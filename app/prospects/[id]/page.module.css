@@ -1,0 +1,269 @@
+.page {
+    min-height: 100vh;
+    padding-bottom: var(--spacing-2xl);
+    position: relative;
+    z-index: 1;
+}
+
+/* Header */
+.header {
+    padding: var(--spacing-lg) 0;
+    border-bottom: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.backLink {
+    color: var(--color-neon-green);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.backLink:hover {
+    transform: translateX(-4px);
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+/* Grid */
+.grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-xl) 0;
+    animation: slideIn 0.5s ease-out;
+}
+
+/* Hero Card */
+.heroCard {
+    background: var(--gradient-card);
+    border: 2px solid rgba(0, 255, 136, 0.2);
+}
+
+.heroHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-lg);
+}
+
+.prospectName {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.prospectMeta {
+    font-size: 1.25rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.rankBadge {
+    background: var(--gradient-primary);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    box-shadow: var(--shadow-neon);
+}
+
+.rankNumber {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--color-bg-primary);
+    line-height: 1;
+}
+
+.rankLabel {
+    font-size: 0.875rem;
+    color: var(--color-bg-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+}
+
+.badges {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+.gradeSection {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+}
+
+.gradeCard {
+    background: rgba(17, 24, 39, 0.5);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    text-align: center;
+    border: 1px solid var(--glass-border);
+}
+
+.gradeLarge {
+    font-size: 3rem;
+    font-weight: 800;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: var(--spacing-sm);
+}
+
+.gradeTitle {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Section Titles */
+.sectionTitle {
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.summary {
+    font-size: 1.125rem;
+    line-height: 1.8;
+    color: var(--color-text-secondary);
+}
+
+/* Two Column Layout */
+.twoCol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+}
+
+/* Lists */
+.list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.listItem {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background: rgba(17, 24, 39, 0.3);
+    border-radius: var(--radius-sm);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+}
+
+.bullet {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: var(--gradient-primary);
+    color: var(--color-bg-primary);
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+/* Comparisons */
+.comparisons {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.comparisonCard {
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 1.125rem;
+    color: var(--color-neon-green);
+}
+
+/* News List */
+.newsList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.newsItem {
+    padding: var(--spacing-md);
+    background: rgba(17, 24, 39, 0.3);
+    border-radius: var(--radius-md);
+    border-left: 3px solid transparent;
+    transition: all var(--transition-normal);
+    text-decoration: none;
+    color: inherit;
+}
+
+.newsItem:hover {
+    background: rgba(17, 24, 39, 0.6);
+    border-left-color: var(--color-neon-green);
+    transform: translateX(4px);
+}
+
+.newsHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.newsSource {
+    font-weight: 600;
+    color: var(--color-neon-blue);
+}
+
+.newsDate {
+    color: var(--color-text-muted);
+}
+
+.newsTitle {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .prospectName {
+        font-size: 2rem;
+    }
+
+    .heroHeader {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .gradeSection {
+        grid-template-columns: 1fr;
+    }
+
+    .twoCol {
+        grid-template-columns: 1fr;
+    }
+
+    .gradeLarge {
+        font-size: 2rem;
+    }
+}

@@ -1,0 +1,223 @@
+import { Prospect } from '@/types/scout';
+
+// Top 50 2026 NFL Draft Prospects (Seed Data)
+// This is a curated list to bootstrap the scouter agent
+// Data compiled from various draft analysts and college football experts
+
+export const SEED_PROSPECTS_2026: Prospect[] = [
+    // Tier 1 - Elite Prospects
+    {
+        id: 'arch-manning',
+        name: 'Arch Manning',
+        position: 'QB',
+        school: 'Texas',
+        year: 2026,
+        projectedRound: 1,
+        scoutGrade: 98,
+        stock: 'stable',
+        tier: 1,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+    {
+        id: 'jeremiah-smith',
+        name: 'Jeremiah Smith',
+        position: 'WR',
+        school: 'Ohio State',
+        year: 2026,
+        projectedRound: 1,
+        scoutGrade: 96,
+        stock: 'rising',
+        tier: 1,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+    {
+        id: 'julian-sayin',
+        name: 'Julian Sayin',
+        position: 'QB',
+        school: 'Ohio State',
+        year: 2026,
+        projectedRound: 1,
+        scoutGrade: 94,
+        stock: 'stable',
+        tier: 1,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+    {
+        id: 'ryan-williams',
+        name: 'Ryan Williams',
+        position: 'WR',
+        school: 'Alabama',
+        year: 2026,
+        projectedRound: 1,
+        scoutGrade: 95,
+        stock: 'rising',
+        tier: 1,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+    {
+        id: 'jordan-seaton',
+        name: 'Jordan Seaton',
+        position: 'QB',
+        school: 'Colorado',
+        year: 2026,
+        projectedRound: 1,
+        scoutGrade: 92,
+        stock: 'stable',
+        tier: 1,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+
+    // Tier 2 - First Round Caliber
+    {
+        id: 'kj-bolden',
+        name: 'KJ Bolden',
+        position: 'RB',
+        school: 'Georgia',
+        year: 2026,
+        projectedRound: 1,
+        scoutGrade: 89,
+        stock: 'rising',
+        tier: 2,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+    {
+        id: 'dakorien-moore',
+        name: 'Dakorien Moore',
+        position: 'WR',
+        school: 'Oregon',
+        year: 2026,
+        projectedRound: 1,
+        scoutGrade: 88,
+        stock: 'stable',
+        tier: 2,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+    {
+        id: 'jaden-rashada',
+        name: 'Jaden Rashada',
+        position: 'QB',
+        school: 'Georgia',
+        year: 2026,
+        projectedRound: 2,
+        scoutGrade: 87,
+        stock: 'stable',
+        tier: 2,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+    {
+        id: 'jordan-davison',
+        name: 'Jordan Davison',
+        position: 'RB',
+        school: 'Ole Miss',
+        year: 2026,
+        projectedRound: 2,
+        scoutGrade: 86,
+        stock: 'rising',
+        tier: 2,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+    {
+        id: 'chris-marshall',
+        name: 'Chris Marshall',
+        position: 'WR',
+        school: 'Texas A&M',
+        year: 2026,
+        projectedRound: 2,
+        scoutGrade: 85,
+        stock: 'stable',
+        tier: 2,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+
+    // Tier 3 - Day 2 Prospects
+    {
+        id: 'noah-grubbs',
+        name: 'Noah Grubbs',
+        position: 'TE',
+        school: 'LSU',
+        year: 2026,
+        projectedRound: 2,
+        scoutGrade: 82,
+        stock: 'rising',
+        tier: 3,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+    {
+        id: 'devin-brown',
+        name: 'Devin Brown',
+        position: 'QB',
+        school: 'Ohio State',
+        year: 2026,
+        projectedRound: 3,
+        scoutGrade: 81,
+        stock: 'stable',
+        tier: 3,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+    {
+        id: 'rueben-owens',
+        name: 'Rueben Owens',
+        position: 'RB',
+        school: 'Louisville',
+        year: 2026,
+        projectedRound: 2,
+        scoutGrade: 83,
+        stock: 'stable',
+        tier: 3,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+    {
+        id: 'joshisa-trader',
+        name: 'Joshisa Trader',
+        position: 'WR',
+        school: 'USC',
+        year: 2026,
+        projectedRound: 3,
+        scoutGrade: 80,
+        stock: 'rising',
+        tier: 3,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+    {
+        id: 'luke-kromenhoek',
+        name: 'Luke Kromenhoek',
+        position: 'QB',
+        school: 'Florida State',
+        year: 2026,
+        projectedRound: 3,
+        scoutGrade: 79,
+        stock: 'stable',
+        tier: 3,
+        lastUpdated: new Date().toISOString(),
+        newsCount: 0,
+    },
+];
+
+// Helper function to get prospect by ID
+export function getProspectById(id: string): Prospect | undefined {
+    return SEED_PROSPECTS_2026.find(p => p.id === id);
+}
+
+// Helper function to get prospects by tier
+export function getProspectsByTier(tier: number): Prospect[] {
+    return SEED_PROSPECTS_2026.filter(p => p.tier === tier);
+}
+
+// Helper function to get prospects by position
+export function getProspectsByPosition(position: string): Prospect[] {
+    return SEED_PROSPECTS_2026.filter(p => p.position === position);
+}

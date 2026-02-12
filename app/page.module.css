@@ -1,0 +1,281 @@
+.page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+}
+
+/* Header */
+.header {
+    padding: var(--spacing-xl) 0;
+    border-bottom: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.headerContent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.title {
+    margin-bottom: var(--spacing-xs);
+}
+
+.subtitle {
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* Main Grid */
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: var(--spacing-xl);
+    padding: var(--spacing-xl) 0;
+}
+
+.mainSection {
+    animation: slideIn 0.5s ease-out;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    animation: slideIn 0.6s ease-out;
+}
+
+/* Section Headers */
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.sidebarTitle {
+    font-size: 1.125rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text-primary);
+}
+
+/* Prospect List */
+.prospectList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.prospectCard {
+    display: grid;
+    grid-template-columns: 50px 1fr auto auto;
+    gap: var(--spacing-md);
+    align-items: center;
+    padding: var(--spacing-md);
+    background: rgba(17, 24, 39, 0.5);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-normal);
+    text-decoration: none;
+    color: inherit;
+}
+
+.prospectCard:hover {
+    background: rgba(17, 24, 39, 0.8);
+    border-color: rgba(0, 255, 136, 0.3);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-neon);
+}
+
+.prospectRank {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-primary);
+    color: var(--color-bg-primary);
+    font-weight: 800;
+    font-size: 1.25rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-neon);
+}
+
+.prospectInfo {
+    flex: 1;
+}
+
+.prospectName {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+}
+
+.prospectMeta {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+.prospectBadges {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.prospectGrade {
+    text-align: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: var(--radius-md);
+}
+
+.gradeNumber {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-neon-green);
+    line-height: 1;
+}
+
+.gradeLabel {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Stock List */
+.stockList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.stockItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm);
+    background: rgba(17, 24, 39, 0.3);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    text-decoration: none;
+    color: inherit;
+}
+
+.stockItem:hover {
+    background: rgba(17, 24, 39, 0.6);
+    transform: translateX(2px);
+}
+
+.stockName {
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 2px;
+}
+
+.stockGrade {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--color-neon-green);
+}
+
+/* News List */
+.newsList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.newsItem {
+    padding: var(--spacing-sm);
+    background: rgba(17, 24, 39, 0.3);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    text-decoration: none;
+    color: inherit;
+    border-left: 3px solid transparent;
+}
+
+.newsItem:hover {
+    background: rgba(17, 24, 39, 0.6);
+    border-left-color: var(--color-neon-green);
+}
+
+.newsTitle {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: var(--spacing-xs);
+    line-height: 1.4;
+}
+
+.newsMeta {
+    display: flex;
+    gap: var(--spacing-xs);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.emptyState {
+    padding: var(--spacing-lg);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+/* Footer */
+.footer {
+    margin-top: auto;
+    padding: var(--spacing-xl) 0;
+    border-top: 1px solid var(--glass-border);
+    text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        order: -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .headerContent {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .prospectCard {
+        grid-template-columns: 40px 1fr;
+        gap: var(--spacing-sm);
+    }
+
+    .prospectRank {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .prospectBadges {
+        grid-column: 2;
+        margin-top: var(--spacing-xs);
+    }
+
+    .prospectGrade {
+        grid-column: 2;
+        justify-self: start;
+        margin-top: var(--spacing-xs);
+    }
+}
