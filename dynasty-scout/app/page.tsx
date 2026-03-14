@@ -8,9 +8,12 @@ export const dynamic = "force-dynamic";
 async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate: string | null }> {
   try {
     const sql = `
-      SELECT 
+      SELECT
         p.*,
-        COALESCE(MAX(cc.school), p.nfl_team) as school,
+        COALESCE(
+          (SELECT school FROM college_career WHERE player_id = p.id ORDER BY id DESC LIMIT 1),
+          p.nfl_team
+        ) as school,
         c.rank_overall,
         c.avg_rank,
         c.best_rank,
@@ -30,7 +33,7 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
           m.speed_score,
           CASE
             WHEN m.forty_yard > 0 AND p.weight_lbs > 0
-            THEN ROUND((p.weight_lbs * 200.0) / (m.forty_yard * m.forty_yard * m.forty_yard * m.forty_yard), 1)
+            THEN ROUND(CAST((p.weight_lbs * 200.0) / (m.forty_yard * m.forty_yard * m.forty_yard * m.forty_yard) AS numeric), 1)
             ELSE NULL
           END
         ) as speed_score,
@@ -38,14 +41,12 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
         (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'Sleeper ADP' ORDER BY scraped_at DESC LIMIT 1) as sleeper_adp,
         (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyPros' ORDER BY scraped_at DESC LIMIT 1) as fantasypros_rank
       FROM players p
-      LEFT JOIN college_career cc ON p.id = cc.player_id
       LEFT JOIN measurables m ON p.id = m.player_id
       LEFT JOIN consensus_rankings c ON p.id = c.player_id
         AND c.calculated_at = (
           SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id
         )
       WHERE p.draft_year = 2026
-      GROUP BY p.id
       ORDER BY c.rank_overall ASC NULLS LAST
     `;
     const players = await query<Player>(sql, []);
