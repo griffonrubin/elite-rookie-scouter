@@ -1,0 +1,15 @@
+requests
+beautifulsoup4
+playwright
+psycopg2-binary
+python-dotenv
+fuzzywuzzy
+python-Levenshtein
+pandas
+numpy
+cfbd
+youtube-transcript-api
+praw
+feedparser
+openai
+anthropic

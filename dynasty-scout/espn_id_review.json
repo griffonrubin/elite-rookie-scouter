@@ -1,0 +1,572 @@
+[
+  {
+    "player_id": 482,
+    "name": "Ty Simpson",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4685522,
+        "fullName": "Ty Simpson",
+        "school": "Alabama Crimson Tide"
+      },
+      {
+        "id": 5101459,
+        "fullName": "Ty Simpson",
+        "school": "Faulkner University Eagles"
+      }
+    ]
+  },
+  {
+    "player_id": 491,
+    "name": "Chris Bell",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4869961,
+        "fullName": "Chris Bell",
+        "school": "Louisville Cardinals"
+      },
+      {
+        "id": 3928974,
+        "fullName": "Chris Bell",
+        "school": "Kansas Jayhawks"
+      }
+    ]
+  },
+  {
+    "player_id": 497,
+    "name": "Antonio Williams",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 5081432,
+        "fullName": "Antonio Williams",
+        "school": "Clemson Tigers"
+      },
+      {
+        "id": 4698236,
+        "fullName": "Antonio Williams",
+        "school": "Delaware State Hornets"
+      },
+      {
+        "id": 556195,
+        "fullName": "Antonio Williams",
+        "school": "East Carolina Pirates"
+      }
+    ]
+  },
+  {
+    "player_id": 521,
+    "name": "Nick Singleton",
+    "reason": "Not found in ESPN. May need CFB Reference fallback.",
+    "candidates": []
+  },
+  {
+    "player_id": 543,
+    "name": "Eric Rivers",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4713277,
+        "fullName": "Eric Rivers",
+        "school": "Georgia Tech Yellow Jackets"
+      },
+      {
+        "id": 3928988,
+        "fullName": "Eric Rivers",
+        "school": "Kansas Jayhawks"
+      }
+    ]
+  },
+  {
+    "player_id": 553,
+    "name": "Aaron Anderson",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4691138,
+        "fullName": "Aaron Anderson",
+        "school": "LSU Tigers"
+      },
+      {
+        "id": 4255848,
+        "fullName": "Aaron Anderson",
+        "school": "Mississippi Valley State Delta Devils"
+      },
+      {
+        "id": 4779381,
+        "fullName": "Aaron Anderson",
+        "school": "Southern Jaguars"
+      }
+    ]
+  },
+  {
+    "player_id": 559,
+    "name": "Desmond Reid",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 5089535,
+        "fullName": "Desmond Reid",
+        "school": "Pittsburgh Panthers"
+      },
+      {
+        "id": 3069803,
+        "fullName": "Desmond Reid",
+        "school": "Mars Hill Lions"
+      }
+    ]
+  },
+  {
+    "player_id": 570,
+    "name": "Jamarion Miller",
+    "reason": "Not found in ESPN. May need CFB Reference fallback.",
+    "candidates": []
+  },
+  {
+    "player_id": 575,
+    "name": "Chase Roberts",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4714388,
+        "fullName": "Chase Roberts",
+        "school": "BYU Cougars"
+      },
+      {
+        "id": 531124,
+        "fullName": "Chase Roberts",
+        "school": "Georgia Tech Yellow Jackets"
+      },
+      {
+        "id": 3164454,
+        "fullName": "Chase Roberts",
+        "school": "Georgia Tech Yellow Jackets"
+      }
+    ]
+  },
+  {
+    "player_id": 578,
+    "name": "Malik Benson",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 5150247,
+        "fullName": "Malik Benson",
+        "school": "Oregon Ducks"
+      },
+      {
+        "id": 4291308,
+        "fullName": "Malik Benson",
+        "school": "Mary Hardin-Baylor Crusaders"
+      }
+    ]
+  },
+  {
+    "player_id": 586,
+    "name": "Emmanuel Henderson",
+    "reason": "Not found in ESPN. May need CFB Reference fallback.",
+    "candidates": []
+  },
+  {
+    "player_id": 591,
+    "name": "Chris Hilton",
+    "reason": "Not found in ESPN. May need CFB Reference fallback.",
+    "candidates": []
+  },
+  {
+    "player_id": 592,
+    "name": "C.J. Donaldson",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 5081999,
+        "fullName": "CJ Donaldson",
+        "school": "Ohio State Buckeyes"
+      },
+      {
+        "id": 5154230,
+        "fullName": "CJ Donaldson",
+        "school": "Kennesaw State Owls"
+      }
+    ]
+  },
+  {
+    "player_id": 601,
+    "name": "Noah Thomas",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4718457,
+        "fullName": "Noah Thomas",
+        "school": "Georgia Bulldogs"
+      },
+      {
+        "id": 4291265,
+        "fullName": "Noah Thomas",
+        "school": "University of Mount Union Raiders"
+      },
+      {
+        "id": 4579561,
+        "fullName": "Noah Thomas",
+        "school": "Howard Bison"
+      },
+      {
+        "id": 5226135,
+        "fullName": "Noah Thomas",
+        "school": "San Diego Toreros"
+      },
+      {
+        "id": 4283162,
+        "fullName": "Noah Thomas",
+        "school": "Ursinus Bears"
+      },
+      {
+        "id": 5210431,
+        "fullName": "Noah Thomas",
+        "school": "Oregon State Beavers"
+      },
+      {
+        "id": 5166228,
+        "fullName": "Noah Thomas",
+        "school": "San Diego Toreros"
+      }
+    ]
+  },
+  {
+    "player_id": 617,
+    "name": "Thomas Castellanos",
+    "reason": "Not found in ESPN. May need CFB Reference fallback.",
+    "candidates": []
+  },
+  {
+    "player_id": 626,
+    "name": "Braylon James",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 5299522,
+        "fullName": "Braylon James",
+        "school": "Cornell Big Red"
+      },
+      {
+        "id": 4870809,
+        "fullName": "Braylon James",
+        "school": "TCU Horned Frogs"
+      }
+    ]
+  },
+  {
+    "player_id": 628,
+    "name": "Sedrick Alexander",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 5030333,
+        "fullName": "Sedrick Alexander",
+        "school": "Vanderbilt Commodores"
+      },
+      {
+        "id": 4580642,
+        "fullName": "Sedrick Alexander",
+        "school": "Point University Skyhawks"
+      }
+    ]
+  },
+  {
+    "player_id": 630,
+    "name": "Kaleb Brown",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4271153,
+        "fullName": "Kaleb Brown",
+        "school": "Cumberland (TN) Bulldogs"
+      },
+      {
+        "id": 4702800,
+        "fullName": "Kaleb Brown",
+        "school": "Tennessee Tech Golden Eagles"
+      },
+      {
+        "id": 5230068,
+        "fullName": "Kaleb Brown",
+        "school": "Alabama A&M Bulldogs"
+      },
+      {
+        "id": 4685283,
+        "fullName": "Kaleb Brown",
+        "school": "UAB Blazers"
+      },
+      {
+        "id": 4883838,
+        "fullName": "Kaleb Brown",
+        "school": "Norfolk State Spartans"
+      },
+      {
+        "id": 4877086,
+        "fullName": "Kaleb Brown",
+        "school": "Nicholls Colonels"
+      },
+      {
+        "id": 4880470,
+        "fullName": "Kaleb Brown",
+        "school": "Penn State Nittany Lions"
+      },
+      {
+        "id": 3949874,
+        "fullName": "Kaleb Brown",
+        "school": "Maine Maritime Mariners"
+      },
+      {
+        "id": 4770005,
+        "fullName": "Kaleb Brown",
+        "school": "Mississippi Valley State Delta Devils"
+      }
+    ]
+  },
+  {
+    "player_id": 635,
+    "name": "TreVonte Citizen",
+    "reason": "Not found in ESPN. May need CFB Reference fallback.",
+    "candidates": []
+  },
+  {
+    "player_id": 636,
+    "name": "C.J. Williams",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 5085024,
+        "fullName": "CJ Williams",
+        "school": "Stanford Cardinal"
+      },
+      {
+        "id": 5218660,
+        "fullName": "CJ Williams",
+        "school": "Vanderbilt Commodores"
+      },
+      {
+        "id": 547644,
+        "fullName": "CJ Williams",
+        "school": "Towson Tigers"
+      },
+      {
+        "id": 4692029,
+        "fullName": "C.J. Williams",
+        "school": "Alabama Crimson Tide"
+      },
+      {
+        "id": 4243712,
+        "fullName": "CJ Williams",
+        "school": "Navy Midshipmen"
+      },
+      {
+        "id": 4877557,
+        "fullName": "CJ Williams",
+        "school": "Western Carolina Catamounts"
+      }
+    ]
+  },
+  {
+    "player_id": 647,
+    "name": "Nate Johnson",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4868300,
+        "fullName": "Nate Johnson",
+        "school": "Utah Utes"
+      },
+      {
+        "id": 5151950,
+        "fullName": "Nate Johnson",
+        "school": "Missouri Tigers"
+      },
+      {
+        "id": 4046527,
+        "fullName": "Nate Johnson",
+        "school": "Michigan Wolverines"
+      },
+      {
+        "id": 4589671,
+        "fullName": "Nate Johnson",
+        "school": "Reinhardt University Eagles"
+      }
+    ]
+  },
+  {
+    "player_id": 651,
+    "name": "Ty Thompson",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4432774,
+        "fullName": "Ty Thompson",
+        "school": "Tulane Green Wave"
+      },
+      {
+        "id": 5082918,
+        "fullName": "Ty Thompson",
+        "school": "Georgia Tech Yellow Jackets"
+      },
+      {
+        "id": 4360161,
+        "fullName": "Ty Thompson",
+        "school": "East Carolina Pirates"
+      }
+    ]
+  },
+  {
+    "player_id": 653,
+    "name": "L.J. Johnson Jr.",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4432718,
+        "fullName": "LJ Johnson Jr.",
+        "school": "California Golden Bears"
+      },
+      {
+        "id": 5220107,
+        "fullName": "L.J. Johnson Jr.",
+        "school": "Texas State Bobcats"
+      }
+    ]
+  },
+  {
+    "player_id": 655,
+    "name": "Kyron Ware-Hudson",
+    "reason": "Not found in ESPN. May need CFB Reference fallback.",
+    "candidates": []
+  },
+  {
+    "player_id": 658,
+    "name": "Trevion Cooley",
+    "reason": "Not found in ESPN. May need CFB Reference fallback.",
+    "candidates": []
+  },
+  {
+    "player_id": 663,
+    "name": "Byron Cardwell",
+    "reason": "Not found in ESPN. May need CFB Reference fallback.",
+    "candidates": []
+  },
+  {
+    "player_id": 666,
+    "name": "Jayden Thomas",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4431600,
+        "fullName": "Jayden Thomas",
+        "school": "Virginia Cavaliers"
+      },
+      {
+        "id": 5224191,
+        "fullName": "Jayden Thomas",
+        "school": "Central Arkansas Bears"
+      },
+      {
+        "id": 5143606,
+        "fullName": "Jayden Thomas",
+        "school": "Benedict College Tigers"
+      }
+    ]
+  },
+  {
+    "player_id": 667,
+    "name": "Jared Brown",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4700453,
+        "fullName": "Jared Brown",
+        "school": "South Carolina Gamecocks"
+      },
+      {
+        "id": 3943306,
+        "fullName": "Jared Brown",
+        "school": "Southern Arkansas Muleriders"
+      }
+    ]
+  },
+  {
+    "player_id": 669,
+    "name": "Alton McCaskill IV",
+    "reason": "Not found in ESPN. May need CFB Reference fallback.",
+    "candidates": []
+  },
+  {
+    "player_id": 674,
+    "name": "Max Tomzcak",
+    "reason": "Not found in ESPN. May need CFB Reference fallback.",
+    "candidates": []
+  },
+  {
+    "player_id": 676,
+    "name": "E.J. Smith",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4430825,
+        "fullName": "EJ Smith",
+        "school": "Texas A&M Aggies"
+      },
+      {
+        "id": 237087,
+        "fullName": "E.J. Smith",
+        "school": "Houston Cougars"
+      },
+      {
+        "id": 5296359,
+        "fullName": "EJ Smith",
+        "school": "Nevada Wolf Pack"
+      }
+    ]
+  },
+  {
+    "player_id": 677,
+    "name": "E.J. Williams",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 5224947,
+        "fullName": "EJ Williams",
+        "school": "Erskine Flying Fleet"
+      },
+      {
+        "id": 5227769,
+        "fullName": "E.J. Williams",
+        "school": "Missouri State Bears"
+      },
+      {
+        "id": 498752,
+        "fullName": "EJ Williams",
+        "school": "Cornell Big Red"
+      },
+      {
+        "id": 4691092,
+        "fullName": "E.J. Williams",
+        "school": "Abilene Christian Wildcats"
+      }
+    ]
+  },
+  {
+    "player_id": 678,
+    "name": "Jeff Sims",
+    "reason": "Multiple exact name matches. Manual resolution needed.",
+    "candidates": [
+      {
+        "id": 4429066,
+        "fullName": "Jeff Sims",
+        "school": "Arizona State Sun Devils"
+      },
+      {
+        "id": 4707556,
+        "fullName": "Jeff Sims",
+        "school": "Duke Blue Devils"
+      }
+    ]
+  }
+]

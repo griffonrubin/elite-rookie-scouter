@@ -1,0 +1,68 @@
+{
+  "Jeremiyah Love": {
+    "sources": {
+      "forty_yard": "NFL",
+      "ras": "RAS"
+    },
+    "disputed_forty": false
+  },
+  "Fernando Mendoza": {
+    "sources": {
+      "ras": "RAS"
+    },
+    "disputed_forty": false
+  },
+  "Carnell Tate": {
+    "sources": {
+      "forty_yard": "NFL",
+      "ras": "RAS"
+    },
+    "disputed_forty": true
+  },
+  "Makai Lemon": {
+    "sources": {
+      "ras": "RAS"
+    },
+    "disputed_forty": false
+  },
+  "Jordyn Tyson": {
+    "sources": {
+      "ras": "RAS"
+    },
+    "disputed_forty": false
+  },
+  "Kenyon Sadiq": {
+    "sources": {
+      "ras": "RAS"
+    },
+    "disputed_forty": false
+  },
+  "Denzel Boston": {
+    "sources": {
+      "ras": "RAS"
+    },
+    "disputed_forty": false
+  },
+  "Jadarian Price": {
+    "sources": {
+      "ras": "RAS"
+    },
+    "disputed_forty": false
+  },
+  "Jonah Coleman": {
+    "sources": {
+      "ras": "RAS"
+    },
+    "disputed_forty": false
+  },
+  "Emmett Johnson": {
+    "sources": {
+      "forty_yard": "NFL",
+      "broad_jump": "NFL",
+      "three_cone": "NFL",
+      "vertical_jump": "NFL",
+      "ras": "RAS"
+    },
+    "disputed_forty": false
+  }
+}

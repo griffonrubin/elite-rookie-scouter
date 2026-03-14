@@ -1,0 +1,2419 @@
+{
+  "errors_count": 0,
+  "warnings_count": 402,
+  "errors": [],
+  "warnings": [
+    {
+      "player": "Jeremiyah Love",
+      "player_id": 471,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Fernando Mendoza",
+      "player_id": 472,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Carnell Tate",
+      "player_id": 473,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Makai Lemon",
+      "player_id": 474,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jordyn Tyson",
+      "player_id": 475,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kenyon Sadiq",
+      "player_id": 476,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "KC Concepcion",
+      "player_id": 477,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Denzel Boston",
+      "player_id": 478,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jadarian Price",
+      "player_id": 479,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Omar Cooper Jr.",
+      "player_id": 480,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jonah Coleman",
+      "player_id": 481,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Ty Simpson",
+      "player_id": 482,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Ty Simpson",
+      "player_id": 482,
+      "type": "WARNING",
+      "message": "Only pre-2025 data present"
+    },
+    {
+      "player": "Nicholas Singleton",
+      "player_id": 483,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Elijah Sarratt",
+      "player_id": 484,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Emmett Johnson",
+      "player_id": 485,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Zachariah Branch",
+      "player_id": 486,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Malachi Fields",
+      "player_id": 487,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Trinidad Chambliss",
+      "player_id": 488,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Eli Stowers",
+      "player_id": 489,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Chris Brazzell II",
+      "player_id": 490,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Chris Bell",
+      "player_id": 491,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Chris Bell",
+      "player_id": 491,
+      "type": "WARNING",
+      "message": "Only pre-2025 data present"
+    },
+    {
+      "player": "Mike Washington Jr.",
+      "player_id": 492,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kaytron Allen",
+      "player_id": 493,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Garrett Nussmeier",
+      "player_id": 494,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Germie Bernard",
+      "player_id": 495,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Ja'Kobi Lane",
+      "player_id": 496,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Antonio Williams",
+      "player_id": 497,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Antonio Williams",
+      "player_id": 497,
+      "type": "WARNING",
+      "message": "Only pre-2025 data present"
+    },
+    {
+      "player": "Skyler Bell",
+      "player_id": 498,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Max Klare",
+      "player_id": 499,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Michael Trigg",
+      "player_id": 500,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Demond Claiborne",
+      "player_id": 501,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Ted Hurst",
+      "player_id": 502,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jack Endries",
+      "player_id": 504,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Deion Burks",
+      "player_id": 505,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Seth McGowan",
+      "player_id": 506,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2020 to 2024)"
+    },
+    {
+      "player": "Seth McGowan",
+      "player_id": 506,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "CJ Daniels",
+      "player_id": 507,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Le'Veon Moss",
+      "player_id": 508,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Barion Brown",
+      "player_id": 509,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jam Miller",
+      "player_id": 510,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "J'Mari Taylor",
+      "player_id": 511,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Luke Altmyer",
+      "player_id": 512,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Reggie Virgil",
+      "player_id": 513,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Cade Klubnik",
+      "player_id": 514,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Terion Stewart",
+      "player_id": 515,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2021 to 2023)"
+    },
+    {
+      "player": "Terion Stewart",
+      "player_id": 515,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Bryce Lance",
+      "player_id": 516,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Drew Allar",
+      "player_id": 519,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Nick Singleton",
+      "player_id": 521,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Nick Singleton",
+      "player_id": 521,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Justin Joly",
+      "player_id": 522,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Justin Joly",
+      "player_id": 522,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Brenen Thompson",
+      "player_id": 523,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Carson Beck",
+      "player_id": 524,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Carson Beck",
+      "player_id": 524,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Sam Roush",
+      "player_id": 525,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Sam Roush",
+      "player_id": 525,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Taylen Green",
+      "player_id": 526,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Taylen Green",
+      "player_id": 526,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Oscar Delp",
+      "player_id": 527,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Oscar Delp",
+      "player_id": 527,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kevin Coleman Jr.",
+      "player_id": 528,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kevin Coleman Jr.",
+      "player_id": 528,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Cole Payton",
+      "player_id": 529,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Cole Payton",
+      "player_id": 529,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Joe Royer",
+      "player_id": 530,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Joe Royer",
+      "player_id": 530,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Josh Cameron",
+      "player_id": 531,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Josh Cameron",
+      "player_id": 531,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Eli Raridon",
+      "player_id": 532,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Eli Raridon",
+      "player_id": 532,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kaelon Black",
+      "player_id": 533,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kaelon Black",
+      "player_id": 533,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Nate Boerkircher",
+      "player_id": 534,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Nate Boerkircher",
+      "player_id": 534,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Eric McAlister",
+      "player_id": 535,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Eric McAlister",
+      "player_id": 535,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Dallen Bentley",
+      "player_id": 536,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Dallen Bentley",
+      "player_id": 536,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Sawyer Robertson",
+      "player_id": 537,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Sawyer Robertson",
+      "player_id": 537,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "De'Zhaun Stribling",
+      "player_id": 538,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "De'Zhaun Stribling",
+      "player_id": 538,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Tanner Koziol",
+      "player_id": 539,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Tanner Koziol",
+      "player_id": 539,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Tyren Montgomery",
+      "player_id": 540,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Tyren Montgomery",
+      "player_id": 540,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Tyren Montgomery",
+      "player_id": 540,
+      "type": "WARNING",
+      "message": "Only pre-2025 data present"
+    },
+    {
+      "player": "Dae'Quan Wright",
+      "player_id": 541,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Eli Heidenreich",
+      "player_id": 542,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Eli Heidenreich",
+      "player_id": 542,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Eric Rivers",
+      "player_id": 543,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Eric Rivers",
+      "player_id": 543,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Josh Cuevas",
+      "player_id": 544,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Marlin Klein",
+      "player_id": 545,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Marlin Klein",
+      "player_id": 545,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Adam Randall",
+      "player_id": 546,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Adam Randall",
+      "player_id": 546,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kaden Wetjen",
+      "player_id": 547,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kaden Wetjen",
+      "player_id": 547,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "John Michael Gyllenborg",
+      "player_id": 548,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jalon Daniels",
+      "player_id": 549,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jalon Daniels",
+      "player_id": 549,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Roman Hemby",
+      "player_id": 550,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Roman Hemby",
+      "player_id": 550,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Robert Henry Jr.",
+      "player_id": 551,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Cyrus Allen",
+      "player_id": 552,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Cyrus Allen",
+      "player_id": 552,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Aaron Anderson",
+      "player_id": 553,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Aaron Anderson",
+      "player_id": 553,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Riley Nowakowski",
+      "player_id": 554,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Riley Nowakowski",
+      "player_id": 554,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2020 to 2022)"
+    },
+    {
+      "player": "Riley Nowakowski",
+      "player_id": 554,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Miles Kitselman",
+      "player_id": 555,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Miles Kitselman",
+      "player_id": 555,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2022 to 2024)"
+    },
+    {
+      "player": "Miles Kitselman",
+      "player_id": 555,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Vinny Anthony II",
+      "player_id": 556,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Vinny Anthony II",
+      "player_id": 556,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Lewis Bond",
+      "player_id": 557,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Lewis Bond",
+      "player_id": 557,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Colbie Young",
+      "player_id": 558,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Colbie Young",
+      "player_id": 558,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Desmond Reid",
+      "player_id": 559,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Desmond Reid",
+      "player_id": 559,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Matthew Hibner",
+      "player_id": 560,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Matthew Hibner",
+      "player_id": 560,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Max Bredeson",
+      "player_id": 561,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Max Bredeson",
+      "player_id": 561,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Lance Mason",
+      "player_id": 562,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Lance Mason",
+      "player_id": 562,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Will Kacmarek",
+      "player_id": 563,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Will Kacmarek",
+      "player_id": 563,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jeff Caldwell",
+      "player_id": 564,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jeff Caldwell",
+      "player_id": 564,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kendrick Law",
+      "player_id": 565,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kendrick Law",
+      "player_id": 565,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Dane Key",
+      "player_id": 566,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Dane Key",
+      "player_id": 566,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Caullin Lacy",
+      "player_id": 567,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Caullin Lacy",
+      "player_id": 567,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Devin Voisin",
+      "player_id": 568,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Devin Voisin",
+      "player_id": 568,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Zavion Thomas",
+      "player_id": 569,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Zavion Thomas",
+      "player_id": 569,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jamarion Miller",
+      "player_id": 570,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jamarion Miller",
+      "player_id": 570,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Noah Whittington",
+      "player_id": 571,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Noah Whittington",
+      "player_id": 571,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Hank Beatty",
+      "player_id": 572,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Hank Beatty",
+      "player_id": 572,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Romello Brinson",
+      "player_id": 573,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Romello Brinson",
+      "player_id": 573,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "R.J. Maryland",
+      "player_id": 574,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "R.J. Maryland",
+      "player_id": 574,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Chase Roberts",
+      "player_id": 575,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Chase Roberts",
+      "player_id": 575,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Jordan Hudson",
+      "player_id": 576,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jordan Hudson",
+      "player_id": 576,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Behren Morton",
+      "player_id": 577,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Malik Benson",
+      "player_id": 578,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Malik Benson",
+      "player_id": 578,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Bauer Sharp",
+      "player_id": 579,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Bauer Sharp",
+      "player_id": 579,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Chip Trayanum",
+      "player_id": 580,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Chip Trayanum",
+      "player_id": 580,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kentrel Bullock",
+      "player_id": 581,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kentrel Bullock",
+      "player_id": 581,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2021 to 2023)"
+    },
+    {
+      "player": "Kentrel Bullock",
+      "player_id": 581,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Michael Wortham",
+      "player_id": 582,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Michael Wortham",
+      "player_id": 582,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Joe Fagnano",
+      "player_id": 583,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Joe Fagnano",
+      "player_id": 583,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Caleb Douglas",
+      "player_id": 584,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Caleb Douglas",
+      "player_id": 584,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Joey Aguilar",
+      "player_id": 585,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Joey Aguilar",
+      "player_id": 585,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Emmanuel Henderson",
+      "player_id": 586,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Emmanuel Henderson",
+      "player_id": 586,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Dan Villari",
+      "player_id": 587,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Dan Villari",
+      "player_id": 587,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jaydn Ott",
+      "player_id": 588,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jaydn Ott",
+      "player_id": 588,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Carsen Ryan",
+      "player_id": 589,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Carsen Ryan",
+      "player_id": 589,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Keelan Marion",
+      "player_id": 590,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Keelan Marion",
+      "player_id": 590,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Chris Hilton",
+      "player_id": 591,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Chris Hilton",
+      "player_id": 591,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "C.J. Donaldson",
+      "player_id": 592,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "C.J. Donaldson",
+      "player_id": 592,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Jamal Haynes",
+      "player_id": 593,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jamal Haynes",
+      "player_id": 593,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kejon Owens",
+      "player_id": 594,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kejon Owens",
+      "player_id": 594,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Seydou Traore",
+      "player_id": 595,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Seydou Traore",
+      "player_id": 595,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2022 to 2024)"
+    },
+    {
+      "player": "Seydou Traore",
+      "player_id": 595,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Curtis Allen",
+      "player_id": 596,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Curtis Allen",
+      "player_id": 596,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Diego Pavia",
+      "player_id": 597,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Diego Pavia",
+      "player_id": 597,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Athan Kaliakmanis",
+      "player_id": 598,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Athan Kaliakmanis",
+      "player_id": 598,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "J.Michael Sturdivant",
+      "player_id": 599,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "J.Michael Sturdivant",
+      "player_id": 599,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Khalil Dinkins",
+      "player_id": 600,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Khalil Dinkins",
+      "player_id": 600,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Noah Thomas",
+      "player_id": 601,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Lake McRee",
+      "player_id": 602,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Lake McRee",
+      "player_id": 602,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Dillon Bell",
+      "player_id": 603,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Dillon Bell",
+      "player_id": 603,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Mark Gronowski",
+      "player_id": 604,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Mark Gronowski",
+      "player_id": 604,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2020 to 2022)"
+    },
+    {
+      "player": "Mark Gronowski",
+      "player_id": 604,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Haynes King",
+      "player_id": 605,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Haynes King",
+      "player_id": 605,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Squirrel White",
+      "player_id": 606,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Squirrel White",
+      "player_id": 606,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Harrison Wallace III",
+      "player_id": 607,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Harrison Wallace III",
+      "player_id": 607,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jaren Kanak",
+      "player_id": 608,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jaren Kanak",
+      "player_id": 608,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Tanner Arkin",
+      "player_id": 609,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Tanner Arkin",
+      "player_id": 609,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "DJ Rogers",
+      "player_id": 610,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "DJ Rogers",
+      "player_id": 610,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jameson Geers",
+      "player_id": 611,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jameson Geers",
+      "player_id": 611,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Rahsul Faison",
+      "player_id": 612,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jalil Farooq",
+      "player_id": 613,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jalil Farooq",
+      "player_id": 613,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Miller Moss",
+      "player_id": 614,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jalen Walthall",
+      "player_id": 615,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jalen Walthall",
+      "player_id": 615,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Dean Connors",
+      "player_id": 616,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Dean Connors",
+      "player_id": 616,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Thomas Castellanos",
+      "player_id": 617,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Thomas Castellanos",
+      "player_id": 617,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Trebor Pena",
+      "player_id": 618,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Trebor Pena",
+      "player_id": 618,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jake Retzlaff",
+      "player_id": 619,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jake Retzlaff",
+      "player_id": 619,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kyron Drones",
+      "player_id": 620,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kyron Drones",
+      "player_id": 620,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jack Velling",
+      "player_id": 621,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jack Velling",
+      "player_id": 621,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Ryan Niblett",
+      "player_id": 622,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Ryan Niblett",
+      "player_id": 622,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Ayden Williams",
+      "player_id": 623,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Raymond Cottrell",
+      "player_id": 624,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Raymond Cottrell",
+      "player_id": 624,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Raymond Cottrell",
+      "player_id": 624,
+      "type": "WARNING",
+      "message": "Only pre-2025 data present"
+    },
+    {
+      "player": "Nathan Leacock",
+      "player_id": 625,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Nathan Leacock",
+      "player_id": 625,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Braylon James",
+      "player_id": 626,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Braylon James",
+      "player_id": 626,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Grayson Loftis",
+      "player_id": 627,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Grayson Loftis",
+      "player_id": 627,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Sedrick Alexander",
+      "player_id": 628,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Sedrick Alexander",
+      "player_id": 628,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Davin Stoffel",
+      "player_id": 629,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Davin Stoffel",
+      "player_id": 629,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kaleb Brown",
+      "player_id": 630,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kaleb Brown",
+      "player_id": 630,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Amari Niblack",
+      "player_id": 631,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Amari Niblack",
+      "player_id": 631,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jaylon Glover",
+      "player_id": 632,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jaylon Glover",
+      "player_id": 632,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Antonio Gates Jr.",
+      "player_id": 633,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Antonio Gates Jr.",
+      "player_id": 633,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Antonio Gates Jr.",
+      "player_id": 633,
+      "type": "WARNING",
+      "message": "Only pre-2025 data present"
+    },
+    {
+      "player": "Tobias Merriweather",
+      "player_id": 634,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Tobias Merriweather",
+      "player_id": 634,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "TreVonte Citizen",
+      "player_id": 635,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "TreVonte Citizen",
+      "player_id": 635,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "C.J. Williams",
+      "player_id": 636,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "C.J. Williams",
+      "player_id": 636,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Kobe Prentice",
+      "player_id": 637,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kobe Prentice",
+      "player_id": 637,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Maalik Murphy",
+      "player_id": 638,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Maalik Murphy",
+      "player_id": 638,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kyion Grayes",
+      "player_id": 639,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kyion Grayes",
+      "player_id": 639,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2022 to 2024)"
+    },
+    {
+      "player": "Kyion Grayes",
+      "player_id": 639,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Braylin Presley",
+      "player_id": 640,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Braylin Presley",
+      "player_id": 640,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Holden Staes",
+      "player_id": 641,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Holden Staes",
+      "player_id": 641,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Savion Red",
+      "player_id": 642,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Savion Red",
+      "player_id": 642,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Justus Ross-Simmons",
+      "player_id": 643,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Justus Ross-Simmons",
+      "player_id": 643,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Owen McCown",
+      "player_id": 644,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Owen McCown",
+      "player_id": 644,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Richard Reese",
+      "player_id": 645,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Richard Reese",
+      "player_id": 645,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Andrew Paul",
+      "player_id": 646,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Andrew Paul",
+      "player_id": 646,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Nate Johnson",
+      "player_id": 647,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Nate Johnson",
+      "player_id": 647,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Josh Kattus",
+      "player_id": 648,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Josh Kattus",
+      "player_id": 648,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kaidon Salter",
+      "player_id": 649,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kaidon Salter",
+      "player_id": 649,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Dacari Collins",
+      "player_id": 650,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Dacari Collins",
+      "player_id": 650,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Ty Thompson",
+      "player_id": 651,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Ty Thompson",
+      "player_id": 651,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Kadarius Calloway",
+      "player_id": 652,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kadarius Calloway",
+      "player_id": 652,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "L.J. Johnson Jr.",
+      "player_id": 653,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "L.J. Johnson Jr.",
+      "player_id": 653,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Preston Stone",
+      "player_id": 654,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Preston Stone",
+      "player_id": 654,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Kyron Ware-Hudson",
+      "player_id": 655,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Kyron Ware-Hudson",
+      "player_id": 655,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Christian Leary",
+      "player_id": 656,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Christian Leary",
+      "player_id": 656,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Armoni Goodwin",
+      "player_id": 657,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Armoni Goodwin",
+      "player_id": 657,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2022 to 2024)"
+    },
+    {
+      "player": "Armoni Goodwin",
+      "player_id": 657,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Trevion Cooley",
+      "player_id": 658,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Trevion Cooley",
+      "player_id": 658,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Deion Colzie",
+      "player_id": 659,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Deion Colzie",
+      "player_id": 659,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jayden Ballard",
+      "player_id": 660,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jayden Ballard",
+      "player_id": 660,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Malik McClain",
+      "player_id": 661,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Malik McClain",
+      "player_id": 661,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "JoJo Earle",
+      "player_id": 662,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "JoJo Earle",
+      "player_id": 662,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Byron Cardwell",
+      "player_id": 663,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Byron Cardwell",
+      "player_id": 663,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Jerand Bradley",
+      "player_id": 664,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jerand Bradley",
+      "player_id": 664,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Barika Kpeenu",
+      "player_id": 665,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Barika Kpeenu",
+      "player_id": 665,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jayden Thomas",
+      "player_id": 666,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jayden Thomas",
+      "player_id": 666,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Jared Brown",
+      "player_id": 667,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jared Brown",
+      "player_id": 667,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Chamon Metayer",
+      "player_id": 668,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Chamon Metayer",
+      "player_id": 668,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Alton McCaskill IV",
+      "player_id": 669,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Alton McCaskill IV",
+      "player_id": 669,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Joseph Manjack IV",
+      "player_id": 670,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Joseph Manjack IV",
+      "player_id": 670,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Andrel Anthony",
+      "player_id": 671,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Andrel Anthony",
+      "player_id": 671,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Rara Thomas",
+      "player_id": 672,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Rara Thomas",
+      "player_id": 672,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2023 to 2025)"
+    },
+    {
+      "player": "Rara Thomas",
+      "player_id": 672,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Logan Diggs",
+      "player_id": 673,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Logan Diggs",
+      "player_id": 673,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Max Tomzcak",
+      "player_id": 674,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Max Tomzcak",
+      "player_id": 674,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Roydell Williams",
+      "player_id": 675,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Roydell Williams",
+      "player_id": 675,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "E.J. Smith",
+      "player_id": 676,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "E.J. Smith",
+      "player_id": 676,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "E.J. Williams",
+      "player_id": 677,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "E.J. Williams",
+      "player_id": 677,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Jeff Sims",
+      "player_id": 678,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jeff Sims",
+      "player_id": 678,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Tyler Van Dyke",
+      "player_id": 679,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Tyler Van Dyke",
+      "player_id": 679,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Tyler Van Dyke",
+      "player_id": 679,
+      "type": "WARNING",
+      "message": "Only pre-2025 data present"
+    },
+    {
+      "player": "Drew Pyne",
+      "player_id": 680,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Drew Pyne",
+      "player_id": 680,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Nate Rutchena",
+      "player_id": 681,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Nate Rutchena",
+      "player_id": 681,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Jalen Berger",
+      "player_id": 682,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Jalen Berger",
+      "player_id": 682,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Cam Porter",
+      "player_id": 683,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Cam Porter",
+      "player_id": 683,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2020 to 2022)"
+    },
+    {
+      "player": "Cam Porter",
+      "player_id": 683,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Dominic Richardson",
+      "player_id": 684,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Dominic Richardson",
+      "player_id": 684,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Ja'Mori Maclin",
+      "player_id": 685,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Ja'Mori Maclin",
+      "player_id": 685,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2020 to 2022)"
+    },
+    {
+      "player": "Ja'Mori Maclin",
+      "player_id": 685,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Matthew Sluka",
+      "player_id": 686,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Matthew Sluka",
+      "player_id": 686,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Ja'Varrius Johnson",
+      "player_id": 687,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Ja'Varrius Johnson",
+      "player_id": 687,
+      "type": "WARNING",
+      "message": "Missing 2025 \u2014 reason: [logged failure]"
+    },
+    {
+      "player": "Ja'Varrius Johnson",
+      "player_id": 687,
+      "type": "WARNING",
+      "message": "Only pre-2025 data present"
+    },
+    {
+      "player": "Cade McNamara",
+      "player_id": 688,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Cade McNamara",
+      "player_id": 688,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Donavon Greene",
+      "player_id": 689,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Donavon Greene",
+      "player_id": 689,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2020 to 2022)"
+    },
+    {
+      "player": "Donavon Greene",
+      "player_id": 689,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2022 to 2024)"
+    },
+    {
+      "player": "Donavon Greene",
+      "player_id": 689,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Dequan Finn",
+      "player_id": 690,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Dequan Finn",
+      "player_id": 690,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    },
+    {
+      "player": "Zach Calzada",
+      "player_id": 691,
+      "type": "WARNING",
+      "message": "missing basic measurables (height/weight NULL)"
+    },
+    {
+      "player": "Zach Calzada",
+      "player_id": 691,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2019 to 2021)"
+    },
+    {
+      "player": "Zach Calzada",
+      "player_id": 691,
+      "type": "WARNING",
+      "message": "Season gap \u2014 possible missing redshirt year or scraper miss (2021 to 2023)"
+    },
+    {
+      "player": "Zach Calzada",
+      "player_id": 691,
+      "type": "WARNING",
+      "message": "2025 row exists but shows 0 games"
+    }
+  ]
+}
