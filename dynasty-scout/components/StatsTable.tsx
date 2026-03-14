@@ -78,18 +78,18 @@ export function StatsTable({ stats, position }: StatsTableProps) {
 
                             {isQB && (
                                 <>
-                                    <TableCell className="text-right">{season.completions}/{season.pass_attempts}</TableCell>
-                                    <TableCell className="text-right">{season.pass_yards}</TableCell>
-                                    <TableCell className="text-right">{season.pass_tds}</TableCell>
-                                    <TableCell className="text-right">{season.interceptions}</TableCell>
-                                    <TableCell className="text-right">{season.pass_attempts ? ((season.pass_yards || 0) / season.pass_attempts).toFixed(1) : '-'}</TableCell>
+                                    <TableCell className="text-right">{season.pass_attempts ? `${season.completions}/${season.pass_attempts}` : '—'}</TableCell>
+                                    <TableCell className="text-right">{season.pass_yards || '—'}</TableCell>
+                                    <TableCell className="text-right">{season.pass_tds ?? '—'}</TableCell>
+                                    <TableCell className="text-right">{season.interceptions ?? '—'}</TableCell>
+                                    <TableCell className="text-right">{season.pass_attempts ? ((season.pass_yards || 0) / season.pass_attempts).toFixed(1) : '—'}</TableCell>
                                 </>
                             )}
 
-                            <TableCell className="text-right">{season.rush_attempts || 0}</TableCell>
-                            <TableCell className="text-right">{season.rush_yards || 0}</TableCell>
-                            <TableCell className="text-right">{season.rush_attempts ? ((season.rush_yards || 0) / season.rush_attempts).toFixed(1) : '-'}</TableCell>
-                            <TableCell className="text-right">{season.rush_tds || 0}</TableCell>
+                            <TableCell className="text-right">{(isWR || isTE) && !season.rush_attempts ? '—' : (season.rush_attempts || 0)}</TableCell>
+                            <TableCell className="text-right">{(isWR || isTE) && !season.rush_attempts ? '—' : (season.rush_yards || 0)}</TableCell>
+                            <TableCell className="text-right">{season.rush_attempts ? ((season.rush_yards || 0) / season.rush_attempts).toFixed(1) : '—'}</TableCell>
+                            <TableCell className="text-right">{(isWR || isTE) && !season.rush_attempts ? '—' : (season.rush_tds || 0)}</TableCell>
 
                             {(isRB || isWR || isTE) && (
                                 <>
@@ -102,7 +102,7 @@ export function StatsTable({ stats, position }: StatsTableProps) {
 
                             {isQB ? (
                                 <TableCell className="text-right text-muted-foreground">
-                                    {((season.completions || 0) / (season.pass_attempts || 1) * 100).toFixed(1)}%
+                                    {season.pass_attempts ? ((season.completions || 0) / season.pass_attempts * 100).toFixed(1) + '%' : '—'}
                                 </TableCell>
                             ) : isRB ? (
                                 <TableCell className="text-right text-muted-foreground">
@@ -110,7 +110,7 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                                 </TableCell>
                             ) : (isWR || isTE) ? (
                                 <TableCell className="text-right text-muted-foreground">
-                                    {season.games_played ? ((season.targets || season.receptions || 0) / season.games_played).toFixed(1) : '—'}
+                                    {season.games_played && (season.targets || season.receptions) ? ((season.targets || season.receptions || 0) / season.games_played).toFixed(1) : '—'}
                                 </TableCell>
                             ) : (
                                 <TableCell className="text-right text-muted-foreground">—</TableCell>
@@ -156,10 +156,10 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                                     </>
                                 )}
 
-                                <TableCell className="text-right">{t.rush_attempts}</TableCell>
-                                <TableCell className={cn("text-right", t.rush_yards > 0 ? "text-primary/80" : "text-muted-foreground/40")}>{t.rush_yards}</TableCell>
+                                <TableCell className="text-right">{(isWR || isTE) && t.rush_attempts === 0 ? '—' : t.rush_attempts}</TableCell>
+                                <TableCell className={cn("text-right", t.rush_yards > 0 ? "text-primary/80" : "text-muted-foreground/40")}>{(isWR || isTE) && t.rush_yards === 0 ? '—' : t.rush_yards}</TableCell>
                                 <TableCell className="text-right text-muted-foreground">{t.rush_attempts > 0 ? (t.rush_yards / t.rush_attempts).toFixed(1) : '—'}</TableCell>
-                                <TableCell className="text-right">{t.rush_tds}</TableCell>
+                                <TableCell className="text-right">{(isWR || isTE) && t.rush_tds === 0 ? '—' : t.rush_tds}</TableCell>
 
                                 {(isRB || isWR || isTE) && (
                                     <>
@@ -180,7 +180,10 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                                     </TableCell>
                                 ) : (isWR || isTE) ? (
                                     <TableCell className="text-right text-muted-foreground">
-                                        {t.games_played > 0 ? (stats.reduce((sum, s) => sum + (s.targets || 0), 0) / t.games_played).toFixed(1) : '—'}
+                                        {(() => {
+                                            const totalTgt = stats.reduce((sum, s) => sum + (s.targets || 0), 0);
+                                            return t.games_played > 0 && totalTgt > 0 ? (totalTgt / t.games_played).toFixed(1) : '—';
+                                        })()}
                                     </TableCell>
                                 ) : (
                                     <TableCell className="text-right text-muted-foreground">—</TableCell>

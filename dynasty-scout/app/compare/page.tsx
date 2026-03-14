@@ -38,7 +38,10 @@ async function getPlayerData(slug: string) {
             p.id, p.slug, p.full_name, p.first_name, p.last_name,
             p.position, p.dob, p.age_at_draft, p.height_inches, p.weight_lbs,
             p.star_rating, p.draft_year, p.headshot_url, p.nfl_team,
-            COALESCE(MAX(cc.school), p.nfl_team) as school,
+            COALESCE(
+                (SELECT school FROM college_career WHERE player_id = p.id ORDER BY id DESC LIMIT 1),
+                p.nfl_team
+            ) as school,
             cr.rank_overall as consensus_rank,
             cr.avg_rank, cr.best_rank, cr.num_sources,
             m.forty_yard, m.vertical_jump, m.broad_jump, m.three_cone, m.twenty_yard_shuttle, m.bench_press, m.ras,
@@ -46,22 +49,22 @@ async function getPlayerData(slug: string) {
             (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'Sleeper ADP' ORDER BY scraped_at DESC LIMIT 1) as sleeper_adp,
             (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyPros' ORDER BY scraped_at DESC LIMIT 1) as fp_rank
         FROM players p
-        LEFT JOIN college_career cc ON p.id = cc.player_id
         LEFT JOIN measurables m ON p.id = m.player_id
         LEFT JOIN consensus_rankings cr ON p.id = cr.player_id
             AND cr.calculated_at = (SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id)
         WHERE p.slug = $1
-        GROUP BY p.id, p.slug, p.full_name, p.first_name, p.last_name,
-            p.position, p.dob, p.age_at_draft, p.height_inches, p.weight_lbs,
-            p.star_rating, p.draft_year, p.headshot_url, p.nfl_team,
-            cr.rank_overall, cr.avg_rank, cr.best_rank, cr.num_sources,
-            m.forty_yard, m.vertical_jump, m.broad_jump, m.three_cone, m.twenty_yard_shuttle, m.bench_press, m.ras
     `, [slug]);
 
     if (!player) return null;
 
     const stats = await query<any>(
-        'SELECT * FROM college_stats WHERE player_id = $1 ORDER BY season DESC',
+        `SELECT * FROM (
+            SELECT *, ROW_NUMBER() OVER (
+                PARTITION BY player_id, season
+                ORDER BY (COALESCE(pass_yards,0)+COALESCE(rush_yards,0)+COALESCE(rec_yards,0)) DESC
+            ) as rn
+            FROM college_stats WHERE player_id = $1
+        ) t WHERE rn = 1 ORDER BY season DESC`,
         [player.id]
     );
 

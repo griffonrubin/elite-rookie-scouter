@@ -62,23 +62,21 @@ async function getPlayer(slug: string) {
                 p.id, p.slug, p.full_name, p.first_name, p.last_name,
                 p.position, p.dob, p.age_at_draft, p.height_inches, p.weight_lbs,
                 p.star_rating, p.draft_year, p.headshot_url, p.nfl_team,
-                COALESCE(MAX(cc.school), p.nfl_team) as school,
+                COALESCE(
+                    (SELECT school FROM college_career WHERE player_id = p.id ORDER BY id DESC LIMIT 1),
+                    p.nfl_team
+                ) as school,
                 cr.rank_overall as consensus_rank,
                 cr.avg_rank, cr.best_rank, cr.num_sources,
                 (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'KeepTradeCut' ORDER BY scraped_at DESC LIMIT 1) as ktc_rank,
                 (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'Sleeper ADP' ORDER BY scraped_at DESC LIMIT 1) as sleeper_adp,
                 (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyPros' ORDER BY scraped_at DESC LIMIT 1) as fp_rank
             FROM players p
-            LEFT JOIN college_career cc ON p.id = cc.player_id
             LEFT JOIN consensus_rankings cr ON p.id = cr.player_id
                 AND cr.calculated_at = (
                     SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id
                 )
             WHERE p.slug = $1
-            GROUP BY p.id, p.slug, p.full_name, p.first_name, p.last_name,
-                p.position, p.dob, p.age_at_draft, p.height_inches, p.weight_lbs,
-                p.star_rating, p.draft_year, p.headshot_url, p.nfl_team,
-                cr.rank_overall, cr.avg_rank, cr.best_rank, cr.num_sources
         `, [slug]);
 
         if (!player) return null;
@@ -95,7 +93,13 @@ async function getPlayer(slug: string) {
         player.consensus_rank = orderedSlugs.findIndex(s => s.slug === slug) + 1;
 
         const stats = await query<CollegeStats>(
-            "SELECT * FROM college_stats WHERE player_id = $1 ORDER BY season DESC",
+            `SELECT * FROM (
+                SELECT *, ROW_NUMBER() OVER (
+                    PARTITION BY player_id, season
+                    ORDER BY (COALESCE(pass_yards,0)+COALESCE(rush_yards,0)+COALESCE(rec_yards,0)) DESC
+                ) as rn
+                FROM college_stats WHERE player_id = $1
+            ) t WHERE rn = 1 ORDER BY season DESC`,
             [player.id]
         );
 
@@ -200,10 +204,12 @@ export default async function PlayerPage({ params }: PageProps) {
     const careerRushAttempts = stats.reduce((sum, row) => sum + (row.rush_attempts ?? 0), 0);
     const careerRecYards = stats.reduce((sum, row) => sum + (row.rec_yards ?? 0), 0);
     const careerReceptions = stats.reduce((sum, row) => sum + (row.receptions ?? 0), 0);
-    const careerPassYards = stats.reduce((sum, row) => sum + (row.pass_yards ?? 0), 0);
-    const careerPassAttempts = stats.reduce((sum, row) => sum + (row.pass_attempts ?? 0), 0);
-    const careerCompletions = stats.reduce((sum, row) => sum + (row.completions ?? 0), 0);
-    const careerPassTds = stats.reduce((sum, row) => sum + (row.pass_tds ?? 0), 0);
+    // Only sum passing yards/completions from seasons where attempts were also recorded — prevents inflated YPA
+    const statsWithPassAtt = stats.filter(row => (row.pass_attempts ?? 0) > 0);
+    const careerPassYards = statsWithPassAtt.reduce((sum, row) => sum + (row.pass_yards ?? 0), 0);
+    const careerPassAttempts = statsWithPassAtt.reduce((sum, row) => sum + (row.pass_attempts ?? 0), 0);
+    const careerCompletions = statsWithPassAtt.reduce((sum, row) => sum + (row.completions ?? 0), 0);
+    const careerPassTds = statsWithPassAtt.reduce((sum, row) => sum + (row.pass_tds ?? 0), 0);
     const careerRushTds = stats.reduce((sum, row) => sum + (row.rush_tds ?? 0), 0);
     const careerRecTds = stats.reduce((sum, row) => sum + (row.rec_tds ?? 0), 0);
     const careerTargetsAgg = stats.reduce((sum, row) => sum + (row.targets ?? 0), 0);
