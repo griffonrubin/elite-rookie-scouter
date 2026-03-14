@@ -24,8 +24,8 @@ export function SourceRankings({ rankings, consensus, consensusRank }: SourceRan
                 <TableHeader>
                     <TableRow>
                         <TableHead>Source</TableHead>
-                        <TableHead className="text-right">Rookie Rank</TableHead>
-                        <TableHead className="text-right">KTC Dynasty Rank</TableHead>
+                        <TableHead className="text-right">Rank</TableHead>
+                        <TableHead className="text-right">Tier</TableHead>
                         <TableHead className="text-right">Date Scraped</TableHead>
                         <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
@@ -46,31 +46,25 @@ export function SourceRankings({ rankings, consensus, consensusRank }: SourceRan
                         </TableRow>
                     )}
 
-                    {rankings.map((r) => {
-                        const dynRank = r.rank_overall;
-
-                        return (
-                            <TableRow key={r.id}>
-                                <TableCell className="font-medium">{r.source}</TableCell>
-                                <TableCell className="text-right">
-                                    {effectiveRank != null ? `#${effectiveRank}` : "—"}
-                                </TableCell>
-                                <TableCell className="text-right font-semibold">
-                                    {dynRank ? (
-                                        <span className="text-primary">#{dynRank} overall</span>
-                                    ) : "—"}
-                                </TableCell>
-                                <TableCell className="text-right text-muted-foreground text-xs">{r.scraped_at}</TableCell>
-                                <TableCell>
-                                    {r.source_url && (
-                                        <a href={r.source_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
-                                            <ExternalLink className="w-4 h-4" />
-                                        </a>
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        );
-                    })}
+                    {rankings.map((r) => (
+                        <TableRow key={r.id}>
+                            <TableCell className="font-medium">{r.source}</TableCell>
+                            <TableCell className="text-right font-semibold">
+                                {r.rank_overall ? <span className="text-primary">#{r.rank_overall}</span> : "—"}
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground text-xs">
+                                {r.tier ?? "—"}
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground text-xs">{r.scraped_at}</TableCell>
+                            <TableCell>
+                                {r.source_url && (
+                                    <a href={r.source_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+                                        <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                )}
+                            </TableCell>
+                        </TableRow>
+                    ))}
 
                     {rankings.length === 0 && (
                         <TableRow>

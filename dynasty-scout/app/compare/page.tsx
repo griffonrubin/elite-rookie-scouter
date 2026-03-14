@@ -163,7 +163,7 @@ export default async function ComparePage({ searchParams }: Props) {
                             { label: 'Class Rank', a: playerA.consensus_rank ? `#${playerA.consensus_rank}` : '—', b: playerB.consensus_rank ? `#${playerB.consensus_rank}` : '—', numA: playerA.consensus_rank, numB: playerB.consensus_rank, lowerWins: true },
                             { label: 'KTC Dynasty', a: playerA.ktc_rank ? `#${playerA.ktc_rank}` : '—', b: playerB.ktc_rank ? `#${playerB.ktc_rank}` : '—', numA: playerA.ktc_rank, numB: playerB.ktc_rank, lowerWins: true },
                             { label: 'FantasyPros', a: playerA.fp_rank ? `#${playerA.fp_rank}` : '—', b: playerB.fp_rank ? `#${playerB.fp_rank}` : '—', numA: playerA.fp_rank, numB: playerB.fp_rank, lowerWins: true },
-                            { label: 'Proj. Pick', a: playerA.ktc_rank ? getDraftLabel(playerA.ktc_rank) : '—', b: playerB.ktc_rank ? getDraftLabel(playerB.ktc_rank) : '—', numA: playerA.ktc_rank, numB: playerB.ktc_rank, lowerWins: true },
+                            { label: 'Dynasty ADP', a: playerA.ktc_rank ? getDraftLabel(playerA.ktc_rank) : '—', b: playerB.ktc_rank ? getDraftLabel(playerB.ktc_rank) : '—', numA: playerA.ktc_rank, numB: playerB.ktc_rank, lowerWins: true },
                         ]}
                     />
 

@@ -230,7 +230,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                             {/* Sortable stat headers — each is flex-1 button */}
                             <SortHeader label="FP" subLabel="Devy" sortKey="fp" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
                             <SortHeader label="KTC" subLabel="Dyn" sortKey="ktc" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
-                            <SortHeader label="Proj" subLabel="Pick" sortKey="proj" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
+                            <SortHeader label="Dynasty" subLabel="ADP" sortKey="proj" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
                             {/* Tier — not sortable */}
                             <div className="flex-1 flex items-center justify-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                                 Tier

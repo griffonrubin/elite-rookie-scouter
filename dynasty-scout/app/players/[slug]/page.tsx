@@ -393,7 +393,7 @@ export default async function PlayerPage({ params }: PageProps) {
                             </div>
                             <div className="bg-card border border-border/60 rounded-xl px-4 py-3 flex-1 min-w-[100px] text-center shadow-sm">
                                 <div className="text-lg font-black text-foreground leading-none">{projRank ? getDraftLabel(projRank) : '—'}</div>
-                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Proj. Pick</div>
+                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Dynasty ADP</div>
                             </div>
                             <div className="bg-card border border-border/60 rounded-xl px-4 py-3 flex-1 min-w-[100px] text-center shadow-sm">
                                 <div className="text-2xl font-black text-cyan-400 leading-none">{player.ktc_rank ? `#${player.ktc_rank}` : '—'}</div>
