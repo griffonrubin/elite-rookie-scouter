@@ -187,7 +187,7 @@ export function PlayerMiniCard({ player, ranking, period, index }: PlayerMiniCar
                     <div className="flex-1 flex items-center justify-center">
                         {(ranking?.num_sources ?? 0) < 2 ? (
                             <span
-                                title="Player has less than 2 ranking sources"
+                                title={`Ranked by ${ranking?.num_sources ?? 0} of 5 sources — consensus rank may be unreliable`}
                                 style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '3px 10px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 600 }}
                                 className={cn('border', 'bg-gray-500/10 text-gray-400/80 border-gray-500/30')}
                             >
