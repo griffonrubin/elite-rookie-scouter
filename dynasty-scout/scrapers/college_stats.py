@@ -67,8 +67,14 @@ def parse_v3_stats(data):
             'receptions': 'receptions',
             'receivingYards': 'rec_yards',
             'receivingTouchdowns': 'rec_tds',
+            # targets occasionally appear in receiving category
+            'targets': 'targets',
         },
         'passing': {
+            # ESPN V3 returns separate fields (not compound "C/A") for most players
+            'completions': 'completions',
+            'passingAttempts': 'pass_attempts',
+            # Legacy compound format e.g. "217/330" — kept as fallback
             'completionAttempts': ('completions', 'pass_attempts'),
             'passingYards': 'pass_yards',
             'passingTouchdowns': 'pass_tds',
