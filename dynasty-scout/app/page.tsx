@@ -133,41 +133,21 @@ export default async function Home() {
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <div className="hidden sm:flex items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" />
-                <span className="text-foreground font-semibold">{players.length}</span> players
-              </div>
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5" />
-                <span className="text-foreground font-semibold">{rankedCount}</span> ranked
-              </div>
+          <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" />
+              <span className="text-foreground font-semibold">{players.length}</span> players
             </div>
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
-            </span>
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span className="text-foreground font-semibold">{rankedCount}</span> ranked
+            </div>
+            {lastUpdateDate && (
+              <span className="text-muted-foreground/60">· Updated {lastUpdateDate}</span>
+            )}
           </div>
         </div>
       </header>
-
-      {/* ── Hero Strip ── */}
-      <div className="border-b border-border/40 bg-gradient-to-r from-primary/5 via-transparent to-blue-500/5">
-        <div className="w-full px-6 sm:px-8 py-4 mx-auto flex items-center">
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground flex items-center gap-3">
-            2026 Rookie Scouting Board
-            <span style={{ padding: '6px 16px', borderRadius: 9999, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }} className="text-muted-foreground bg-muted/50 border border-border/50">
-              {players.length} Players Tracked
-            </span>
-            {lastUpdateDate && (
-              <span style={{ padding: '6px 16px', borderRadius: 9999, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }} className="text-primary/80 bg-primary/10 border border-primary/20">
-                Updated {lastUpdateDate}
-              </span>
-            )}
-          </h1>
-        </div>
-      </div>
 
       {/* ── Board ── */}
       <main className="w-full px-6 sm:px-8 py-6 mx-auto">
