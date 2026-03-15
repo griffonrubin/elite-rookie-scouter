@@ -54,7 +54,7 @@ export function HexView({ players, period }: HexViewProps) {
 
             {/* Draft board — scrolls horizontally on small screens */}
             <div className="overflow-x-auto">
-                <div style={{ minWidth: `${10 + PICKS_PER_ROUND * 88}px` }}>
+                <div style={{ minWidth: `${10 + PICKS_PER_ROUND * 96}px` }}>
                     {rounds.map((roundPlayers, roundIdx) => {
                         const roundNum = roundIdx + 1;
                         return (
@@ -76,7 +76,8 @@ export function HexView({ players, period }: HexViewProps) {
                                         return (
                                             <div
                                                 key={pickIdx}
-                                                className="flex-1 min-w-[80px] h-[68px] rounded border border-border/10 bg-muted/[0.03]"
+                                                className="flex-1 min-w-[90px] rounded border border-border/10 bg-muted/[0.03]"
+                                                style={{ minHeight: '58px' }}
                                             />
                                         );
                                     }
@@ -90,13 +91,13 @@ export function HexView({ players, period }: HexViewProps) {
                                             key={player.id}
                                             href={`/players/${player.slug}`}
                                             className={cn(
-                                                'group flex-1 min-w-[80px] h-[68px] flex flex-col rounded border p-2 cursor-pointer overflow-hidden',
+                                                'group flex-1 min-w-[90px] flex flex-col rounded border px-2 py-1.5 cursor-pointer overflow-hidden',
                                                 'transition-all duration-150 hover:scale-[1.04] hover:z-10 hover:shadow-lg hover:shadow-black/40',
                                                 tier.border, tier.bg
                                             )}
                                         >
                                             {/* Pick + position */}
-                                            <div className="flex items-center justify-between gap-1 mb-1">
+                                            <div className="flex items-center justify-between gap-1">
                                                 <span className={`text-[9px] font-black font-mono leading-none ${tier.pickColor}`}>
                                                     {pickLabel}
                                                 </span>
@@ -110,14 +111,15 @@ export function HexView({ players, period }: HexViewProps) {
 
                                             {/* Name */}
                                             <div
-                                                className="text-[10px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors truncate"
+                                                className="text-[11px] font-bold text-foreground leading-snug group-hover:text-primary transition-colors mt-1"
                                                 title={player.full_name}
+                                                style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                                             >
                                                 {player.first_name?.[0] ? `${player.first_name[0]}.` : ''} {player.last_name}
                                             </div>
 
                                             {/* School */}
-                                            <div className="text-[8px] text-muted-foreground/50 truncate leading-tight mt-0.5">
+                                            <div className="text-[9px] text-muted-foreground/55 truncate leading-tight mt-0.5">
                                                 {(player as any).school || '—'}
                                             </div>
                                         </Link>

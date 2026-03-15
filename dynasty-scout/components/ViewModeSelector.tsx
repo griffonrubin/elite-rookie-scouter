@@ -18,7 +18,7 @@ const VIEWS: { value: ViewMode; icon: React.ElementType; label: string }[] = [
 
 export function ViewModeSelector({ mode, onChange }: ViewModeSelectorProps) {
     return (
-        <div className="flex items-center gap-0.5 bg-card border border-border/60 rounded-lg p-1">
+        <div className="flex items-center gap-0.5 bg-card border border-border/60 rounded-lg p-1 h-9">
             {VIEWS.map(({ value, icon: Icon, label }) => {
                 const active = mode === value;
                 return (

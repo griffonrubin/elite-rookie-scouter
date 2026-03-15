@@ -71,7 +71,7 @@ async function getPlayer(slug: string) {
             SELECT
                 p.id, p.slug, p.full_name, p.first_name, p.last_name,
                 p.position, p.dob, p.age_at_draft, p.height_inches, p.weight_lbs,
-                p.star_rating, p.draft_year, p.headshot_url, p.nfl_team, p.espn_college_id,
+                p.star_rating, p.draft_year, p.headshot_url, p.nfl_team,
                 p.breakout_age, p.breakout_year,
                 p.recruiting_composite, p.recruiting_stars, p.recruiting_year,
                 COALESCE(
@@ -407,7 +407,7 @@ export default async function PlayerPage({ params }: PageProps) {
         <div className="min-h-screen bg-background text-foreground">
             {/* Top nav bar */}
             <header className="border-b border-border/60 bg-card/60 backdrop-blur-md sticky top-0 z-50">
-                <div className="w-full mx-auto px-6 sm:px-8 h-14 flex items-center justify-between">
+                <div className="w-full mx-auto px-8 sm:px-12 h-14 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                         <ArrowLeft className="w-4 h-4" />
                         <span>Draft Board</span>
@@ -421,7 +421,7 @@ export default async function PlayerPage({ params }: PageProps) {
                 </div>
             </header>
 
-            <div className="w-full mx-auto px-6 sm:px-8 py-8">
+            <div className="w-full mx-auto px-8 sm:px-12 py-8">
                 {/* ── Profile Section ── */}
                 <div className="flex flex-col lg:flex-row gap-6 mb-8">
                     {/* Avatar */}

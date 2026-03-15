@@ -60,6 +60,7 @@ def ensure_pg_schema(pg):
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS recruiting_year INTEGER",
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS breakout_age REAL",
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS breakout_year INTEGER",
+        "ALTER TABLE players ADD COLUMN IF NOT EXISTS espn_college_id BIGINT",
         # historical_comps table
         """
         CREATE TABLE IF NOT EXISTS historical_comps (
@@ -234,10 +235,12 @@ def sync_player_recruiting(pg, sq):
     cur_pg = pg.cursor()
 
     rows = cur_sq.execute("""
-        SELECT id, recruiting_composite, recruiting_stars, recruiting_year, headshot_url
+        SELECT id, recruiting_composite, recruiting_stars, recruiting_year, headshot_url,
+               espn_college_id
         FROM players
         WHERE draft_year = 2026
-          AND (recruiting_composite IS NOT NULL OR headshot_url IS NOT NULL)
+          AND (recruiting_composite IS NOT NULL OR headshot_url IS NOT NULL
+               OR espn_college_id IS NOT NULL)
     """).fetchall()
 
     updated = 0
@@ -247,10 +250,12 @@ def sync_player_recruiting(pg, sq):
                 recruiting_composite = COALESCE(recruiting_composite, %s),
                 recruiting_stars     = COALESCE(recruiting_stars, %s),
                 recruiting_year      = COALESCE(recruiting_year, %s),
-                headshot_url         = COALESCE(headshot_url, %s)
+                headshot_url         = COALESCE(headshot_url, %s),
+                espn_college_id      = COALESCE(espn_college_id, %s)
             WHERE id = %s
         """, (r["recruiting_composite"], r["recruiting_stars"],
-              r["recruiting_year"], r["headshot_url"], r["id"]))
+              r["recruiting_year"], r["headshot_url"],
+              r["espn_college_id"], r["id"]))
         updated += cur_pg.rowcount
 
     pg.commit()

@@ -120,7 +120,7 @@ export default async function Home() {
     <div className="min-h-screen bg-background text-foreground">
       {/* ── Top Bar ── */}
       <header className="border-b border-border/60 bg-card/60 backdrop-blur-md sticky top-0 z-50">
-        <div className="w-full px-6 sm:px-8 h-14 flex items-center justify-between mx-auto">
+        <div className="w-full px-8 sm:px-12 h-14 flex items-center justify-between mx-auto">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
@@ -143,14 +143,14 @@ export default async function Home() {
               <span className="text-foreground font-semibold">{rankedCount}</span> ranked
             </div>
             {lastUpdateDate && (
-              <span className="text-muted-foreground/60">· Updated {lastUpdateDate}</span>
+              <span className="text-muted-foreground/60">Updated {lastUpdateDate}</span>
             )}
           </div>
         </div>
       </header>
 
       {/* ── Board ── */}
-      <main className="w-full px-6 sm:px-8 py-6 mx-auto">
+      <main className="w-full px-8 sm:px-12 py-6 mx-auto">
         {players.length === 0 ? (
           <div className="p-16 text-center text-muted-foreground border border-dashed border-border rounded-xl">
             No players found. Run the seed scripts to populate data.
