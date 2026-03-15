@@ -157,11 +157,11 @@ export default async function Home() {
         <div className="w-full px-6 sm:px-8 py-4 mx-auto flex items-center">
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground flex items-center gap-3">
             2026 Rookie Scouting Board
-            <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground bg-muted/50 px-4 py-2 rounded-full border border-border/50">
+            <span style={{ padding: '6px 16px', borderRadius: 9999, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }} className="text-muted-foreground bg-muted/50 border border-border/50">
               {players.length} Players Tracked
             </span>
             {lastUpdateDate && (
-              <span className="text-[10px] font-bold tracking-widest uppercase text-primary/80 bg-primary/10 px-4 py-2 rounded-full border border-primary/20">
+              <span style={{ padding: '6px 16px', borderRadius: 9999, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }} className="text-primary/80 bg-primary/10 border border-primary/20">
                 Updated {lastUpdateDate}
               </span>
             )}

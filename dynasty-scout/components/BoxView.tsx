@@ -10,12 +10,13 @@ interface BoxViewProps {
     period: '1d' | '7d' | '30d';
 }
 
-// ── Grade system (mirrors AthleticsCard) ──────────────────────────────────────
+// ── Grade system ──────────────────────────────────────────────────────────────
 const BENCH: Record<string, Record<string, { poor: number; elite: number; lowerIsBetter?: boolean }>> = {
     QB: {
         forty: { poor: 5.10, elite: 4.52, lowerIsBetter: true }, ras: { poor: 0, elite: 10 },
         speed_score: { poor: 60, elite: 110 }, dom_pct: { poor: 5, elite: 25 },
         comp_pct: { poor: 52, elite: 72 }, ypa: { poor: 5.5, elite: 9.5 }, pass_ypg: { poor: 100, elite: 350 },
+        arm_length: { poor: 30.0, elite: 33.5 }, hand_size: { poor: 8.5, elite: 10.5 },
     },
     RB: {
         forty: { poor: 4.72, elite: 4.28, lowerIsBetter: true }, ras: { poor: 0, elite: 10 },
@@ -27,17 +28,17 @@ const BENCH: Record<string, Record<string, { poor: number; elite: number; lowerI
         forty: { poor: 4.70, elite: 4.27, lowerIsBetter: true }, ras: { poor: 0, elite: 10 },
         speed_score: { poor: 80, elite: 115 }, dom_pct: { poor: 8, elite: 28 },
         ypr: { poor: 8, elite: 18 }, scrim_ypg: { poor: 30, elite: 80 },
-        breakout_age: { poor: 21, elite: 19, lowerIsBetter: true },
+        breakout_age: { poor: 21, elite: 19, lowerIsBetter: true }, arm_length: { poor: 30.0, elite: 33.5 },
     },
     TE: {
         forty: { poor: 5.00, elite: 4.43, lowerIsBetter: true }, ras: { poor: 0, elite: 10 },
         speed_score: { poor: 65, elite: 103 }, dom_pct: { poor: 6, elite: 20 },
         ypr: { poor: 7, elite: 15 }, scrim_ypg: { poor: 20, elite: 60 },
-        breakout_age: { poor: 22, elite: 19, lowerIsBetter: true },
+        breakout_age: { poor: 22, elite: 19, lowerIsBetter: true }, arm_length: { poor: 31.0, elite: 35.5 },
     },
 };
 
-function score(val: number, pos: string, key: string): number {
+function scoreMetric(val: number, pos: string, key: string): number {
     const b = (BENCH[pos] || BENCH.WR)[key];
     if (!b) return 50;
     const { poor, elite, lowerIsBetter } = b;
@@ -51,7 +52,7 @@ function score(val: number, pos: string, key: string): number {
     return Math.round(((val - poor) / (elite - poor)) * 100);
 }
 
-function grade(pct: number) {
+function gradeOf(pct: number) {
     if (pct >= 90) return { label: 'S+', text: 'text-yellow-400',   badge: 'bg-yellow-400/15  text-yellow-400  border-yellow-400/40'  };
     if (pct >= 80) return { label: 'S',  text: 'text-yellow-300',   badge: 'bg-yellow-300/15  text-yellow-300  border-yellow-300/40'  };
     if (pct >= 70) return { label: 'A',  text: 'text-emerald-400',  badge: 'bg-emerald-400/15 text-emerald-400 border-emerald-400/40' };
@@ -85,42 +86,58 @@ function formatHeight(inches?: number | null) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function GradeBadge({ label, val, pos, benchKey, title }: {
-    label: string; val: number | null | undefined; pos: string; benchKey: string; title?: string;
+/** Full-width grade badge for the athletics grid */
+function GradeCell({ label, val, pos, benchKey, displayVal }: {
+    label: string; val: number | null | undefined;
+    pos: string; benchKey: string; displayVal?: string;
 }) {
     if (val == null || val === 0) return null;
-    const pct = score(Number(val), pos, benchKey);
-    const g = grade(pct);
-    return (
-        <div className="flex flex-col items-center gap-0.5" title={title}>
-            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border font-mono ${g.badge}`}>{g.label}</span>
-            <span className="text-[8px] text-muted-foreground/50 font-bold uppercase tracking-wide leading-none">{label}</span>
-        </div>
-    );
-}
-
-function StatBar({ label, val, pos, benchKey, display }: {
-    label: string; val: number | null | undefined; pos: string; benchKey: string; display: string;
-}) {
-    if (val == null) return null;
-    const pct = score(Number(val), pos, benchKey);
-    const g = grade(pct);
+    const pct = scoreMetric(Number(val), pos, benchKey);
+    const g = gradeOf(pct);
     const barColors: Record<string, string> = {
         'S+': '#facc15', S: '#fde047', A: '#34d399', 'B+': '#22d3ee',
         B: '#06b6d4', C: '#eab308', D: '#f97316', F: '#f87171',
     };
-    const barColor = barColors[g.label] || '#94a3b8';
     return (
-        <div className="grid grid-cols-[70px_1fr_32px] items-center gap-2">
+        <div className="flex flex-col gap-1 p-2 rounded-lg bg-muted/[0.07] border border-border/20">
+            <div className="flex items-center justify-between">
+                <span className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground/50">{label}</span>
+                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border font-mono ${g.badge}`}>{g.label}</span>
+            </div>
+            <div className={`text-[11px] font-black font-mono ${g.text}`}>
+                {displayVal ?? String(val)}
+            </div>
+            <div className="relative h-1.5 bg-border/20 rounded-full overflow-hidden">
+                <div
+                    className="absolute left-0 top-0 h-full rounded-full"
+                    style={{ width: `${Math.max(3, pct)}%`, backgroundColor: barColors[g.label] || '#94a3b8' }}
+                />
+                <div className="absolute top-0 h-full w-px bg-white/10" style={{ left: '50%' }} />
+            </div>
+        </div>
+    );
+}
+
+/** Compact stat bar for production section */
+function StatBar({ label, val, pos, benchKey, display }: {
+    label: string; val: number | null | undefined; pos: string; benchKey: string; display: string;
+}) {
+    if (val == null) return null;
+    const pct = scoreMetric(Number(val), pos, benchKey);
+    const g = gradeOf(pct);
+    const barColors: Record<string, string> = {
+        'S+': '#facc15', S: '#fde047', A: '#34d399', 'B+': '#22d3ee',
+        B: '#06b6d4', C: '#eab308', D: '#f97316', F: '#f87171',
+    };
+    return (
+        <div className="grid grid-cols-[72px_1fr_30px] items-center gap-2">
             <div>
-                <div className="text-[9px] text-muted-foreground/60 leading-none mb-0.5">{label}</div>
+                <div className="text-[9px] text-muted-foreground/50 leading-none mb-0.5">{label}</div>
                 <div className={`text-[11px] font-black font-mono ${g.text}`}>{display}</div>
             </div>
-            <div className="relative h-1.5 bg-border/25 rounded-full overflow-hidden">
-                <div
-                    className="absolute left-0 top-0 h-full rounded-full transition-all duration-500"
-                    style={{ width: `${Math.max(3, pct)}%`, backgroundColor: barColor }}
-                />
+            <div className="relative h-1.5 bg-border/20 rounded-full overflow-hidden">
+                <div className="absolute left-0 top-0 h-full rounded-full"
+                    style={{ width: `${Math.max(3, pct)}%`, backgroundColor: barColors[g.label] || '#94a3b8' }} />
                 <div className="absolute top-0 h-full w-px bg-white/10" style={{ left: '50%' }} />
             </div>
             <span className={`text-[9px] font-black text-center py-0.5 rounded border font-mono ${g.badge}`}>{g.label}</span>
@@ -137,45 +154,22 @@ function MiniBarChart({ seasons, color, label }: { seasons: SeasonBar[]; color: 
     return (
         <div>
             <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-1.5">{label} by Season</div>
-            <div className="flex items-end gap-1 h-10">
+            <div className="flex items-end gap-1.5" style={{ height: '36px' }}>
                 {valid.map((s, i) => {
                     const heightPct = Math.max(8, (s.yds / maxYds) * 100);
                     return (
                         <div key={i} className="flex flex-col items-center gap-0.5 flex-1">
-                            <div className="w-full flex flex-col justify-end" style={{ height: '32px' }}>
-                                <div
-                                    className="w-full rounded-t-sm"
-                                    style={{ height: `${(heightPct / 100) * 32}px`, backgroundColor: color, opacity: 0.85 }}
-                                />
+                            <div className="w-full flex flex-col justify-end" style={{ height: '28px' }}>
+                                <div className="w-full rounded-t-sm"
+                                    style={{ height: `${(heightPct / 100) * 28}px`, backgroundColor: color, opacity: 0.8 }} />
                             </div>
                             <span className="text-[7px] text-muted-foreground/50 font-mono">{s.yr ? String(s.yr).slice(2) : '?'}</span>
                         </div>
                     );
                 })}
             </div>
-            <div className="text-right text-[8px] text-muted-foreground/30 font-mono mt-0.5">
-                peak {maxYds.toLocaleString()} yds
-            </div>
+            <div className="text-right text-[8px] text-muted-foreground/30 font-mono mt-0.5">peak {maxYds.toLocaleString()}</div>
         </div>
-    );
-}
-
-function DivergenceBadge({ ktc, fp }: { ktc: number | null | undefined; fp: number | null | undefined }) {
-    if (!ktc || !fp) return null;
-    const gap = fp - ktc;
-    if (Math.abs(gap) < 15) return null;
-    const isBuy = gap > 0;
-    return (
-        <span
-            title={isBuy ? `KTC ranks ${gap} spots higher than FP` : `FP ranks ${Math.abs(gap)} spots higher than KTC`}
-            style={{ padding: '1px 5px', borderRadius: 9999, fontSize: 9, fontWeight: 800, lineHeight: 1 }}
-            className={cn('inline-flex items-center border ml-1', isBuy
-                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                : 'bg-red-500/20 text-red-400 border-red-500/40'
-            )}
-        >
-            {isBuy ? '▲BUY' : '▼SELL'}
-        </span>
     );
 }
 
@@ -186,7 +180,7 @@ export function BoxView({ players, period }: BoxViewProps) {
     }
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             {players.map((player, index) => {
                 const p = player as any;
                 const pos = player.position.toUpperCase();
@@ -198,18 +192,10 @@ export function BoxView({ players, period }: BoxViewProps) {
                 const ht = formatHeight(player.height_inches);
                 const wt = player.weight_lbs ? `${player.weight_lbs}lb` : null;
 
-                // Compute derived stats
-                const compPct = p.career_pass_att > 0
-                    ? (p.career_completions / p.career_pass_att * 100)
-                    : null;
-                const ypa = p.career_pass_att > 0
-                    ? (p.career_pass_yards / p.career_pass_att)
-                    : null;
-                const scrimYpg = p.career_games_cs > 0
-                    ? (p.career_scrim_yards / p.career_games_cs)
-                    : null;
+                const compPct = p.career_pass_att > 0 ? (p.career_completions / p.career_pass_att * 100) : null;
+                const ypa     = p.career_pass_att > 0 ? (p.career_pass_yards   / p.career_pass_att)       : null;
+                const scrimYpg = p.career_games_cs > 0 ? (p.career_scrim_yards / p.career_games_cs)       : null;
 
-                // Season bar data (reversed so oldest→newest = left→right)
                 const seasons: SeasonBar[] = [
                     { yr: p.s4_yr, yds: pos === 'QB' ? (p.s4_pass ?? 0) : (p.s4_scrim ?? 0) },
                     { yr: p.s3_yr, yds: pos === 'QB' ? (p.s3_pass ?? 0) : (p.s3_scrim ?? 0) },
@@ -219,48 +205,61 @@ export function BoxView({ players, period }: BoxViewProps) {
                 const barColor = pos === 'QB' ? '#22d3ee' : pos === 'RB' ? '#34d399' : pos === 'WR' ? '#e879f9' : '#a78bfa';
                 const barLabel = pos === 'QB' ? 'Pass Yds' : pos === 'RB' ? 'Scrim Yds' : 'Rec Yds';
 
+                // Build athletics grade cells — show all available, fill full row
+                type GradeSpec = { label: string; val: number | null | undefined; key: string; display: string };
+                const athleteGrades: GradeSpec[] = [
+                    p.forty_yard  && { label: '40yd',  val: p.forty_yard,   key: 'forty',       display: `${Number(p.forty_yard).toFixed(2)}s`  },
+                    p.ras         && { label: 'RAS',   val: p.ras,          key: 'ras',         display: Number(p.ras).toFixed(1)               },
+                    p.speed_score && { label: 'Spd',   val: p.speed_score,  key: 'speed_score', display: Math.round(p.speed_score).toString()   },
+                    p.arm_length  && { label: 'Arm',   val: p.arm_length,   key: 'arm_length',  display: `${Number(p.arm_length).toFixed(1)}"`  },
+                    p.hand_size   && { label: 'Hand',  val: p.hand_size,    key: 'hand_size',   display: `${Number(p.hand_size).toFixed(1)}"`   },
+                ].filter(Boolean) as GradeSpec[];
+
+                // Choose columns based on count to fill the row
+                const cols = athleteGrades.length <= 2 ? 2 : athleteGrades.length <= 4 ? 2 : 3;
+
                 return (
                     <Link
                         key={player.id}
                         href={`/players/${player.slug}`}
                         className={cn(
                             'group flex flex-col bg-card border rounded-xl overflow-hidden',
-                            'hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200',
+                            'hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-200',
                             tier.bg
                         )}
                         style={{ borderLeft: `3px solid ${tier.border}70` }}
                     >
                         {/* ── Header ── */}
-                        <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5">
+                        <div className="flex items-center justify-between px-4 pt-3 pb-2">
                             <div className="flex items-center gap-2">
                                 <span className={cn('text-sm font-extrabold font-mono', tier.text)}>#{rank}</span>
                                 <span className="text-[10px] font-bold font-mono text-muted-foreground/40">{draftSlot}</span>
                             </div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2 mr-0.5">
                                 {p.recruiting_stars >= 4 && (
-                                    <span className={`text-[10px] font-bold ${p.recruiting_stars >= 5 ? 'text-yellow-400' : 'text-yellow-400/60'}`}>
+                                    <span className={`text-[11px] font-bold ${p.recruiting_stars >= 5 ? 'text-yellow-400' : 'text-yellow-400/60'}`}>
                                         {'★'.repeat(p.recruiting_stars)}
                                     </span>
                                 )}
                                 <span
-                                    style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 10, fontWeight: 800, lineHeight: 1 }}
+                                    style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 10, fontWeight: 800, lineHeight: 1 }}
                                     className={cn('border inline-flex items-center', posColor)}
                                 >{player.position}</span>
                             </div>
                         </div>
 
                         {/* ── Name + school ── */}
-                        <div className="px-3 pb-2">
-                            <div className="font-bold text-[14px] text-foreground group-hover:text-primary transition-colors leading-snug truncate" title={player.full_name}>
+                        <div className="px-4 pb-3">
+                            <div className="font-bold text-[14px] text-foreground group-hover:text-primary transition-colors leading-snug" title={player.full_name}>
                                 {player.full_name}
                             </div>
-                            <div className="text-[11px] text-muted-foreground/60 truncate">{school}</div>
-                            {(ht || wt) && (
-                                <div className="text-[10px] text-muted-foreground/40 font-mono mt-0.5">
-                                    {ht}{ht && wt ? ' / ' : ''}{wt}
+                            <div className="text-[11px] text-muted-foreground/60 truncate mt-0.5">{school}</div>
+                            {(ht || wt || p.breakout_age) && (
+                                <div className="text-[10px] text-muted-foreground/40 font-mono mt-1 flex items-center gap-2 flex-wrap">
+                                    {(ht || wt) && <span>{ht}{ht && wt ? ' / ' : ''}{wt}</span>}
                                     {p.breakout_age && (
-                                        <span className={`ml-2 font-bold ${p.breakout_age <= 19 ? 'text-emerald-400' : p.breakout_age <= 20 ? 'text-cyan-400' : 'text-muted-foreground/50'}`}>
-                                            · BO age {Number(p.breakout_age).toFixed(1)}
+                                        <span className={`font-bold ${p.breakout_age <= 19 ? 'text-emerald-400' : p.breakout_age <= 20 ? 'text-cyan-400' : ''}`}>
+                                            BO age {Number(p.breakout_age).toFixed(1)}
                                         </span>
                                     )}
                                 </div>
@@ -270,46 +269,47 @@ export function BoxView({ players, period }: BoxViewProps) {
                         <div className="border-t border-border/20" />
 
                         {/* ── Season bar chart ── */}
-                        <div className="px-3 py-2.5">
+                        <div className="px-4 py-3">
                             <MiniBarChart seasons={seasons} color={barColor} label={barLabel} />
                         </div>
 
                         <div className="border-t border-border/20" />
 
                         {/* ── Production stat bars ── */}
-                        <div className="px-3 py-2.5 space-y-2">
-                            <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-1">Production</div>
+                        <div className="px-4 py-3 space-y-2">
+                            <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-2">Production</div>
                             {pos === 'QB' && <>
-                                <StatBar label="Comp %" val={compPct} pos={pos} benchKey="comp_pct" display={compPct ? `${compPct.toFixed(1)}%` : '—'} />
-                                <StatBar label="YPA" val={ypa} pos={pos} benchKey="ypa" display={ypa ? ypa.toFixed(1) : '—'} />
-                                <StatBar label="Pass/G" val={p.best_pass_ypg} pos={pos} benchKey="pass_ypg" display={p.best_pass_ypg ? Number(p.best_pass_ypg).toFixed(0) : '—'} />
-                                <StatBar label="Dom %" val={p.best_dominator} pos={pos} benchKey="dom_pct" display={p.best_dominator ? `${Number(p.best_dominator).toFixed(1)}%` : '—'} />
+                                <StatBar label="Comp %" val={compPct}         pos={pos} benchKey="comp_pct"  display={compPct  ? `${compPct.toFixed(1)}%`                    : '—'} />
+                                <StatBar label="YPA"    val={ypa}             pos={pos} benchKey="ypa"       display={ypa      ? ypa.toFixed(1)                              : '—'} />
+                                <StatBar label="Pass/G" val={p.best_pass_ypg} pos={pos} benchKey="pass_ypg"  display={p.best_pass_ypg ? Number(p.best_pass_ypg).toFixed(0) : '—'} />
+                                <StatBar label="Dom %"  val={p.best_dominator}pos={pos} benchKey="dom_pct"   display={p.best_dominator ? `${Number(p.best_dominator).toFixed(1)}%` : '—'} />
                             </>}
                             {pos === 'RB' && <>
-                                <StatBar label="Dom %" val={p.best_dominator} pos={pos} benchKey="dom_pct" display={p.best_dominator ? `${Number(p.best_dominator).toFixed(1)}%` : '—'} />
-                                <StatBar label="YPC" val={p.best_ypc} pos={pos} benchKey="ypc" display={p.best_ypc ? Number(p.best_ypc).toFixed(2) : '—'} />
-                                <StatBar label="Scrim/G" val={scrimYpg} pos={pos} benchKey="scrim_ypg" display={scrimYpg ? scrimYpg.toFixed(1) : '—'} />
+                                <StatBar label="Dom %"   val={p.best_dominator} pos={pos} benchKey="dom_pct"   display={p.best_dominator ? `${Number(p.best_dominator).toFixed(1)}%` : '—'} />
+                                <StatBar label="YPC"     val={p.best_ypc}       pos={pos} benchKey="ypc"       display={p.best_ypc  ? Number(p.best_ypc).toFixed(2)  : '—'} />
+                                <StatBar label="Scrim/G" val={scrimYpg}         pos={pos} benchKey="scrim_ypg" display={scrimYpg    ? scrimYpg.toFixed(1)             : '—'} />
                             </>}
                             {(pos === 'WR' || pos === 'TE') && <>
-                                <StatBar label="Dom %" val={p.best_dominator} pos={pos} benchKey="dom_pct" display={p.best_dominator ? `${Number(p.best_dominator).toFixed(1)}%` : '—'} />
-                                <StatBar label="Yds/Rec" val={p.best_ypr} pos={pos} benchKey="ypr" display={p.best_ypr ? Number(p.best_ypr).toFixed(1) : '—'} />
-                                <StatBar label="Scrim/G" val={scrimYpg} pos={pos} benchKey="scrim_ypg" display={scrimYpg ? scrimYpg.toFixed(1) : '—'} />
+                                <StatBar label="Dom %"   val={p.best_dominator} pos={pos} benchKey="dom_pct"   display={p.best_dominator ? `${Number(p.best_dominator).toFixed(1)}%` : '—'} />
+                                <StatBar label="Yds/Rec" val={p.best_ypr}       pos={pos} benchKey="ypr"       display={p.best_ypr  ? Number(p.best_ypr).toFixed(1)  : '—'} />
+                                <StatBar label="Scrim/G" val={scrimYpg}         pos={pos} benchKey="scrim_ypg" display={scrimYpg    ? scrimYpg.toFixed(1)             : '—'} />
                             </>}
                         </div>
 
                         <div className="border-t border-border/20" />
 
-                        {/* ── Athletic grade badges ── */}
-                        <div className="px-3 py-2.5">
+                        {/* ── Athletics grade grid — fills full row ── */}
+                        <div className="px-4 py-3">
                             <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-2">Athletics</div>
-                            <div className="flex items-start gap-2 flex-wrap">
-                                <GradeBadge label="40yd" val={p.forty_yard} pos={pos} benchKey="forty" title={p.forty_yard ? `${Number(p.forty_yard).toFixed(2)}s` : undefined} />
-                                <GradeBadge label="RAS"  val={p.ras}        pos={pos} benchKey="ras"   title={p.ras ? `RAS ${Number(p.ras).toFixed(1)}/10` : undefined} />
-                                <GradeBadge label="Spd"  val={p.speed_score} pos={pos} benchKey="speed_score" title={p.speed_score ? `Speed Score ${Math.round(p.speed_score)}` : undefined} />
-                                {!p.forty_yard && !p.ras && !p.speed_score && (
-                                    <span className="text-[10px] text-muted-foreground/30 italic">No combine data</span>
-                                )}
-                            </div>
+                            {athleteGrades.length > 0 ? (
+                                <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+                                    {athleteGrades.map(g => (
+                                        <GradeCell key={g.key} label={g.label} val={g.val} pos={pos} benchKey={g.key} displayVal={g.display} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center text-[10px] text-muted-foreground/30 italic py-1">No combine data yet</div>
+                            )}
                         </div>
 
                         <div className="border-t border-border/20" />
@@ -317,21 +317,19 @@ export function BoxView({ players, period }: BoxViewProps) {
                         {/* ── Rankings ── */}
                         <div className="grid grid-cols-3">
                             {[
-                                { label: 'KTC', val: p.ktc_rank, extra: <DivergenceBadge ktc={p.ktc_rank} fp={p.fantasypros_rank} /> },
-                                { label: 'FP',  val: p.fantasypros_rank   },
-                                { label: 'DN',  val: p.dynasty_nerds_rank },
-                            ].map(({ label, val, extra }) => (
-                                <div key={label} className="flex flex-col items-center justify-center py-2 border-r border-border/20 last:border-r-0">
+                                { label: 'KTC', val: p.ktc_rank            },
+                                { label: 'FP',  val: p.fantasypros_rank    },
+                                { label: 'DN',  val: p.dynasty_nerds_rank  },
+                            ].map(({ label, val }) => (
+                                <div key={label} className="flex flex-col items-center justify-center py-2.5 border-r border-border/20 last:border-r-0">
                                     <div className="text-[9px] text-muted-foreground/50 uppercase font-bold tracking-wider mb-0.5">{label}</div>
-                                    <div className="text-[11px] font-bold font-mono text-foreground/80 flex items-center">
-                                        {val ?? '—'}{extra}
-                                    </div>
+                                    <div className="text-[11px] font-bold font-mono text-foreground/80">{val ?? '—'}</div>
                                 </div>
                             ))}
                         </div>
 
                         {/* ── Tier footer ── */}
-                        <div className={cn('px-3 py-1.5 text-center text-[9px] font-bold tracking-widest uppercase border-t border-border/20', tier.text)}>
+                        <div className={cn('px-4 py-2 text-center text-[9px] font-bold tracking-widest uppercase border-t border-border/20', tier.text)}>
                             {tier.label}
                         </div>
                     </Link>

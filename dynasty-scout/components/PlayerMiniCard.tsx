@@ -233,9 +233,9 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                 </div>
 
                 {/* 2. Player info */}
-                <div style={{ width: '180px', minWidth: '180px', maxWidth: '180px' }} className="flex-shrink-0">
+                <div style={{ width: '220px', minWidth: '220px' }} className="flex-shrink-0">
                     <div className="flex items-center gap-1.5 mb-0.5 overflow-hidden">
-                        <span className="font-bold text-[14px] text-foreground truncate group-hover:text-primary transition-colors leading-snug">
+                        <span className="font-bold text-[14px] text-foreground group-hover:text-primary transition-colors leading-snug">
                             {player.full_name}
                         </span>
                         <span
