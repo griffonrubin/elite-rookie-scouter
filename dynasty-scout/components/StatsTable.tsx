@@ -54,6 +54,7 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                                 <TableHead className="text-right">Yds</TableHead>
                                 <TableHead className="text-right">Avg</TableHead>
                                 <TableHead className="text-right">TD</TableHead>
+                                {(isWR || isTE) && <TableHead className="text-right">YAC</TableHead>}
                             </>
                         )}
 
@@ -97,6 +98,13 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                                     <TableCell className="text-right">{season.rec_yards || 0}</TableCell>
                                     <TableCell className="text-right">{season.receptions ? ((season.rec_yards || 0) / season.receptions).toFixed(1) : '-'}</TableCell>
                                     <TableCell className="text-right">{season.rec_tds || 0}</TableCell>
+                                    {(isWR || isTE) && (
+                                        <TableCell className="text-right text-muted-foreground">
+                                            {(season as any).yards_after_catch != null && (season as any).yards_after_catch > 0
+                                                ? Number((season as any).yards_after_catch).toFixed(0)
+                                                : '—'}
+                                        </TableCell>
+                                    )}
                                 </>
                             )}
 
@@ -167,6 +175,7 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                                         <TableCell className="text-right text-primary/80">{t.rec_yards}</TableCell>
                                         <TableCell className="text-right text-muted-foreground">{t.receptions > 0 ? (t.rec_yards / t.receptions).toFixed(1) : '—'}</TableCell>
                                         <TableCell className="text-right">{t.rec_tds}</TableCell>
+                                        {(isWR || isTE) && <TableCell className="text-right text-muted-foreground">—</TableCell>}
                                     </>
                                 )}
 

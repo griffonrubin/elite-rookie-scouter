@@ -97,6 +97,7 @@ async function getPlayerData(slug: string) {
         rec_yards: (acc.rec_yards || 0) + (s.rec_yards || 0),
         rec_tds: (acc.rec_tds || 0) + (s.rec_tds || 0),
         targets: (acc.targets || 0) + (s.targets || 0),
+        yards_after_catch: (acc.yards_after_catch || 0) + (s.yards_after_catch || 0),
     }), {} as any);
 
     if (careerStat.receptions > 0) careerStat.yards_per_reception = careerStat.rec_yards / careerStat.receptions;
@@ -300,6 +301,10 @@ function buildAdvancedMetrics(playerA: any, playerB: any) {
         rows.push({ label: 'Scrim Yds/Game', a: scrimA, b: scrimB, numA: parseFloat(scrimA) || null, numB: parseFloat(scrimB) || null, lowerWins: false });
     }
 
+    // Career YAC (yards after catch) — shown when available
+    const yacA = sa?.yards_after_catch != null && sa.yards_after_catch > 0 ? String(Math.round(sa.yards_after_catch)) : '—';
+    const yacB = sb?.yards_after_catch != null && sb.yards_after_catch > 0 ? String(Math.round(sb.yards_after_catch)) : '—';
+
     // Best-season Dominator Rating (from DB)
     const domA = playerA.best_dominator != null ? `${playerA.best_dominator.toFixed(1)}%` : '—';
     const domB = playerB.best_dominator != null ? `${playerB.best_dominator.toFixed(1)}%` : '—';
@@ -309,6 +314,10 @@ function buildAdvancedMetrics(playerA: any, playerB: any) {
     if (posA !== 'QB' || posB !== 'QB') {
         rows.push({ label: 'Dominator Rtg', a: domA, b: domB, numA: playerA.best_dominator ?? null, numB: playerB.best_dominator ?? null, lowerWins: false });
         rows.push({ label: 'Market Share', a: mktA, b: mktB, numA: playerA.best_market_share ?? null, numB: playerB.best_market_share ?? null, lowerWins: false });
+    }
+
+    if ((posA === 'WR' || posA === 'TE') && (posB === 'WR' || posB === 'TE')) {
+        rows.push({ label: 'Career YAC', a: yacA, b: yacB, numA: sa?.yards_after_catch || null, numB: sb?.yards_after_catch || null, lowerWins: false });
     }
 
     // Breakout Age
