@@ -6,6 +6,8 @@ import { StatsTable } from '@/components/StatsTable';
 import { StatTrendChart } from '@/components/StatTrendChart';
 import { PercentileChart } from '@/components/PercentileChart';
 import { SourceRankings } from '@/components/SourceRankings';
+import { AthleticsCard } from '@/components/AthleticsCard';
+import { DominatorChart } from '@/components/DominatorChart';
 import { POSITION_COLORS, POSITION_HEADLINE_STATS } from '@/lib/constants';
 import { ArrowLeft, GraduationCap, Calendar, Ruler, Weight, Star, Trophy, Newspaper, BarChart2, TrendingUp, ExternalLink, Scale, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
@@ -540,6 +542,9 @@ export default async function PlayerPage({ params }: PageProps) {
                         <TabsTrigger value="rankings" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
                             🏆 <span className="ml-0.5">Rankings</span>
                         </TabsTrigger>
+                        <TabsTrigger value="analytics" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
+                            📡 <span className="ml-0.5">Analytics</span>
+                        </TabsTrigger>
                         <TabsTrigger value="scout" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
                             🔬 <span className="ml-0.5">Scout</span>
                         </TabsTrigger>
@@ -689,6 +694,118 @@ export default async function PlayerPage({ params }: PageProps) {
                         />
                     </TabsContent>
 
+                    {/* Analytics Tab — Bloomberg-style visualization dashboard */}
+                    <TabsContent value="analytics">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+                            {/* Left column */}
+                            <div className="space-y-5">
+                                {/* Athletic grades */}
+                                <AthleticsCard
+                                    position={player.position}
+                                    heightInches={player.height_inches}
+                                    weightLbs={player.weight_lbs}
+                                    measurables={measurables}
+                                    speedScore={speedScore}
+                                />
+
+                                {/* Production percentiles vs. class */}
+                                {percentileMetrics.length > 0 && (
+                                    <PercentileChart metrics={percentileMetrics} position={player.position} />
+                                )}
+                            </div>
+
+                            {/* Right column */}
+                            <div className="space-y-5">
+                                {/* Career production bar chart */}
+                                {stats.length > 0 && (
+                                    <StatTrendChart stats={stats} position={player.position} />
+                                )}
+
+                                {/* Dominator rating visual */}
+                                {dominatorStats.length > 0 && (
+                                    <DominatorChart data={dominatorStats} position={player.position} />
+                                )}
+
+                                {/* Historical comps */}
+                                {historicalComps && historicalComps.length > 0 && (
+                                    <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
+                                        <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
+                                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Historical Athletic Comps</span>
+                                        </div>
+                                        <div className="divide-y divide-border/20">
+                                            {historicalComps.map((comp: any, i: number) => (
+                                                <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-muted/10 transition-colors">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-xs font-bold font-mono text-muted-foreground/40 w-4">{i + 1}</span>
+                                                        <div>
+                                                            <div className="text-sm font-bold text-foreground">{comp.comp_name}</div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {comp.comp_year} · {comp.comp_round ? `Rd ${comp.comp_round}` : 'UDFA'}
+                                                                {comp.comp_team ? ` · ${comp.comp_team}` : ''}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 text-right">
+                                                        {comp.comp_w_av != null && (
+                                                            <div>
+                                                                <div className="text-[9px] text-muted-foreground uppercase">AV</div>
+                                                                <div className={`text-sm font-black font-mono ${comp.comp_w_av >= 40 ? 'text-emerald-400' : comp.comp_w_av >= 15 ? 'text-cyan-400' : 'text-muted-foreground'}`}>
+                                                                    {comp.comp_w_av}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <div className="text-[9px] text-muted-foreground uppercase">Sim</div>
+                                                            <div className="text-sm font-bold font-mono text-foreground">{comp.similarity}%</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="px-4 py-2 border-t border-border/20">
+                                            <p className="text-[9px] text-muted-foreground/40">Athletically similar 2010–2024 draft prospects. AV = Career Approximate Value.</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                        </div>
+
+                        {/* EPA / Competition Adjustment — full width */}
+                        {epaStats && epaStats.length > 0 && (
+                            <div className="rounded-xl border border-border/60 bg-card/40 p-4 mt-5">
+                                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Competition Adjustment (SP+ / EPA)</h3>
+                                <div className="space-y-2">
+                                    {epaStats.map((row: any) => (
+                                        <div key={row.season} className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground font-mono text-xs">{row.season}</span>
+                                            <div className="flex items-center gap-6">
+                                                {row.sp_rating != null && (
+                                                    <div className="text-right">
+                                                        <span className="text-[9px] text-muted-foreground uppercase mr-1">SP+</span>
+                                                        <span className={`font-bold font-mono text-xs ${row.sp_rating >= 20 ? 'text-emerald-400' : row.sp_rating >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
+                                                            {row.sp_rating > 0 ? '+' : ''}{Number(row.sp_rating).toFixed(1)}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {row.epa_per_play != null && (
+                                                    <div className="text-right">
+                                                        <span className="text-[9px] text-muted-foreground uppercase mr-1">EPA/play</span>
+                                                        <span className={`font-bold font-mono text-xs ${row.epa_per_play >= 1.0 ? 'text-emerald-400' : row.epa_per_play >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
+                                                            {Number(row.epa_per_play).toFixed(3)}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-[9px] text-muted-foreground/40 mt-2">SP+ = team strength vs. avg. EPA/play = expected points added per play.</p>
+                            </div>
+                        )}
+                    </TabsContent>
+
                     {/* Draft Profile Tab */}
                     <TabsContent value="draft">
                         <div className="space-y-6">
@@ -781,31 +898,14 @@ export default async function PlayerPage({ params }: PageProps) {
                     <TabsContent value="scout">
                         <div className="space-y-6">
 
-                            {/* Athletic profile */}
-                            {(player.height_inches || player.weight_lbs || (measurables && (measurables as any).forty_yard)) && (
-                                <div>
-                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Athletic Profile</h3>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                        {([
-                                            { label: 'Height', val: player.height_inches ? `${Math.floor(player.height_inches / 12)}'${player.height_inches % 12}"` : null },
-                                            { label: 'Weight', val: player.weight_lbs ? `${player.weight_lbs}lb` : null },
-                                            { label: '40 Yard', val: measurables && (measurables as any).forty_yard ? `${(measurables as any).forty_yard}s` : null },
-                                            { label: 'Vertical', val: measurables && (measurables as any).vertical_jump ? `${(measurables as any).vertical_jump}"` : null },
-                                            { label: 'Broad Jump', val: measurables && (measurables as any).broad_jump ? `${(measurables as any).broad_jump}"` : null },
-                                            { label: '3-Cone', val: measurables && (measurables as any).three_cone ? `${(measurables as any).three_cone}s` : null },
-                                            { label: 'Hand Size', val: measurables && (measurables as any).hand_size ? `${(measurables as any).hand_size}"` : null },
-                                            { label: 'Arm Length', val: measurables && (measurables as any).arm_length ? `${(measurables as any).arm_length}"` : null },
-                                            { label: 'RAS Score', val: measurables && (measurables as any).ras ? String((measurables as any).ras) : null },
-                                            { label: 'Speed Score', val: (measurables && (measurables as any).speed_score ? (measurables as any).speed_score : speedScore) ? String(measurables && (measurables as any).speed_score ? (measurables as any).speed_score : speedScore) : null },
-                                        ] as { label: string; val: string | null }[]).map(item => (
-                                            <div key={item.label} className={`bg-card border rounded-xl p-3 text-center ${item.val ? 'border-border/60' : 'border-dashed border-border/30 opacity-50'}`}>
-                                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{item.label}</div>
-                                                <div className={`text-xl font-black mt-1 ${item.val ? 'text-foreground' : 'text-muted-foreground/20'}`}>{item.val ?? '—'}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                            {/* Athletic profile — graded bars */}
+                            <AthleticsCard
+                                position={player.position}
+                                heightInches={player.height_inches}
+                                weightLbs={player.weight_lbs}
+                                measurables={measurables}
+                                speedScore={speedScore}
+                            />
 
                             {/* Recruiting */}
                             {(player as any).recruiting_composite && (
@@ -849,40 +949,9 @@ export default async function PlayerPage({ params }: PageProps) {
                                         </div>
                                     )}
 
-                                    {/* Dominator Rating by Season */}
+                                    {/* Dominator Rating by Season — visual bars */}
                                     {dominatorStats.length > 0 && (
-                                        <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
-                                            <div className="px-4 py-2 border-b border-border/40 bg-muted/20">
-                                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Dominator Rating by Season</span>
-                                            </div>
-                                            <div className="divide-y divide-border/20">
-                                                {dominatorStats.map((row: any) => (
-                                                    <div key={row.season} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-4 py-3">
-                                                        <span className="text-xs font-bold text-muted-foreground font-mono w-10">{row.season}</span>
-                                                        <span className="text-xs text-muted-foreground truncate">{row.school}</span>
-                                                        {row.dominator_rating != null && (
-                                                            <div className="text-right">
-                                                                <div className="text-[10px] text-muted-foreground/60 uppercase">DOM</div>
-                                                                <div className={`text-sm font-bold font-mono ${row.dominator_rating >= 25 ? 'text-emerald-400' : row.dominator_rating >= 15 ? 'text-cyan-400' : 'text-foreground'}`}>
-                                                                    {row.dominator_rating.toFixed(1)}%
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        {row.market_share != null && (
-                                                            <div className="text-right">
-                                                                <div className="text-[10px] text-muted-foreground/60 uppercase">MKT</div>
-                                                                <div className="text-sm font-bold font-mono text-foreground/80">
-                                                                    {row.market_share.toFixed(1)}%
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="px-4 py-2 border-t border-border/40">
-                                                <p className="text-[10px] text-muted-foreground/50">DOM = share of team's total passing production (yds + TDs). MKT = share of team pass yards. ≥20% DOM is elite for WR/RB.</p>
-                                            </div>
-                                        </div>
+                                        <DominatorChart data={dominatorStats} position={player.position} />
                                     )}
                                 </div>
                             )}
