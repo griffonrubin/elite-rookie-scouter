@@ -29,6 +29,8 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
         m.twenty_yard_shuttle as shuttle,
         m.bench_press as bench_press,
         m.ras as ras,
+        m.hand_size as hand_size,
+        m.arm_length as arm_length,
         COALESCE(
           m.speed_score,
           CASE
@@ -41,7 +43,13 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
         (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'Sleeper ADP' ORDER BY scraped_at DESC LIMIT 1) as sleeper_adp,
         (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyPros' ORDER BY scraped_at DESC LIMIT 1) as fantasypros_rank,
         (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyCalc' ORDER BY scraped_at DESC LIMIT 1) as fantasycalc_rank,
-        (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'DynastyNerds' ORDER BY scraped_at DESC LIMIT 1) as dynasty_nerds_rank
+        (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'DynastyNerds' ORDER BY scraped_at DESC LIMIT 1) as dynasty_nerds_rank,
+        (SELECT MAX(dominator_rating) FROM college_stats WHERE player_id = p.id) as best_dominator,
+        (SELECT COALESCE(SUM(pass_yards),0) FROM college_stats WHERE player_id = p.id) as career_pass_yards,
+        (SELECT COALESCE(SUM(pass_attempts),0) FROM college_stats WHERE player_id = p.id) as career_pass_att,
+        (SELECT COALESCE(SUM(completions),0) FROM college_stats WHERE player_id = p.id) as career_completions,
+        (SELECT COALESCE(SUM(rush_yards),0) + COALESCE(SUM(rec_yards),0) FROM college_stats WHERE player_id = p.id) as career_scrim_yards,
+        (SELECT COALESCE(SUM(games_played),0) FROM college_stats WHERE player_id = p.id) as career_games_cs
       FROM players p
       LEFT JOIN measurables m ON p.id = m.player_id
       LEFT JOIN consensus_rankings c ON p.id = c.player_id

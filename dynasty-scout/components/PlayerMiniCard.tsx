@@ -1,27 +1,28 @@
 import Link from 'next/link';
-import { TrendingIndicator } from '@/components/TrendingIndicator';
 import { POSITION_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { ConsensusRanking, Player } from '@/lib/types';
 import { WatchlistButton } from './WatchlistButton';
+import { getColDefs, getGridTemplate, ColDef } from '@/lib/boardColumns';
 
 interface PlayerMiniCardProps {
     player: Player;
     ranking: ConsensusRanking;
     period: '1d' | '7d' | '30d';
     index: number;
+    positionFilter?: string;
 }
 
 function getDraftSlot(rank: number): string {
     const round = Math.ceil(rank / 12);
-    const pick = rank - (round - 1) * 12;
+    const pick  = rank - (round - 1) * 12;
     return `${round}.${String(pick).padStart(2, '0')}`;
 }
 
 function getTier(rank: number): { label: string; color: string } {
-    if (rank <= 5) return { label: 'S Tier', color: 'bg-[#FF6B00]/20 text-[#FF9A50] border-[#FF6B00]/40' };
+    if (rank <= 5)  return { label: 'S Tier', color: 'bg-[#FF6B00]/20 text-[#FF9A50] border-[#FF6B00]/40'   };
     if (rank <= 12) return { label: 'A Tier', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
-    if (rank <= 24) return { label: 'B Tier', color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' };
+    if (rank <= 24) return { label: 'B Tier', color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'       };
     if (rank <= 48) return { label: 'C Tier', color: 'bg-violet-500/20 text-violet-300 border-violet-500/40' };
     return { label: 'Depth', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40' };
 }
@@ -38,172 +39,154 @@ function formatHeight(inches?: number | null) {
     return `${Math.floor(inches / 12)}'${inches % 12}"`;
 }
 
-// Colors the 40-yard time contextually by position and speed tier
-function getFortyColor(fortyYard: number, position: string): string {
-    const pos = position.toUpperCase();
-    if (pos === 'RB') {
-        if (fortyYard < 4.40) return 'text-emerald-400 font-bold';  // elite
-        if (fortyYard < 4.50) return 'text-yellow-400 font-semibold'; // good
-        if (fortyYard < 4.60) return 'text-orange-400 font-semibold'; // average
-        return 'text-red-400 font-semibold'; // slow
-    }
-    if (pos === 'WR') {
-        if (fortyYard < 4.38) return 'text-emerald-400 font-bold';
-        if (fortyYard < 4.47) return 'text-yellow-400 font-semibold';
-        if (fortyYard < 4.56) return 'text-orange-400 font-semibold';
-        return 'text-red-400 font-semibold';
-    }
-    if (pos === 'TE') {
-        if (fortyYard < 4.50) return 'text-emerald-400 font-bold';
-        if (fortyYard < 4.62) return 'text-yellow-400 font-semibold';
-        if (fortyYard < 4.75) return 'text-orange-400 font-semibold';
-        return 'text-red-400 font-semibold';
-    }
-    if (pos === 'QB') {
-        if (fortyYard < 4.65) return 'text-emerald-400 font-bold';
-        if (fortyYard < 4.78) return 'text-yellow-400 font-semibold';
-        return 'text-orange-400 font-semibold';
-    }
+function getFortyColor(v: number, pos: string): string {
+    const p = pos.toUpperCase();
+    if (p === 'RB') { if (v < 4.40) return 'text-emerald-400 font-bold'; if (v < 4.50) return 'text-yellow-400'; if (v < 4.60) return 'text-orange-400'; return 'text-red-400'; }
+    if (p === 'WR') { if (v < 4.38) return 'text-emerald-400 font-bold'; if (v < 4.47) return 'text-yellow-400'; if (v < 4.56) return 'text-orange-400'; return 'text-red-400'; }
+    if (p === 'TE') { if (v < 4.50) return 'text-emerald-400 font-bold'; if (v < 4.62) return 'text-yellow-400'; if (v < 4.75) return 'text-orange-400'; return 'text-red-400'; }
+    if (p === 'QB') { if (v < 4.65) return 'text-emerald-400 font-bold'; if (v < 4.78) return 'text-yellow-400'; return 'text-orange-400'; }
     return 'text-foreground/70';
 }
 
-export function PlayerMiniCard({ player, ranking, period, index }: PlayerMiniCardProps) {
+function StatVal({ val, highlight }: { val: string | number | null | undefined; highlight?: string }) {
+    const display = val != null && val !== '' ? String(val) : '—';
+    const empty   = display === '—';
+    return (
+        <span className={`font-mono font-bold text-sm ${empty ? 'text-muted-foreground/30' : (highlight || 'text-foreground/80')}`}>
+            {display}
+        </span>
+    );
+}
+
+function RecruitStars({ stars }: { stars: number | null | undefined }) {
+    if (!stars) return <StatVal val={null} />;
+    const color = stars >= 5 ? 'text-yellow-400' : stars >= 4 ? 'text-yellow-300/80' : 'text-muted-foreground/60';
+    return <span className={`text-sm font-bold ${color}`}>{'★'.repeat(stars)}</span>;
+}
+
+export function PlayerMiniCard({ player, ranking, period, index, positionFilter = 'ALL' }: PlayerMiniCardProps) {
+    const p = player as any;
     const positionColor = POSITION_COLORS[player.position] || 'bg-gray-500/20 text-gray-300 border-gray-500/40';
 
-    let change = ranking?.rank_change_1d ?? 0;
-    if (period === '7d') change = ranking?.rank_change_7d ?? 0;
-    if (period === '30d') change = ranking?.rank_change_30d ?? 0;
-
     const rookieRank = ranking?.rank_overall ?? (index + 1);
-    const tier = getTier(rookieRank);
-    const draftSlot = getDraftSlot(rookieRank);
-    const rankColor = getRankColor(rookieRank);
-    const ktcOverallRank = (player as any).ktc_rank;
-    const fcRank = (player as any).fantasycalc_rank;
-    const dnRank = (player as any).dynasty_nerds_rank;
-    const schoolDisplay = (player as any).school || '';
+    const tier       = getTier(rookieRank);
+    const draftSlot  = getDraftSlot(rookieRank);
+    const rankColor  = getRankColor(rookieRank);
+    const schoolDisplay = p.school || '';
 
-    // Height / Weight on one line
-    const ht = player.height_inches ? formatHeight(player.height_inches) : '—';
-    const wt = player.weight_lbs ? `${player.weight_lbs}lb` : '—';
-    const fortyYard = (player as any).forty_yard as number | null | undefined;
+    const ht        = player.height_inches ? formatHeight(player.height_inches) : '—';
+    const wt        = player.weight_lbs    ? `${player.weight_lbs}lb`           : '—';
+    const fortyYard = p.forty_yard as number | null | undefined;
+
+    const colDefs      = getColDefs(positionFilter);
+    const gridTemplate = getGridTemplate(positionFilter);
+
+    // Computed career stats used by position-specific columns
+    const compPct   = p.career_pass_att > 0  ? ((p.career_completions  / p.career_pass_att)  * 100).toFixed(1) + '%' : null;
+    const ypa       = p.career_pass_att > 0  ? (p.career_pass_yards    / p.career_pass_att).toFixed(1)              : null;
+    const scrimYpg  = p.career_games_cs > 0  ? (p.career_scrim_yards   / p.career_games_cs).toFixed(1)              : null;
+    const domPct    = p.best_dominator != null ? Number(p.best_dominator).toFixed(1) + '%'                           : null;
+
+    function renderCell(col: ColDef) {
+        switch (col.key) {
+
+            // ── Measurables ────────────────────────────────────────────────────
+            case 'measurables':
+                return (
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-foreground/80 truncate">
+                        <span className="shrink-0">{ht} / {wt}</span>
+                        {fortyYard ? <span className={`shrink-0 ${getFortyColor(fortyYard, player.position)}`}>· {fortyYard.toFixed(2)}s</span> : null}
+                        {p.ras      ? <span className="text-purple-400 shrink-0">· RAS {Number(p.ras).toFixed(1)}</span> : null}
+                        {p.arm_length ? <span className="text-muted-foreground/60 shrink-0">· {Number(p.arm_length).toFixed(2)}"arm</span> : null}
+                        {p.speed_score && !p.arm_length ? <span className="text-cyan-400/80 shrink-0 text-[10px]">· Spd {Number(p.speed_score).toFixed(0)}</span> : null}
+                    </div>
+                );
+
+            // ── Ranking sources ────────────────────────────────────────────────
+            case 'fp':  return <StatVal val={p.fantasypros_rank}   />;
+            case 'ktc': return <StatVal val={p.ktc_rank}           />;
+            case 'fc':  return <StatVal val={p.fantasycalc_rank}   />;
+            case 'dn':  return <StatVal val={p.dynasty_nerds_rank} />;
+            case 'adp': return <span className="font-mono font-bold text-sm text-foreground/80">{draftSlot}</span>;
+
+            // ── Tier badge ────────────────────────────────────────────────────
+            case 'tier':
+                return (ranking?.num_sources ?? 0) < 2 ? (
+                    <span
+                        title={`Ranked by ${ranking?.num_sources ?? 0} of 4 sources — limited data`}
+                        style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 8px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 600 }}
+                        className={cn('border', 'bg-gray-500/10 text-gray-400/80 border-gray-500/30')}
+                    >⚠ Limited</span>
+                ) : (
+                    <span
+                        style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 8px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 600 }}
+                        className={cn('border', tier.color)}
+                    >{tier.label}</span>
+                );
+
+            // ── Position-specific stats ────────────────────────────────────────
+            case 'career_pass_yards': return <StatVal val={p.career_pass_yards > 0 ? Number(p.career_pass_yards).toLocaleString() : null} />;
+            case 'comp_pct':          return <StatVal val={compPct} />;
+            case 'ypa':               return <StatVal val={ypa} />;
+            case 'breakout_age':      return <StatVal val={p.breakout_age ? Number(p.breakout_age).toFixed(1) : null} highlight={p.breakout_age && p.breakout_age <= 19 ? 'text-emerald-400 font-extrabold' : p.breakout_age <= 20 ? 'text-cyan-400 font-bold' : undefined} />;
+            case 'best_dominator':    return <StatVal val={domPct} highlight={p.best_dominator >= 30 ? 'text-emerald-400 font-bold' : p.best_dominator >= 20 ? 'text-cyan-400' : undefined} />;
+            case 'scrim_ypg':         return <StatVal val={scrimYpg} />;
+            case 'recruiting_stars':  return <RecruitStars stars={p.recruiting_stars} />;
+
+            default: return <StatVal val={null} />;
+        }
+    }
 
     return (
         <Link href={`/players/${player.slug}`} className="block group">
             <div className="flex items-center px-4 py-2.5 hover:bg-accent/40 transition-all duration-150 border-b border-border/20 gap-3">
 
-                {/* 1. Rank + Watchlist */}
-                <div className="w-16 flex-shrink-0 flex flex-col lg:flex-row items-center justify-center lg:gap-2">
+                {/* 1. Rank + inline watchlist */}
+                <div className="w-16 flex-shrink-0 flex flex-row items-center justify-center gap-1.5">
                     <span className={`text-sm font-mono leading-none ${rankColor}`}>{rookieRank}</span>
-                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="cursor-pointer lg:mt-0 mt-1 flex items-center">
+                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="cursor-pointer flex items-center">
                         <WatchlistButton playerSlug={player.slug} />
                     </div>
                 </div>
 
-                {/* 2. Player info — hard fixed 180px */}
+                {/* 2. Player info */}
                 <div style={{ width: '180px', minWidth: '180px', maxWidth: '180px' }} className="flex-shrink-0">
                     <div className="flex items-center gap-2 mb-0.5 overflow-hidden">
                         <span className="font-bold text-[14px] text-foreground truncate group-hover:text-primary transition-colors leading-snug">
                             {player.full_name}
                         </span>
-                        {/* Position badge — pure inline-flex, no fixed height */}
                         <span
                             style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 8px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 10, fontWeight: 800 }}
                             className={cn('border', positionColor)}
-                        >
-                            {player.position}
-                        </span>
+                        >{player.position}</span>
                     </div>
                     <div className="flex items-center text-[11px] text-muted-foreground/70 gap-1.5 leading-none">
                         <span className="truncate">{schoolDisplay || 'School TBD'}</span>
                         {player.age_at_draft && (
-                            <>
-                                <span className="opacity-40">•</span>
-                                <span className="whitespace-nowrap">Age {player.age_at_draft}</span>
-                            </>
+                            <><span className="opacity-40">•</span><span className="whitespace-nowrap">Age {player.age_at_draft}</span></>
                         )}
                     </div>
                 </div>
 
-                {/* Right stat columns — fixed widths for rank cols, flex-1 for measurables */}
-                <div className="hidden lg:flex flex-1 items-center text-xs min-w-0">
-
-                    {/* 3. Measurables — flex-1 min-w-0, overflow hidden to prevent expansion */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-center border-l border-border/30 pl-4 overflow-hidden">
-                        <div className="font-mono text-[11px] text-foreground/80 flex items-center gap-1.5 truncate">
-                            <span className="shrink-0">{ht} / {wt}</span>
-                            {fortyYard ? (
-                                <span className="text-muted-foreground shrink-0">
-                                    · <span className={getFortyColor(fortyYard, player.position)}>{fortyYard.toFixed(2)}s</span>
-                                </span>
-                            ) : null}
-                            {(player as any).ras ? (
-                                <span className="text-muted-foreground shrink-0">
-                                    · <span className="text-purple-400">RAS {((player as any).ras as number).toFixed(1)}</span>
-                                </span>
-                            ) : null}
-                            {(player as any).speed_score ? (
-                                <span className="text-[9px] text-muted-foreground/50 shrink-0">
-                                    · <span className="text-cyan-400/80">Spd {((player as any).speed_score as number).toFixed(0)}</span>
-                                </span>
-                            ) : null}
+                {/* 3. Dynamic stat columns — CSS grid */}
+                <div
+                    className="hidden lg:grid flex-1 min-w-0"
+                    style={{ gridTemplateColumns: gridTemplate }}
+                >
+                    {colDefs.map((col, i) => (
+                        <div
+                            key={col.key}
+                            className={`flex items-center min-h-[36px] overflow-hidden ${
+                                i === 0
+                                    ? 'border-l border-border/30 pl-3'
+                                    : 'justify-center'
+                            }`}
+                        >
+                            {renderCell(col)}
                         </div>
-                    </div>
-
-                    {/* 4. FP Devy — fixed width */}
-                    <div style={{ width: '52px', minWidth: '52px', flexShrink: 0 }} className="flex items-center justify-center">
-                        <span className={`font-bold font-mono text-sm ${player.fantasypros_rank != null ? 'text-foreground/90' : 'text-muted-foreground/30'}`}>
-                            {player.fantasypros_rank ?? '—'}
-                        </span>
-                    </div>
-
-                    {/* 5. KTC Dyn — fixed width */}
-                    <div style={{ width: '52px', minWidth: '52px', flexShrink: 0 }} className="flex items-center justify-center">
-                        <span className={`font-bold font-mono text-sm ${ktcOverallRank != null ? 'text-foreground/80' : 'text-muted-foreground/30'}`}>
-                            {ktcOverallRank ?? '—'}
-                        </span>
-                    </div>
-
-                    {/* 6. FantasyCalc Rookie — fixed width */}
-                    <div style={{ width: '52px', minWidth: '52px', flexShrink: 0 }} className="flex items-center justify-center">
-                        <span className={`font-bold font-mono text-sm ${fcRank != null ? 'text-foreground/80' : 'text-muted-foreground/30'}`}>
-                            {fcRank ?? '—'}
-                        </span>
-                    </div>
-
-                    {/* 7. DynastyNerds Rookie — fixed width */}
-                    <div style={{ width: '52px', minWidth: '52px', flexShrink: 0 }} className="flex items-center justify-center">
-                        <span className={`font-bold font-mono text-sm ${dnRank != null ? 'text-foreground/80' : 'text-muted-foreground/30'}`}>
-                            {dnRank ?? '—'}
-                        </span>
-                    </div>
-
-                    {/* 8. Proj Pick — fixed width */}
-                    <div style={{ width: '64px', minWidth: '64px', flexShrink: 0 }} className="flex items-center justify-center" title="Projected Dynasty Draft Pick">
-                        <span className="font-mono font-bold text-sm text-foreground/80">{draftSlot}</span>
-                    </div>
-
-                    {/* 9. Tier badge — fixed width */}
-                    <div style={{ width: '96px', minWidth: '96px', flexShrink: 0 }} className="flex items-center justify-center">
-                        {(ranking?.num_sources ?? 0) < 2 ? (
-                            <span
-                                title={`Ranked by ${ranking?.num_sources ?? 0} of 5 sources — consensus rank may be unreliable`}
-                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '3px 8px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 600 }}
-                                className={cn('border', 'bg-gray-500/10 text-gray-400/80 border-gray-500/30')}
-                            >
-                                ⚠ Limited
-                            </span>
-                        ) : (
-                            <span
-                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '3px 8px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 600 }}
-                                className={cn('border', tier.color)}
-                            >
-                                {tier.label}
-                            </span>
-                        )}
-                    </div>
-
+                    ))}
                 </div>
+
             </div>
         </Link>
     );
