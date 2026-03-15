@@ -427,17 +427,17 @@ export default async function PlayerPage({ params }: PageProps) {
                     {/* Avatar */}
                     <div className="flex-shrink-0">
                         <div
-                            className="w-32 h-44 rounded-2xl border border-border/40 overflow-hidden flex items-end justify-center shadow-xl relative"
+                            className="w-36 h-44 rounded-2xl border border-border/40 overflow-hidden shadow-xl relative"
                             style={{ background: avatarBg }}
                         >
                             {headshotUrl ? (
                                 <img
                                     src={headshotUrl}
                                     alt={player.full_name}
-                                    className="w-full h-full object-contain object-bottom"
+                                    className="w-full h-full object-cover object-top"
                                 />
                             ) : (
-                                <div className="flex flex-col items-center gap-2 pb-6 z-10 relative">
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-2">
                                     <div className="text-5xl text-muted-foreground/20 leading-none select-none">🏈</div>
                                     <div
                                         style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 800, lineHeight: 1 }}
