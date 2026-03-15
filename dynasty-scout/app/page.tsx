@@ -58,7 +58,19 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
          ORDER BY CAST(rec_yards AS NUMERIC) / NULLIF(receptions, 0) DESC LIMIT 1) as best_ypr,
         (SELECT ROUND(CAST(rush_yards AS NUMERIC) / NULLIF(rush_attempts, 0), 2)
          FROM college_stats WHERE player_id = p.id AND rush_attempts > 20
-         ORDER BY CAST(rush_yards AS NUMERIC) / NULLIF(rush_attempts, 0) DESC LIMIT 1) as best_ypc
+         ORDER BY CAST(rush_yards AS NUMERIC) / NULLIF(rush_attempts, 0) DESC LIMIT 1) as best_ypc,
+        (SELECT season     FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 0) as s1_yr,
+        (SELECT COALESCE(rush_yards,0)+COALESCE(rec_yards,0) FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 0) as s1_scrim,
+        (SELECT COALESCE(pass_yards,0) FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 0) as s1_pass,
+        (SELECT season     FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 1) as s2_yr,
+        (SELECT COALESCE(rush_yards,0)+COALESCE(rec_yards,0) FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 1) as s2_scrim,
+        (SELECT COALESCE(pass_yards,0) FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 1) as s2_pass,
+        (SELECT season     FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 2) as s3_yr,
+        (SELECT COALESCE(rush_yards,0)+COALESCE(rec_yards,0) FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 2) as s3_scrim,
+        (SELECT COALESCE(pass_yards,0) FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 2) as s3_pass,
+        (SELECT season     FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 3) as s4_yr,
+        (SELECT COALESCE(rush_yards,0)+COALESCE(rec_yards,0) FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 3) as s4_scrim,
+        (SELECT COALESCE(pass_yards,0) FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 3) as s4_pass
       FROM players p
       LEFT JOIN measurables m ON p.id = m.player_id
       LEFT JOIN consensus_rankings c ON p.id = c.player_id
@@ -132,13 +144,10 @@ export default async function Home() {
                 <span className="text-foreground font-semibold">{rankedCount}</span> ranked
               </div>
             </div>
-            <div className="flex items-center gap-1.5 bg-muted/60 px-2.5 py-1 rounded-full">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
-              </span>
-              <span className="text-primary font-medium">Live</span>
-            </div>
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
+            </span>
           </div>
         </div>
       </header>
@@ -148,11 +157,11 @@ export default async function Home() {
         <div className="w-full px-6 sm:px-8 py-4 mx-auto flex items-center">
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground flex items-center gap-3">
             2026 Rookie Scouting Board
-            <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border border-border/50">
+            <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground bg-muted/50 px-4 py-2 rounded-full border border-border/50">
               {players.length} Players Tracked
             </span>
             {lastUpdateDate && (
-              <span className="text-[10px] font-bold tracking-widest uppercase text-primary/80 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
+              <span className="text-[10px] font-bold tracking-widest uppercase text-primary/80 bg-primary/10 px-4 py-2 rounded-full border border-primary/20">
                 Updated {lastUpdateDate}
               </span>
             )}

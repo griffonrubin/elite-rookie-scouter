@@ -133,7 +133,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     return (
         <div className="space-y-0">
             {/* ── Controls ── */}
-            <div className="flex flex-col gap-2.5 mb-6">
+            <div className="flex flex-col gap-3 mb-8">
                 {/* Row 1: Search + view mode + sort */}
                 <div className="flex items-center gap-3 flex-wrap">
                     <div style={{ position: 'relative', width: '280px', minWidth: '220px', flexShrink: 0 }}>
@@ -156,7 +156,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                     <div className="flex items-center gap-1.5">
                         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sort:</span>
                         <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir(DEFAULT_DESC.includes(v as SortKey) ? 'desc' : 'asc'); }}>
-                            <SelectTrigger className="w-[168px] h-9 bg-card border-border/60 text-xs px-3 gap-2">
+                            <SelectTrigger className="w-[180px] h-9 bg-card border-border/60 text-xs px-4 gap-3">
                                 <SelectValue>
                                     {{ rank: 'Consensus', ktc: 'KTC', sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FantasyCalc', dn: 'DynNerds', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit ★', proj: 'Proj Pick', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC' }[sortKey] ?? 'Consensus'}
                                 </SelectValue>
@@ -327,7 +327,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                     <div key={player.id}>
                                         {showTierHeader && (
                                             <div
-                                                className="flex items-center gap-3 mx-3 px-4 py-2 text-[11px] font-black uppercase tracking-[0.15em] mb-0.5 mt-2"
+                                                className="flex items-center gap-3 mx-5 px-4 py-2 text-[11px] font-black uppercase tracking-[0.15em] mb-0.5 mt-2"
                                                 style={{ background: tier.accent, color: '#000', borderRadius: '6px' }}
                                             >
                                                 <span>{tier.label}</span>
@@ -369,8 +369,8 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 </div>
             )}
 
-            {viewMode === 'box' && <div className="mt-2"><BoxView players={filteredPlayers} period="1d" /></div>}
-            {viewMode === 'hex' && <div className="mt-2"><HexView players={filteredPlayers} period="1d" /></div>}
+            {viewMode === 'box' && <div className="mt-4"><BoxView players={filteredPlayers} period="1d" /></div>}
+            {viewMode === 'hex' && <div className="mt-4"><HexView players={filteredPlayers} period="1d" /></div>}
         </div>
     );
 }
