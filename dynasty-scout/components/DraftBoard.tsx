@@ -133,7 +133,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     return (
         <div className="space-y-0">
             {/* ── Controls ── */}
-            <div className="flex flex-col gap-3 mb-8">
+            <div className="flex flex-col gap-3" style={{ marginBottom: '36px' }}>
                 {/* Row 1: Search + view mode + sort */}
                 <div className="flex items-center gap-3 flex-wrap">
                     <div style={{ position: 'relative', width: '280px', minWidth: '220px', flexShrink: 0 }}>
@@ -369,8 +369,8 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 </div>
             )}
 
-            {viewMode === 'box' && <div className="mt-4"><BoxView players={filteredPlayers} period="1d" /></div>}
-            {viewMode === 'hex' && <div className="mt-4"><HexView players={filteredPlayers} period="1d" /></div>}
+            {viewMode === 'box' && <BoxView players={filteredPlayers} period="1d" />}
+            {viewMode === 'hex' && <HexView players={filteredPlayers} period="1d" />}
         </div>
     );
 }
