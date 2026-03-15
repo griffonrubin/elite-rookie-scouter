@@ -138,7 +138,7 @@ async function getPlayer(slug: string) {
             JOIN players p ON p.id = cs.player_id
             WHERE p.position = $1 AND p.draft_year = 2026
             GROUP BY cs.player_id
-            HAVING SUM(COALESCE(cs.games_played, 0)) >= 5
+            HAVING SUM(COALESCE(cs.games_played, 0)) >= 1
         `, [player.position]);
 
         // Compute speed score inline if not stored: (weight × 200) / (40yd)^4
@@ -177,7 +177,23 @@ async function getPlayer(slug: string) {
             trustIndicator = `No stats available · ${reason}`;
         }
 
-        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [] };
+        // Historical athletic comps
+        const historicalComps = await query<any>(
+            `SELECT comp_name, comp_year, comp_round, comp_pick, comp_team,
+                    comp_position, comp_w_av, comp_probowls, similarity, shared_metrics
+             FROM historical_comps WHERE player_id = $1 ORDER BY similarity DESC LIMIT 3`,
+            [player.id]
+        ).catch(() => [] as any[]);
+
+        // Best EPA/SP+ season for this player
+        const epaStats = await query<any>(
+            `SELECT season, epa_per_play, sp_rating FROM college_stats
+             WHERE player_id = $1 AND epa_per_play IS NOT NULL
+             ORDER BY season DESC LIMIT 3`,
+            [player.id]
+        ).catch(() => [] as any[]);
+
+        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], historicalComps: historicalComps || [], epaStats: epaStats || [] };
     } catch (e) {
         console.error("DB Error:", e);
         return null;
@@ -201,7 +217,7 @@ export default async function PlayerPage({ params }: PageProps) {
         );
     }
 
-    const { player, stats, rankings, measurables, speedScore, news, peerCareer } = data;
+    const { player, stats, rankings, measurables, speedScore, news, peerCareer, historicalComps, epaStats } = data;
     const posStyle = POS_STYLES[player.position] || 'bg-gray-500/20 text-gray-400 border-gray-500/40 text-gray-300';
     const avatarBgMap: Record<string, string> = {
         QB: 'rgba(34, 211, 238, 0.15)',
@@ -308,7 +324,7 @@ export default async function PlayerPage({ params }: PageProps) {
     }
 
     // ── Percentile metrics vs. 2026 position peers ────────────────────────────
-    const myPeer = peerCareer.find((p: any) => p.player_id === player.id);
+    const myPeer = peerCareer.find((p: any) => Number(p.player_id) === Number(player.id));
     const percentileMetrics: { label: string; value: string | number; percentile: number; unit?: string }[] = [];
     if (myPeer && peerCareer.length > 3) {
         const s = (v: any) => Number(v) || 0;
@@ -513,8 +529,11 @@ export default async function PlayerPage({ params }: PageProps) {
                         <TabsTrigger value="rankings" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
                             🏆 <span className="ml-0.5">Rankings</span>
                         </TabsTrigger>
+                        <TabsTrigger value="scout" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
+                            🔬 <span className="ml-0.5">Scout</span>
+                        </TabsTrigger>
                         <TabsTrigger value="draft" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
-                            📋 <span className="ml-0.5">Draft Profile</span>
+                            📋 <span className="ml-0.5">Draft</span>
                         </TabsTrigger>
                         <TabsTrigger value="news" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
                             📰 <span className="ml-0.5">News</span> {news.length > 0 && <span className="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded-full font-bold">{news.length}</span>}
@@ -551,6 +570,39 @@ export default async function PlayerPage({ params }: PageProps) {
 
                                 {percentileMetrics.length > 0 && (
                                     <PercentileChart metrics={percentileMetrics} position={player.position} />
+                                )}
+
+                                {/* EPA / Competition-Adjusted Stats */}
+                                {epaStats && epaStats.length > 0 && (
+                                    <div className="rounded-xl border border-border/60 bg-card/40 p-4">
+                                        <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">EPA & Competition Adjustment</h3>
+                                        <div className="space-y-2">
+                                            {epaStats.map((row: any) => (
+                                                <div key={row.season} className="flex items-center justify-between text-sm">
+                                                    <span className="text-muted-foreground font-mono">{row.season}</span>
+                                                    <div className="flex items-center gap-4">
+                                                        {row.sp_rating != null && (
+                                                            <div className="text-right">
+                                                                <span className="text-[10px] text-muted-foreground uppercase mr-1">SP+</span>
+                                                                <span className={`font-bold font-mono text-xs ${row.sp_rating >= 20 ? 'text-emerald-400' : row.sp_rating >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
+                                                                    {row.sp_rating > 0 ? '+' : ''}{Number(row.sp_rating).toFixed(1)}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {row.epa_per_play != null && (
+                                                            <div className="text-right">
+                                                                <span className="text-[10px] text-muted-foreground uppercase mr-1">EPA/play</span>
+                                                                <span className={`font-bold font-mono text-xs ${row.epa_per_play >= 1.0 ? 'text-emerald-400' : row.epa_per_play >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
+                                                                    {Number(row.epa_per_play).toFixed(3)}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground/50 mt-2">SP+ = team strength vs. avg (higher = stronger competition). EPA/play = expected points added per play.</p>
+                                    </div>
                                 )}
 
                                 <div className="text-right text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">
@@ -711,6 +763,12 @@ export default async function PlayerPage({ params }: PageProps) {
                                     {player.position === 'TE' && <div className="flex items-start gap-2"><span className="text-violet-400 font-bold mt-0.5">→</span><span>Elite TEs are extremely rare — top-12 TEs drafted in the first round represent <strong className="text-foreground">generational value</strong>.</span></div>}
                                 </div>
                             </div>
+                        </div>
+                    </TabsContent>
+
+                    {/* Scout Tab */}
+                    <TabsContent value="scout">
+                        <div className="space-y-6">
 
                             {/* Athletic profile */}
                             {(player.height_inches || player.weight_lbs || (measurables && (measurables as any).forty_yard)) && (
@@ -724,12 +782,71 @@ export default async function PlayerPage({ params }: PageProps) {
                                             { label: 'Vertical', val: measurables && (measurables as any).vertical_jump ? `${(measurables as any).vertical_jump}"` : null },
                                             { label: 'Broad Jump', val: measurables && (measurables as any).broad_jump ? `${(measurables as any).broad_jump}"` : null },
                                             { label: '3-Cone', val: measurables && (measurables as any).three_cone ? `${(measurables as any).three_cone}s` : null },
+                                            { label: 'Hand Size', val: measurables && (measurables as any).hand_size ? `${(measurables as any).hand_size}"` : null },
+                                            { label: 'Arm Length', val: measurables && (measurables as any).arm_length ? `${(measurables as any).arm_length}"` : null },
                                             { label: 'RAS Score', val: measurables && (measurables as any).ras ? String((measurables as any).ras) : null },
                                             { label: 'Speed Score', val: (measurables && (measurables as any).speed_score ? (measurables as any).speed_score : speedScore) ? String(measurables && (measurables as any).speed_score ? (measurables as any).speed_score : speedScore) : null },
                                         ] as { label: string; val: string | null }[]).map(item => (
                                             <div key={item.label} className={`bg-card border rounded-xl p-3 text-center ${item.val ? 'border-border/60' : 'border-dashed border-border/30 opacity-50'}`}>
                                                 <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{item.label}</div>
                                                 <div className={`text-xl font-black mt-1 ${item.val ? 'text-foreground' : 'text-muted-foreground/20'}`}>{item.val ?? '—'}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Recruiting */}
+                            {(player as any).recruiting_composite && (
+                                <div>
+                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Recruiting Profile</h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        {[
+                                            { label: 'Stars', val: (player as any).recruiting_stars ? `${'★'.repeat((player as any).recruiting_stars)}` : null },
+                                            { label: 'Composite Rating', val: (player as any).recruiting_composite ? `${((player as any).recruiting_composite as number).toFixed(4)}` : null },
+                                            { label: 'Recruit Year', val: (player as any).recruiting_year ? String((player as any).recruiting_year) : null },
+                                        ].map(item => (
+                                            <div key={item.label} className={`bg-card border rounded-xl p-3 text-center ${item.val ? 'border-border/60' : 'border-dashed border-border/30 opacity-50'}`}>
+                                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{item.label}</div>
+                                                <div className={`text-lg font-black mt-1 ${item.val ? 'text-foreground' : 'text-muted-foreground/20'}`}>{item.val ?? '—'}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Historical Comps */}
+                            {historicalComps && historicalComps.length > 0 && (
+                                <div>
+                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Historical Athletic Comps</h3>
+                                    <p className="text-xs text-muted-foreground/60 mb-3">Most athletically similar prospects from 2010–2024 NFL Draft classes</p>
+                                    <div className="space-y-2">
+                                        {historicalComps.map((comp: any, i: number) => (
+                                            <div key={i} className="flex items-center justify-between bg-card border border-border/60 rounded-xl px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="text-xs font-bold text-muted-foreground/40 font-mono w-4">{i + 1}</div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-foreground">{comp.comp_name}</div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {comp.comp_year} · {comp.comp_round ? `Round ${comp.comp_round}` : 'UDFA'}
+                                                            {comp.comp_team ? ` · ${comp.comp_team}` : ''}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4 text-right">
+                                                    {comp.comp_w_av != null && (
+                                                        <div>
+                                                            <div className="text-[10px] text-muted-foreground uppercase">Career AV</div>
+                                                            <div className={`text-sm font-bold ${comp.comp_w_av >= 40 ? 'text-emerald-400' : comp.comp_w_av >= 15 ? 'text-cyan-400' : 'text-muted-foreground'}`}>
+                                                                {comp.comp_w_av}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <div className="text-[10px] text-muted-foreground uppercase">Similarity</div>
+                                                        <div className="text-sm font-bold text-foreground font-mono">{comp.similarity}%</div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

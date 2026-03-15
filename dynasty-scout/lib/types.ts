@@ -27,6 +27,9 @@ export interface Player {
     forty_yard?: number;
     sleeper_adp?: number;
     fantasypros_rank?: number;
+    recruiting_composite?: number;
+    recruiting_stars?: number;
+    recruiting_year?: number;
 }
 
 export interface CollegeCareer {
@@ -108,6 +111,8 @@ export interface Measurables {
     sparq_x?: number;
     ras?: number;
     bmi?: number;
+    hand_size?: number;
+    arm_length?: number;
 }
 
 export interface Ranking {

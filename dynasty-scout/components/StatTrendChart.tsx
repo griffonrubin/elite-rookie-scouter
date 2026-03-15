@@ -65,7 +65,7 @@ function CustomTooltip({ active, payload, label, position }: any) {
 }
 
 export function StatTrendChart({ stats, position }: Props) {
-    if (!stats || stats.length < 2) return null;
+    if (!stats || stats.length < 1) return null;
 
     // Build chart data sorted ascending by year
     const sorted = [...stats].sort((a, b) => a.season - b.season);

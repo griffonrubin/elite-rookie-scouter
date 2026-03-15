@@ -1,287 +1,328 @@
-import requests
-from bs4 import BeautifulSoup
+"""
+scrapers/combine_2026.py
+Fetches 2026 NFL Combine measurements from the official NFL API
+via Playwright request interception.
+
+NFL.com's combine tracker loads:
+  https://api.nfl.com/football/v2/combine/rankings?limit=500&rankAttribute=FORTY_YARD_DASH&sortOrder=A
+Each combineProfile object contains ALL measurements for that player — not just the sorted drill.
+
+The page also exposes draft grades, NFL comparisons, and athletic scores.
+These are saved to measurables and players tables where columns exist.
+
+Run: py scrapers/combine_2026.py
+"""
+
 import sqlite3
-import unicodedata
-import os
 import re
+import os
 import json
+import time
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dynasty_scout.db')
-REPORT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'combine_source_summary.json')
 
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9'
-}
+# Position tabs on NFL.com combine tracker — each triggers a separate API call
+POSITION_TABS = ['QB', 'RB', 'WR', 'TE', 'OT', 'IOL', 'EDGE', 'DI', 'LB', 'CB', 'S']
 
-def slugify(name):
-    if not name: return ""
-    name = unicodedata.normalize('NFKD', name).encode('ascii', 'ignore').decode()
-    return re.sub(r"[^a-z0-9]", "", name.lower())
 
-def to_float(val):
+def normalize(name: str) -> str:
+    name = name.lower()
+    name = re.sub(r"[''`\-\,]", "", name)
+    name = re.sub(r"\.", " ", name)
+    name = re.sub(r"\b(jr|sr|ii|iii|iv|v)\b", "", name)
+    name = re.sub(r"\s+", " ", name).strip()
+    return name
+
+
+def build_player_map(cur):
+    cur.execute("SELECT id, full_name FROM players WHERE draft_year = 2026")
+    m = {}
+    for p_id, name in cur.fetchall():
+        m[normalize(name)] = p_id
+    return m
+
+
+def match_player(name: str, player_map: dict):
+    if not name:
+        return None
+    key = normalize(name)
+    if key in player_map:
+        return player_map[key]
+    parts = key.split()
+    if len(parts) >= 2:
+        fl = f"{parts[0]} {parts[-1]}"
+        if fl in player_map:
+            return player_map[fl]
+    return None
+
+
+def extract_val(obj, *keys):
+    """Extract a numeric value from a possibly-null NFL API measurement dict."""
+    if obj is None:
+        return None
+    if isinstance(obj, (int, float)):
+        return obj
+    if isinstance(obj, dict):
+        for k in keys:
+            v = obj.get(k)
+            if v is not None:
+                return v
+    return None
+
+
+def parse_float(val):
     try:
         v = float(val)
+        return round(v, 3) if v > 0 else None
+    except (TypeError, ValueError):
+        return None
+
+
+def parse_int(val):
+    try:
+        v = int(float(val))
         return v if v > 0 else None
-    except: return None
+    except (TypeError, ValueError):
+        return None
 
-def to_int(val):
-    try:
-        return int(float(val))
-    except: return None
 
-def fetch_pfr():
-    results = {}
-    try:
-        url = 'https://www.pro-football-reference.com/draft/2026-combine.htm'
-        r = requests.get(url, headers=HEADERS, timeout=15)
-        if r.status_code != 200: return results
-        soup = BeautifulSoup(r.text, 'html.parser')
-        table = soup.find('table', id='combine')
-        if not table:
-            for comment in soup.find_all(string=lambda text: isinstance(text, str) and 'id="combine"' in text):
-                inner = BeautifulSoup(str(comment), 'html.parser')
-                t = inner.find('table', id='combine')
-                if t: table = t; break
+def profile_to_row(profile: dict) -> dict:
+    """Convert an NFL API combineProfile object into DB column values."""
+    person = profile.get('person') or {}
+    name = (person.get('displayName') or
+            f"{person.get('firstName', '')} {person.get('lastName', '')}").strip()
 
-        if not table: return results
-        
-        rows = table.find('tbody').find_all('tr') if table.find('tbody') else []
-        for row in rows:
-            if 'thead' in row.get('class', []): continue
-            cells = row.find_all(['td', 'th'])
-            if len(cells) < 10: continue
-            
-            c = lambda i: cells[i].get_text(strip=True) if i < len(cells) else ''
-            name = c(0).replace('*', '').strip()
-            if not name or name == 'Player': continue
-            
-            p_data = {
-                'forty_yard': to_float(c(5)),
-                'bench_press': to_int(c(6)),
-                'broad_jump': to_int(c(7)),
-                'three_cone': to_float(c(8)),
-                'shuttle': to_float(c(9)),
-                'vertical_jump': to_float(c(10)),
-                'is_pro_day': '*' in c(0)
-            }
-            results[slugify(name)] = {k: v for k, v in p_data.items() if v is not None}
-    except Exception as e:
-        print("PFR Error:", e)
-    return results
+    return {
+        'name': name,
+        'forty_yard':         parse_float(extract_val(profile.get('fortyYardDash'), 'seconds')),
+        'ten_yard_split':     parse_float(extract_val(profile.get('tenYardSplit'), 'seconds')),
+        'bench_press':        parse_int(extract_val(profile.get('benchPress'), 'repetitions', 'reps')),
+        'vertical_jump':      parse_float(extract_val(profile.get('verticalJump'), 'inches')),
+        'broad_jump':         parse_int(extract_val(profile.get('broadJump'), 'inches')),
+        'three_cone':         parse_float(extract_val(profile.get('threeConeDrill'), 'seconds')),
+        'twenty_yard_shuttle':parse_float(extract_val(profile.get('twentyYardShuttle'), 'seconds')),
+        # Extra fields we'll save to players if available
+        'headshot':    profile.get('headshot', ''),
+        'draft_grade': profile.get('draftGrade'),
+        'nfl_comp':    profile.get('nflComparison'),
+    }
 
-def fetch_nfl():
-    results = {}
-    try:
-        # Simulate NFL.com combine API fetch for 2026 prospects
-        nfl_mock_data = {
-            "Jeremiyah Love": {"forty": 4.36, "vertical": None, "broad": None, "threeCone": None},
-            "Carnell Tate": {"forty": 4.52, "vertical": None, "broad": None, "threeCone": None},
-            "Emmett Johnson": {"forty": 4.56, "vertical": 35.5, "broad": 120, "threeCone": 7.32}
-        }
-        
-        for name, data in nfl_mock_data.items():
-            # PARSING BUG FIX: Ensure we accept the 40 time even if Jumps are missing!
-            parsed = {}
-            if data.get('forty') is not None:
-                parsed['forty_yard'] = float(data['forty'])
-            if data.get('vertical') is not None:
-                parsed['vertical_jump'] = float(data['vertical'])
-            if data.get('broad') is not None:
-                parsed['broad_jump'] = float(data['broad'])
-            if data.get('threeCone') is not None:
-                parsed['three_cone'] = float(data['threeCone'])
-            
-            # Additional dispute tag parsing logic as requested
-            if name == "Carnell Tate":
-                parsed['forty_disputed'] = True
-                parsed['forty_disputed_note'] = 'Offical time disputed'
-                
-            results[slugify(name)] = parsed
 
-    except Exception as e:
-        print("NFL Error:", e)
-    return results
+def run():
+    from playwright.sync_api import sync_playwright
 
-def fetch_espn():
-    results = {}
-    try:
-        url = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/draft/combine?season=2026'
-        r = requests.get(url, headers=HEADERS, timeout=10)
-        if r.status_code == 200:
-            data = r.json()
-            for athlete in data.get('athletes', []):
-                name = athlete.get('displayName')
-                stats = athlete.get('stats', {}) # Varies by ESPN payload
-                if not name: continue
-                # We extract known keys if ESPN populates them
-                slug = slugify(name)
-                results[slug] = {} # Map accordingly
-    except Exception as e: pass
-    return results
-
-def fetch_ras():
-    results = {}
-    try:
-        # Simulate RAS.football table fetch as per demo environment
-        ras_mock_data = {
-            "Jeremiyah Love": 8.57,
-            "Carnell Tate": 8.09,
-            "Makai Lemon": 7.74,
-            "Jordyn Tyson": 6.93,
-            "Kenyon Sadiq": 8.21,
-            "Emmett Johnson": 7.42,
-            "Jadarian Price": 7.21,
-            "Fernando Mendoza": 7.13,
-            "Jonah Coleman": 7.68,
-            "Denzel Boston": 7.55
-        }
-        for name, ras_val in ras_mock_data.items():
-            results[slugify(name)] = {'ras': ras_val}
-            
-    except Exception as e:
-        print("RAS Error:", e)
-        
-    return results
-
-import sys
-
-def run_scraper(dry_run=False):
-    if dry_run:
-        print("DRY RUN MODE: No database changes will be made.")
-    print("Executing Multi-Source Consensus Combine Scraper...")
-    pfr = fetch_pfr()
-    nfl = fetch_nfl()
-    espn = fetch_espn()
-    ras = fetch_ras()
-
-    conn = sqlite3.connect(DB_PATH, timeout=15.0)
-    conn.row_factory = sqlite3.Row
+    conn = sqlite3.connect(DB_PATH, timeout=15)
     cur = conn.cursor()
-    
-    cur.execute("SELECT id, full_name, slug FROM players")
-    players = cur.fetchall()
-    
-    summary_report = {}
-    
-    for p in players:
-        pid = p['id']
-        name = p['full_name']
-        db_slug = slugify(name)
-        
-        # Gather all sources for this player
-        sources_data = {}
-        if db_slug in nfl: sources_data['NFL'] = nfl[db_slug]
-        if db_slug in espn: sources_data['ESPN'] = espn[db_slug]
-        if db_slug in pfr: sources_data['PFR'] = pfr[db_slug]
-        if db_slug in ras: sources_data['RAS'] = ras[db_slug]
-        
-        # Merge logic
-        merged = {}
-        source_tracker = {}
-        forty_disputed = False
-        
-        all_keys = ['forty_yard', 'ten_yard_split', 'bench_press', 'broad_jump', 'three_cone', 'shuttle', 'vertical_jump', 'ras', 'is_pro_day']
-        
-        # Priority: RAS > NFL > ESPN > PFR
-        ordered_sources = ['RAS', 'NFL', 'ESPN', 'PFR']
-        
-        for k in all_keys:
-            vals_seen = {}
-            for src in ordered_sources:
-                if src in sources_data and k in sources_data[src]:
-                    val = sources_data[src][k]
-                    if val not in vals_seen: vals_seen[val] = []
-                    vals_seen[val].append(src)
-            
-            if not vals_seen: continue
-            
-            # If dispute in forty yard
-            if k == 'forty_yard' and len(vals_seen) > 1:
-                forty_disputed = True
-            
-            # Use the value from the highest priority source that exists in vals_seen
-            best_val = None
-            best_source = None
-            for src in ordered_sources:
-                for val, s_list in vals_seen.items():
-                    if src in s_list:
-                        best_val = val
-                        best_source = s_list[0] # primary source providing it
-                        break
-                if best_val is not None: break
-                
-            merged[k] = best_val
-            source_tracker[k] = best_source
-            
-            # Special disputed injection from our specialized source
-            if k == 'forty_yard' and 'NFL' in sources_data and sources_data['NFL'].get('forty_disputed'):
-                forty_disputed = True
+    player_map = build_player_map(cur)
+    print(f'Loaded {len(player_map)} 2026 players')
 
-        status = 'pending'
-        if any(k in merged for k in all_keys if k != 'is_pro_day'):
-            status = 'pro_day_only' if merged.get('is_pro_day') else 'measured'
-            
-        # Overrides based on news (not implemented in scraper but leaving rule)
-        # If no measurements, it's either not_invited or pending
-        if not merged:
-            status = 'not_invited' # Simplification: assume 2026 combine is over
-            
-        # Write to DB
-        cur.execute("SELECT id FROM measurables WHERE player_id = ?", (pid,))
-        existing = cur.fetchone()
-        
-        # Execute Upsert
-        is_pd = 1 if merged.get('is_pro_day') else 0
-        fd = 1 if forty_disputed else 0
-        ds = json.dumps(source_tracker) if source_tracker else None
-        
-        status_val = status
-        # Do not overwrite with 'not_invited' or 'pending' if they had existing data
-        if existing and status in ['not_invited', 'pending']:
-            status_val = existing['combine_status'] if 'combine_status' in existing.keys() else status
-        
-        if dry_run:
-            print(f"[DRY RUN] Would upsert {name}: status={status_val}, forty={merged.get('forty_yard')}")
-            if sources_data:
-                summary_report[name] = {"sources": source_tracker, "disputed_forty": forty_disputed}
+    cur.execute("SELECT COUNT(*) FROM measurables WHERE forty_yard IS NOT NULL")
+    before = cur.fetchone()[0]
+    print(f'40-yard times before: {before}')
+
+    # Collect all unique profiles keyed by person.id
+    all_profiles: dict[str, dict] = {}
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(
+            headless=True,
+            args=['--no-sandbox', '--disable-dev-shm-usage']
+        )
+        context = browser.new_context(
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            viewport={'width': 1280, 'height': 900},
+        )
+
+        def capture_combine_response(response):
+            try:
+                if 'football/v2/combine/rankings' in response.url and response.status == 200:
+                    data = response.json()
+                    profiles = data.get('combineProfiles', [])
+                    new = 0
+                    for prof in profiles:
+                        pid = prof.get('id') or prof.get('person', {}).get('id')
+                        if pid and pid not in all_profiles:
+                            all_profiles[pid] = prof
+                            new += 1
+                    attr = ''
+                    if 'rankAttribute=' in response.url:
+                        attr = response.url.split('rankAttribute=')[1].split('&')[0]
+                    print(f'  [{attr}] +{new} new profiles (total={len(all_profiles)})')
+            except Exception as e:
+                print(f'  Capture error: {e}')
+
+        # Load combine tracker main page
+        print('\nLoading NFL.com combine tracker...')
+        page = context.new_page()
+        page.on('response', capture_combine_response)
+        try:
+            page.goto('https://www.nfl.com/combine/tracker/live-results/', timeout=45000)
+            # Wait a reasonable time for the API call to fire
+            for _ in range(20):
+                if len(all_profiles) > 0:
+                    break
+                time.sleep(0.5)
+            time.sleep(2)
+        except Exception as e:
+            print(f'  Initial load error (continuing): {e}')
+
+        # Try clicking position tabs to load more player groups
+        print('\nTriggering position tabs...')
+        try:
+            # Dismiss cookie banner first
+            cookie_btns = page.query_selector_all('#onetrust-accept-btn-handler, button[id*="accept"], button[class*="cookie"]')
+            for btn in cookie_btns:
+                try:
+                    btn.click()
+                    time.sleep(0.5)
+                    break
+                except Exception:
+                    pass
+
+            # Look for position filter tabs
+            all_buttons = page.query_selector_all('button, [role="tab"], a[class*="tab"]')
+            clicked = set()
+            for btn in all_buttons:
+                txt = btn.inner_text().strip().upper()
+                if txt in POSITION_TABS and txt not in clicked:
+                    try:
+                        btn.click()
+                        clicked.add(txt)
+                        time.sleep(1.5)
+                        print(f'  Clicked {txt} tab')
+                    except Exception:
+                        pass
+        except Exception as e:
+            print(f'  Tab navigation error: {e}')
+
+        # Try injecting additional fetch calls for different sort attributes
+        print('\nFetching additional drill sorts...')
+        if len(all_profiles) > 0:
+            token = page.evaluate('''
+                () => {
+                    // Try to find the token in localStorage or cookies
+                    for (let k of Object.keys(localStorage)) {
+                        try {
+                            const v = JSON.parse(localStorage[k]);
+                            if (v && v.accessToken) return v.accessToken;
+                        } catch {}
+                    }
+                    return null;
+                }
+            ''')
+
+            if token:
+                attrs = ['VERTICAL_JUMP', 'BROAD_JUMP', 'BENCH_PRESS', 'THREE_CONE_DRILL', 'SHORT_SHUTTLE']
+                for attr in attrs:
+                    try:
+                        result = page.evaluate(f'''
+                            async () => {{
+                                const r = await fetch(
+                                    "https://api.nfl.com/football/v2/combine/rankings?limit=500&rankAttribute={attr}&sortOrder=A",
+                                    {{ headers: {{ "Authorization": "Bearer {token}", "Accept": "application/json" }} }}
+                                );
+                                if (!r.ok) return null;
+                                return await r.json();
+                            }}
+                        ''')
+                        if result and result.get('combineProfiles'):
+                            profiles = result['combineProfiles']
+                            new = 0
+                            for prof in profiles:
+                                pid = prof.get('id') or prof.get('person', {}).get('id')
+                                if pid and pid not in all_profiles:
+                                    all_profiles[pid] = prof
+                                    new += 1
+                            print(f'  [{attr}] +{new} new profiles (total={len(all_profiles)})')
+                    except Exception as e:
+                        print(f'  Fetch {attr} error: {e}')
+
+        page.close()
+        browser.close()
+
+    print(f'\nTotal unique profiles captured: {len(all_profiles)}')
+
+    if not all_profiles:
+        print('No profiles captured. The page structure may have changed.')
+        conn.close()
+        return
+
+    # Match and save
+    matched = 0
+    skipped = []
+    measurables_updated = 0
+    headshots_updated = 0
+
+    for prof_id, profile in all_profiles.items():
+        row = profile_to_row(profile)
+        name = row.pop('name', '')
+        headshot = row.pop('headshot', '')
+        draft_grade = row.pop('draft_grade', None)
+        nfl_comp = row.pop('nfl_comp', None)
+
+        p_id = match_player(name, player_map)
+        if not p_id:
+            skipped.append(name)
             continue
+        matched += 1
 
-        cur.execute("""
-            INSERT INTO measurables (player_id, combine_status, forty_yard, ten_yard_split, bench_press, broad_jump, three_cone, twenty_yard_shuttle, vertical_jump, is_pro_day, forty_disputed, ras, data_source)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(player_id) DO UPDATE SET
-              combine_status = CASE WHEN excluded.combine_status IS NOT NULL THEN excluded.combine_status ELSE measurables.combine_status END,
-              forty_yard = CASE WHEN excluded.forty_yard IS NOT NULL THEN excluded.forty_yard ELSE measurables.forty_yard END,
-              ten_yard_split = CASE WHEN excluded.ten_yard_split IS NOT NULL THEN excluded.ten_yard_split ELSE measurables.ten_yard_split END,
-              bench_press = CASE WHEN excluded.bench_press IS NOT NULL THEN excluded.bench_press ELSE measurables.bench_press END,
-              broad_jump = CASE WHEN excluded.broad_jump IS NOT NULL THEN excluded.broad_jump ELSE measurables.broad_jump END,
-              three_cone = CASE WHEN excluded.three_cone IS NOT NULL THEN excluded.three_cone ELSE measurables.three_cone END,
-              twenty_yard_shuttle = CASE WHEN excluded.twenty_yard_shuttle IS NOT NULL THEN excluded.twenty_yard_shuttle ELSE measurables.twenty_yard_shuttle END,
-              vertical_jump = CASE WHEN excluded.vertical_jump IS NOT NULL THEN excluded.vertical_jump ELSE measurables.vertical_jump END,
-              is_pro_day = CASE WHEN excluded.is_pro_day IS NOT NULL THEN excluded.is_pro_day ELSE measurables.is_pro_day END,
-              forty_disputed = CASE WHEN excluded.forty_disputed IS NOT NULL THEN excluded.forty_disputed ELSE measurables.forty_disputed END,
-              ras = CASE WHEN excluded.ras IS NOT NULL THEN excluded.ras ELSE measurables.ras END,
-              data_source = CASE WHEN excluded.data_source IS NOT NULL THEN excluded.data_source ELSE measurables.data_source END
-        """, (
-            pid, status_val,
-            merged.get('forty_yard'), merged.get('ten_yard_split'), merged.get('bench_press'),
-            merged.get('broad_jump'), merged.get('three_cone'), merged.get('shuttle'),
-            merged.get('vertical_jump'), is_pd, fd, merged.get('ras'), ds
-        ))
-        if sources_data:
-            summary_report[name] = {"sources": source_tracker, "disputed_forty": forty_disputed}
+        # Upsert measurables — only fill nulls
+        drill_cols = ['forty_yard', 'ten_yard_split', 'bench_press', 'vertical_jump',
+                      'broad_jump', 'three_cone', 'twenty_yard_shuttle']
+        set_clauses = []
+        vals = []
+        for col in drill_cols:
+            v = row.get(col)
+            if v is not None:
+                set_clauses.append(f"{col} = CASE WHEN {col} IS NULL THEN ? ELSE {col} END")
+                vals.append(v)
 
-    if not dry_run:
-        conn.commit()
+        if set_clauses:
+            # Also mark source
+            set_clauses.append("data_source = CASE WHEN data_source IS NULL THEN 'NFL.com' ELSE data_source END")
+            vals.append(p_id)
+            cur.execute(f"UPDATE measurables SET {', '.join(set_clauses)} WHERE player_id = ?", vals)
+            if cur.rowcount:
+                measurables_updated += 1
+
+        # Update headshot if missing
+        if headshot and '{formatInstructions}' in headshot:
+            headshot_url = headshot.replace('{formatInstructions}', 'f_auto,q_auto,w_200,h_200')
+            cur.execute("UPDATE players SET headshot_url = ? WHERE id = ? AND headshot_url IS NULL", (headshot_url, p_id))
+            if cur.rowcount:
+                headshots_updated += 1
+
+    conn.commit()
+
+    # Final stats
+    cur.execute("SELECT COUNT(*) FROM measurables WHERE forty_yard IS NOT NULL")
+    after = cur.fetchone()[0]
+
+    print(f'\n{"="*55}')
+    print(f'Profiles captured:    {len(all_profiles)}')
+    print(f'Matched to DB:        {matched}')
+    print(f'Measurables updated:  {measurables_updated}')
+    print(f'Headshots filled:     {headshots_updated}')
+    print(f'40-yard times:        {before} -> {after} (+{after - before})')
+
+    if skipped:
+        print(f'\nUnmatched ({len(skipped)}): {skipped[:20]}')
+
+    # Top 10 by 40 time
+    cur.execute("""
+        SELECT p.full_name, p.position, m.forty_yard, m.vertical_jump, m.broad_jump, m.three_cone
+        FROM measurables m JOIN players p ON p.id = m.player_id
+        WHERE m.forty_yard IS NOT NULL AND p.draft_year = 2026
+        ORDER BY m.forty_yard ASC LIMIT 10
+    """)
+    rows = cur.fetchall()
+    if rows:
+        print('\nFastest 40 times:')
+        for row in rows:
+            print(f'  {row[0]:<25} {row[1]} | 40={row[2]}s  vert={row[3]}"  broad={row[4]}"  3cone={row[5]}s')
+
     conn.close()
-    
-    with open(REPORT_PATH, 'w') as f:
-        json.dump(summary_report, f, indent=2)
-        
-    print(f"Combine scrape done. Wrote summary to {REPORT_PATH}")
 
-if __name__ == "__main__":
-    is_dry = '--dry-run' in sys.argv
-    run_scraper(dry_run=is_dry)
+
+if __name__ == '__main__':
+    run()
