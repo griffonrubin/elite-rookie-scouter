@@ -190,6 +190,9 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                         {player.age_at_draft && (
                             <><span className="opacity-40">•</span><span className="whitespace-nowrap">Age {player.age_at_draft}</span></>
                         )}
+                        {(player.height_inches || player.weight_lbs) && (
+                            <><span className="opacity-40">•</span><span className="whitespace-nowrap font-mono">{ht}{player.weight_lbs ? ` ${player.weight_lbs}` : ''}</span></>
+                        )}
                     </div>
                 </div>
 
