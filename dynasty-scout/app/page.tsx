@@ -50,15 +50,15 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
         (SELECT COALESCE(SUM(completions),0) FROM college_stats WHERE player_id = p.id) as career_completions,
         (SELECT COALESCE(SUM(rush_yards),0) + COALESCE(SUM(rec_yards),0) FROM college_stats WHERE player_id = p.id) as career_scrim_yards,
         (SELECT COALESCE(SUM(games_played),0) FROM college_stats WHERE player_id = p.id) as career_games_cs,
-        (SELECT ROUND(CAST(pass_yards AS REAL) / NULLIF(games_played, 0), 1)
+        (SELECT ROUND(CAST(pass_yards AS NUMERIC) / NULLIF(games_played, 0), 1)
          FROM college_stats WHERE player_id = p.id AND pass_yards > 0
-         ORDER BY CAST(pass_yards AS REAL) / NULLIF(games_played, 0) DESC LIMIT 1) as best_pass_ypg,
-        (SELECT ROUND(CAST(rec_yards AS REAL) / NULLIF(receptions, 0), 1)
+         ORDER BY CAST(pass_yards AS NUMERIC) / NULLIF(games_played, 0) DESC LIMIT 1) as best_pass_ypg,
+        (SELECT ROUND(CAST(rec_yards AS NUMERIC) / NULLIF(receptions, 0), 1)
          FROM college_stats WHERE player_id = p.id AND receptions > 5
-         ORDER BY CAST(rec_yards AS REAL) / NULLIF(receptions, 0) DESC LIMIT 1) as best_ypr,
-        (SELECT ROUND(CAST(rush_yards AS REAL) / NULLIF(rush_attempts, 0), 2)
+         ORDER BY CAST(rec_yards AS NUMERIC) / NULLIF(receptions, 0) DESC LIMIT 1) as best_ypr,
+        (SELECT ROUND(CAST(rush_yards AS NUMERIC) / NULLIF(rush_attempts, 0), 2)
          FROM college_stats WHERE player_id = p.id AND rush_attempts > 20
-         ORDER BY CAST(rush_yards AS REAL) / NULLIF(rush_attempts, 0) DESC LIMIT 1) as best_ypc
+         ORDER BY CAST(rush_yards AS NUMERIC) / NULLIF(rush_attempts, 0) DESC LIMIT 1) as best_ypc
       FROM players p
       LEFT JOIN measurables m ON p.id = m.player_id
       LEFT JOIN consensus_rankings c ON p.id = c.player_id
