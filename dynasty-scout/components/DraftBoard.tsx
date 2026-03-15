@@ -70,7 +70,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     }), [players]);
 
     // Higher = better for these — default to desc when first clicked
-    const DEFAULT_DESC: SortKey[] = ['ras', 'height', 'arm', 'hand', 'stars', 'spd'];
+    const DEFAULT_DESC: SortKey[] = ['ras', 'height', 'arm', 'hand', 'stars', 'spd', 'dom', 'scrim_ypg', 'pass_ypg', 'comp_pct', 'ypa', 'ypr', 'ypc'];
 
     function handleSort(key: SortKey) {
         if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -91,13 +91,23 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 case 'fp':     va = (a as any).fantasypros_rank   ?? MISS; vb = (b as any).fantasypros_rank   ?? MISS; break;
                 case 'fc':     va = (a as any).fantasycalc_rank   ?? MISS; vb = (b as any).fantasycalc_rank   ?? MISS; break;
                 case 'dn':     va = (a as any).dynasty_nerds_rank ?? MISS; vb = (b as any).dynasty_nerds_rank ?? MISS; break;
-                case 'forty':  va = (a as any).forty_yard         ?? MISS; vb = (b as any).forty_yard         ?? MISS; break;
-                case 'spd':    va = (a as any).speed_score        ?? MISS; vb = (b as any).speed_score        ?? MISS; break;
-                case 'ras':    va = (a as any).ras                ?? MISS; vb = (b as any).ras                ?? MISS; break;
-                case 'height': va = (a as any).height_inches      ?? MISS; vb = (b as any).height_inches      ?? MISS; break;
-                case 'arm':    va = (a as any).arm_length         ?? MISS; vb = (b as any).arm_length         ?? MISS; break;
-                case 'hand':   va = (a as any).hand_size          ?? MISS; vb = (b as any).hand_size          ?? MISS; break;
-                case 'stars':  va = (a as any).recruiting_stars   ?? MISS; vb = (b as any).recruiting_stars   ?? MISS; break;
+                case 'forty':    va = (a as any).forty_yard         ?? MISS; vb = (b as any).forty_yard         ?? MISS; break;
+                case 'spd':      va = (a as any).speed_score        ?? MISS; vb = (b as any).speed_score        ?? MISS; break;
+                case 'ras':      va = (a as any).ras                ?? MISS; vb = (b as any).ras                ?? MISS; break;
+                case 'height':   va = (a as any).height_inches      ?? MISS; vb = (b as any).height_inches      ?? MISS; break;
+                case 'arm':      va = (a as any).arm_length         ?? MISS; vb = (b as any).arm_length         ?? MISS; break;
+                case 'hand':     va = (a as any).hand_size          ?? MISS; vb = (b as any).hand_size          ?? MISS; break;
+                case 'stars':    va = (a as any).recruiting_stars   ?? MISS; vb = (b as any).recruiting_stars   ?? MISS; break;
+                case 'dom':      va = (a as any).best_dominator     ?? MISS; vb = (b as any).best_dominator     ?? MISS; break;
+                case 'pass_ypg': va = (a as any).best_pass_ypg      ?? MISS; vb = (b as any).best_pass_ypg      ?? MISS; break;
+                case 'comp_pct': va = (a as any).career_pass_att > 0 ? (a as any).career_completions / (a as any).career_pass_att : MISS;
+                                 vb = (b as any).career_pass_att > 0 ? (b as any).career_completions / (b as any).career_pass_att : MISS; break;
+                case 'ypa':      va = (a as any).career_pass_att > 0 ? (a as any).career_pass_yards / (a as any).career_pass_att : MISS;
+                                 vb = (b as any).career_pass_att > 0 ? (b as any).career_pass_yards / (b as any).career_pass_att : MISS; break;
+                case 'scrim_ypg':va = (a as any).career_games_cs > 0 ? (a as any).career_scrim_yards / (a as any).career_games_cs : MISS;
+                                 vb = (b as any).career_games_cs > 0 ? (b as any).career_scrim_yards / (b as any).career_games_cs : MISS; break;
+                case 'ypr':      va = (a as any).best_ypr           ?? MISS; vb = (b as any).best_ypr           ?? MISS; break;
+                case 'ypc':      va = (a as any).best_ypc           ?? MISS; vb = (b as any).best_ypc           ?? MISS; break;
                 case 'rank':
                 default:       va = (a as any).consensus_rank     ?? MISS; vb = (b as any).consensus_rank     ?? MISS;
             }
@@ -147,7 +157,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir(DEFAULT_DESC.includes(v as SortKey) ? 'desc' : 'asc'); }}>
                             <SelectTrigger className="w-[140px] h-9 bg-card border-border/60 text-xs px-3">
                                 <SelectValue>
-                                    {{ rank: 'Consensus', ktc: 'KTC', sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FantasyCalc', dn: 'DynNerds', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit ★', proj: 'Proj Pick' }[sortKey] ?? 'Consensus'}
+                                    {{ rank: 'Consensus', ktc: 'KTC', sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FantasyCalc', dn: 'DynNerds', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit ★', proj: 'Proj Pick', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC' }[sortKey] ?? 'Consensus'}
                                 </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
@@ -163,6 +173,13 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 <SelectItem value="arm">Arm Length</SelectItem>
                                 <SelectItem value="hand">Hand Size</SelectItem>
                                 <SelectItem value="stars">Recruit Stars</SelectItem>
+                                <SelectItem value="dom">Dominator %</SelectItem>
+                                <SelectItem value="scrim_ypg">Scrim Yds/G</SelectItem>
+                                <SelectItem value="pass_ypg">Pass Yds/G</SelectItem>
+                                <SelectItem value="comp_pct">Comp %</SelectItem>
+                                <SelectItem value="ypa">Yds/Attempt</SelectItem>
+                                <SelectItem value="ypr">Yds/Reception</SelectItem>
+                                <SelectItem value="ypc">Yds/Carry</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -250,7 +267,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                             {colDefs.map((col, i) => (
                                 <div
                                     key={col.key}
-                                    className={`flex items-center min-h-[40px] ${i === 0 ? 'border-l border-border/30 pl-3' : 'justify-center'}`}
+                                    className={`flex items-center justify-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''}`}
                                 >
                                     {col.sortKey ? (
                                         <button

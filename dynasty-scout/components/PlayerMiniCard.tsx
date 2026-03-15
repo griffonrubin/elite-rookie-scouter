@@ -79,7 +79,7 @@ function StatVal({ val, highlight }: { val: string | number | null | undefined; 
     const display = val != null && val !== '' ? String(val) : '—';
     const empty   = display === '—';
     return (
-        <span className={`font-mono font-bold text-sm ${empty ? 'text-muted-foreground/30' : (highlight || 'text-foreground/80')}`}>
+        <span className={`font-mono font-bold text-xs ${empty ? 'text-muted-foreground/30' : (highlight || 'text-foreground/80')}`}>
             {display}
         </span>
     );
@@ -88,7 +88,7 @@ function StatVal({ val, highlight }: { val: string | number | null | undefined; 
 function RecruitStars({ stars }: { stars: number | null | undefined }) {
     if (!stars) return <StatVal val={null} />;
     const color = stars >= 5 ? 'text-yellow-400' : stars >= 4 ? 'text-yellow-300/80' : 'text-muted-foreground/60';
-    return <span className={`text-sm font-bold ${color}`}>{'★'.repeat(stars)}</span>;
+    return <span className={`text-xs font-bold ${color}`}>{'★'.repeat(stars)}</span>;
 }
 
 export function PlayerMiniCard({ player, ranking, period, index, positionFilter = 'ALL' }: PlayerMiniCardProps) {
@@ -128,30 +128,30 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
 
             case 'forty':
                 return fortyYard
-                    ? <span className={`font-mono font-bold text-sm ${getFortyColor(fortyYard, player.position)}`}>{fortyYard.toFixed(2)}s</span>
+                    ? <span className={`font-mono font-bold text-xs ${getFortyColor(fortyYard, player.position)}`}>{fortyYard.toFixed(2)}s</span>
                     : <StatVal val={null} />;
 
             case 'spd': {
                 const ss = p.speed_score as number | null | undefined;
                 return ss
-                    ? <span className={`font-mono font-bold text-sm ${getSpeedScoreColor(Number(ss), player.position)}`}>{Math.round(Number(ss))}</span>
+                    ? <span className={`font-mono font-bold text-xs ${getSpeedScoreColor(Number(ss), player.position)}`}>{Math.round(Number(ss))}</span>
                     : <StatVal val={null} />;
             }
 
             case 'ras':
-                return <StatVal val={p.ras ? Number(p.ras).toFixed(1) : null} highlight="text-purple-400 font-bold" />;
+                return <span className={`font-mono font-bold text-xs ${p.ras ? 'text-purple-400' : 'text-muted-foreground/30'}`}>{p.ras ? Number(p.ras).toFixed(1) : '—'}</span>;
 
             case 'arm': {
                 const av = p.arm_length as number | null | undefined;
                 return av
-                    ? <span className={`font-mono font-bold text-sm ${getArmColor(Number(av), player.position)}`}>{Number(av).toFixed(2)}"</span>
+                    ? <span className={`font-mono font-bold text-xs ${getArmColor(Number(av), player.position)}`}>{Number(av).toFixed(1)}"</span>
                     : <StatVal val={null} />;
             }
 
             case 'hand': {
                 const hv = p.hand_size as number | null | undefined;
                 return hv
-                    ? <span className={`font-mono font-bold text-sm ${getHandColor(Number(hv), player.position)}`}>{Number(hv).toFixed(2)}"</span>
+                    ? <span className={`font-mono font-bold text-xs ${getHandColor(Number(hv), player.position)}`}>{Number(hv).toFixed(1)}"</span>
                     : <StatVal val={null} />;
             }
 
@@ -193,8 +193,11 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
 
             // ── Position-specific stats ────────────────────────────────────────
             case 'career_pass_yards': return <StatVal val={p.career_pass_yards > 0 ? Number(p.career_pass_yards).toLocaleString() : null} />;
+            case 'best_pass_ypg':     return <StatVal val={p.best_pass_ypg != null ? `${Number(p.best_pass_ypg).toFixed(1)}` : null} highlight="text-cyan-400 font-bold" />;
             case 'comp_pct':          return <StatVal val={compPct} />;
             case 'ypa':               return <StatVal val={ypa} />;
+            case 'best_ypr':          return <StatVal val={p.best_ypr != null ? Number(p.best_ypr).toFixed(1) : null} highlight={p.best_ypr >= 16 ? 'text-emerald-400 font-bold' : p.best_ypr >= 12 ? 'text-cyan-400' : undefined} />;
+            case 'best_ypc':          return <StatVal val={p.best_ypc != null ? Number(p.best_ypc).toFixed(2) : null} highlight={p.best_ypc >= 6.5 ? 'text-emerald-400 font-bold' : p.best_ypc >= 5.5 ? 'text-cyan-400' : undefined} />;
             case 'breakout_age':      return <StatVal val={p.breakout_age ? Number(p.breakout_age).toFixed(1) : null} highlight={p.breakout_age && p.breakout_age <= 19 ? 'text-emerald-400 font-extrabold' : p.breakout_age <= 20 ? 'text-cyan-400 font-bold' : undefined} />;
             case 'best_dominator':    return <StatVal val={domPct} highlight={p.best_dominator >= 30 ? 'text-emerald-400 font-bold' : p.best_dominator >= 20 ? 'text-cyan-400' : undefined} />;
             case 'scrim_ypg':         return <StatVal val={scrimYpg} />;
@@ -246,11 +249,7 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                     {colDefs.map((col, i) => (
                         <div
                             key={col.key}
-                            className={`flex items-center min-h-[36px] overflow-hidden ${
-                                i === 0
-                                    ? 'border-l border-border/30 pl-3'
-                                    : 'justify-center'
-                            }`}
+                            className={`flex items-center justify-center min-h-[36px] overflow-hidden ${i === 0 ? 'border-l border-border/30' : ''}`}
                         >
                             {renderCell(col)}
                         </div>

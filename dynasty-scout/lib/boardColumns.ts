@@ -4,7 +4,8 @@
 
 export type SortKey =
     | 'rank' | 'ktc' | 'sleeper' | 'fp' | 'fc' | 'dn' | 'proj'
-    | 'forty' | 'spd' | 'ras' | 'height' | 'arm' | 'hand' | 'stars';
+    | 'forty' | 'spd' | 'ras' | 'height' | 'arm' | 'hand' | 'stars'
+    | 'dom' | 'scrim_ypg' | 'pass_ypg' | 'comp_pct' | 'ypa' | 'ypr' | 'ypc';
 
 export interface ColDef {
     key: string;
@@ -30,25 +31,27 @@ const TIER:  ColDef = { key: 'tier',  label: 'Tier'                             
 export function getColDefs(pos: string): ColDef[] {
     if (pos === 'QB') return [
         FORTY, SPD, RAS, STARS,
-        { key: 'career_pass_yards', label: 'Pass Yds', subLabel: 'Career' },
-        { key: 'comp_pct',          label: 'Comp%',    subLabel: 'Career' },
-        { key: 'ypa',               label: 'YPA',      subLabel: 'Career' },
+        { key: 'best_pass_ypg', label: 'Pass/G',  subLabel: 'Best',   sortKey: 'pass_ypg' },
+        { key: 'comp_pct',      label: 'Comp%',   subLabel: 'Career', sortKey: 'comp_pct' },
+        { key: 'ypa',           label: 'YPA',     subLabel: 'Career', sortKey: 'ypa'      },
         FP, KTC, TIER,
     ]; // 10 cols
 
     if (pos === 'RB') return [
         FORTY, SPD, RAS, STARS,
-        { key: 'best_dominator', label: 'Dom%',    subLabel: 'Best' },
-        { key: 'scrim_ypg',      label: 'Scrim/G', subLabel: 'Career' },
+        { key: 'best_dominator', label: 'Dom%',    subLabel: 'Best',   sortKey: 'dom'      },
+        { key: 'scrim_ypg',      label: 'Scrim/G', subLabel: 'Career', sortKey: 'scrim_ypg'},
+        { key: 'best_ypc',       label: 'YPC',     subLabel: 'Best',   sortKey: 'ypc'      },
         FP, KTC, TIER,
-    ]; // 9 cols
+    ]; // 10 cols
 
     if (pos === 'WR' || pos === 'TE') return [
         FORTY, SPD, RAS, STARS,
-        { key: 'best_dominator', label: 'Dom%',    subLabel: 'Best' },
-        { key: 'scrim_ypg',      label: 'Scrim/G', subLabel: 'Career' },
+        { key: 'best_dominator', label: 'Dom%',    subLabel: 'Best',   sortKey: 'dom'      },
+        { key: 'scrim_ypg',      label: 'Scrim/G', subLabel: 'Career', sortKey: 'scrim_ypg'},
+        { key: 'best_ypr',       label: 'Yds/Rec', subLabel: 'Best',   sortKey: 'ypr'      },
         FP, KTC, TIER,
-    ]; // 9 cols
+    ]; // 10 cols
 
     // ALL — full measurables + four ranking sources
     return [FORTY, SPD, RAS, ARM, HAND, STARS, FP, KTC, FC, DN, TIER]; // 11 cols
@@ -58,12 +61,12 @@ export function getColDefs(pos: string): ColDef[] {
 export function getGridTemplate(pos: string): string {
     if (pos === 'ALL') {
         // 11 cols — measurables tight on left, ranking cols right
-        return '0.65fr 0.65fr 0.65fr 0.65fr 0.65fr 0.65fr 0.8fr 0.8fr 0.8fr 0.8fr 1fr';
+        return '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.55fr 0.85fr 0.85fr 0.85fr 0.85fr 1fr';
     }
     if (pos === 'QB') {
         // 10 cols
-        return '0.65fr 0.65fr 0.65fr 0.65fr 1fr 0.85fr 0.7fr 0.8fr 0.8fr 1fr';
+        return '0.65fr 0.65fr 0.65fr 0.65fr 0.9fr 0.8fr 0.7fr 0.8fr 0.8fr 1fr';
     }
-    // RB / WR / TE — 9 cols
-    return '0.65fr 0.65fr 0.65fr 0.65fr 0.9fr 1fr 0.8fr 0.8fr 1fr';
+    // RB / WR / TE — 10 cols
+    return '0.65fr 0.65fr 0.65fr 0.65fr 0.75fr 0.85fr 0.65fr 0.8fr 0.8fr 1fr';
 }
