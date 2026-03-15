@@ -38,6 +38,7 @@ async function getPlayerData(slug: string) {
             p.id, p.slug, p.full_name, p.first_name, p.last_name,
             p.position, p.dob, p.age_at_draft, p.height_inches, p.weight_lbs,
             p.star_rating, p.draft_year, p.headshot_url, p.nfl_team,
+            p.breakout_age, p.breakout_year, p.recruiting_stars,
             COALESCE(
                 (SELECT school FROM college_career WHERE player_id = p.id ORDER BY id DESC LIMIT 1),
                 p.nfl_team
@@ -56,6 +57,20 @@ async function getPlayerData(slug: string) {
     `, [slug]);
 
     if (!player) return null;
+
+    // Best-season dominator rating and market share
+    const bestDominator = await queryOne<any>(
+        `SELECT dominator_rating, market_share, season
+         FROM college_stats WHERE player_id = $1 AND dominator_rating IS NOT NULL
+         ORDER BY dominator_rating DESC LIMIT 1`,
+        [player.id]
+    ).catch(() => null);
+
+    if (bestDominator) {
+        player.best_dominator = bestDominator.dominator_rating;
+        player.best_market_share = bestDominator.market_share;
+        player.best_dom_season = bestDominator.season;
+    }
 
     const stats = await query<any>(
         `SELECT * FROM (
@@ -200,7 +215,7 @@ export default async function ComparePage({ searchParams }: Props) {
                         rows={[
                             { label: 'School', a: playerA.school || '—', b: playerB.school || '—' },
                             { label: 'Age at Draft', a: playerA.age_at_draft ? `${playerA.age_at_draft}` : '—', b: playerB.age_at_draft ? `${playerB.age_at_draft}` : '—', numA: playerA.age_at_draft, numB: playerB.age_at_draft, lowerWins: true },
-                            { label: 'Star Rating', a: playerA.star_rating ? `${playerA.star_rating}★` : '—', b: playerB.star_rating ? `${playerB.star_rating}★` : '—', numA: playerA.star_rating, numB: playerB.star_rating, lowerWins: false },
+                            { label: 'Recruit Stars', a: playerA.recruiting_stars ? `${'★'.repeat(playerA.recruiting_stars)}` : '—', b: playerB.recruiting_stars ? `${'★'.repeat(playerB.recruiting_stars)}` : '—', numA: playerA.recruiting_stars, numB: playerB.recruiting_stars, lowerWins: false },
                         ]}
                     />
                 </div>
@@ -262,10 +277,6 @@ function buildAdvancedMetrics(playerA: any, playerB: any) {
 
     const rows: any[] = [];
 
-    // WR / RB Dominator
-    const estDomA = sa?.rec_yards && sa?.games_played ? (sa.rec_yards / ((sa.rec_yards / sa.games_played) * sa.games_played * 3.5) * 100).toFixed(1) + '%' : '—';
-    const estDomB = sb?.rec_yards && sb?.games_played ? (sb.rec_yards / ((sb.rec_yards / sb.games_played) * sb.games_played * 3.5) * 100).toFixed(1) + '%' : '—';
-
     // Rushing YPC (RB)
     const ypcA = sa?.rush_attempts > 0 ? (sa.rush_yards / sa.rush_attempts).toFixed(1) : '—';
     const ypcB = sb?.rush_attempts > 0 ? (sb.rush_yards / sb.rush_attempts).toFixed(1) : '—';
@@ -278,10 +289,8 @@ function buildAdvancedMetrics(playerA: any, playerB: any) {
     if (posA === 'QB' && posB === 'QB') {
         const tdIntA = sa?.interceptions > 0 ? (sa.pass_tds / sa.interceptions).toFixed(1) : (sa?.pass_tds ? sa.pass_tds : '—');
         const tdIntB = sb?.interceptions > 0 ? (sb.pass_tds / sb.interceptions).toFixed(1) : (sb?.pass_tds ? sb.pass_tds : '—');
-
         const ypaA = sa?.pass_attempts > 0 ? (sa.pass_yards / sa.pass_attempts).toFixed(1) : '—';
         const ypaB = sb?.pass_attempts > 0 ? (sb.pass_yards / sb.pass_attempts).toFixed(1) : '—';
-
         rows.push({ label: 'Yards Per Attempt', a: ypaA, b: ypaB, numA: parseFloat(ypaA) || null, numB: parseFloat(ypaB) || null, lowerWins: false });
         rows.push({ label: 'TD:INT Ratio', a: tdIntA, b: tdIntB, numA: parseFloat(tdIntA) || null, numB: parseFloat(tdIntB) || null, lowerWins: false });
     }
@@ -291,8 +300,22 @@ function buildAdvancedMetrics(playerA: any, playerB: any) {
         rows.push({ label: 'Scrim Yds/Game', a: scrimA, b: scrimB, numA: parseFloat(scrimA) || null, numB: parseFloat(scrimB) || null, lowerWins: false });
     }
 
-    if (posA === 'WR' || posB === 'WR' || posA === 'TE' || posB === 'TE') {
-        rows.push({ label: 'Est. Dominator', a: estDomA, b: estDomB, lowerWins: false });
+    // Best-season Dominator Rating (from DB)
+    const domA = playerA.best_dominator != null ? `${playerA.best_dominator.toFixed(1)}%` : '—';
+    const domB = playerB.best_dominator != null ? `${playerB.best_dominator.toFixed(1)}%` : '—';
+    const mktA = playerA.best_market_share != null ? `${playerA.best_market_share.toFixed(1)}%` : '—';
+    const mktB = playerB.best_market_share != null ? `${playerB.best_market_share.toFixed(1)}%` : '—';
+
+    if (posA !== 'QB' || posB !== 'QB') {
+        rows.push({ label: 'Dominator Rtg', a: domA, b: domB, numA: playerA.best_dominator ?? null, numB: playerB.best_dominator ?? null, lowerWins: false });
+        rows.push({ label: 'Market Share', a: mktA, b: mktB, numA: playerA.best_market_share ?? null, numB: playerB.best_market_share ?? null, lowerWins: false });
+    }
+
+    // Breakout Age
+    const baA = playerA.breakout_age != null ? `${playerA.breakout_age} (${playerA.breakout_year})` : '—';
+    const baB = playerB.breakout_age != null ? `${playerB.breakout_age} (${playerB.breakout_year})` : '—';
+    if (posA !== 'QB' || posB !== 'QB') {
+        rows.push({ label: 'Breakout Age', a: baA, b: baB, numA: playerA.breakout_age ?? null, numB: playerB.breakout_age ?? null, lowerWins: true });
     }
 
     return rows;

@@ -52,10 +52,14 @@ def ensure_pg_schema(pg):
         # college_stats
         "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS epa_per_play REAL",
         "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS sp_rating REAL",
+        "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS dominator_rating REAL",
+        "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS market_share REAL",
         # players
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS recruiting_composite REAL",
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS recruiting_stars INTEGER",
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS recruiting_year INTEGER",
+        "ALTER TABLE players ADD COLUMN IF NOT EXISTS breakout_age REAL",
+        "ALTER TABLE players ADD COLUMN IF NOT EXISTS breakout_year INTEGER",
         # historical_comps table
         """
         CREATE TABLE IF NOT EXISTS historical_comps (
@@ -168,6 +172,59 @@ def sync_college_stats_analytics(pg, sq):
 
     pg.commit()
     print(f"College stats analytics: {updated} rows updated")
+
+
+# ── Sync advanced metrics (dominator, market share) ───────────────────────
+
+def sync_advanced_metrics(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    rows = cur_sq.execute("""
+        SELECT cs.player_id, cs.season, cs.dominator_rating, cs.market_share
+        FROM college_stats cs
+        JOIN players p ON p.id = cs.player_id
+        WHERE p.draft_year = 2026
+          AND (cs.dominator_rating IS NOT NULL OR cs.market_share IS NOT NULL)
+    """).fetchall()
+
+    updated = 0
+    for r in rows:
+        cur_pg.execute("""
+            UPDATE college_stats
+            SET dominator_rating = COALESCE(dominator_rating, %s),
+                market_share     = COALESCE(market_share, %s)
+            WHERE player_id = %s AND season = %s
+        """, (r["dominator_rating"], r["market_share"], r["player_id"], r["season"]))
+        updated += cur_pg.rowcount
+
+    pg.commit()
+    print(f"Advanced metrics (dominator/market share): {updated} rows updated")
+
+
+def sync_breakout_age(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    rows = cur_sq.execute("""
+        SELECT id, breakout_age, breakout_year
+        FROM players
+        WHERE draft_year = 2026
+          AND breakout_age IS NOT NULL
+    """).fetchall()
+
+    updated = 0
+    for r in rows:
+        cur_pg.execute("""
+            UPDATE players SET
+                breakout_age  = COALESCE(breakout_age, %s),
+                breakout_year = COALESCE(breakout_year, %s)
+            WHERE id = %s
+        """, (r["breakout_age"], r["breakout_year"], r["id"]))
+        updated += cur_pg.rowcount
+
+    pg.commit()
+    print(f"Breakout age: {updated} players updated")
 
 
 # ── Sync player recruiting fields ─────────────────────────────────────────
@@ -289,6 +346,12 @@ def run():
 
     print("\n[3/6] Syncing college stats (EPA/SP+)...")
     sync_college_stats_analytics(pg, sq)
+
+    print("\n[3b] Syncing advanced metrics (dominator/market share)...")
+    sync_advanced_metrics(pg, sq)
+
+    print("\n[3c] Syncing breakout age...")
+    sync_breakout_age(pg, sq)
 
     print("\n[4/6] Syncing player recruiting + headshots...")
     sync_player_recruiting(pg, sq)

@@ -70,6 +70,8 @@ async function getPlayer(slug: string) {
                 p.id, p.slug, p.full_name, p.first_name, p.last_name,
                 p.position, p.dob, p.age_at_draft, p.height_inches, p.weight_lbs,
                 p.star_rating, p.draft_year, p.headshot_url, p.nfl_team,
+                p.breakout_age, p.breakout_year,
+                p.recruiting_composite, p.recruiting_stars, p.recruiting_year,
                 COALESCE(
                     (SELECT school FROM college_career WHERE player_id = p.id ORDER BY id DESC LIMIT 1),
                     p.nfl_team
@@ -193,7 +195,16 @@ async function getPlayer(slug: string) {
             [player.id]
         ).catch(() => [] as any[]);
 
-        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], historicalComps: historicalComps || [], epaStats: epaStats || [] };
+        // Dominator rating + market share by season
+        const dominatorStats = await query<any>(
+            `SELECT season, school, dominator_rating, market_share
+             FROM college_stats
+             WHERE player_id = $1 AND (dominator_rating IS NOT NULL OR market_share IS NOT NULL)
+             ORDER BY season DESC LIMIT 5`,
+            [player.id]
+        ).catch(() => [] as any[]);
+
+        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [] };
     } catch (e) {
         console.error("DB Error:", e);
         return null;
@@ -217,7 +228,7 @@ export default async function PlayerPage({ params }: PageProps) {
         );
     }
 
-    const { player, stats, rankings, measurables, speedScore, news, peerCareer, historicalComps, epaStats } = data;
+    const { player, stats, rankings, measurables, speedScore, news, peerCareer, historicalComps, epaStats, dominatorStats } = data;
     const posStyle = POS_STYLES[player.position] || 'bg-gray-500/20 text-gray-400 border-gray-500/40 text-gray-300';
     const avatarBgMap: Record<string, string> = {
         QB: 'rgba(34, 211, 238, 0.15)',
@@ -812,6 +823,67 @@ export default async function PlayerPage({ params }: PageProps) {
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Production Metrics */}
+                            {(dominatorStats.length > 0 || player.breakout_age) && (
+                                <div>
+                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Production Metrics</h3>
+
+                                    {/* Breakout Age */}
+                                    {player.breakout_age && (
+                                        <div className="grid grid-cols-2 gap-3 mb-4">
+                                            <div className="bg-card border border-border/60 rounded-xl p-3 text-center">
+                                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Breakout Age</div>
+                                                <div className={`text-2xl font-black mt-1 ${player.breakout_age <= 19 ? 'text-emerald-400' : player.breakout_age <= 20 ? 'text-cyan-400' : 'text-foreground'}`}>
+                                                    {player.breakout_age}
+                                                </div>
+                                                <div className="text-[10px] text-muted-foreground/60 mt-0.5">{player.breakout_year} season</div>
+                                            </div>
+                                            <div className="bg-card border border-border/60 rounded-xl p-3 text-center">
+                                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Breakout Year</div>
+                                                <div className="text-2xl font-black mt-1 text-foreground">{player.breakout_year || '—'}</div>
+                                                <div className="text-[10px] text-muted-foreground/60 mt-0.5">First elite season</div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Dominator Rating by Season */}
+                                    {dominatorStats.length > 0 && (
+                                        <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
+                                            <div className="px-4 py-2 border-b border-border/40 bg-muted/20">
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Dominator Rating by Season</span>
+                                            </div>
+                                            <div className="divide-y divide-border/20">
+                                                {dominatorStats.map((row: any) => (
+                                                    <div key={row.season} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-4 py-3">
+                                                        <span className="text-xs font-bold text-muted-foreground font-mono w-10">{row.season}</span>
+                                                        <span className="text-xs text-muted-foreground truncate">{row.school}</span>
+                                                        {row.dominator_rating != null && (
+                                                            <div className="text-right">
+                                                                <div className="text-[10px] text-muted-foreground/60 uppercase">DOM</div>
+                                                                <div className={`text-sm font-bold font-mono ${row.dominator_rating >= 25 ? 'text-emerald-400' : row.dominator_rating >= 15 ? 'text-cyan-400' : 'text-foreground'}`}>
+                                                                    {row.dominator_rating.toFixed(1)}%
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {row.market_share != null && (
+                                                            <div className="text-right">
+                                                                <div className="text-[10px] text-muted-foreground/60 uppercase">MKT</div>
+                                                                <div className="text-sm font-bold font-mono text-foreground/80">
+                                                                    {row.market_share.toFixed(1)}%
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="px-4 py-2 border-t border-border/40">
+                                                <p className="text-[10px] text-muted-foreground/50">DOM = share of team's total passing production (yds + TDs). MKT = share of team pass yards. ≥20% DOM is elite for WR/RB.</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
