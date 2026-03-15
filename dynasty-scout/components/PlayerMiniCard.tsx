@@ -19,12 +19,20 @@ function getDraftSlot(rank: number): string {
     return `${round}.${String(pick).padStart(2, '0')}`;
 }
 
-function getTier(rank: number): { label: string; color: string } {
-    if (rank <= 5)  return { label: 'S Tier', color: 'bg-[#FF6B00]/20 text-[#FF9A50] border-[#FF6B00]/40'   };
-    if (rank <= 12) return { label: 'A Tier', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
-    if (rank <= 24) return { label: 'B Tier', color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'       };
-    if (rank <= 48) return { label: 'C Tier', color: 'bg-violet-500/20 text-violet-300 border-violet-500/40' };
-    return { label: 'Depth', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40' };
+function getTier(rank: number): { label: string; color: string; border: string } {
+    if (rank <= 5)  return { label: 'S Tier', color: 'bg-[#FF6B00]/20 text-[#FF9A50] border-[#FF6B00]/40',    border: 'rgba(255,107,0,0.55)'    };
+    if (rank <= 12) return { label: 'A Tier', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40', border: 'rgba(34,197,94,0.55)'    };
+    if (rank <= 24) return { label: 'B Tier', color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',         border: 'rgba(0,180,216,0.55)'    };
+    if (rank <= 48) return { label: 'C Tier', color: 'bg-violet-500/20 text-violet-300 border-violet-500/40',   border: 'rgba(167,139,250,0.55)'  };
+    if (rank <= 80) return { label: 'D Tier', color: 'bg-amber-500/20 text-amber-300 border-amber-500/40',      border: 'rgba(245,158,11,0.55)'   };
+    return            { label: 'Depth',  color: 'bg-gray-500/20 text-gray-400 border-gray-500/40',              border: 'rgba(107,114,128,0.35)'  };
+}
+
+function getProjDC(rank: number): { label: string; color: string } {
+    if (rank <= 12) return { label: '1st Rd', color: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/40' };
+    if (rank <= 32) return { label: 'Day 2',  color: 'bg-sky-500/15 text-sky-300 border-sky-500/40'          };
+    if (rank <= 72) return { label: 'Day 3',  color: 'bg-muted/40 text-muted-foreground/80 border-border/50' };
+    return                 { label: 'UDFA',   color: 'bg-muted/20 text-muted-foreground/40 border-border/30' };
 }
 
 function getRankColor(rank: number): string {
@@ -178,9 +186,9 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
 
             // ── Tier badge ────────────────────────────────────────────────────
             case 'tier':
-                return (ranking?.num_sources ?? 0) < 2 ? (
+                return (ranking?.num_sources ?? 0) < 1 ? (
                     <span
-                        title={`Ranked by ${ranking?.num_sources ?? 0} of 4 sources — limited data`}
+                        title={`Not yet ranked by any tracked sources — check back after more rankings drop`}
                         style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 8px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 600 }}
                         className={cn('border', 'bg-gray-500/10 text-gray-400/80 border-gray-500/30')}
                     >⚠ Limited</span>
@@ -207,10 +215,15 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
         }
     }
 
+    const projDC   = getProjDC(rookieRank);
+    const zebraClass = index % 2 === 1 ? 'bg-muted/[0.035]' : '';
+
     return (
         <Link href={`/players/${player.slug}`} className="block group">
-            <div className="flex items-center px-4 py-2.5 hover:bg-accent/40 transition-all duration-150 border-b border-border/20 gap-3">
-
+            <div
+                className={`flex items-center px-4 py-2.5 hover:bg-accent/50 transition-all duration-100 border-b border-border/20 gap-3 ${zebraClass}`}
+                style={{ borderLeft: `3px solid ${tier.border}` }}
+            >
                 {/* 1. Rank + inline watchlist */}
                 <div className="w-16 flex-shrink-0 flex flex-row items-center justify-center gap-1.5">
                     <span className={`text-sm font-mono leading-none ${rankColor}`}>{rookieRank}</span>
@@ -221,14 +234,19 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
 
                 {/* 2. Player info */}
                 <div style={{ width: '180px', minWidth: '180px', maxWidth: '180px' }} className="flex-shrink-0">
-                    <div className="flex items-center gap-2 mb-0.5 overflow-hidden">
+                    <div className="flex items-center gap-1.5 mb-0.5 overflow-hidden">
                         <span className="font-bold text-[14px] text-foreground truncate group-hover:text-primary transition-colors leading-snug">
                             {player.full_name}
                         </span>
                         <span
-                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 8px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 10, fontWeight: 800 }}
+                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 6px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 10, fontWeight: 800 }}
                             className={cn('border', positionColor)}
                         >{player.position}</span>
+                        <span
+                            style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 5px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 9, fontWeight: 700 }}
+                            className={cn('border', projDC.color)}
+                            title="Projected NFL draft capital based on consensus fantasy rank"
+                        >{projDC.label}</span>
                     </div>
                     <div className="flex items-center text-[11px] text-muted-foreground/70 gap-1.5 leading-none">
                         <span className="truncate">{schoolDisplay || 'School TBD'}</span>

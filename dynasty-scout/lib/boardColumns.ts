@@ -12,20 +12,21 @@ export interface ColDef {
     label: string;
     subLabel?: string;
     sortKey?: SortKey;
+    tooltip?: string;
 }
 
 // ── Reusable column atoms ─────────────────────────────────────────────────────
-const FORTY: ColDef = { key: 'forty', label: '40yd',    sortKey: 'forty' };
-const SPD:   ColDef = { key: 'spd',   label: 'Spd',     sortKey: 'spd'   };
-const RAS:   ColDef = { key: 'ras',   label: 'RAS',     sortKey: 'ras'   };
-const ARM:   ColDef = { key: 'arm',   label: 'Arm',     sortKey: 'arm'   };
-const HAND:  ColDef = { key: 'hand',  label: 'Hand',    sortKey: 'hand'  };
-const STARS: ColDef = { key: 'stars', label: '★',       sortKey: 'stars' };
-const FP:    ColDef = { key: 'fp',    label: 'FP',      subLabel: 'Devy',   sortKey: 'fp'  };
-const KTC:   ColDef = { key: 'ktc',   label: 'KTC',     subLabel: 'Dyn',    sortKey: 'ktc' };
-const FC:    ColDef = { key: 'fc',    label: 'FC',      subLabel: 'Rookie', sortKey: 'fc'  };
-const DN:    ColDef = { key: 'dn',    label: 'DN',      subLabel: 'Rookie', sortKey: 'dn'  };
-const TIER:  ColDef = { key: 'tier',  label: 'Tier'                                        };
+const FORTY: ColDef = { key: 'forty', label: '40yd',  sortKey: 'forty', tooltip: '40-yard dash (seconds) — lower is faster' };
+const SPD:   ColDef = { key: 'spd',   label: 'Spd',   sortKey: 'spd',   tooltip: 'Speed Score = (weight × 200) ÷ 40yd⁴ — adjusts raw speed for size' };
+const RAS:   ColDef = { key: 'ras',   label: 'RAS',   sortKey: 'ras',   tooltip: 'Relative Athletic Score (0–10) — overall athleticism vs. historical players at same position' };
+const ARM:   ColDef = { key: 'arm',   label: 'Arm',   sortKey: 'arm',   tooltip: 'Arm length in inches — important for contested catches and press coverage' };
+const HAND:  ColDef = { key: 'hand',  label: 'Hand',  sortKey: 'hand',  tooltip: 'Hand size in inches — larger hands = better ball security and catching in weather' };
+const STARS: ColDef = { key: 'stars', label: '★',     sortKey: 'stars', tooltip: 'High school recruiting stars (247Sports composite) — 5★ = top national recruit' };
+const FP:    ColDef = { key: 'fp',    label: 'FP',    subLabel: 'Devy',   sortKey: 'fp',  tooltip: 'FantasyPros — consensus dynasty devy/rookie ranking' };
+const KTC:   ColDef = { key: 'ktc',   label: 'KTC',   subLabel: 'Dyn',    sortKey: 'ktc', tooltip: 'KeepTradeCut — dynasty trade value ranking (updated daily from trade data)' };
+const FC:    ColDef = { key: 'fc',    label: 'FC',    subLabel: 'Rookie', sortKey: 'fc',  tooltip: 'FantasyCalc — startup/rookie draft ranking' };
+const DN:    ColDef = { key: 'dn',    label: 'DN',    subLabel: 'Rookie', sortKey: 'dn',  tooltip: 'Dynasty Nerds — analyst consensus rookie ranking' };
+const TIER:  ColDef = { key: 'tier',  label: 'Tier',                                       tooltip: 'Dynasty value tier based on consensus rank. ⚠ Limited = ranked by 0 sources' };
 
 /** Column set per position filter. */
 export function getColDefs(pos: string): ColDef[] {

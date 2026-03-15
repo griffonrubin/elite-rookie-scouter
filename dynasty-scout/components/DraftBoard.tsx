@@ -21,7 +21,8 @@ const TIERS = [
     { label: 'A Tier', minRank: 6,  maxRank: 12,   accent: '#22c55e', bg: 'rgba(34,197,94,0.08)',   border: 'rgba(34,197,94,0.3)'   },
     { label: 'B Tier', minRank: 13, maxRank: 24,   accent: '#00b4d8', bg: 'rgba(0,180,216,0.07)',   border: 'rgba(0,180,216,0.25)'  },
     { label: 'C Tier', minRank: 25, maxRank: 48,   accent: '#a78bfa', bg: 'rgba(167,139,250,0.07)', border: 'rgba(167,139,250,0.25)' },
-    { label: 'Depth',  minRank: 49, maxRank: 9999, accent: '#6b7280', bg: 'rgba(107,114,128,0.05)', border: 'rgba(107,114,128,0.2)' },
+    { label: 'D Tier', minRank: 49, maxRank: 80,   accent: '#f59e0b', bg: 'rgba(245,158,11,0.06)',  border: 'rgba(245,158,11,0.25)' },
+    { label: 'Depth',  minRank: 81, maxRank: 9999, accent: '#6b7280', bg: 'rgba(107,114,128,0.05)', border: 'rgba(107,114,128,0.2)' },
 ];
 function getTierForRank(rank: number) {
     return TIERS.find(t => rank >= t.minRank && rank <= t.maxRank) ?? TIERS[TIERS.length - 1];
@@ -234,10 +235,11 @@ function DraftBoardContent({ players }: DraftBoardProps) {
 
             {/* ── Table View ── */}
             {viewMode === 'table' && (
-                <div className="bg-card rounded-xl border border-border/60 overflow-hidden shadow-lg shadow-black/20">
+                <div className="bg-card rounded-xl border border-border/60 shadow-lg shadow-black/20">
 
-                    {/* Column headers */}
-                    <div className="flex items-stretch px-4 py-0 border-b border-border/40 bg-muted/30 gap-3 min-h-[40px]">
+                    {/* Column headers — sticky below the app header bar (h-14 = 56px) */}
+                    <div className="flex items-stretch px-4 py-0 border-b border-border/40 bg-card gap-3 min-h-[40px] sticky top-14 z-20 rounded-t-xl"
+                         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
                         {/* Rank */}
                         <div className="w-16 flex-shrink-0 flex items-center justify-center">
                             <button
@@ -268,6 +270,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 <div
                                     key={col.key}
                                     className={`flex items-center justify-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''}`}
+                                    title={col.tooltip}
                                 >
                                     {col.sortKey ? (
                                         <button
