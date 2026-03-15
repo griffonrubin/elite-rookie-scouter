@@ -48,6 +48,33 @@ function getFortyColor(v: number, pos: string): string {
     return 'text-foreground/70';
 }
 
+function getSpeedScoreColor(v: number, pos: string): string {
+    const p = pos.toUpperCase();
+    if (p === 'RB') { if (v >= 110) return 'text-emerald-400 font-bold'; if (v >= 100) return 'text-yellow-400'; if (v >= 90) return 'text-foreground/70'; return 'text-red-400'; }
+    if (p === 'WR') { if (v >= 105) return 'text-emerald-400 font-bold'; if (v >= 95)  return 'text-yellow-400'; if (v >= 85) return 'text-foreground/70'; return 'text-red-400'; }
+    if (p === 'TE') { if (v >= 98)  return 'text-emerald-400 font-bold'; if (v >= 88)  return 'text-yellow-400'; if (v >= 78) return 'text-foreground/70'; return 'text-red-400'; }
+    if (p === 'QB') { if (v >= 100) return 'text-emerald-400 font-bold'; if (v >= 88)  return 'text-yellow-400'; return 'text-foreground/70'; }
+    return 'text-foreground/70';
+}
+
+function getArmColor(v: number, pos: string): string {
+    const p = pos.toUpperCase();
+    if (p === 'QB') { if (v >= 32.5) return 'text-emerald-400 font-bold'; if (v >= 31.0) return 'text-foreground/80'; return 'text-red-400'; }
+    if (p === 'WR') { if (v >= 33.0) return 'text-emerald-400 font-bold'; if (v >= 31.0) return 'text-foreground/80'; return 'text-orange-400'; }
+    if (p === 'RB') { if (v >= 32.0) return 'text-emerald-400 font-bold'; if (v >= 30.5) return 'text-foreground/80'; return 'text-orange-400'; }
+    if (p === 'TE') { if (v >= 34.0) return 'text-emerald-400 font-bold'; if (v >= 32.5) return 'text-foreground/80'; return 'text-red-400'; }
+    return 'text-foreground/80';
+}
+
+function getHandColor(v: number, pos: string): string {
+    const p = pos.toUpperCase();
+    if (p === 'QB') { if (v >= 9.5)  return 'text-emerald-400 font-bold'; if (v >= 9.0) return 'text-foreground/80'; return 'text-red-400'; }
+    if (p === 'RB') { if (v >= 9.75) return 'text-emerald-400 font-bold'; if (v >= 9.0) return 'text-foreground/80'; return 'text-orange-400'; }
+    if (p === 'WR') { if (v >= 9.75) return 'text-emerald-400 font-bold'; if (v >= 9.0) return 'text-foreground/80'; return 'text-orange-400'; }
+    if (p === 'TE') { if (v >= 10.0) return 'text-emerald-400 font-bold'; if (v >= 9.5) return 'text-foreground/80'; return 'text-orange-400'; }
+    return 'text-foreground/80';
+}
+
 function StatVal({ val, highlight }: { val: string | number | null | undefined; highlight?: string }) {
     const display = val != null && val !== '' ? String(val) : '—';
     const empty   = display === '—';
@@ -104,14 +131,29 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                     ? <span className={`font-mono font-bold text-sm ${getFortyColor(fortyYard, player.position)}`}>{fortyYard.toFixed(2)}s</span>
                     : <StatVal val={null} />;
 
+            case 'spd': {
+                const ss = p.speed_score as number | null | undefined;
+                return ss
+                    ? <span className={`font-mono font-bold text-sm ${getSpeedScoreColor(Number(ss), player.position)}`}>{Math.round(Number(ss))}</span>
+                    : <StatVal val={null} />;
+            }
+
             case 'ras':
                 return <StatVal val={p.ras ? Number(p.ras).toFixed(1) : null} highlight="text-purple-400 font-bold" />;
 
-            case 'arm':
-                return <StatVal val={p.arm_length ? `${Number(p.arm_length).toFixed(2)}"` : null} />;
+            case 'arm': {
+                const av = p.arm_length as number | null | undefined;
+                return av
+                    ? <span className={`font-mono font-bold text-sm ${getArmColor(Number(av), player.position)}`}>{Number(av).toFixed(2)}"</span>
+                    : <StatVal val={null} />;
+            }
 
-            case 'hand':
-                return <StatVal val={p.hand_size ? `${Number(p.hand_size).toFixed(2)}"` : null} />;
+            case 'hand': {
+                const hv = p.hand_size as number | null | undefined;
+                return hv
+                    ? <span className={`font-mono font-bold text-sm ${getHandColor(Number(hv), player.position)}`}>{Number(hv).toFixed(2)}"</span>
+                    : <StatVal val={null} />;
+            }
 
             case 'stars':
                 return <RecruitStars stars={p.recruiting_stars} />;
