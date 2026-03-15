@@ -35,10 +35,10 @@ export function getColDefs(pos: string): ColDef[] {
         FP, KTC, TIER,
     ];
     if (pos === 'WR' || pos === 'TE') return [
-        { key: 'measurables',      label: 'Measurables'                        },
-        { key: 'breakout_age',     label: 'Breakout',  subLabel: 'Age'         },
-        { key: 'best_dominator',   label: 'Dom%',      subLabel: 'Best Ssn'    },
-        { key: 'recruiting_stars', label: 'Recruit',   subLabel: 'Stars'       },
+        { key: 'measurables',    label: 'Measurables'                          },
+        { key: 'breakout_age',   label: 'Breakout',  subLabel: 'Age'           },
+        { key: 'best_dominator', label: 'Dom%',      subLabel: 'Best Ssn'      },
+        { key: 'scrim_ypg',      label: 'Scrim/G',   subLabel: 'Career'        },
         FP, KTC, TIER,
     ];
     // ALL — show all 4 ranking sources

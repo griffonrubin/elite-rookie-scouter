@@ -98,7 +98,9 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                         {fortyYard ? <span className={`shrink-0 ${getFortyColor(fortyYard, player.position)}`}>· {fortyYard.toFixed(2)}s</span> : null}
                         {p.ras      ? <span className="text-purple-400 shrink-0">· RAS {Number(p.ras).toFixed(1)}</span> : null}
                         {p.arm_length ? <span className="text-muted-foreground/60 shrink-0">· {Number(p.arm_length).toFixed(2)}"arm</span> : null}
+                        {p.hand_size  ? <span className="text-muted-foreground/60 shrink-0">· {Number(p.hand_size).toFixed(2)}"hand</span> : null}
                         {p.speed_score && !p.arm_length ? <span className="text-cyan-400/80 shrink-0 text-[10px]">· Spd {Number(p.speed_score).toFixed(0)}</span> : null}
+                        {p.recruiting_stars ? <span className="text-yellow-400/80 shrink-0">· {'★'.repeat(p.recruiting_stars)}</span> : null}
                     </div>
                 );
 
