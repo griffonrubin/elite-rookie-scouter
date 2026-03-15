@@ -156,7 +156,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                     <div className="flex items-center gap-1.5">
                         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sort:</span>
                         <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir(DEFAULT_DESC.includes(v as SortKey) ? 'desc' : 'asc'); }}>
-                            <SelectTrigger className="w-[180px] h-9 bg-card border-border/60 text-xs" style={{ paddingLeft: '14px', paddingRight: '14px', gap: '10px' }}>
+                            <SelectTrigger className="w-[180px] bg-card border-border/60 text-xs" style={{ height: '34px', paddingLeft: '14px', paddingRight: '14px', gap: '10px' }}>
                                 <SelectValue>
                                     {{ rank: 'Consensus', ktc: 'KTC', sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FantasyCalc', dn: 'DynNerds', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit ★', proj: 'Proj Pick', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC' }[sortKey] ?? 'Consensus'}
                                 </SelectValue>
@@ -256,7 +256,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         </div>
 
                         {/* Player */}
-                        <div style={{ width: '180px', minWidth: '180px', maxWidth: '180px' }}
+                        <div style={{ width: '220px', minWidth: '220px' }}
                             className="flex-shrink-0 flex items-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                             Player
                         </div>
