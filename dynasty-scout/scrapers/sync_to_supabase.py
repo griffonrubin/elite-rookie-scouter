@@ -1,0 +1,308 @@
+"""
+sync_to_supabase.py
+Syncs local SQLite data to Supabase PostgreSQL.
+
+Run from dynasty-scout/ directory:
+  py -3 scrapers/sync_to_supabase.py
+
+Handles:
+  1. Schema migration (new columns)
+  2. measurables (forty_yard, vertical, broad, hand_size, arm_length, etc.)
+  3. college_stats (epa_per_play, sp_rating)
+  4. players (recruiting_composite, recruiting_stars, recruiting_year, headshot_url)
+  5. historical_comps table (create + populate)
+  6. consensus_rankings
+"""
+
+import os
+import sqlite3
+import psycopg2
+import psycopg2.extras
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=".env.local")
+load_dotenv(dotenv_path=".env")
+
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL not set in .env.local")
+
+SQLITE_PATH = "dynasty_scout.db"
+
+
+def pg_conn():
+    return psycopg2.connect(DATABASE_URL, sslmode="require")
+
+
+def sqlite_conn():
+    conn = sqlite3.connect(SQLITE_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+# ── Schema migration ──────────────────────────────────────────────────────
+
+def ensure_pg_schema(pg):
+    cur = pg.cursor()
+
+    migrations = [
+        # measurables
+        "ALTER TABLE measurables ADD COLUMN IF NOT EXISTS hand_size REAL",
+        "ALTER TABLE measurables ADD COLUMN IF NOT EXISTS arm_length REAL",
+        # college_stats
+        "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS epa_per_play REAL",
+        "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS sp_rating REAL",
+        # players
+        "ALTER TABLE players ADD COLUMN IF NOT EXISTS recruiting_composite REAL",
+        "ALTER TABLE players ADD COLUMN IF NOT EXISTS recruiting_stars INTEGER",
+        "ALTER TABLE players ADD COLUMN IF NOT EXISTS recruiting_year INTEGER",
+        # historical_comps table
+        """
+        CREATE TABLE IF NOT EXISTS historical_comps (
+            id              SERIAL PRIMARY KEY,
+            player_id       INTEGER NOT NULL REFERENCES players(id),
+            comp_name       TEXT,
+            comp_year       INTEGER,
+            comp_round      INTEGER,
+            comp_pick       INTEGER,
+            comp_team       TEXT,
+            comp_position   TEXT,
+            comp_car_av     INTEGER,
+            comp_w_av       INTEGER,
+            comp_probowls   INTEGER,
+            similarity      REAL,
+            shared_metrics  TEXT,
+            created_at      TIMESTAMP DEFAULT NOW()
+        )
+        """,
+    ]
+
+    for sql in migrations:
+        try:
+            cur.execute(sql)
+        except Exception as e:
+            pg.rollback()
+            print(f"  Migration warning: {e}")
+            cur = pg.cursor()
+        else:
+            pg.commit()
+
+    cur.close()
+    print("Schema migrations done.")
+
+
+# ── Sync measurables ──────────────────────────────────────────────────────
+
+def sync_measurables(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    rows = cur_sq.execute("""
+        SELECT m.player_id, m.forty_yard, m.ten_yard_split, m.bench_press,
+               m.vertical_jump, m.broad_jump, m.three_cone, m.twenty_yard_shuttle,
+               m.speed_score, m.ras, m.hand_size, m.arm_length,
+               p.headshot_url
+        FROM measurables m
+        JOIN players p ON p.id = m.player_id
+        WHERE p.draft_year = 2026
+    """).fetchall()
+
+    upserted = 0
+    for r in rows:
+        cur_pg.execute("""
+            INSERT INTO measurables (player_id, forty_yard, ten_yard_split, bench_press,
+                vertical_jump, broad_jump, three_cone, twenty_yard_shuttle,
+                speed_score, ras, hand_size, arm_length)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (player_id) DO UPDATE SET
+                forty_yard           = COALESCE(EXCLUDED.forty_yard, measurables.forty_yard),
+                ten_yard_split       = COALESCE(EXCLUDED.ten_yard_split, measurables.ten_yard_split),
+                bench_press          = COALESCE(EXCLUDED.bench_press, measurables.bench_press),
+                vertical_jump        = COALESCE(EXCLUDED.vertical_jump, measurables.vertical_jump),
+                broad_jump           = COALESCE(EXCLUDED.broad_jump, measurables.broad_jump),
+                three_cone           = COALESCE(EXCLUDED.three_cone, measurables.three_cone),
+                twenty_yard_shuttle  = COALESCE(EXCLUDED.twenty_yard_shuttle, measurables.twenty_yard_shuttle),
+                speed_score          = COALESCE(EXCLUDED.speed_score, measurables.speed_score),
+                ras                  = COALESCE(EXCLUDED.ras, measurables.ras),
+                hand_size            = COALESCE(EXCLUDED.hand_size, measurables.hand_size),
+                arm_length           = COALESCE(EXCLUDED.arm_length, measurables.arm_length)
+        """, (r["player_id"], r["forty_yard"], r["ten_yard_split"], r["bench_press"],
+              r["vertical_jump"], r["broad_jump"], r["three_cone"], r["twenty_yard_shuttle"],
+              r["speed_score"], r["ras"], r["hand_size"], r["arm_length"]))
+        upserted += 1
+
+        # Also sync headshot_url to players table
+        if r["headshot_url"]:
+            cur_pg.execute("""
+                UPDATE players SET headshot_url = %s
+                WHERE id = %s AND headshot_url IS NULL
+            """, (r["headshot_url"], r["player_id"]))
+
+    pg.commit()
+    print(f"Measurables: {upserted} rows upserted")
+
+
+# ── Sync college_stats EPA + SP+ ──────────────────────────────────────────
+
+def sync_college_stats_analytics(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    rows = cur_sq.execute("""
+        SELECT cs.player_id, cs.season, cs.epa_per_play, cs.sp_rating
+        FROM college_stats cs
+        JOIN players p ON p.id = cs.player_id
+        WHERE p.draft_year = 2026
+          AND (cs.epa_per_play IS NOT NULL OR cs.sp_rating IS NOT NULL)
+    """).fetchall()
+
+    updated = 0
+    for r in rows:
+        cur_pg.execute("""
+            UPDATE college_stats
+            SET epa_per_play = COALESCE(epa_per_play, %s),
+                sp_rating    = COALESCE(sp_rating, %s)
+            WHERE player_id = %s AND season = %s
+        """, (r["epa_per_play"], r["sp_rating"], r["player_id"], r["season"]))
+        updated += cur_pg.rowcount
+
+    pg.commit()
+    print(f"College stats analytics: {updated} rows updated")
+
+
+# ── Sync player recruiting fields ─────────────────────────────────────────
+
+def sync_player_recruiting(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    rows = cur_sq.execute("""
+        SELECT id, recruiting_composite, recruiting_stars, recruiting_year, headshot_url
+        FROM players
+        WHERE draft_year = 2026
+          AND (recruiting_composite IS NOT NULL OR headshot_url IS NOT NULL)
+    """).fetchall()
+
+    updated = 0
+    for r in rows:
+        cur_pg.execute("""
+            UPDATE players SET
+                recruiting_composite = COALESCE(recruiting_composite, %s),
+                recruiting_stars     = COALESCE(recruiting_stars, %s),
+                recruiting_year      = COALESCE(recruiting_year, %s),
+                headshot_url         = COALESCE(headshot_url, %s)
+            WHERE id = %s
+        """, (r["recruiting_composite"], r["recruiting_stars"],
+              r["recruiting_year"], r["headshot_url"], r["id"]))
+        updated += cur_pg.rowcount
+
+    pg.commit()
+    print(f"Player recruiting/headshots: {updated} rows updated")
+
+
+# ── Sync historical_comps ─────────────────────────────────────────────────
+
+def sync_historical_comps(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    # Clear and repopulate (small table, safe to replace)
+    cur_pg.execute("DELETE FROM historical_comps WHERE player_id IN "
+                   "(SELECT id FROM players WHERE draft_year = 2026)")
+
+    rows = cur_sq.execute("""
+        SELECT hc.*
+        FROM historical_comps hc
+        JOIN players p ON p.id = hc.player_id
+        WHERE p.draft_year = 2026
+    """).fetchall()
+
+    inserted = 0
+    for r in rows:
+        cur_pg.execute("""
+            INSERT INTO historical_comps
+              (player_id, comp_name, comp_year, comp_round, comp_pick,
+               comp_team, comp_position, comp_car_av, comp_w_av, comp_probowls,
+               similarity, shared_metrics)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (r["player_id"], r["comp_name"], r["comp_year"], r["comp_round"],
+              r["comp_pick"], r["comp_team"], r["comp_position"],
+              r["comp_car_av"], r["comp_w_av"], r["comp_probowls"],
+              r["similarity"], r["shared_metrics"]))
+        inserted += 1
+
+    pg.commit()
+    print(f"Historical comps: {inserted} rows inserted")
+
+
+# ── Sync consensus rankings ───────────────────────────────────────────────
+
+def sync_consensus_rankings(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    rows = cur_sq.execute("""
+        SELECT cr.*
+        FROM consensus_rankings cr
+        JOIN players p ON p.id = cr.player_id
+        WHERE p.draft_year = 2026
+    """).fetchall()
+
+    upserted = 0
+    for r in rows:
+        cur_pg.execute("""
+            INSERT INTO consensus_rankings
+              (player_id, rank_overall, rank_positional, avg_rank, best_rank,
+               worst_rank, std_deviation, num_sources, calculated_at,
+               rank_change_1d, rank_change_7d, rank_change_30d)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (player_id, calculated_at) DO UPDATE SET
+                rank_overall    = EXCLUDED.rank_overall,
+                rank_positional = EXCLUDED.rank_positional,
+                avg_rank        = EXCLUDED.avg_rank,
+                num_sources     = EXCLUDED.num_sources,
+                rank_change_1d  = EXCLUDED.rank_change_1d,
+                rank_change_7d  = EXCLUDED.rank_change_7d,
+                rank_change_30d = EXCLUDED.rank_change_30d
+        """, (r["player_id"], r["rank_overall"], r["rank_positional"],
+              r["avg_rank"], r["best_rank"], r["worst_rank"],
+              r["std_deviation"], r["num_sources"], r["calculated_at"],
+              r["rank_change_1d"], r["rank_change_7d"], r["rank_change_30d"]))
+        upserted += 1
+
+    pg.commit()
+    print(f"Consensus rankings: {upserted} rows upserted")
+
+
+# ── Main ──────────────────────────────────────────────────────────────────
+
+def run():
+    print(f"Connecting to Supabase...")
+    pg = pg_conn()
+    sq = sqlite_conn()
+
+    print("\n[1/6] Migrating schema...")
+    ensure_pg_schema(pg)
+
+    print("\n[2/6] Syncing measurables...")
+    sync_measurables(pg, sq)
+
+    print("\n[3/6] Syncing college stats (EPA/SP+)...")
+    sync_college_stats_analytics(pg, sq)
+
+    print("\n[4/6] Syncing player recruiting + headshots...")
+    sync_player_recruiting(pg, sq)
+
+    print("\n[5/6] Syncing historical comps...")
+    sync_historical_comps(pg, sq)
+
+    print("\n[6/6] Syncing consensus rankings...")
+    sync_consensus_rankings(pg, sq)
+
+    pg.close()
+    sq.close()
+    print("\nSync complete.")
+
+
+if __name__ == "__main__":
+    run()
