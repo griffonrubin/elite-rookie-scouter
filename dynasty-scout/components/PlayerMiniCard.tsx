@@ -90,17 +90,40 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
     function renderCell(col: ColDef) {
         switch (col.key) {
 
-            // ── Measurables ────────────────────────────────────────────────────
+            // ── Individual sortable measurable columns ─────────────────────────
+            case 'hw':
+                return (
+                    <div className="flex flex-col leading-tight text-left">
+                        <span className="font-mono font-bold text-sm text-foreground/80">{ht}</span>
+                        <span className="font-mono text-[10px] text-muted-foreground/50">{wt}</span>
+                    </div>
+                );
+
+            case 'forty':
+                return fortyYard
+                    ? <span className={`font-mono font-bold text-sm ${getFortyColor(fortyYard, player.position)}`}>{fortyYard.toFixed(2)}s</span>
+                    : <StatVal val={null} />;
+
+            case 'ras':
+                return <StatVal val={p.ras ? Number(p.ras).toFixed(1) : null} highlight="text-purple-400 font-bold" />;
+
+            case 'arm':
+                return <StatVal val={p.arm_length ? `${Number(p.arm_length).toFixed(2)}"` : null} />;
+
+            case 'hand':
+                return <StatVal val={p.hand_size ? `${Number(p.hand_size).toFixed(2)}"` : null} />;
+
+            case 'stars':
+                return <RecruitStars stars={p.recruiting_stars} />;
+
+            // ── Legacy compact measurables (fallback) ─────────────────────────
             case 'measurables':
                 return (
                     <div className="flex items-center gap-1.5 text-[11px] font-mono text-foreground/80 truncate">
                         <span className="shrink-0">{ht} / {wt}</span>
                         {fortyYard ? <span className={`shrink-0 ${getFortyColor(fortyYard, player.position)}`}>· {fortyYard.toFixed(2)}s</span> : null}
                         {p.ras      ? <span className="text-purple-400 shrink-0">· RAS {Number(p.ras).toFixed(1)}</span> : null}
-                        {p.arm_length ? <span className="text-muted-foreground/60 shrink-0">· {Number(p.arm_length).toFixed(2)}"arm</span> : null}
-                        {p.hand_size  ? <span className="text-muted-foreground/60 shrink-0">· {Number(p.hand_size).toFixed(2)}"hand</span> : null}
-                        {p.speed_score && !p.arm_length ? <span className="text-cyan-400/80 shrink-0 text-[10px]">· Spd {Number(p.speed_score).toFixed(0)}</span> : null}
-                        {p.recruiting_stars ? <span className="text-yellow-400/80 shrink-0">· {'★'.repeat(p.recruiting_stars)}</span> : null}
+                        {p.speed_score && !p.ras ? <span className="text-cyan-400/80 shrink-0 text-[10px]">· Spd {Number(p.speed_score).toFixed(0)}</span> : null}
                     </div>
                 );
 

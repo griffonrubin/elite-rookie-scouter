@@ -69,9 +69,12 @@ function DraftBoardContent({ players }: DraftBoardProps) {
         keys: ['full_name', 'position', 'school'], threshold: 0.3,
     }), [players]);
 
+    // Higher = better for these — default to desc when first clicked
+    const DEFAULT_DESC: SortKey[] = ['ras', 'height', 'arm', 'hand', 'stars'];
+
     function handleSort(key: SortKey) {
         if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-        else { setSortKey(key); setSortDir('asc'); }
+        else { setSortKey(key); setSortDir(DEFAULT_DESC.includes(key) ? 'desc' : 'asc'); }
     }
 
     const filteredPlayers = useMemo(() => {
@@ -88,6 +91,12 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 case 'fp':     va = (a as any).fantasypros_rank   ?? MISS; vb = (b as any).fantasypros_rank   ?? MISS; break;
                 case 'fc':     va = (a as any).fantasycalc_rank   ?? MISS; vb = (b as any).fantasycalc_rank   ?? MISS; break;
                 case 'dn':     va = (a as any).dynasty_nerds_rank ?? MISS; vb = (b as any).dynasty_nerds_rank ?? MISS; break;
+                case 'forty':  va = (a as any).forty_yard         ?? MISS; vb = (b as any).forty_yard         ?? MISS; break;
+                case 'ras':    va = (a as any).ras                ?? MISS; vb = (b as any).ras                ?? MISS; break;
+                case 'height': va = (a as any).height_inches      ?? MISS; vb = (b as any).height_inches      ?? MISS; break;
+                case 'arm':    va = (a as any).arm_length         ?? MISS; vb = (b as any).arm_length         ?? MISS; break;
+                case 'hand':   va = (a as any).hand_size          ?? MISS; vb = (b as any).hand_size          ?? MISS; break;
+                case 'stars':  va = (a as any).recruiting_stars   ?? MISS; vb = (b as any).recruiting_stars   ?? MISS; break;
                 case 'rank':
                 default:       va = (a as any).consensus_rank     ?? MISS; vb = (b as any).consensus_rank     ?? MISS;
             }
@@ -134,10 +143,10 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                     <ViewModeSelector mode={viewMode} onChange={setViewMode} />
                     <div className="flex items-center gap-1.5">
                         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sort:</span>
-                        <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir('asc'); }}>
-                            <SelectTrigger className="w-[130px] h-9 bg-card border-border/60 text-xs px-3">
+                        <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir(DEFAULT_DESC.includes(v as SortKey) ? 'desc' : 'asc'); }}>
+                            <SelectTrigger className="w-[140px] h-9 bg-card border-border/60 text-xs px-3">
                                 <SelectValue>
-                                    {sortKey === 'rank' ? 'Consensus' : sortKey === 'ktc' ? 'KTC' : sortKey === 'fp' ? 'FantasyPros' : sortKey === 'fc' ? 'FantasyCalc' : sortKey === 'dn' ? 'DynNerds' : 'Consensus'}
+                                    {{ rank: 'Consensus', ktc: 'KTC', sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FantasyCalc', dn: 'DynNerds', forty: '40yd Dash', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit ★', proj: 'Proj Pick' }[sortKey] ?? 'Consensus'}
                                 </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
@@ -146,6 +155,12 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 <SelectItem value="fp">FantasyPros</SelectItem>
                                 <SelectItem value="fc">FantasyCalc</SelectItem>
                                 <SelectItem value="dn">DynastyNerds</SelectItem>
+                                <SelectItem value="forty">40yd Dash</SelectItem>
+                                <SelectItem value="ras">RAS Score</SelectItem>
+                                <SelectItem value="height">Height</SelectItem>
+                                <SelectItem value="arm">Arm Length</SelectItem>
+                                <SelectItem value="hand">Hand Size</SelectItem>
+                                <SelectItem value="stars">Recruit Stars</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
