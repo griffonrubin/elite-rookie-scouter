@@ -292,6 +292,53 @@ def sync_historical_comps(pg, sq):
     print(f"Historical comps: {inserted} rows inserted")
 
 
+# ── Sync individual rankings (source rankings) ────────────────────────────
+
+def sync_individual_rankings(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    # Ensure rankings table exists in Supabase
+    cur_pg.execute("""
+        CREATE TABLE IF NOT EXISTS rankings (
+            id              SERIAL PRIMARY KEY,
+            player_id       INTEGER NOT NULL REFERENCES players(id),
+            source          TEXT NOT NULL,
+            rank_overall    INTEGER,
+            rank_positional INTEGER,
+            tier            INTEGER,
+            source_url      TEXT,
+            scraped_at      TEXT,
+            UNIQUE(player_id, source, scraped_at)
+        )
+    """)
+    pg.commit()
+
+    rows = cur_sq.execute("""
+        SELECT r.player_id, r.source, r.rank_overall, r.rank_positional,
+               r.tier, r.source_url, r.scraped_at
+        FROM rankings r
+        JOIN players p ON p.id = r.player_id
+        WHERE p.draft_year = 2026
+    """).fetchall()
+
+    upserted = 0
+    for r in rows:
+        cur_pg.execute("""
+            INSERT INTO rankings (player_id, source, rank_overall, rank_positional, tier, source_url, scraped_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (player_id, source, scraped_at) DO UPDATE SET
+                rank_overall    = EXCLUDED.rank_overall,
+                rank_positional = EXCLUDED.rank_positional,
+                source_url      = EXCLUDED.source_url
+        """, (r["player_id"], r["source"], r["rank_overall"], r["rank_positional"],
+              r["tier"], r["source_url"], r["scraped_at"]))
+        upserted += 1
+
+    pg.commit()
+    print(f"Individual rankings: {upserted} rows upserted")
+
+
 # ── Sync consensus rankings ───────────────────────────────────────────────
 
 def sync_consensus_rankings(pg, sq):
@@ -358,6 +405,9 @@ def run():
 
     print("\n[5/6] Syncing historical comps...")
     sync_historical_comps(pg, sq)
+
+    print("\n[5b] Syncing individual rankings...")
+    sync_individual_rankings(pg, sq)
 
     print("\n[6/6] Syncing consensus rankings...")
     sync_consensus_rankings(pg, sq)
