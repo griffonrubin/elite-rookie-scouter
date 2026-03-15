@@ -17,24 +17,30 @@ const BENCH: Record<string, Record<string, { poor: number; elite: number; lowerI
         speed_score: { poor: 60, elite: 110 }, dom_pct: { poor: 5, elite: 25 },
         comp_pct: { poor: 52, elite: 72 }, ypa: { poor: 5.5, elite: 9.5 }, pass_ypg: { poor: 100, elite: 350 },
         arm_length: { poor: 30.0, elite: 33.5 }, hand_size: { poor: 8.5, elite: 10.5 },
+        height: { poor: 71, elite: 77 }, weight: { poor: 195, elite: 235 },
     },
     RB: {
         forty: { poor: 4.72, elite: 4.28, lowerIsBetter: true }, ras: { poor: 0, elite: 10 },
         speed_score: { poor: 80, elite: 120 }, dom_pct: { poor: 8, elite: 28 },
         ypc: { poor: 3.5, elite: 6.5 }, scrim_ypg: { poor: 40, elite: 100 },
         breakout_age: { poor: 21, elite: 19, lowerIsBetter: true },
+        height: { poor: 66, elite: 72 }, weight: { poor: 180, elite: 220 },
     },
     WR: {
         forty: { poor: 4.70, elite: 4.27, lowerIsBetter: true }, ras: { poor: 0, elite: 10 },
         speed_score: { poor: 80, elite: 115 }, dom_pct: { poor: 8, elite: 28 },
         ypr: { poor: 8, elite: 18 }, scrim_ypg: { poor: 30, elite: 80 },
-        breakout_age: { poor: 21, elite: 19, lowerIsBetter: true }, arm_length: { poor: 30.0, elite: 33.5 },
+        breakout_age: { poor: 21, elite: 19, lowerIsBetter: true },
+        arm_length: { poor: 30.0, elite: 33.5 }, hand_size: { poor: 8.5, elite: 10.0 },
+        height: { poor: 68, elite: 75 }, weight: { poor: 170, elite: 215 },
     },
     TE: {
         forty: { poor: 5.00, elite: 4.43, lowerIsBetter: true }, ras: { poor: 0, elite: 10 },
         speed_score: { poor: 65, elite: 103 }, dom_pct: { poor: 6, elite: 20 },
         ypr: { poor: 7, elite: 15 }, scrim_ypg: { poor: 20, elite: 60 },
-        breakout_age: { poor: 22, elite: 19, lowerIsBetter: true }, arm_length: { poor: 31.0, elite: 35.5 },
+        breakout_age: { poor: 22, elite: 19, lowerIsBetter: true },
+        arm_length: { poor: 31.0, elite: 35.5 }, hand_size: { poor: 9.0, elite: 11.0 },
+        height: { poor: 73, elite: 79 }, weight: { poor: 230, elite: 270 },
     },
 };
 
@@ -208,15 +214,17 @@ export function BoxView({ players, period }: BoxViewProps) {
                 // Build athletics grade cells — show all available, fill full row
                 type GradeSpec = { label: string; val: number | null | undefined; key: string; display: string };
                 const athleteGrades: GradeSpec[] = [
-                    p.forty_yard  && { label: '40yd',  val: p.forty_yard,   key: 'forty',       display: `${Number(p.forty_yard).toFixed(2)}s`  },
-                    p.ras         && { label: 'RAS',   val: p.ras,          key: 'ras',         display: Number(p.ras).toFixed(1)               },
-                    p.speed_score && { label: 'Spd',   val: p.speed_score,  key: 'speed_score', display: Math.round(p.speed_score).toString()   },
-                    p.arm_length  && { label: 'Arm',   val: p.arm_length,   key: 'arm_length',  display: `${Number(p.arm_length).toFixed(1)}"`  },
-                    p.hand_size   && { label: 'Hand',  val: p.hand_size,    key: 'hand_size',   display: `${Number(p.hand_size).toFixed(1)}"`   },
+                    player.height_inches && { label: 'Ht',   val: player.height_inches, key: 'height',      display: ht ?? `${player.height_inches}"` },
+                    player.weight_lbs    && { label: 'Wt',   val: player.weight_lbs,    key: 'weight',      display: `${player.weight_lbs}lb`         },
+                    p.forty_yard         && { label: '40yd', val: p.forty_yard,          key: 'forty',       display: `${Number(p.forty_yard).toFixed(2)}s`  },
+                    p.ras                && { label: 'RAS',  val: p.ras,                 key: 'ras',         display: Number(p.ras).toFixed(1)               },
+                    p.speed_score        && { label: 'Spd',  val: p.speed_score,         key: 'speed_score', display: Math.round(p.speed_score).toString()   },
+                    p.arm_length         && { label: 'Arm',  val: p.arm_length,          key: 'arm_length',  display: `${Number(p.arm_length).toFixed(1)}"`  },
+                    p.hand_size          && { label: 'Hand', val: p.hand_size,           key: 'hand_size',   display: `${Number(p.hand_size).toFixed(1)}"`   },
                 ].filter(Boolean) as GradeSpec[];
 
                 // Choose columns based on count to fill the row
-                const cols = athleteGrades.length <= 2 ? 2 : athleteGrades.length <= 4 ? 2 : 3;
+                const cols = athleteGrades.length <= 3 ? 3 : athleteGrades.length <= 4 ? 4 : athleteGrades.length <= 6 ? 3 : 4;
 
                 return (
                     <Link
@@ -254,14 +262,11 @@ export function BoxView({ players, period }: BoxViewProps) {
                                 {player.full_name}
                             </div>
                             <div className="text-[11px] text-muted-foreground/60 truncate mt-0.5">{school}</div>
-                            {(ht || wt || p.breakout_age) && (
-                                <div className="text-[10px] text-muted-foreground/40 font-mono mt-1 flex items-center gap-2 flex-wrap">
-                                    {(ht || wt) && <span>{ht}{ht && wt ? ' / ' : ''}{wt}</span>}
-                                    {p.breakout_age && (
-                                        <span className={`font-bold ${p.breakout_age <= 19 ? 'text-emerald-400' : p.breakout_age <= 20 ? 'text-cyan-400' : ''}`}>
-                                            BO age {Number(p.breakout_age).toFixed(1)}
-                                        </span>
-                                    )}
+                            {p.breakout_age && (
+                                <div className="text-[10px] text-muted-foreground/40 font-mono mt-1">
+                                    <span className={`font-bold ${p.breakout_age <= 19 ? 'text-emerald-400' : p.breakout_age <= 20 ? 'text-cyan-400' : ''}`}>
+                                        BO age {Number(p.breakout_age).toFixed(1)}
+                                    </span>
                                 </div>
                             )}
                         </div>
