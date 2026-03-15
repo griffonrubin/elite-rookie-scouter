@@ -125,77 +125,77 @@ export function PlayerMiniCard({ player, ranking, period, index }: PlayerMiniCar
                     </div>
                 </div>
 
-                {/* Right stat columns — flex-1 fills remaining space */}
-                <div className="hidden lg:flex flex-1 items-center text-xs">
+                {/* Right stat columns — fixed widths for rank cols, flex-1 for measurables */}
+                <div className="hidden lg:flex flex-1 items-center text-xs min-w-0">
 
-                    {/* 3. Measurables — HT/WT · 40yd (contextual color) · Speed Score */}
-                    <div className="flex-1 flex flex-col justify-center border-l border-border/30 pl-4">
-                        <div className="font-mono text-[11px] text-foreground/80 whitespace-nowrap flex items-center gap-1.5">
-                            <span>{ht} / {wt}</span>
+                    {/* 3. Measurables — flex-1 min-w-0, overflow hidden to prevent expansion */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-center border-l border-border/30 pl-4 overflow-hidden">
+                        <div className="font-mono text-[11px] text-foreground/80 flex items-center gap-1.5 truncate">
+                            <span className="shrink-0">{ht} / {wt}</span>
                             {fortyYard ? (
-                                <span className="text-muted-foreground mr-1">
+                                <span className="text-muted-foreground shrink-0">
                                     · <span className={getFortyColor(fortyYard, player.position)}>{fortyYard.toFixed(2)}s</span>
                                 </span>
                             ) : null}
                             {(player as any).ras ? (
-                                <span className="text-muted-foreground ml-1">
-                                    · <span className="text-purple-400">RAS: {((player as any).ras as number).toFixed(2)}</span>
+                                <span className="text-muted-foreground shrink-0">
+                                    · <span className="text-purple-400">RAS {((player as any).ras as number).toFixed(1)}</span>
                                 </span>
                             ) : null}
                             {(player as any).speed_score ? (
-                                <span className="text-[9px] text-muted-foreground/50 ml-0.5 font-normal">
-                                    · <span className="text-cyan-400/80">Spd:{((player as any).speed_score as number).toFixed(0)}</span>
+                                <span className="text-[9px] text-muted-foreground/50 shrink-0">
+                                    · <span className="text-cyan-400/80">Spd {((player as any).speed_score as number).toFixed(0)}</span>
                                 </span>
                             ) : null}
                         </div>
                     </div>
 
-                    {/* 4. FP Devy */}
-                    <div className="flex-1 flex items-center justify-center gap-1">
+                    {/* 4. FP Devy — fixed width */}
+                    <div style={{ width: '52px', minWidth: '52px', flexShrink: 0 }} className="flex items-center justify-center">
                         <span className={`font-bold font-mono text-sm ${player.fantasypros_rank != null ? 'text-foreground/90' : 'text-muted-foreground/30'}`}>
                             {player.fantasypros_rank ?? '—'}
                         </span>
                     </div>
 
-                    {/* 5. KTC Dyn */}
-                    <div className="flex-1 flex items-center justify-center gap-1">
+                    {/* 5. KTC Dyn — fixed width */}
+                    <div style={{ width: '52px', minWidth: '52px', flexShrink: 0 }} className="flex items-center justify-center">
                         <span className={`font-bold font-mono text-sm ${ktcOverallRank != null ? 'text-foreground/80' : 'text-muted-foreground/30'}`}>
                             {ktcOverallRank ?? '—'}
                         </span>
                     </div>
 
-                    {/* 6. FantasyCalc Rookie */}
-                    <div className="flex-1 flex items-center justify-center">
+                    {/* 6. FantasyCalc Rookie — fixed width */}
+                    <div style={{ width: '52px', minWidth: '52px', flexShrink: 0 }} className="flex items-center justify-center">
                         <span className={`font-bold font-mono text-sm ${fcRank != null ? 'text-foreground/80' : 'text-muted-foreground/30'}`}>
                             {fcRank ?? '—'}
                         </span>
                     </div>
 
-                    {/* 7. DynastyNerds Rookie */}
-                    <div className="flex-1 flex items-center justify-center">
+                    {/* 7. DynastyNerds Rookie — fixed width */}
+                    <div style={{ width: '52px', minWidth: '52px', flexShrink: 0 }} className="flex items-center justify-center">
                         <span className={`font-bold font-mono text-sm ${dnRank != null ? 'text-foreground/80' : 'text-muted-foreground/30'}`}>
                             {dnRank ?? '—'}
                         </span>
                     </div>
 
-                    {/* 8. Proj Pick */}
-                    <div className="flex-1 flex items-center justify-center" title={`Projected Dynasty Draft Pick (Round.Pick) - e.g. 1.01`}>
+                    {/* 8. Proj Pick — fixed width */}
+                    <div style={{ width: '64px', minWidth: '64px', flexShrink: 0 }} className="flex items-center justify-center" title="Projected Dynasty Draft Pick">
                         <span className="font-mono font-bold text-sm text-foreground/80">{draftSlot}</span>
                     </div>
 
-                    {/* 8. Tier badge — inline-flex, padding-only height */}
-                    <div className="flex-1 flex items-center justify-center">
+                    {/* 9. Tier badge — fixed width */}
+                    <div style={{ width: '96px', minWidth: '96px', flexShrink: 0 }} className="flex items-center justify-center">
                         {(ranking?.num_sources ?? 0) < 2 ? (
                             <span
                                 title={`Ranked by ${ranking?.num_sources ?? 0} of 5 sources — consensus rank may be unreliable`}
-                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '3px 10px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 600 }}
+                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '3px 8px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 600 }}
                                 className={cn('border', 'bg-gray-500/10 text-gray-400/80 border-gray-500/30')}
                             >
-                                ⚠ Limited Data
+                                ⚠ Limited
                             </span>
                         ) : (
                             <span
-                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '3px 10px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 600 }}
+                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '3px 8px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 600 }}
                                 className={cn('border', tier.color)}
                             >
                                 {tier.label}

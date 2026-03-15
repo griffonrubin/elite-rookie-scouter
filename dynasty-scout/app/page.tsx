@@ -91,7 +91,7 @@ export default async function Home() {
     <div className="min-h-screen bg-background text-foreground">
       {/* ── Top Bar ── */}
       <header className="border-b border-border/60 bg-card/60 backdrop-blur-md sticky top-0 z-50">
-        <div className="w-full px-6 sm:px-8 h-14 flex items-center justify-between mx-auto max-w-[1600px]">
+        <div className="w-full px-6 sm:px-8 h-14 flex items-center justify-between mx-auto">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
@@ -128,7 +128,7 @@ export default async function Home() {
 
       {/* ── Hero Strip ── */}
       <div className="border-b border-border/40 bg-gradient-to-r from-primary/5 via-transparent to-blue-500/5">
-        <div className="w-full px-6 sm:px-8 py-4 mx-auto max-w-[1600px] flex items-center">
+        <div className="w-full px-6 sm:px-8 py-4 mx-auto flex items-center">
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground flex items-center gap-3">
             2026 Rookie Scouting Board
             <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full border border-border/50">
@@ -144,7 +144,7 @@ export default async function Home() {
       </div>
 
       {/* ── Board ── */}
-      <main className="w-full px-6 sm:px-8 py-6 mx-auto max-w-[1600px]">
+      <main className="w-full px-6 sm:px-8 py-6 mx-auto">
         {players.length === 0 ? (
           <div className="p-16 text-center text-muted-foreground border border-dashed border-border rounded-xl">
             No players found. Run the seed scripts to populate data.

@@ -389,7 +389,7 @@ export default async function PlayerPage({ params }: PageProps) {
         <div className="min-h-screen bg-background text-foreground">
             {/* Top nav bar */}
             <header className="border-b border-border/60 bg-card/60 backdrop-blur-md sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+                <div className="w-full mx-auto px-6 sm:px-8 h-14 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                         <ArrowLeft className="w-4 h-4" />
                         <span>Draft Board</span>
@@ -403,7 +403,7 @@ export default async function PlayerPage({ params }: PageProps) {
                 </div>
             </header>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+            <div className="w-full mx-auto px-6 sm:px-8 py-8">
                 {/* ── Profile Section ── */}
                 <div className="flex flex-col lg:flex-row gap-6 mb-8">
                     {/* Avatar — football silhouette placeholder */}
@@ -554,14 +554,14 @@ export default async function PlayerPage({ params }: PageProps) {
                     {/* Stats Tab */}
                     <TabsContent value="stats">
                         {stats.length > 0 ? (
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">College Career Stats</h3>
                                 <StatsTable stats={stats} position={player.position} />
 
                                 <StatTrendChart stats={stats} position={player.position} />
 
                                 {hasAdvancedMetrics && (
-                                    <div className="bg-card border border-border/60 rounded-xl p-5 mt-6">
+                                    <div className="bg-card border border-border/60 rounded-xl p-5">
                                         <div className="flex items-center gap-2 mb-4">
                                             <BarChart2 className="w-5 h-5 text-primary/60" />
                                             <span className="text-sm font-bold text-foreground">College Production</span>

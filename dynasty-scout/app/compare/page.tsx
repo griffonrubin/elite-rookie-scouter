@@ -137,7 +137,7 @@ export default async function ComparePage({ searchParams }: Props) {
         <div className="min-h-screen bg-background text-foreground">
             {/* Nav */}
             <header className="border-b border-border/60 bg-card/60 backdrop-blur-md sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+                <div className="w-full mx-auto px-6 sm:px-8 h-14 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                         <ArrowLeft className="w-4 h-4" />
                         <span>Draft Board</span>
@@ -152,7 +152,7 @@ export default async function ComparePage({ searchParams }: Props) {
                 </div>
             </header>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+            <div className="w-full mx-auto px-6 sm:px-8 py-8">
 
                 <ComparePlayerPicker
                     currentSlugA={a}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Player } from '@/lib/types';
 import { PlayerMiniCard } from '@/components/PlayerMiniCard';
@@ -30,15 +30,17 @@ function getTierForRank(rank: number) {
 }
 
 // Sortable column header — NO all:unset, so flex-1 from className works correctly
-function SortHeader({ label, subLabel, sortKey, currentSort, currentDir, onSort }: {
+function SortHeader({ label, subLabel, sortKey, currentSort, currentDir, onSort, style }: {
     label: string; subLabel?: string; sortKey: SortKey;
     currentSort: SortKey; currentDir: SortDir; onSort: (k: SortKey) => void;
+    style?: React.CSSProperties;
 }) {
     const active = currentSort === sortKey;
     return (
         <button
             onClick={() => onSort(sortKey)}
-            className="flex-1 flex flex-col items-center justify-center cursor-pointer select-none bg-transparent border-0 p-0 gap-0 group"
+            style={style}
+            className="flex flex-col items-center justify-center cursor-pointer select-none bg-transparent border-0 p-0 gap-0 group"
         >
             <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest leading-none transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
                 {label}
@@ -225,20 +227,20 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                             Player
                         </div>
 
-                        {/* Stat columns — each is flex-1 inside a single flex-1 container */}
-                        <div className="hidden lg:flex flex-1 items-stretch">
-                            {/* Measurables — not sortable */}
-                            <div className="flex-1 flex items-center pl-4 border-l border-border/30 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        {/* Stat columns — matches PlayerMiniCard exactly: flex-1 measurables + fixed rank cols */}
+                        <div className="hidden lg:flex flex-1 items-stretch min-w-0">
+                            {/* Measurables — flex-1, matches data row */}
+                            <div className="flex-1 min-w-0 flex items-center pl-4 border-l border-border/30 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                                 Measurables
                             </div>
-                            {/* Sortable stat headers — each is flex-1 button */}
-                            <SortHeader label="FP" subLabel="Devy" sortKey="fp" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
-                            <SortHeader label="KTC" subLabel="Dyn" sortKey="ktc" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
-                            <SortHeader label="FC" subLabel="Rookie" sortKey="fc" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
-                            <SortHeader label="DN" subLabel="Rookie" sortKey="dn" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
-                            <SortHeader label="Dynasty" subLabel="ADP" sortKey="proj" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
-                            {/* Tier — not sortable */}
-                            <div className="flex-1 flex items-center justify-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            {/* Fixed-width rank headers — widths must match PlayerMiniCard exactly */}
+                            <SortHeader label="FP" subLabel="Devy" sortKey="fp" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} style={{ width: '52px', minWidth: '52px', flexShrink: 0 }} />
+                            <SortHeader label="KTC" subLabel="Dyn" sortKey="ktc" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} style={{ width: '52px', minWidth: '52px', flexShrink: 0 }} />
+                            <SortHeader label="FC" subLabel="Rookie" sortKey="fc" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} style={{ width: '52px', minWidth: '52px', flexShrink: 0 }} />
+                            <SortHeader label="DN" subLabel="Rookie" sortKey="dn" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} style={{ width: '52px', minWidth: '52px', flexShrink: 0 }} />
+                            <SortHeader label="ADP" subLabel="Pick" sortKey="proj" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} style={{ width: '64px', minWidth: '64px', flexShrink: 0 }} />
+                            {/* Tier — fixed width */}
+                            <div style={{ width: '96px', minWidth: '96px', flexShrink: 0 }} className="flex items-center justify-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                                 Tier
                             </div>
                         </div>
