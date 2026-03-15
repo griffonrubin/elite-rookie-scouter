@@ -29,7 +29,23 @@ def run():
     except Exception as e:
         logger.error(f"KTC scrape failed: {e}")
         
-    # 3. MultiRankings (FP Devy, Nerds, etc)
+    # 3. FantasyCalc
+    try:
+        logger.info("\n--- Scraping FantasyCalc ---")
+        from scrapers.rankings.fantasycalc import run as fc_run
+        fc_run()
+    except Exception as e:
+        logger.error(f"FantasyCalc scrape failed: {e}")
+
+    # 4. Dynasty Nerds
+    try:
+        logger.info("\n--- Scraping DynastyNerds ---")
+        from scrapers.rankings.dynasty_nerds import run as dn_run
+        dn_run()
+    except Exception as e:
+        logger.error(f"DynastyNerds scrape failed: {e}")
+
+    # 5. MultiRankings (FP Devy, etc)
     try:
         logger.info("\n--- Running MultiRankings ---")
         subprocess.run([sys.executable, "scrapers/multi_rankings.py"], check=True)

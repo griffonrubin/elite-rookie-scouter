@@ -3,6 +3,8 @@ import { Player, CollegeStats, Measurables, Ranking } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatsTable } from '@/components/StatsTable';
+import { StatTrendChart } from '@/components/StatTrendChart';
+import { PercentileChart } from '@/components/PercentileChart';
 import { SourceRankings } from '@/components/SourceRankings';
 import { POSITION_COLORS, POSITION_HEADLINE_STATS } from '@/lib/constants';
 import { ArrowLeft, GraduationCap, Calendar, Ruler, Weight, Star, Trophy, Newspaper, BarChart2, TrendingUp, ExternalLink, Scale, AlertTriangle } from 'lucide-react';
@@ -33,6 +35,12 @@ function getDraftLabel(rank: number): string {
 
 function formatHeight(inches: number) {
     return `${Math.floor(inches / 12)}'${inches % 12}"`;
+}
+
+function pctRank(val: number, arr: number[]): number {
+    if (arr.length === 0) return 50;
+    const sorted = [...arr].sort((a, b) => a - b);
+    return Math.round((sorted.filter(v => v < val).length / sorted.length) * 100);
 }
 
 function timeAgo(dateStr: string) {
@@ -113,6 +121,26 @@ async function getPlayer(slug: string) {
             [player.id]
         );
 
+        // Career aggregates for all position peers — used for percentile bars
+        const peerCareer = await query<any>(`
+            SELECT
+                cs.player_id,
+                SUM(COALESCE(cs.games_played, 0)) as games,
+                SUM(COALESCE(cs.rush_yards, 0))   as rush_yards,
+                SUM(COALESCE(cs.rush_attempts, 0)) as rush_att,
+                SUM(COALESCE(cs.rec_yards, 0))    as rec_yards,
+                SUM(COALESCE(cs.receptions, 0))   as receptions,
+                SUM(COALESCE(cs.pass_yards, 0))   as pass_yards,
+                SUM(COALESCE(cs.pass_attempts, 0)) as pass_att,
+                SUM(COALESCE(cs.completions, 0))  as completions,
+                SUM(COALESCE(cs.rush_tds, 0) + COALESCE(cs.rec_tds, 0) + COALESCE(cs.pass_tds, 0)) as total_tds
+            FROM college_stats cs
+            JOIN players p ON p.id = cs.player_id
+            WHERE p.position = $1 AND p.draft_year = 2026
+            GROUP BY cs.player_id
+            HAVING SUM(COALESCE(cs.games_played, 0)) >= 5
+        `, [player.position]);
+
         // Compute speed score inline if not stored: (weight × 200) / (40yd)^4
         const speedScore: number | null = (() => {
             if (measurables && (measurables as any).speed_score) return (measurables as any).speed_score;
@@ -149,7 +177,7 @@ async function getPlayer(slug: string) {
             trustIndicator = `No stats available · ${reason}`;
         }
 
-        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator };
+        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [] };
     } catch (e) {
         console.error("DB Error:", e);
         return null;
@@ -173,7 +201,7 @@ export default async function PlayerPage({ params }: PageProps) {
         );
     }
 
-    const { player, stats, rankings, measurables, speedScore, news } = data;
+    const { player, stats, rankings, measurables, speedScore, news, peerCareer } = data;
     const posStyle = POS_STYLES[player.position] || 'bg-gray-500/20 text-gray-400 border-gray-500/40 text-gray-300';
     const avatarBgMap: Record<string, string> = {
         QB: 'rgba(34, 211, 238, 0.15)',
@@ -277,6 +305,57 @@ export default async function PlayerPage({ params }: PageProps) {
             { label: 'Dom. Rating', val: '—', hint: 'Team target/yardage share %' },
             { label: 'Mkt Share', val: '—', hint: 'Team offensive share' },
         ];
+    }
+
+    // ── Percentile metrics vs. 2026 position peers ────────────────────────────
+    const myPeer = peerCareer.find((p: any) => p.player_id === player.id);
+    const percentileMetrics: { label: string; value: string | number; percentile: number; unit?: string }[] = [];
+    if (myPeer && peerCareer.length > 3) {
+        const s = (v: any) => Number(v) || 0;
+        const pos = player.position;
+        if (pos === 'QB') {
+            const passYpgArr = peerCareer.map((p: any) => s(p.games) > 0 ? s(p.pass_yards) / s(p.games) : 0);
+            const ypaArr     = peerCareer.map((p: any) => s(p.pass_att) > 0 ? s(p.pass_yards) / s(p.pass_att) : 0);
+            const cpArr      = peerCareer.map((p: any) => s(p.pass_att) > 0 ? s(p.completions) / s(p.pass_att) * 100 : 0);
+            const rushYpgArr = peerCareer.map((p: any) => s(p.games) > 0 ? s(p.rush_yards) / s(p.games) : 0);
+            const myPassYpg  = s(myPeer.games) > 0 ? s(myPeer.pass_yards) / s(myPeer.games) : 0;
+            const myYpa      = s(myPeer.pass_att) > 0 ? s(myPeer.pass_yards) / s(myPeer.pass_att) : 0;
+            const myCp       = s(myPeer.pass_att) > 0 ? s(myPeer.completions) / s(myPeer.pass_att) * 100 : 0;
+            const myRushYpg  = s(myPeer.games) > 0 ? s(myPeer.rush_yards) / s(myPeer.games) : 0;
+            percentileMetrics.push(
+                { label: 'Pass Yds/G',  value: myPassYpg > 0 ? myPassYpg.toFixed(0) : '—', percentile: pctRank(myPassYpg, passYpgArr), unit: 'yds' },
+                { label: 'Yds/Attempt', value: myYpa > 0 ? myYpa.toFixed(1) : '—',          percentile: pctRank(myYpa, ypaArr) },
+                { label: 'Comp %',      value: myCp > 0 ? myCp.toFixed(1) + '%' : '—',       percentile: pctRank(myCp, cpArr) },
+                { label: 'Rush Yds/G',  value: myRushYpg > 0 ? myRushYpg.toFixed(1) : '—',  percentile: pctRank(myRushYpg, rushYpgArr), unit: 'yds' },
+            );
+        } else if (pos === 'RB') {
+            const rushYpgArr  = peerCareer.map((p: any) => s(p.games) > 0 ? s(p.rush_yards) / s(p.games) : 0);
+            const ypcArr      = peerCareer.map((p: any) => s(p.rush_att) > 0 ? s(p.rush_yards) / s(p.rush_att) : 0);
+            const scrimYpgArr = peerCareer.map((p: any) => s(p.games) > 0 ? (s(p.rush_yards) + s(p.rec_yards)) / s(p.games) : 0);
+            const recPgArr    = peerCareer.map((p: any) => s(p.games) > 0 ? s(p.receptions) / s(p.games) : 0);
+            const myRushYpg   = s(myPeer.games) > 0 ? s(myPeer.rush_yards) / s(myPeer.games) : 0;
+            const myYpc       = s(myPeer.rush_att) > 0 ? s(myPeer.rush_yards) / s(myPeer.rush_att) : 0;
+            const myScrimYpg  = s(myPeer.games) > 0 ? (s(myPeer.rush_yards) + s(myPeer.rec_yards)) / s(myPeer.games) : 0;
+            const myRecPg     = s(myPeer.games) > 0 ? s(myPeer.receptions) / s(myPeer.games) : 0;
+            percentileMetrics.push(
+                { label: 'Rush Yds/G',  value: myRushYpg > 0 ? myRushYpg.toFixed(1) : '—',  percentile: pctRank(myRushYpg, rushYpgArr), unit: 'yds' },
+                { label: 'Yds/Carry',   value: myYpc > 0 ? myYpc.toFixed(1) : '—',            percentile: pctRank(myYpc, ypcArr) },
+                { label: 'Scrim Yds/G', value: myScrimYpg > 0 ? myScrimYpg.toFixed(1) : '—', percentile: pctRank(myScrimYpg, scrimYpgArr), unit: 'yds' },
+                { label: 'Rec/G',       value: myRecPg > 0 ? myRecPg.toFixed(2) : '—',        percentile: pctRank(myRecPg, recPgArr) },
+            );
+        } else {
+            const recYpgArr = peerCareer.map((p: any) => s(p.games) > 0 ? s(p.rec_yards) / s(p.games) : 0);
+            const yprArr    = peerCareer.map((p: any) => s(p.receptions) > 0 ? s(p.rec_yards) / s(p.receptions) : 0);
+            const recPgArr  = peerCareer.map((p: any) => s(p.games) > 0 ? s(p.receptions) / s(p.games) : 0);
+            const myRecYpg  = s(myPeer.games) > 0 ? s(myPeer.rec_yards) / s(myPeer.games) : 0;
+            const myYpr     = s(myPeer.receptions) > 0 ? s(myPeer.rec_yards) / s(myPeer.receptions) : 0;
+            const myRecPg   = s(myPeer.games) > 0 ? s(myPeer.receptions) / s(myPeer.games) : 0;
+            percentileMetrics.push(
+                { label: 'Rec Yds/G', value: myRecYpg > 0 ? myRecYpg.toFixed(1) : '—', percentile: pctRank(myRecYpg, recYpgArr), unit: 'yds' },
+                { label: 'Yds/Rec',   value: myYpr > 0 ? myYpr.toFixed(1) : '—',         percentile: pctRank(myYpr, yprArr) },
+                { label: 'Rec/G',     value: myRecPg > 0 ? myRecPg.toFixed(2) : '—',      percentile: pctRank(myRecPg, recPgArr) },
+            );
+        }
     }
 
     return (
@@ -449,6 +528,8 @@ export default async function PlayerPage({ params }: PageProps) {
                                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">College Career Stats</h3>
                                 <StatsTable stats={stats} position={player.position} />
 
+                                <StatTrendChart stats={stats} position={player.position} />
+
                                 {hasAdvancedMetrics && (
                                     <div className="bg-card border border-border/60 rounded-xl p-5 mt-6">
                                         <div className="flex items-center gap-2 mb-4">
@@ -466,6 +547,10 @@ export default async function PlayerPage({ params }: PageProps) {
                                             ))}
                                         </div>
                                     </div>
+                                )}
+
+                                {percentileMetrics.length > 0 && (
+                                    <PercentileChart metrics={percentileMetrics} position={player.position} />
                                 )}
 
                                 <div className="text-right text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">
