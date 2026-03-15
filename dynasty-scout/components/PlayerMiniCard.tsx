@@ -128,8 +128,8 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
             // ── Individual sortable measurable columns ─────────────────────────
             case 'hw':
                 return (
-                    <div className="flex flex-col leading-tight text-left">
-                        <span className="font-mono font-bold text-sm text-foreground/80">{ht}</span>
+                    <div className="flex flex-col items-center leading-tight">
+                        <span className="font-mono font-bold text-xs text-foreground/80">{ht}</span>
                         <span className="font-mono text-[10px] text-muted-foreground/50">{wt}</span>
                     </div>
                 );
@@ -169,7 +169,7 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
             // ── Legacy compact measurables (fallback) ─────────────────────────
             case 'measurables':
                 return (
-                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-foreground/80 truncate">
+                    <div className="flex items-center justify-center gap-1.5 text-[11px] font-mono text-foreground/80 truncate">
                         <span className="shrink-0">{ht} / {wt}</span>
                         {fortyYard ? <span className={`shrink-0 ${getFortyColor(fortyYard, player.position)}`}>· {fortyYard.toFixed(2)}s</span> : null}
                         {p.ras      ? <span className="text-purple-400 shrink-0">· RAS {Number(p.ras).toFixed(1)}</span> : null}

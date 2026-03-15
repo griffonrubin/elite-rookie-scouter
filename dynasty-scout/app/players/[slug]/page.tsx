@@ -71,7 +71,7 @@ async function getPlayer(slug: string) {
             SELECT
                 p.id, p.slug, p.full_name, p.first_name, p.last_name,
                 p.position, p.dob, p.age_at_draft, p.height_inches, p.weight_lbs,
-                p.star_rating, p.draft_year, p.headshot_url, p.nfl_team,
+                p.star_rating, p.draft_year, p.headshot_url, p.nfl_team, p.espn_college_id,
                 p.breakout_age, p.breakout_year,
                 p.recruiting_composite, p.recruiting_stars, p.recruiting_year,
                 COALESCE(
@@ -235,12 +235,16 @@ export default async function PlayerPage({ params }: PageProps) {
     const { player, stats, rankings, measurables, speedScore, news, peerCareer, historicalComps, epaStats, dominatorStats } = data;
     const posStyle = POS_STYLES[player.position] || 'bg-gray-500/20 text-gray-400 border-gray-500/40 text-gray-300';
     const avatarBgMap: Record<string, string> = {
-        QB: 'rgba(34, 211, 238, 0.15)',
-        RB: 'rgba(52, 211, 153, 0.15)',
-        WR: 'rgba(232, 121, 249, 0.15)',
-        TE: 'rgba(167, 139, 250, 0.15)',
+        QB: 'rgba(34, 211, 238, 0.12)',
+        RB: 'rgba(52, 211, 153, 0.12)',
+        WR: 'rgba(232, 121, 249, 0.12)',
+        TE: 'rgba(167, 139, 250, 0.12)',
     };
     const avatarBg = avatarBgMap[player.position] || avatarBgMap.WR;
+    // Best available headshot: stored URL → ESPN college CDN → placeholder
+    const headshotUrl: string | null =
+        player.headshot_url ??
+        (player.espn_college_id ? `https://a.espncdn.com/i/headshots/college-football/players/full/${player.espn_college_id}.png` : null);
     const classRank: number | null = player.consensus_rank && player.consensus_rank > 0 ? player.consensus_rank : null;
     // PROJ PICK = KTC is the most reliable source for draft slot estimation
     const projRank: number | null = player.ktc_rank ?? player.consensus_rank ?? player.best_rank ?? null;
@@ -420,24 +424,29 @@ export default async function PlayerPage({ params }: PageProps) {
             <div className="w-full mx-auto px-6 sm:px-8 py-8">
                 {/* ── Profile Section ── */}
                 <div className="flex flex-col lg:flex-row gap-6 mb-8">
-                    {/* Avatar — football silhouette placeholder */}
+                    {/* Avatar */}
                     <div className="flex-shrink-0">
-                        <div className="w-36 h-36 rounded-3xl border border-border/60 overflow-hidden flex items-center justify-center shadow-lg relative" style={{ background: avatarBg }}>
-                            {player.headshot_url ? (
-                                <img src={player.headshot_url} alt={player.full_name} className="w-full h-full object-cover" />
+                        <div
+                            className="w-32 h-44 rounded-2xl border border-border/40 overflow-hidden flex items-end justify-center shadow-xl relative"
+                            style={{ background: avatarBg }}
+                        >
+                            {headshotUrl ? (
+                                <img
+                                    src={headshotUrl}
+                                    alt={player.full_name}
+                                    className="w-full h-full object-contain object-bottom"
+                                />
                             ) : (
-                                <div className="flex flex-col items-center gap-1 z-10 relative">
-                                    {/* Jersey number / silhouette */}
-                                    <div className="text-4xl font-black text-muted-foreground/30 leading-none select-none mb-2">🏈</div>
+                                <div className="flex flex-col items-center gap-2 pb-6 z-10 relative">
+                                    <div className="text-5xl text-muted-foreground/20 leading-none select-none">🏈</div>
                                     <div
-                                        style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 9999, fontSize: 10, fontWeight: 800, lineHeight: 1 }}
+                                        style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 800, lineHeight: 1 }}
                                         className={`border ${posStyle} bg-background/80`}
                                     >
                                         {player.position}
                                     </div>
                                 </div>
                             )}
-                            <div className="absolute inset-0 bg-black/10 mix-blend-overlay"></div>
                         </div>
                     </div>
 
@@ -507,21 +516,35 @@ export default async function PlayerPage({ params }: PageProps) {
 
                         {/* Standardized 4-Col Header Badges */}
                         <div className="flex flex-wrap gap-3 mt-4">
-                            <div className="bg-card border border-border/60 rounded-xl px-4 py-3 flex-1 min-w-[100px] text-center shadow-sm">
-                                <div className="text-2xl font-black text-foreground leading-none">#{classRank ?? '—'}</div>
-                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Class Rank</div>
+                            {/* Class Rank — tier-colored accent */}
+                            <div className={cn(
+                                'rounded-xl px-4 py-3 flex-1 min-w-[110px] text-center shadow-sm border relative overflow-hidden',
+                                tier.color
+                            )}>
+                                <div className="text-3xl font-black leading-none font-mono">#{classRank ?? '—'}</div>
+                                <div className="text-[10px] uppercase tracking-widest mt-1.5 opacity-70 font-bold">Class Rank</div>
                             </div>
-                            <div className="bg-card border border-border/60 rounded-xl px-4 py-3 flex-1 min-w-[100px] text-center shadow-sm">
-                                <div className="text-lg font-black text-foreground leading-none">{projRank ? getDraftLabel(projRank) : '—'}</div>
-                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Dynasty ADP</div>
+                            {/* Dynasty ADP */}
+                            <div className="bg-card border border-border/60 rounded-xl px-4 py-3 flex-1 min-w-[110px] text-center shadow-sm">
+                                <div className="text-xl font-black text-foreground leading-tight font-mono">
+                                    {projRank ? getDraftSlot(projRank) : '—'}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1.5 font-bold">Proj. Pick</div>
                             </div>
-                            <div className="bg-card border border-border/60 rounded-xl px-4 py-3 flex-1 min-w-[100px] text-center shadow-sm">
-                                <div className="text-2xl font-black text-cyan-400 leading-none">{player.ktc_rank ? `#${player.ktc_rank}` : '—'}</div>
-                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">KTC Dynasty</div>
+                            {/* KTC Dynasty */}
+                            <div className="bg-card border border-cyan-500/30 rounded-xl px-4 py-3 flex-1 min-w-[110px] text-center shadow-sm" style={{ background: 'rgba(34,211,238,0.04)' }}>
+                                <div className="text-3xl font-black text-cyan-400 leading-none font-mono">{player.ktc_rank ? `#${player.ktc_rank}` : '—'}</div>
+                                <div className="text-[10px] text-cyan-400/60 uppercase tracking-widest mt-1.5 font-bold">KTC Dynasty</div>
                             </div>
-                            <div className="bg-card border border-border/60 rounded-xl px-4 py-3 flex-1 min-w-[100px] text-center shadow-sm">
-                                <div className="text-2xl font-black text-foreground leading-none">{player.num_sources || '—'}</div>
-                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Sources</div>
+                            {/* Avg Rank */}
+                            <div className="bg-card border border-border/60 rounded-xl px-4 py-3 flex-1 min-w-[110px] text-center shadow-sm">
+                                <div className="text-3xl font-black text-foreground leading-none font-mono">
+                                    {player.avg_rank ? `#${Math.round(player.avg_rank)}` : '—'}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1.5 font-bold">
+                                    Avg Rank
+                                    {player.num_sources > 0 && <span className="ml-1 opacity-50">({player.num_sources} src)</span>}
+                                </div>
                             </div>
                         </div>
 
@@ -533,12 +556,22 @@ export default async function PlayerPage({ params }: PageProps) {
                 {/* ── Headline stats row (if we have stats) ── */}
                 {recentStat && headlines.length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-8">
-                        {headlines.map((m) => {
+                        {headlines.map((m, i) => {
                             const val = (recentStat as any)[m.key];
+                            const display = val != null && val !== 0 && val !== '0' && val !== '0.0' ? val : '—';
+                            const hasVal = display !== '—';
+                            // Rotate accent colors across the stat strip
+                            const accentColors = [
+                                'text-[#FF9A50]', 'text-emerald-400', 'text-cyan-400',
+                                'text-violet-400', 'text-amber-400', 'text-fuchsia-400',
+                            ];
+                            const accent = accentColors[i % accentColors.length];
                             return (
-                                <div key={m.key} className="bg-card border border-border/60 rounded-xl p-3 flex flex-col items-center justify-center">
-                                    <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">{m.label}</span>
-                                    <span className="text-xl font-black text-foreground mt-1">{val != null && val !== 0 && val !== '0' && val !== '0.0' ? val : '—'}</span>
+                                <div key={m.key} className="bg-card border border-border/50 rounded-xl px-3 py-3.5 flex flex-col items-center justify-center gap-1 shadow-sm hover:border-border transition-colors">
+                                    <span className="text-[9px] text-muted-foreground/60 font-bold uppercase tracking-widest leading-none">{m.label}</span>
+                                    <span className={`text-2xl font-black leading-none font-mono ${hasVal ? accent : 'text-muted-foreground/20'}`}>
+                                        {display}
+                                    </span>
                                 </div>
                             );
                         })}
@@ -547,17 +580,17 @@ export default async function PlayerPage({ params }: PageProps) {
 
                 {/* ── Tabs ── */}
                 <Tabs defaultValue="stats">
-                    <TabsList className="bg-card border border-border/60 mb-6 h-10 w-full justify-start rounded-xl overflow-x-auto overflow-y-hidden">
-                        <TabsTrigger value="stats" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
+                    <TabsList className="bg-card border border-border/60 mb-6 h-12 w-full justify-start rounded-xl overflow-x-auto overflow-y-hidden">
+                        <TabsTrigger value="stats" className="text-xs font-semibold gap-1.5 px-5 py-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
                             📊 <span className="ml-0.5">Stats</span>
                         </TabsTrigger>
-                        <TabsTrigger value="rankings" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
+                        <TabsTrigger value="rankings" className="text-xs font-semibold gap-1.5 px-5 py-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
                             🏆 <span className="ml-0.5">Rankings</span>
                         </TabsTrigger>
-                        <TabsTrigger value="scout" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
+                        <TabsTrigger value="scout" className="text-xs font-semibold gap-1.5 px-5 py-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
                             🔬 <span className="ml-0.5">Scout</span>
                         </TabsTrigger>
-                        <TabsTrigger value="news" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
+                        <TabsTrigger value="news" className="text-xs font-semibold gap-1.5 px-5 py-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
                             📰 <span className="ml-0.5">News</span> {news.length > 0 && <span className="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded-full font-bold">{news.length}</span>}
                         </TabsTrigger>
                     </TabsList>
@@ -579,13 +612,23 @@ export default async function PlayerPage({ params }: PageProps) {
                                             <span className="ml-auto text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Career Aggregated</span>
                                         </div>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                            {statsGrid.map(m => (
-                                                <div key={m.label} className="bg-muted/30 border border-border/30 rounded-lg p-3 flex flex-col">
-                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide font-bold">{m.label}</div>
-                                                    <div className="text-xl font-black mt-1 text-foreground">{m.val != null && m.val !== 0 && m.val !== '—' ? m.val : '—'}</div>
-                                                    <div className="text-[9px] text-muted-foreground/50 mt-1">{m.hint}</div>
-                                                </div>
-                                            ))}
+                                            {statsGrid.map((m, i) => {
+                                                const hasVal = m.val != null && m.val !== 0 && m.val !== '—';
+                                                const accentColors = [
+                                                    'text-[#FF9A50]', 'text-emerald-400', 'text-cyan-400', 'text-violet-400',
+                                                    'text-amber-400', 'text-fuchsia-400', 'text-sky-400', 'text-rose-400',
+                                                ];
+                                                const accent = accentColors[i % accentColors.length];
+                                                return (
+                                                    <div key={m.label} className="bg-card border border-border/40 rounded-xl p-4 flex flex-col gap-1">
+                                                        <div className="text-[9px] text-muted-foreground/60 uppercase tracking-widest font-bold leading-none">{m.label}</div>
+                                                        <div className={`text-2xl font-black font-mono leading-none mt-1 ${hasVal ? accent : 'text-muted-foreground/20'}`}>
+                                                            {hasVal ? m.val : '—'}
+                                                        </div>
+                                                        <div className="text-[9px] text-muted-foreground/40 leading-none mt-0.5">{m.hint}</div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}

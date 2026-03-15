@@ -327,7 +327,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                     <div key={player.id}>
                                         {showTierHeader && (
                                             <div
-                                                className="flex items-center gap-3 mx-5 px-4 py-2 text-[11px] font-black uppercase tracking-[0.15em] mb-0.5 mt-2"
+                                                className="flex items-center gap-3 ml-8 mr-5 px-4 py-2 text-[11px] font-black uppercase tracking-[0.15em] mb-0.5 mt-2"
                                                 style={{ background: tier.accent, color: '#000', borderRadius: '6px' }}
                                             >
                                                 <span>{tier.label}</span>
