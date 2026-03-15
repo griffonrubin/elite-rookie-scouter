@@ -10,90 +10,155 @@ interface HexViewProps {
     period: '1d' | '7d' | '30d';
 }
 
-function getTierAccent(rank: number): string {
-    if (rank <= 5) return 'border-[#FF6B00]/60 bg-[#FF6B00]/5';
-    if (rank <= 12) return 'border-emerald-500/50 bg-emerald-500/5';
-    if (rank <= 24) return 'border-cyan-500/40 bg-cyan-500/5';
-    if (rank <= 48) return 'border-violet-500/40 bg-violet-500/5';
-    return 'border-border/30 bg-card/60';
+const PICKS_PER_ROUND = 12;
+
+function getTierStyle(rank: number): { border: string; bg: string; pickColor: string } {
+    if (rank <= 5)  return { border: 'border-[#FF6B00]/70', bg: 'bg-[#FF6B00]/[0.08]',   pickColor: 'text-[#FF9A50]'            };
+    if (rank <= 12) return { border: 'border-emerald-500/60', bg: 'bg-emerald-500/[0.06]', pickColor: 'text-emerald-400'          };
+    if (rank <= 24) return { border: 'border-cyan-500/50',    bg: 'bg-cyan-500/[0.05]',    pickColor: 'text-cyan-400'             };
+    if (rank <= 48) return { border: 'border-violet-500/50',  bg: 'bg-violet-500/[0.05]',  pickColor: 'text-violet-400'           };
+    if (rank <= 80) return { border: 'border-amber-500/40',   bg: 'bg-amber-500/[0.05]',   pickColor: 'text-amber-400'            };
+    return                 { border: 'border-border/25',       bg: 'bg-card/50',            pickColor: 'text-muted-foreground/50'  };
 }
 
-function getFortyColor(forty: number, pos: string): string {
+function getFortyColor(v: number, pos: string): string {
     const p = pos.toUpperCase();
-    if (p === 'RB') return forty < 4.40 ? 'text-emerald-400' : forty < 4.50 ? 'text-yellow-400' : forty < 4.60 ? 'text-orange-400' : 'text-red-400';
-    if (p === 'WR') return forty < 4.38 ? 'text-emerald-400' : forty < 4.47 ? 'text-yellow-400' : forty < 4.56 ? 'text-orange-400' : 'text-red-400';
-    if (p === 'TE') return forty < 4.50 ? 'text-emerald-400' : forty < 4.62 ? 'text-yellow-400' : forty < 4.75 ? 'text-orange-400' : 'text-red-400';
-    return forty < 4.75 ? 'text-emerald-400' : 'text-muted-foreground';
+    if (p === 'RB') return v < 4.40 ? 'text-emerald-400' : v < 4.50 ? 'text-yellow-400' : v < 4.60 ? 'text-orange-400' : 'text-red-400/70';
+    if (p === 'WR') return v < 4.38 ? 'text-emerald-400' : v < 4.47 ? 'text-yellow-400' : v < 4.56 ? 'text-orange-400' : 'text-red-400/70';
+    if (p === 'TE') return v < 4.50 ? 'text-emerald-400' : v < 4.62 ? 'text-yellow-400' : v < 4.75 ? 'text-orange-400' : 'text-red-400/70';
+    return v < 4.65 ? 'text-emerald-400' : v < 4.78 ? 'text-yellow-400' : 'text-muted-foreground/60';
 }
 
 export function HexView({ players, period }: HexViewProps) {
     if (players.length === 0) {
-        return (
-            <div className="p-12 text-center text-muted-foreground">
-                No players found.
-            </div>
-        );
+        return <div className="p-12 text-center text-muted-foreground">No players found.</div>;
+    }
+
+    // Group players into rounds of 12
+    const rounds: Player[][] = [];
+    for (let i = 0; i < players.length; i += PICKS_PER_ROUND) {
+        rounds.push(players.slice(i, i + PICKS_PER_ROUND));
     }
 
     return (
-        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-10 gap-2 p-3">
-            {players.map((player, index) => {
-                const rank = player.consensus?.rank_overall ?? (index + 1);
-                const posColor = POSITION_COLORS[player.position] || 'bg-gray-500/20 text-gray-300 border-gray-500/40';
-                const tierBorder = getTierAccent(rank);
-                const fortyYard = (player as any).forty_yard as number | null | undefined;
-                const forty = fortyYard ? fortyYard.toFixed(2) : null;
-                const fortyClass = fortyYard ? getFortyColor(fortyYard, player.position) : 'text-muted-foreground/50';
-                const ktc = player.consensus?.best_rank;
-                const sleeper = (player as any).sleeper_adp as number | null | undefined;
-                const hasDivergence = ktc && sleeper && Math.abs((sleeper as number) - ktc) >= 65;
-                const isBuy = hasDivergence && ((sleeper as number) - ktc) > 0;
+        <div className="space-y-1">
+            {/* Tier legend */}
+            <div className="flex items-center gap-4 px-2 pb-2 flex-wrap">
+                <span className="text-muted-foreground/40 uppercase tracking-widest text-[9px] font-bold">Tier</span>
+                {[
+                    { label: 'S (1–5)',    color: 'bg-[#FF6B00]'  },
+                    { label: 'A (6–12)',   color: 'bg-emerald-500' },
+                    { label: 'B (13–24)',  color: 'bg-cyan-500'    },
+                    { label: 'C (25–48)',  color: 'bg-violet-500'  },
+                    { label: 'D (49–80)',  color: 'bg-amber-500'   },
+                    { label: 'Depth 81+', color: 'bg-border'       },
+                ].map(t => (
+                    <span key={t.label} className="flex items-center gap-1 text-[10px] text-muted-foreground/60 font-semibold">
+                        <span className={`inline-block w-2 h-2 rounded-sm ${t.color}`} />
+                        {t.label}
+                    </span>
+                ))}
+            </div>
 
-                return (
-                    <Link
-                        key={player.id}
-                        href={`/players/${player.slug}`}
-                        className={cn(
-                            'group flex flex-col items-start gap-0.5 rounded-lg border p-2 cursor-pointer',
-                            'transition-all duration-150 hover:bg-primary/10 hover:border-primary/50 hover:shadow-md hover:shadow-primary/10 hover:-translate-y-px',
-                            tierBorder
-                        )}
-                    >
-                        {/* Rank + position */}
-                        <div className="flex items-center justify-between w-full gap-1">
-                            <span className="text-[10px] font-black font-mono text-muted-foreground/70">#{rank}</span>
-                            <span
-                                style={{ display: 'inline-flex', alignItems: 'center', padding: '1px 5px', borderRadius: 9999, fontSize: 8, fontWeight: 800, lineHeight: 1, whiteSpace: 'nowrap' }}
-                                className={cn('border', posColor)}
-                            >
-                                {player.position}
-                            </span>
-                        </div>
+            {/* Draft board — scrolls horizontally on small screens */}
+            <div className="overflow-x-auto">
+                <div style={{ minWidth: `${10 + PICKS_PER_ROUND * 82}px` }}>
+                    {rounds.map((roundPlayers, roundIdx) => {
+                        const roundNum = roundIdx + 1;
+                        return (
+                            <div key={roundIdx} className="flex items-stretch gap-0.5 mb-0.5">
+                                {/* Round label sidebar */}
+                                <div className="w-10 flex-shrink-0 flex items-center justify-center border-r border-border/20 mr-1">
+                                    <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/40">
+                                        Rd {roundNum}
+                                    </span>
+                                </div>
 
-                        {/* Name */}
-                        <div className="w-full">
-                            <div className="text-[11px] font-bold text-foreground leading-tight truncate group-hover:text-primary transition-colors" title={player.full_name}>
-                                {player.first_name?.[0]}. {player.last_name}
+                                {/* 12 pick slots */}
+                                {Array.from({ length: PICKS_PER_ROUND }).map((_, pickIdx) => {
+                                    const player = roundPlayers[pickIdx];
+                                    const globalRank = roundIdx * PICKS_PER_ROUND + pickIdx + 1;
+                                    const pickLabel = `${roundNum}.${String(pickIdx + 1).padStart(2, '0')}`;
+
+                                    if (!player) {
+                                        return (
+                                            <div
+                                                key={pickIdx}
+                                                className="flex-1 min-w-[74px] h-[78px] rounded border border-border/10 bg-muted/[0.03]"
+                                            />
+                                        );
+                                    }
+
+                                    const rank = (player as any).consensus_rank ?? globalRank;
+                                    const tier = getTierStyle(rank);
+                                    const posColor = POSITION_COLORS[player.position] || 'bg-gray-500/20 text-gray-300 border-gray-500/40';
+                                    const fortyYard = (player as any).forty_yard as number | null | undefined;
+                                    const ras = (player as any).ras as number | null | undefined;
+                                    const stars = (player as any).recruiting_stars as number | null | undefined;
+
+                                    return (
+                                        <Link
+                                            key={player.id}
+                                            href={`/players/${player.slug}`}
+                                            className={cn(
+                                                'group flex-1 min-w-[74px] h-[78px] flex flex-col rounded border p-1.5 cursor-pointer overflow-hidden',
+                                                'transition-all duration-150 hover:scale-[1.05] hover:z-10 hover:shadow-xl hover:shadow-black/40 relative',
+                                                tier.border, tier.bg
+                                            )}
+                                        >
+                                            {/* Pick + position */}
+                                            <div className="flex items-center justify-between gap-0.5">
+                                                <span className={`text-[9px] font-black font-mono ${tier.pickColor}`}>
+                                                    {pickLabel}
+                                                </span>
+                                                <span
+                                                    style={{ padding: '1px 4px', borderRadius: 9999, fontSize: 7, fontWeight: 800, lineHeight: 1, whiteSpace: 'nowrap' }}
+                                                    className={cn('border inline-flex items-center flex-shrink-0', posColor)}
+                                                >
+                                                    {player.position}
+                                                </span>
+                                            </div>
+
+                                            {/* Name */}
+                                            <div
+                                                className="text-[10px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors truncate mt-0.5"
+                                                title={player.full_name}
+                                            >
+                                                {player.first_name?.[0] ? `${player.first_name[0]}.` : ''} {player.last_name}
+                                            </div>
+
+                                            {/* School */}
+                                            <div className="text-[8px] text-muted-foreground/45 truncate leading-tight">
+                                                {(player as any).school || '—'}
+                                            </div>
+
+                                            {/* Bottom stat + stars */}
+                                            <div className="mt-auto flex items-center justify-between gap-1">
+                                                {fortyYard ? (
+                                                    <span className={`text-[8px] font-mono font-bold ${getFortyColor(fortyYard, player.position)}`}>
+                                                        {fortyYard.toFixed(2)}s
+                                                    </span>
+                                                ) : ras ? (
+                                                    <span className="text-[8px] font-mono font-bold text-purple-400">
+                                                        {Number(ras).toFixed(1)}
+                                                    </span>
+                                                ) : (
+                                                    <span />
+                                                )}
+                                                {stars && stars >= 4 && (
+                                                    <span className={`text-[8px] font-bold leading-none ${stars >= 5 ? 'text-yellow-400' : 'text-yellow-400/60'}`}>
+                                                        {'★'.repeat(Math.min(stars, 5))}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
                             </div>
-                            {forty ? (
-                                <div className={`text-[10px] font-mono font-semibold ${fortyClass}`}>{forty}s</div>
-                            ) : null}
-                        </div>
-
-                        {/* KTC + divergence dot */}
-                        <div className="flex items-center gap-1 mt-auto">
-                            {ktc ? (
-                                <span className="text-[9px] font-bold text-primary font-mono">#{ktc}</span>
-                            ) : null}
-                            {hasDivergence ? (
-                                <span className={`text-[8px] font-black ${isBuy ? 'text-emerald-400' : 'text-red-400'}`}>
-                                    {isBuy ? '▲' : '▼'}
-                                </span>
-                            ) : null}
-                        </div>
-                    </Link>
-                );
-            })}
+                        );
+                    })}
+                </div>
+            </div>
         </div>
     );
 }
