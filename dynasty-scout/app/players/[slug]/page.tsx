@@ -82,7 +82,9 @@ async function getPlayer(slug: string) {
                 cr.avg_rank, cr.best_rank, cr.num_sources,
                 (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'KeepTradeCut' ORDER BY scraped_at DESC LIMIT 1) as ktc_rank,
                 (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'Sleeper ADP' ORDER BY scraped_at DESC LIMIT 1) as sleeper_adp,
-                (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyPros' ORDER BY scraped_at DESC LIMIT 1) as fp_rank
+                (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyPros' ORDER BY scraped_at DESC LIMIT 1) as fp_rank,
+                (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyCalc' ORDER BY scraped_at DESC LIMIT 1) as fc_rank,
+                (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'DynastyNerds' ORDER BY scraped_at DESC LIMIT 1) as dn_rank
             FROM players p
             LEFT JOIN consensus_rankings cr ON p.id = cr.player_id
                 AND cr.calculated_at = (
@@ -244,6 +246,16 @@ export default async function PlayerPage({ params }: PageProps) {
     const projRank: number | null = player.ktc_rank ?? player.consensus_rank ?? player.best_rank ?? null;
     const draftSlot = projRank ? getDraftSlot(projRank) : null;
     const headlines = POSITION_HEADLINE_STATS[player.position] || [];
+
+    // Tier for scout tab
+    function getTierInfo(rank: number): { label: string; color: string } {
+        if (rank <= 5)  return { label: 'S Tier', color: 'bg-[#FF6B00]/20 text-[#FF9A50] border-[#FF6B00]/40' };
+        if (rank <= 12) return { label: 'A Tier', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
+        if (rank <= 24) return { label: 'B Tier', color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' };
+        if (rank <= 48) return { label: 'C Tier', color: 'bg-violet-500/20 text-violet-300 border-violet-500/40' };
+        return { label: 'Depth', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40' };
+    }
+    const tier = classRank ? getTierInfo(classRank) : { label: 'Unranked', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40' };
     const recentStat = stats[0] || null;
 
     // Derived stats for the summary bubbles calculated directly from accurate career database aggregations
@@ -542,14 +554,8 @@ export default async function PlayerPage({ params }: PageProps) {
                         <TabsTrigger value="rankings" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
                             🏆 <span className="ml-0.5">Rankings</span>
                         </TabsTrigger>
-                        <TabsTrigger value="analytics" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
-                            📡 <span className="ml-0.5">Analytics</span>
-                        </TabsTrigger>
                         <TabsTrigger value="scout" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
                             🔬 <span className="ml-0.5">Scout</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="draft" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
-                            📋 <span className="ml-0.5">Draft</span>
                         </TabsTrigger>
                         <TabsTrigger value="news" className="text-xs font-semibold gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
                             📰 <span className="ml-0.5">News</span> {news.length > 0 && <span className="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded-full font-bold">{news.length}</span>}
@@ -694,305 +700,332 @@ export default async function PlayerPage({ params }: PageProps) {
                         />
                     </TabsContent>
 
-                    {/* Analytics Tab — Bloomberg-style visualization dashboard */}
-                    <TabsContent value="analytics">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    {/* Scout Tab — comprehensive visual dashboard */}
+                    <TabsContent value="scout">
+                        <div className="space-y-6">
 
-                            {/* Left column */}
-                            <div className="space-y-5">
-                                {/* Athletic grades */}
-                                <AthleticsCard
-                                    position={player.position}
-                                    heightInches={player.height_inches}
-                                    weightLbs={player.weight_lbs}
-                                    measurables={measurables}
-                                    speedScore={speedScore}
-                                />
-
-                                {/* Production percentiles vs. class */}
-                                {percentileMetrics.length > 0 && (
-                                    <PercentileChart metrics={percentileMetrics} position={player.position} />
-                                )}
+                            {/* ── Dynasty Snapshot ── */}
+                            <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card via-card to-primary/5 p-5">
+                                <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[96px] font-black text-foreground/[0.03] leading-none select-none pointer-events-none">
+                                    {player.position}
+                                </div>
+                                <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-4">
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                        <span className={cn('border text-sm font-black px-3 py-1 rounded-full', tier.color)}>
+                                            {tier.label}
+                                        </span>
+                                        {projRank && (
+                                            <span className="text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full border border-border/40">
+                                                {projRank <= 12 ? '1st-Round Dynasty Pick' : projRank <= 24 ? '2nd-Round Dynasty Pick' : projRank <= 36 ? '3rd-Round Dynasty Pick' : 'Late-Round Dynasty Pick'}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-6 sm:ml-auto flex-wrap">
+                                        <div className="text-center">
+                                            <div className="text-2xl font-black text-foreground leading-none">#{classRank ?? '—'}</div>
+                                            <div className="text-[9px] text-muted-foreground uppercase tracking-wide mt-0.5">Class Rank</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-xl font-black text-primary leading-none">{draftSlot ?? '—'}</div>
+                                            <div className="text-[9px] text-muted-foreground uppercase tracking-wide mt-0.5">Proj Pick</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-2xl font-black text-cyan-400 leading-none">{player.ktc_rank ? `#${player.ktc_rank}` : '—'}</div>
+                                            <div className="text-[9px] text-muted-foreground uppercase tracking-wide mt-0.5">KTC</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-2xl font-black text-emerald-400 leading-none">{player.fp_rank ? `#${player.fp_rank}` : '—'}</div>
+                                            <div className="text-[9px] text-muted-foreground uppercase tracking-wide mt-0.5">FP</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-2xl font-black text-foreground/70 leading-none">{(player as any).num_sources ?? '—'}</div>
+                                            <div className="text-[9px] text-muted-foreground uppercase tracking-wide mt-0.5">Sources</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Right column */}
-                            <div className="space-y-5">
-                                {/* Career production bar chart */}
-                                {stats.length > 0 && (
-                                    <StatTrendChart stats={stats} position={player.position} />
-                                )}
+                            {/* ── Source Rankings Visual ── */}
+                            {[classRank, player.ktc_rank, player.fp_rank, (player as any).fc_rank, (player as any).dn_rank].some(r => r != null) && (() => {
+                                const sources = [
+                                    { label: 'Consensus', rank: classRank, bar: 'bg-primary' },
+                                    { label: 'KTC Dynasty', rank: player.ktc_rank as number | null, bar: 'bg-cyan-400' },
+                                    { label: 'FantasyPros', rank: player.fp_rank as number | null, bar: 'bg-emerald-400' },
+                                    { label: 'FantasyCalc', rank: (player as any).fc_rank as number | null, bar: 'bg-blue-400' },
+                                    { label: 'Dyn. Nerds', rank: (player as any).dn_rank as number | null, bar: 'bg-violet-400' },
+                                ].filter(s => s.rank != null) as { label: string; rank: number; bar: string }[];
+                                const maxScale = Math.max(50, ...sources.map(s => s.rank));
+                                return (
+                                    <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
+                                        <div className="px-4 py-3 border-b border-border/40 bg-muted/20 flex items-center justify-between">
+                                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Source Rankings</span>
+                                            <span className="text-[10px] text-muted-foreground/50 font-mono">1 → {maxScale} scale</span>
+                                        </div>
+                                        <div className="p-4 space-y-3">
+                                            {sources.map(src => {
+                                                const pct = Math.max(3, Math.round(((maxScale - src.rank + 1) / maxScale) * 100));
+                                                const rankCol = src.rank <= 12 ? 'text-emerald-400' : src.rank <= 24 ? 'text-cyan-400' : src.rank <= 36 ? 'text-yellow-400' : 'text-muted-foreground/80';
+                                                const avg = sources.reduce((s, x) => s + x.rank, 0) / sources.length;
+                                                const isHigh = src.rank < avg - 2;
+                                                const isLow  = src.rank > avg + 2;
+                                                return (
+                                                    <div key={src.label} className="grid grid-cols-[100px_1fr_52px_24px] items-center gap-3">
+                                                        <span className="text-[11px] text-muted-foreground font-medium">{src.label}</span>
+                                                        <div className="relative h-3.5 bg-border/20 rounded-full overflow-hidden">
+                                                            <div
+                                                                className={`absolute left-0 top-0 h-full rounded-full ${src.bar} opacity-75 transition-all duration-700`}
+                                                                style={{ width: `${pct}%` }}
+                                                            />
+                                                            {/* R1/R2 reference lines */}
+                                                            <div className="absolute top-0 h-full w-px bg-emerald-400/30" style={{ left: `${Math.round(((maxScale - 12 + 1) / maxScale) * 100)}%` }} />
+                                                            <div className="absolute top-0 h-full w-px bg-white/10"    style={{ left: `${Math.round(((maxScale - 24 + 1) / maxScale) * 100)}%` }} />
+                                                        </div>
+                                                        <span className={`text-sm font-black font-mono text-right ${rankCol}`}>#{src.rank}</span>
+                                                        <span className={`text-[10px] font-bold text-right ${isHigh ? 'text-emerald-400' : isLow ? 'text-red-400' : 'text-transparent'}`}>
+                                                            {isHigh ? '▲' : isLow ? '▼' : '·'}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="px-4 py-2 border-t border-border/20 flex gap-4 text-[9px] text-muted-foreground/40">
+                                            <span>Bar extends right = better rank</span>
+                                            <span className="text-emerald-400/50">│ R1 cutoff</span>
+                                            <span className="text-emerald-400 ml-auto">▲ bullish vs. consensus</span>
+                                            <span className="text-red-400">▼ bearish</span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
-                                {/* Dominator rating visual */}
-                                {dominatorStats.length > 0 && (
-                                    <DominatorChart data={dominatorStats} position={player.position} />
-                                )}
+                            {/* ── Two-column layout ── */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-                                {/* Historical comps */}
-                                {historicalComps && historicalComps.length > 0 && (
+                                {/* Left: Athletic profile + recruiting */}
+                                <div className="space-y-5">
+
+                                    {/* Athletic grades */}
+                                    <AthleticsCard
+                                        position={player.position}
+                                        heightInches={player.height_inches}
+                                        weightLbs={player.weight_lbs}
+                                        measurables={measurables}
+                                        speedScore={speedScore}
+                                    />
+
+                                    {/* Recruiting spotlight */}
+                                    {((player as any).recruiting_composite || (player as any).recruiting_stars) && (
+                                        <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
+                                            <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
+                                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Recruiting Pedigree</span>
+                                            </div>
+                                            <div className="p-4 space-y-3">
+                                                {(player as any).recruiting_stars && (
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs text-muted-foreground">Star Rating</span>
+                                                        <span className="text-yellow-400 font-black text-lg">{'★'.repeat((player as any).recruiting_stars)}</span>
+                                                    </div>
+                                                )}
+                                                {(player as any).recruiting_composite && (
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs text-muted-foreground">Composite Rating</span>
+                                                        <span className="text-sm font-black font-mono text-foreground">{Number((player as any).recruiting_composite).toFixed(4)}</span>
+                                                    </div>
+                                                )}
+                                                {(player as any).recruiting_year && (() => {
+                                                    const composite = Number((player as any).recruiting_composite || 0);
+                                                    // Bar showing 0.8500 (avg) to 1.0000 (elite)
+                                                    const pct = Math.max(2, Math.min(100, ((composite - 0.85) / 0.15) * 100));
+                                                    const barColor = composite >= 0.98 ? 'bg-yellow-400' : composite >= 0.95 ? 'bg-emerald-400' : composite >= 0.90 ? 'bg-cyan-400' : 'bg-yellow-500';
+                                                    return (
+                                                        <>
+                                                            {composite > 0 && (
+                                                                <div className="space-y-1">
+                                                                    <div className="flex justify-between text-[9px] text-muted-foreground/50">
+                                                                        <span>0.8500</span><span>Natl. avg: 0.9000</span><span>Elite: 0.9800+</span>
+                                                                    </div>
+                                                                    <div className="relative h-2 bg-border/25 rounded-full overflow-hidden">
+                                                                        <div className={`absolute left-0 top-0 h-full rounded-full ${barColor} transition-all duration-700`} style={{ width: `${pct}%` }} />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-xs text-muted-foreground">Recruit Class</span>
+                                                                <span className="text-xs font-bold text-foreground/70">{(player as any).recruiting_year}</span>
+                                                            </div>
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Breakout age card */}
+                                    {player.breakout_age && (
+                                        <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
+                                            <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
+                                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Breakout Profile</span>
+                                            </div>
+                                            <div className="p-4 grid grid-cols-2 gap-4">
+                                                <div className="text-center">
+                                                    <div className={`text-4xl font-black leading-none ${player.breakout_age <= 19 ? 'text-emerald-400' : player.breakout_age <= 20 ? 'text-cyan-400' : player.breakout_age <= 21 ? 'text-yellow-400' : 'text-foreground'}`}>
+                                                        {player.breakout_age}
+                                                    </div>
+                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Breakout Age</div>
+                                                    <div className="text-[10px] mt-1 font-bold">
+                                                        {player.breakout_age <= 19 ? <span className="text-emerald-400">Elite early</span>
+                                                            : player.breakout_age <= 20 ? <span className="text-cyan-400">Early breakout</span>
+                                                            : player.breakout_age <= 21 ? <span className="text-yellow-400">On schedule</span>
+                                                            : <span className="text-muted-foreground/60">Late bloomer</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="text-center">
+                                                    <div className="text-4xl font-black text-foreground leading-none">{player.breakout_year}</div>
+                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Season</div>
+                                                    <div className="text-[10px] text-muted-foreground/50 mt-1">First elite season</div>
+                                                </div>
+                                            </div>
+                                            <div className="px-4 py-2 border-t border-border/20">
+                                                <p className="text-[9px] text-muted-foreground/40">Age of first season with ≥20% dominator rating. Earlier = stronger dynasty prospect.</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                </div>
+
+                                {/* Right: Production visualizations */}
+                                <div className="space-y-5">
+
+                                    {/* Career production bar chart */}
+                                    {stats.length > 0 && (
+                                        <StatTrendChart stats={stats} position={player.position} />
+                                    )}
+
+                                    {/* Dominator rating visual */}
+                                    {dominatorStats.length > 0 && (
+                                        <DominatorChart data={dominatorStats} position={player.position} />
+                                    )}
+
+                                    {/* Percentile bars vs. class */}
+                                    {percentileMetrics.length > 0 && (
+                                        <PercentileChart metrics={percentileMetrics} position={player.position} />
+                                    )}
+
+                                    {/* EPA / Competition — shown here if no dominator data */}
+                                    {epaStats && epaStats.length > 0 && dominatorStats.length === 0 && (
+                                        <div className="rounded-xl border border-border/60 bg-card/40 p-4">
+                                            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Competition Adjustment</h3>
+                                            <div className="space-y-2">
+                                                {epaStats.map((row: any) => (
+                                                    <div key={row.season} className="flex items-center justify-between text-sm">
+                                                        <span className="text-muted-foreground font-mono text-xs">{row.season}</span>
+                                                        <div className="flex gap-5">
+                                                            {row.sp_rating != null && <span className={`font-bold font-mono text-xs ${row.sp_rating >= 20 ? 'text-emerald-400' : row.sp_rating >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>SP+ {row.sp_rating > 0 ? '+' : ''}{Number(row.sp_rating).toFixed(1)}</span>}
+                                                            {row.epa_per_play != null && <span className={`font-bold font-mono text-xs ${row.epa_per_play >= 1.0 ? 'text-emerald-400' : row.epa_per_play >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>EPA {Number(row.epa_per_play).toFixed(3)}</span>}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                </div>
+                            </div>
+
+                            {/* ── Dynasty Context + Historical Comps ── */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+                                {/* Dynasty context narrative */}
+                                <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
+                                    <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
+                                        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Dynasty Context</span>
+                                    </div>
+                                    <div className="p-4 space-y-3 text-sm text-muted-foreground">
+                                        <div className="flex items-start gap-2">
+                                            <span className="text-primary font-bold mt-0.5 shrink-0">→</span>
+                                            <span>Projected as a <strong className="text-foreground">{projRank ? (projRank <= 12 ? '1st-round' : projRank <= 24 ? '2nd-round' : projRank <= 36 ? '3rd-round' : 'late-round') : 'unranked'}</strong> dynasty pick based on consensus ranking.</span>
+                                        </div>
+                                        {player.position === 'RB' && (() => {
+                                            const scrimYds = (recentStat?.rush_yards || 0) + (recentStat?.rec_yards || 0);
+                                            const scrimYpg = recentStat?.games_played ? (scrimYds / recentStat.games_played).toFixed(1) : '—';
+                                            const rasScore = (measurables as any)?.ras || '—';
+                                            const yr = recentStat?.season || '2025';
+                                            const projStr = projRank ? (projRank <= 12 ? '1st' : projRank <= 24 ? '2nd' : projRank <= 36 ? '3rd' : 'late') : 'unranked';
+                                            return <div className="flex items-start gap-2"><span className="text-amber-400 font-bold mt-0.5 shrink-0">→</span><span>{player.last_name} averaged <strong className="text-foreground">{scrimYpg} scrim. yds/G</strong> in {yr} with a <strong className="text-foreground">{rasScore} RAS</strong> — {projStr}-round dynasty asset.</span></div>;
+                                        })()}
+                                        {player.position === 'WR' && (() => {
+                                            const ypg = (recentStat as any)?.yds_per_game || '—';
+                                            const rpg = (recentStat as any)?.rec_per_game || '—';
+                                            const yr = recentStat?.season || '2025';
+                                            const rasScore = (measurables as any)?.ras || '—';
+                                            const ht = player.height_inches || 72;
+                                            const sizeDesc = ht >= 74 ? `big-bodied (${Math.floor(ht / 12)}'${ht % 12}")` : `slot-frame (${Math.floor(ht / 12)}'${ht % 12}")`;
+                                            return <div className="flex items-start gap-2"><span className="text-fuchsia-400 font-bold mt-0.5 shrink-0">→</span><span>{player.last_name} averaged <strong className="text-foreground">{ypg} rec yds/G</strong> ({rpg} rec/G) in {yr} — {sizeDesc} with <strong className="text-foreground">{rasScore} RAS</strong>.</span></div>;
+                                        })()}
+                                        {player.position === 'QB' && (() => {
+                                            const cmp = (recentStat as any)?.completion_pct || '—';
+                                            const pyds = recentStat?.pass_yards || '—';
+                                            const ptds = recentStat?.pass_tds || '—';
+                                            const ryds = recentStat?.rush_yards || 0;
+                                            const yr = recentStat?.season || '2025';
+                                            const mob = ryds >= 300 ? 'dual-threat' : 'pocket passer';
+                                            return <div className="flex items-start gap-2"><span className="text-cyan-400 font-bold mt-0.5 shrink-0">→</span><span>{player.last_name} completed <strong className="text-foreground">{cmp}</strong> of passes for <strong className="text-foreground">{pyds} yds / {ptds} TDs</strong> in {yr} — <strong className="text-foreground">{mob}</strong> profile.</span></div>;
+                                        })()}
+                                        {player.position === 'TE' && <div className="flex items-start gap-2"><span className="text-violet-400 font-bold mt-0.5 shrink-0">→</span><span>Elite TEs are extremely rare — top-12 TEs in the 1st round represent <strong className="text-foreground">generational dynasty value</strong>.</span></div>}
+                                        {player.age_at_draft && (
+                                            <div className="flex items-start gap-2">
+                                                <span className="text-muted-foreground/50 font-bold mt-0.5 shrink-0">→</span>
+                                                <span>Draft age <strong className="text-foreground">{player.age_at_draft}</strong> — {player.age_at_draft <= 21 ? <span className="text-emerald-400 font-bold">young prospect with long NFL runway</span> : player.age_at_draft <= 23 ? <span className="text-cyan-400 font-bold">prime age for NFL entry</span> : <span className="text-yellow-400 font-bold">older prospect, shorter dynasty window</span>}.</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Historical athletic comps */}
+                                {historicalComps && historicalComps.length > 0 ? (
                                     <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
                                         <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
-                                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Historical Athletic Comps</span>
+                                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Athletic Comps</span>
+                                            <p className="text-[10px] text-muted-foreground/50 mt-0.5">Most similar 2010–2024 draft prospects by athleticism</p>
                                         </div>
                                         <div className="divide-y divide-border/20">
                                             {historicalComps.map((comp: any, i: number) => (
                                                 <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-muted/10 transition-colors">
                                                     <div className="flex items-center gap-3">
-                                                        <span className="text-xs font-bold font-mono text-muted-foreground/40 w-4">{i + 1}</span>
+                                                        <span className="text-xs font-bold font-mono text-muted-foreground/30 w-4">{i + 1}</span>
                                                         <div>
                                                             <div className="text-sm font-bold text-foreground">{comp.comp_name}</div>
-                                                            <div className="text-xs text-muted-foreground">
+                                                            <div className="text-[11px] text-muted-foreground">
                                                                 {comp.comp_year} · {comp.comp_round ? `Rd ${comp.comp_round}` : 'UDFA'}
                                                                 {comp.comp_team ? ` · ${comp.comp_team}` : ''}
+                                                                {comp.comp_probowls ? ` · ${comp.comp_probowls}× Pro Bowl` : ''}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-4 text-right">
+                                                    <div className="flex items-center gap-3 text-right">
                                                         {comp.comp_w_av != null && (
                                                             <div>
-                                                                <div className="text-[9px] text-muted-foreground uppercase">AV</div>
-                                                                <div className={`text-sm font-black font-mono ${comp.comp_w_av >= 40 ? 'text-emerald-400' : comp.comp_w_av >= 15 ? 'text-cyan-400' : 'text-muted-foreground'}`}>
-                                                                    {comp.comp_w_av}
-                                                                </div>
+                                                                <div className="text-[9px] text-muted-foreground/50 uppercase">Career AV</div>
+                                                                <div className={`text-sm font-black font-mono ${comp.comp_w_av >= 40 ? 'text-emerald-400' : comp.comp_w_av >= 15 ? 'text-cyan-400' : 'text-muted-foreground'}`}>{comp.comp_w_av}</div>
                                                             </div>
                                                         )}
                                                         <div>
-                                                            <div className="text-[9px] text-muted-foreground uppercase">Sim</div>
+                                                            <div className="text-[9px] text-muted-foreground/50 uppercase">Sim.</div>
                                                             <div className="text-sm font-bold font-mono text-foreground">{comp.similarity}%</div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
-                                        <div className="px-4 py-2 border-t border-border/20">
-                                            <p className="text-[9px] text-muted-foreground/40">Athletically similar 2010–2024 draft prospects. AV = Career Approximate Value.</p>
-                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-xl border border-dashed border-border/40 bg-card/20 p-8 text-center">
+                                        <p className="text-sm text-muted-foreground/40">No historical comps data yet</p>
                                     </div>
                                 )}
+
                             </div>
 
-                        </div>
-
-                        {/* EPA / Competition Adjustment — full width */}
-                        {epaStats && epaStats.length > 0 && (
-                            <div className="rounded-xl border border-border/60 bg-card/40 p-4 mt-5">
-                                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Competition Adjustment (SP+ / EPA)</h3>
-                                <div className="space-y-2">
-                                    {epaStats.map((row: any) => (
-                                        <div key={row.season} className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground font-mono text-xs">{row.season}</span>
-                                            <div className="flex items-center gap-6">
-                                                {row.sp_rating != null && (
-                                                    <div className="text-right">
-                                                        <span className="text-[9px] text-muted-foreground uppercase mr-1">SP+</span>
-                                                        <span className={`font-bold font-mono text-xs ${row.sp_rating >= 20 ? 'text-emerald-400' : row.sp_rating >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
-                                                            {row.sp_rating > 0 ? '+' : ''}{Number(row.sp_rating).toFixed(1)}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {row.epa_per_play != null && (
-                                                    <div className="text-right">
-                                                        <span className="text-[9px] text-muted-foreground uppercase mr-1">EPA/play</span>
-                                                        <span className={`font-bold font-mono text-xs ${row.epa_per_play >= 1.0 ? 'text-emerald-400' : row.epa_per_play >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
-                                                            {Number(row.epa_per_play).toFixed(3)}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <p className="text-[9px] text-muted-foreground/40 mt-2">SP+ = team strength vs. avg. EPA/play = expected points added per play.</p>
-                            </div>
-                        )}
-                    </TabsContent>
-
-                    {/* Draft Profile Tab */}
-                    <TabsContent value="draft">
-                        <div className="space-y-6">
-                            {/* Draft round projection */}
-                            <div>
-                                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">NFL Draft Projection</h3>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    <div className="bg-card border border-border/60 rounded-xl p-4 text-center">
-                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Dynasty Proj. Pick</div>
-                                        <div className="text-lg font-black text-primary mt-1">{projRank ? getDraftLabel(projRank) : '—'}</div>
-                                    </div>
-                                    <div className="bg-card border border-border/60 rounded-xl p-4 text-center">
-                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">KTC Dynasty Rank</div>
-                                        <div className="text-2xl font-black text-cyan-400 mt-1">{player.ktc_rank ? `#${player.ktc_rank}` : '—'}</div>
-                                    </div>
-                                    <div className="bg-card border border-border/60 rounded-xl p-4 text-center">
-                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Consensus Rank</div>
-                                        <div className="text-2xl font-black text-foreground mt-1">{classRank ? `#${classRank}` : '—'}</div>
-                                    </div>
-                                    <div className="bg-card border border-border/60 rounded-xl p-4 text-center">
-                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Draft Year</div>
-                                        <div className="text-2xl font-black text-foreground mt-1">{player.draft_year ?? '2026'}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Dynasty context */}
-                            <div className="bg-card border border-border/60 rounded-xl p-5">
-                                <h3 className="text-sm font-bold text-foreground mb-3">Dynasty Context</h3>
-                                <div className="space-y-2 text-sm text-muted-foreground">
-                                    <div className="flex items-start gap-2">
-                                        <span className="text-primary font-bold mt-0.5">→</span>
-                                        <span>Projected as a <strong className="text-foreground">{projRank ? (projRank <= 12 ? '1st-round' : projRank <= 24 ? '2nd-round' : projRank <= 36 ? '3rd-round' : 'late-round') : 'unranked'}</strong> dynasty pick based on KTC ranking.</span>
-                                    </div>
-                                    {player.position === 'RB' && (() => {
-                                        const scrimYds = (recentStat?.rush_yards || 0) + (recentStat?.rec_yards || 0);
-                                        const scrimYdsPerGame = recentStat?.games_played ? (scrimYds / recentStat.games_played).toFixed(1) : '—';
-                                        const rasScore = (measurables as any)?.ras || '—';
-                                        const fortyTime = (measurables as any)?.forty_yard || '—';
-                                        const recentYear = recentStat?.season || '2024';
-                                        const projStr = projRank ? (projRank <= 12 ? '1st' : projRank <= 24 ? '2nd' : projRank <= 36 ? '3rd' : 'late') : 'unranked';
-                                        return (
-                                            <div className="flex items-start gap-2">
-                                                <span className="text-amber-400 font-bold mt-0.5">→</span>
-                                                <span>
-                                                    {player.last_name} averaged <strong className="text-foreground">{scrimYdsPerGame} scrimmage yds/G</strong> in {recentYear} with a <strong className="text-foreground">{rasScore} RAS</strong> and {fortyTime}s speed — projects as a {projStr}-round dynasty asset.
-                                                </span>
-                                            </div>
-                                        );
-                                    })()}
-                                    {player.position === 'WR' && (() => {
-                                        const ydsPerGame = (recentStat as any)?.yds_per_game || '—';
-                                        const recPerGame = (recentStat as any)?.rec_per_game || '—';
-                                        const recentYear = recentStat?.season || '2024';
-                                        const rasScore = (measurables as any)?.ras || '—';
-                                        const ht = player.height_inches || 72; // default 6'0"
-                                        const sizeDesc = ht >= 74 ? `elite size at ${Math.floor(ht / 12)}'${ht % 12}"` : `smaller slot at ${Math.floor(ht / 12)}'${ht % 12}"`;
-                                        return (
-                                            <div className="flex items-start gap-2">
-                                                <span className="text-fuchsia-400 font-bold mt-0.5">→</span>
-                                                <span>
-                                                    {player.last_name} averaged <strong className="text-foreground">{ydsPerGame} rec yds/G</strong> ({recPerGame} rec/G) in {recentYear} — {sizeDesc} with <strong className="text-foreground">{rasScore} RAS</strong>.
-                                                </span>
-                                            </div>
-                                        );
-                                    })()}
-                                    {player.position === 'QB' && (() => {
-                                        const cmpPct = (recentStat as any)?.completion_pct || '—';
-                                        const passYards = recentStat?.pass_yards || '—';
-                                        const passTds = recentStat?.pass_tds || '—';
-                                        const rushYards = recentStat?.rush_yards || '0';
-                                        const recentYear = recentStat?.season || '2024';
-                                        const mobility = (recentStat?.rush_yards || 0) >= 300 ? "dual-threat" : "pocket passer";
-                                        return (
-                                            <div className="flex items-start gap-2">
-                                                <span className="text-cyan-400 font-bold mt-0.5">→</span>
-                                                <span>
-                                                    {player.last_name} completed <strong className="text-foreground">{cmpPct} of passes</strong> for {passYards} yards and {passTds} TDs in {recentYear}, adding {rushYards} rush yards — <strong className="text-foreground">{mobility}</strong> profile.
-                                                </span>
-                                            </div>
-                                        );
-                                    })()}
-                                    {player.position === 'TE' && <div className="flex items-start gap-2"><span className="text-violet-400 font-bold mt-0.5">→</span><span>Elite TEs are extremely rare — top-12 TEs drafted in the first round represent <strong className="text-foreground">generational value</strong>.</span></div>}
-                                </div>
-                            </div>
-                        </div>
-                    </TabsContent>
-
-                    {/* Scout Tab */}
-                    <TabsContent value="scout">
-                        <div className="space-y-6">
-
-                            {/* Athletic profile — graded bars */}
-                            <AthleticsCard
-                                position={player.position}
-                                heightInches={player.height_inches}
-                                weightLbs={player.weight_lbs}
-                                measurables={measurables}
-                                speedScore={speedScore}
-                            />
-
-                            {/* Recruiting */}
-                            {(player as any).recruiting_composite && (
-                                <div>
-                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Recruiting Profile</h3>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                        {[
-                                            { label: 'Stars', val: (player as any).recruiting_stars ? `${'★'.repeat((player as any).recruiting_stars)}` : null },
-                                            { label: 'Composite Rating', val: (player as any).recruiting_composite ? `${((player as any).recruiting_composite as number).toFixed(4)}` : null },
-                                            { label: 'Recruit Year', val: (player as any).recruiting_year ? String((player as any).recruiting_year) : null },
-                                        ].map(item => (
-                                            <div key={item.label} className={`bg-card border rounded-xl p-3 text-center ${item.val ? 'border-border/60' : 'border-dashed border-border/30 opacity-50'}`}>
-                                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{item.label}</div>
-                                                <div className={`text-lg font-black mt-1 ${item.val ? 'text-foreground' : 'text-muted-foreground/20'}`}>{item.val ?? '—'}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Production Metrics */}
-                            {(dominatorStats.length > 0 || player.breakout_age) && (
-                                <div>
-                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Production Metrics</h3>
-
-                                    {/* Breakout Age */}
-                                    {player.breakout_age && (
-                                        <div className="grid grid-cols-2 gap-3 mb-4">
-                                            <div className="bg-card border border-border/60 rounded-xl p-3 text-center">
-                                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Breakout Age</div>
-                                                <div className={`text-2xl font-black mt-1 ${player.breakout_age <= 19 ? 'text-emerald-400' : player.breakout_age <= 20 ? 'text-cyan-400' : 'text-foreground'}`}>
-                                                    {player.breakout_age}
-                                                </div>
-                                                <div className="text-[10px] text-muted-foreground/60 mt-0.5">{player.breakout_year} season</div>
-                                            </div>
-                                            <div className="bg-card border border-border/60 rounded-xl p-3 text-center">
-                                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Breakout Year</div>
-                                                <div className="text-2xl font-black mt-1 text-foreground">{player.breakout_year || '—'}</div>
-                                                <div className="text-[10px] text-muted-foreground/60 mt-0.5">First elite season</div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Dominator Rating by Season — visual bars */}
-                                    {dominatorStats.length > 0 && (
-                                        <DominatorChart data={dominatorStats} position={player.position} />
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Historical Comps */}
-                            {historicalComps && historicalComps.length > 0 && (
-                                <div>
-                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Historical Athletic Comps</h3>
-                                    <p className="text-xs text-muted-foreground/60 mb-3">Most athletically similar prospects from 2010–2024 NFL Draft classes</p>
-                                    <div className="space-y-2">
-                                        {historicalComps.map((comp: any, i: number) => (
-                                            <div key={i} className="flex items-center justify-between bg-card border border-border/60 rounded-xl px-4 py-3">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="text-xs font-bold text-muted-foreground/40 font-mono w-4">{i + 1}</div>
-                                                    <div>
-                                                        <div className="text-sm font-bold text-foreground">{comp.comp_name}</div>
-                                                        <div className="text-xs text-muted-foreground">
-                                                            {comp.comp_year} · {comp.comp_round ? `Round ${comp.comp_round}` : 'UDFA'}
-                                                            {comp.comp_team ? ` · ${comp.comp_team}` : ''}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-4 text-right">
-                                                    {comp.comp_w_av != null && (
-                                                        <div>
-                                                            <div className="text-[10px] text-muted-foreground uppercase">Career AV</div>
-                                                            <div className={`text-sm font-bold ${comp.comp_w_av >= 40 ? 'text-emerald-400' : comp.comp_w_av >= 15 ? 'text-cyan-400' : 'text-muted-foreground'}`}>
-                                                                {comp.comp_w_av}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <div className="text-[10px] text-muted-foreground uppercase">Similarity</div>
-                                                        <div className="text-sm font-bold text-foreground font-mono">{comp.similarity}%</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     </TabsContent>
 
