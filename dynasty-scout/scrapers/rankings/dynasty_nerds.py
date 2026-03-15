@@ -158,13 +158,14 @@ def run():
         conn.close()
         return
 
-    # Sort by rank, deduplicate, and save
+    # Sort by raw dynasty rank, deduplicate, then save as relative rookie rank 1..N
     results.sort(key=lambda x: x[0])
     seen = set()
     matched = 0
     unmatched = []
+    rookie_rank = 0
 
-    for rank, name, pos in results:
+    for _raw_rank, name, pos in results:
         if name in seen:
             continue
         seen.add(name)
@@ -174,11 +175,12 @@ def run():
             unmatched.append(name)
             continue
 
+        rookie_rank += 1
         cur.execute("DELETE FROM rankings WHERE player_id=? AND source=?", (p_id, SOURCE_NAME))
         cur.execute("""
             INSERT INTO rankings (player_id, source, rank_overall, source_url, scraped_at)
             VALUES (?, ?, ?, ?, ?)
-        """, (p_id, SOURCE_NAME, rank, SOURCE_URL, today))
+        """, (p_id, SOURCE_NAME, rookie_rank, SOURCE_URL, today))
         matched += 1
 
     conn.commit()

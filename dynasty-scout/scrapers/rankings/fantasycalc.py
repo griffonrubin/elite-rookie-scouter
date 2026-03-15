@@ -57,12 +57,15 @@ def run():
     ]
     print(f"Found {len(prospects)} named 2026 prospects")
 
+    # Sort by overall dynasty rank to get relative rookie rank 1..N
+    prospects.sort(key=lambda x: x.get("overallRank") or 9999)
+
     today = date.today().isoformat()
     matched = 0
     bio_updated = 0
     unmatched = []
 
-    for item in prospects:
+    for rookie_rank, item in enumerate(prospects, start=1):
         pl = item["player"]
         name_key = normalize_name(pl["name"])
         p_id = player_map.get(name_key)
@@ -80,7 +83,7 @@ def run():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             p_id, SOURCE_NAME,
-            item.get("overallRank"),
+            rookie_rank,  # relative rookie rank (1..N), not overall dynasty rank
             item.get("positionRank"),
             item.get("value"),
             item.get("maybeTier"),

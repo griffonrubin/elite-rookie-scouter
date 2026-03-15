@@ -1,0 +1,24 @@
+{
+  "": {
+    "fortyYardDash": {
+      "designation": "OFFICIAL",
+      "seconds": 5.36
+    },
+    "verticalJump": {
+      "designation": "OFFICIAL",
+      "inches": 29.5
+    },
+    "broadJump": {
+      "designation": "OFFICIAL",
+      "inches": 106
+    },
+    "benchPress": {
+      "designation": "OFFICIAL",
+      "repetitions": 24
+    },
+    "threeConeDrill": {
+      "designation": "OFFICIAL",
+      "seconds": 7.88
+    }
+  }
+}

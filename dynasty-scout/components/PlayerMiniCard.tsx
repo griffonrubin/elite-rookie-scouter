@@ -79,6 +79,8 @@ export function PlayerMiniCard({ player, ranking, period, index }: PlayerMiniCar
     const draftSlot = getDraftSlot(rookieRank);
     const rankColor = getRankColor(rookieRank);
     const ktcOverallRank = (player as any).ktc_rank;
+    const fcRank = (player as any).fantasycalc_rank;
+    const dnRank = (player as any).dynasty_nerds_rank;
     const schoolDisplay = (player as any).school || '';
 
     // Height / Weight on one line
@@ -155,30 +157,28 @@ export function PlayerMiniCard({ player, ranking, period, index }: PlayerMiniCar
                         </span>
                     </div>
 
-                    {/* 6. KTC Dyn — with optional divergence dot */}
+                    {/* 5. KTC Dyn */}
                     <div className="flex-1 flex items-center justify-center gap-1">
                         <span className={`font-bold font-mono text-sm ${ktcOverallRank != null ? 'text-foreground/80' : 'text-muted-foreground/30'}`}>
                             {ktcOverallRank ?? '—'}
                         </span>
-                        {(() => {
-                            const ktc = ktcOverallRank;
-                            const fp = player.fantasypros_rank;
-                            if (!ktc || !fp) return null;
-                            const gap = (fp as number) - ktc;
-                            // Threshold for meaningful divergence between KTC and FP
-                            if (Math.abs(gap) < 15) return null;
-                            return (
-                                <span
-                                    title={gap > 0 ? `KTC ranks ${gap} spots higher than FP — dynasty buy signal` : `FP ranks ${Math.abs(gap)} spots higher than KTC — possible sell`}
-                                    className={`text-[9px] font-black ${gap > 0 ? 'text-emerald-400' : 'text-red-400'}`}
-                                >
-                                    {gap > 0 ? '▲' : '▼'}
-                                </span>
-                            );
-                        })()}
                     </div>
 
-                    {/* 6. Proj Pick */}
+                    {/* 6. FantasyCalc Rookie */}
+                    <div className="flex-1 flex items-center justify-center">
+                        <span className={`font-bold font-mono text-sm ${fcRank != null ? 'text-foreground/80' : 'text-muted-foreground/30'}`}>
+                            {fcRank ?? '—'}
+                        </span>
+                    </div>
+
+                    {/* 7. DynastyNerds Rookie */}
+                    <div className="flex-1 flex items-center justify-center">
+                        <span className={`font-bold font-mono text-sm ${dnRank != null ? 'text-foreground/80' : 'text-muted-foreground/30'}`}>
+                            {dnRank ?? '—'}
+                        </span>
+                    </div>
+
+                    {/* 8. Proj Pick */}
                     <div className="flex-1 flex items-center justify-center" title={`Projected Dynasty Draft Pick (Round.Pick) - e.g. 1.01`}>
                         <span className="font-mono font-bold text-sm text-foreground/80">{draftSlot}</span>
                     </div>

@@ -15,7 +15,7 @@ import { BoxView } from '@/components/BoxView';
 import { HexView } from '@/components/HexView';
 
 interface DraftBoardProps { players: Player[]; }
-type SortKey = 'rank' | 'ktc' | 'sleeper' | 'fp' | 'proj';
+type SortKey = 'rank' | 'ktc' | 'sleeper' | 'fp' | 'fc' | 'dn' | 'proj';
 type SortDir = 'asc' | 'desc';
 
 const TIERS = [
@@ -96,6 +96,8 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 case 'ktc': va = (a as any).ktc_rank ?? MISS; vb = (b as any).ktc_rank ?? MISS; break;
                 case 'sleeper': va = (a as any).sleeper_adp ?? MISS; vb = (b as any).sleeper_adp ?? MISS; break;
                 case 'fp': va = (a as any).fantasypros_rank ?? MISS; vb = (b as any).fantasypros_rank ?? MISS; break;
+                case 'fc': va = (a as any).fantasycalc_rank ?? MISS; vb = (b as any).fantasycalc_rank ?? MISS; break;
+                case 'dn': va = (a as any).dynasty_nerds_rank ?? MISS; vb = (b as any).dynasty_nerds_rank ?? MISS; break;
                 case 'rank':
                 default: va = (a as any).consensus_rank ?? MISS; vb = (b as any).consensus_rank ?? MISS;
             }
@@ -145,13 +147,15 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir('asc'); }}>
                             <SelectTrigger className="w-[130px] h-9 bg-card border-border/60 text-xs px-3">
                                 <SelectValue>
-                                    {sortKey === 'rank' ? 'Consensus' : sortKey === 'ktc' ? 'KTC Dyn' : 'FantasyPros'}
+                                    {sortKey === 'rank' ? 'Consensus' : sortKey === 'ktc' ? 'KTC' : sortKey === 'fp' ? 'FantasyPros' : sortKey === 'fc' ? 'FantasyCalc' : sortKey === 'dn' ? 'DynNerds' : 'Consensus'}
                                 </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="rank">Consensus</SelectItem>
-                                <SelectItem value="ktc">KTC Dyn</SelectItem>
+                                <SelectItem value="ktc">KTC Dynasty</SelectItem>
                                 <SelectItem value="fp">FantasyPros</SelectItem>
+                                <SelectItem value="fc">FantasyCalc</SelectItem>
+                                <SelectItem value="dn">DynastyNerds</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -230,6 +234,8 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                             {/* Sortable stat headers — each is flex-1 button */}
                             <SortHeader label="FP" subLabel="Devy" sortKey="fp" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
                             <SortHeader label="KTC" subLabel="Dyn" sortKey="ktc" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
+                            <SortHeader label="FC" subLabel="Rookie" sortKey="fc" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
+                            <SortHeader label="DN" subLabel="Rookie" sortKey="dn" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
                             <SortHeader label="Dynasty" subLabel="ADP" sortKey="proj" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
                             {/* Tier — not sortable */}
                             <div className="flex-1 flex items-center justify-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
