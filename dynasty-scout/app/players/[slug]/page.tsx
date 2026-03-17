@@ -8,8 +8,12 @@ import { PercentileChart } from '@/components/PercentileChart';
 import { SourceRankings } from '@/components/SourceRankings';
 import { AthleticsCard } from '@/components/AthleticsCard';
 import { DominatorChart } from '@/components/DominatorChart';
+import { StatRingGauge } from '@/components/StatRingGauge';
+import { DonutSplit } from '@/components/DonutSplit';
+import { SeasonRankingsChart, type RankingMetric } from '@/components/SeasonRankingsChart';
+import { AdvancedStatsTable } from '@/components/AdvancedStatsTable';
 import { POSITION_COLORS, POSITION_HEADLINE_STATS } from '@/lib/constants';
-import { ArrowLeft, GraduationCap, Calendar, Ruler, Weight, Star, Trophy, Newspaper, BarChart2, TrendingUp, ExternalLink, Scale, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Calendar, Ruler, Weight, Star, Newspaper, BarChart2, ExternalLink, Scale, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Zap } from 'lucide-react';
@@ -104,7 +108,8 @@ async function getPlayer(slug: string) {
             ORDER BY c.rank_overall ASC NULLS LAST
         `, []);
 
-        player.consensus_rank = orderedSlugs.findIndex(s => s.slug === slug) + 1;
+        const idx = orderedSlugs.findIndex(s => s.slug === slug);
+        player.consensus_rank = idx >= 0 ? idx + 1 : null;
 
         const stats = await query<CollegeStats>(
             `SELECT * FROM (
@@ -147,6 +152,38 @@ async function getPlayer(slug: string) {
             HAVING SUM(COALESCE(cs.games_played, 0)) >= 1
         `, [player.position]);
 
+        // Advanced career metrics for position peers — used for class rankings + extended percentiles
+        const peerAdvanced = await query<any>(`
+            SELECT
+                cs.player_id,
+                SUM(COALESCE(cs.routes_run, 0))               as routes,
+                SUM(COALESCE(cs.targets, 0))                  as targets,
+                SUM(COALESCE(cs.receptions, 0))               as receptions,
+                SUM(COALESCE(cs.yards_after_catch, 0))        as yac,
+                SUM(COALESCE(cs.missed_tackles_forced, 0))    as mtf,
+                SUM(COALESCE(cs.first_downs, 0))              as first_downs,
+                SUM(COALESCE(cs.rec_tds, 0))                  as rec_tds,
+                SUM(COALESCE(cs.rec_yards, 0))                as rec_yards,
+                SUM(COALESCE(cs.rush_yards, 0))               as rush_yards,
+                SUM(COALESCE(cs.rush_attempts, 0))            as rush_att,
+                SUM(COALESCE(cs.yards_after_contact, 0))      as yac_contact,
+                SUM(COALESCE(cs.games_played, 0))             as games,
+                CASE WHEN SUM(COALESCE(cs.routes_run, 0)) > 0
+                    THEN SUM(COALESCE(cs.yprr, 0) * COALESCE(cs.routes_run, 0)) / SUM(COALESCE(cs.routes_run, 0))
+                    ELSE NULL END                             as yprr_wavg,
+                CASE WHEN SUM(COALESCE(cs.targets, 0)) > 0
+                    THEN SUM(COALESCE(cs.target_share, 0) * COALESCE(cs.targets, 0)) / SUM(COALESCE(cs.targets, 0))
+                    ELSE NULL END                             as target_share_wavg,
+                CASE WHEN SUM(COALESCE(cs.rush_attempts, 0)) > 0
+                    THEN SUM(COALESCE(cs.breakaway_run_rate, 0) * COALESCE(cs.rush_attempts, 0)) / SUM(COALESCE(cs.rush_attempts, 0))
+                    ELSE NULL END                             as breakaway_wavg
+            FROM college_stats cs
+            JOIN players p ON p.id = cs.player_id
+            WHERE p.position = $1 AND p.draft_year = 2026
+            GROUP BY cs.player_id
+            HAVING SUM(COALESCE(cs.games_played, 0)) >= 1
+        `, [player.position]);
+
         // Compute speed score inline if not stored: (weight × 200) / (40yd)^4
         const speedScore: number | null = (() => {
             if (measurables && (measurables as any).speed_score) return (measurables as any).speed_score;
@@ -167,21 +204,9 @@ async function getPlayer(slug: string) {
         ).catch(() => null);
         const scrapeDate = lastScrape?.completed_at ? new Date(lastScrape.completed_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'March 7, 2026';
 
-        const missingLog = await query<{ reason: string }>(
-            "SELECT $1::text as reason LIMIT 0", ['']
-        ).catch(() => [] as { reason: string }[]);
-
-        let trustIndicator = '';
-        if (player.espn_college_id) {
-            trustIndicator = `Stats via ESPN · Updated ${scrapeDate}`;
-        } else if (player.cfbref_id) {
-            trustIndicator = `Stats via CFB Reference · Updated ${scrapeDate}`;
-        } else if (stats && stats.length > 0) {
-            trustIndicator = `Stats manually verified · ${scrapeDate}`;
-        } else {
-            const reason = missingLog && missingLog.length > 0 ? missingLog[0].reason : 'Unscraped / Defensive Player';
-            trustIndicator = `No stats available · ${reason}`;
-        }
+        const trustIndicator = stats && stats.length > 0
+            ? `Stats via ESPN · Updated ${scrapeDate}`
+            : `No stats available · Unscraped / Defensive Player`;
 
         // Historical athletic comps
         const historicalComps = await query<any>(
@@ -208,7 +233,7 @@ async function getPlayer(slug: string) {
             [player.id]
         ).catch(() => [] as any[]);
 
-        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [] };
+        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [] };
     } catch (e) {
         console.error("DB Error:", e);
         return null;
@@ -232,7 +257,7 @@ export default async function PlayerPage({ params }: PageProps) {
         );
     }
 
-    const { player, stats, rankings, measurables, speedScore, news, peerCareer, historicalComps, epaStats, dominatorStats } = data;
+    const { player, stats, rankings, measurables, speedScore, news, peerCareer, peerAdvanced, historicalComps, epaStats, dominatorStats } = data;
     const posStyle = POS_STYLES[player.position] || 'bg-gray-500/20 text-gray-400 border-gray-500/40 text-gray-300';
     const avatarBgMap: Record<string, string> = {
         QB: 'rgba(34, 211, 238, 0.12)',
@@ -403,6 +428,194 @@ export default async function PlayerPage({ params }: PageProps) {
         }
     }
 
+    // ── Advanced analytics ────────────────────────────────────────────────────
+    // Helpers
+    const sd = (a: number | null | undefined, b: number | null | undefined) =>
+        a != null && b != null && b > 0 ? a / b : null;
+    const clamp = (v: number, lo = 0, hi = 10) => Math.min(hi, Math.max(lo, v));
+    const classRankFn = (val: number, arr: number[], higherIsBetter = true): number =>
+        higherIsBetter ? arr.filter(v => v > val).length + 1 : arr.filter(v => v < val).length + 1;
+
+    const myAdv = peerAdvanced.find((p: any) => Number(p.player_id) === Number(player.id));
+
+    // Career totals for this player
+    const carTotals = stats.reduce((acc, s) => ({
+        gp:      acc.gp + (s.games_played ?? 0),
+        routes:  acc.routes + (s.routes_run ?? 0),
+        targets: acc.targets + (s.targets ?? 0),
+        rec:     acc.rec + (s.receptions ?? 0),
+        recYds:  acc.recYds + (s.rec_yards ?? 0),
+        recTds:  acc.recTds + (s.rec_tds ?? 0),
+        yac:     acc.yac + (s.yards_after_catch ?? 0),
+        airYds:  acc.airYds + (s.air_yards ?? 0),
+        mtf:     acc.mtf + (s.missed_tackles_forced ?? 0),
+        firstDs: acc.firstDs + (s.first_downs ?? 0),
+        rushYds: acc.rushYds + (s.rush_yards ?? 0),
+        rushAtt: acc.rushAtt + (s.rush_attempts ?? 0),
+        yacCont: acc.yacCont + (s.yards_after_contact ?? 0),
+    }), { gp:0, routes:0, targets:0, rec:0, recYds:0, recTds:0, yac:0, airYds:0, mtf:0, firstDs:0, rushYds:0, rushAtt:0, yacCont:0 });
+
+    // Weighted-avg rate stats from DB
+    const carYPRR = stats.length > 0 ? (() => {
+        const wSum = stats.reduce((s, r) => s + (r.routes_run ?? 0), 0);
+        if (wSum === 0) return null;
+        return stats.reduce((s, r) => s + (r.yprr ?? 0) * (r.routes_run ?? 0), 0) / wSum;
+    })() : null;
+    const carDropRate = stats.length > 0 ? (() => {
+        const wSum = stats.reduce((s, r) => s + (r.targets ?? 0), 0);
+        if (wSum === 0) return null;
+        return stats.reduce((s, r) => s + (r.drop_rate ?? 0) * (r.targets ?? 0), 0) / wSum;
+    })() : null;
+    const carContestedRate = stats.length > 0 ? (() => {
+        const wSum = stats.reduce((s, r) => s + (r.targets ?? 0), 0);
+        if (wSum === 0) return null;
+        return stats.reduce((s, r) => s + (r.contested_catch_rate ?? 0) * (r.targets ?? 0), 0) / wSum;
+    })() : null;
+    const carDominator = stats.length > 0 ? (() => {
+        const wSum = stats.reduce((s, r) => s + (r.games_played ?? 0), 0);
+        if (wSum === 0) return null;
+        return stats.reduce((s, r) => s + (r.dominator_rating ?? 0) * (r.games_played ?? 0), 0) / wSum;
+    })() : null;
+
+    // Gauges, donuts, composite scores — position-specific
+    type GaugeSpec = { label: string; displayValue: string; pct: number };
+    type CompositeSpec = { label: string; score: number | null; description: string };
+    const advGauges: GaugeSpec[] = [];
+    const advComposites: CompositeSpec[] = [];
+    type DonutProps = { title: string; labelA: string; valueA: number | null; labelB: string; valueB: number | null; colorA: string; colorB: string };
+    let advDonutA: DonutProps | null = null;
+    let advDonutB: DonutProps | null = null;
+    const advRankingMetrics: RankingMetric[] = [];
+
+    const pos = player.position;
+
+    if (pos === 'WR' || pos === 'TE') {
+        const catchRate = sd(carTotals.rec, carTotals.targets);
+        const yacRec = sd(carTotals.yac, carTotals.rec);
+        const adotCar = sd(carTotals.airYds, carTotals.targets);
+        const rprr = sd(carTotals.rec, carTotals.routes);
+
+        if (catchRate != null) advGauges.push({ label: 'Catch Rate', displayValue: `${(catchRate*100).toFixed(1)}%`, pct: catchRate * 100 });
+        if (carDropRate != null) advGauges.push({ label: 'Drop Rate', displayValue: `${(carDropRate*100).toFixed(1)}%`, pct: 100 - carDropRate * 100 });
+        if (yacRec != null) advGauges.push({ label: 'YAC/Rec', displayValue: yacRec.toFixed(1), pct: Math.min(100, (yacRec / 8) * 100) });
+        if (carContestedRate != null) advGauges.push({ label: 'Contested%', displayValue: `${(carContestedRate*100).toFixed(1)}%`, pct: carContestedRate * 100 });
+
+        // Donuts
+        if (carTotals.airYds > 0 && carTotals.yac > 0) {
+            advDonutA = { title: 'Air Yds / YAC Split', labelA: 'Air Yards', valueA: carTotals.airYds, colorA: '#06b6d4', labelB: 'YAC', valueB: carTotals.yac, colorB: '#a78bfa' };
+        }
+
+        // Composite scores
+        const prodScore = carDominator != null && carYPRR != null ? clamp((carDominator/30)*4 + (carYPRR/3)*3 + (catchRate ?? 0.65)/0.70*3) : null;
+        const yacScore = yacRec != null ? clamp((yacRec / 8) * 10) : null;
+        const playmakerScore = carYPRR != null ? clamp((carYPRR/3)*5 + ((carContestedRate ?? 0)/0.5)*2.5 + (Math.min(carTotals.mtf,40)/40)*2.5) : null;
+        const effScore = rprr != null ? clamp((rprr/0.65)*3.5 + ((catchRate ?? 0)/0.72)*3.5 + ((1-(carDropRate ?? 0.08))/0.94)*3) : null;
+
+        advComposites.push(
+            { label: 'Production', score: prodScore, description: 'DOM + YPRR + Catch%' },
+            { label: 'YAC', score: yacScore, description: 'Yards after catch per rec' },
+            { label: 'Playmaker', score: playmakerScore, description: 'YPRR + Contested + MTF' },
+            { label: 'Efficiency', score: effScore, description: 'RPRR + Catch% + Drop%' },
+        );
+
+        // Class rankings from peerAdvanced
+        if (myAdv && peerAdvanced.length > 3) {
+            const n = (x: any) => Number(x) || 0;
+            const routesArr = peerAdvanced.filter((p: any) => n(p.routes) > 0).map((p: any) => n(p.routes));
+            const tgtsArr   = peerAdvanced.filter((p: any) => n(p.targets) > 0).map((p: any) => n(p.targets));
+            const recYdsArr = peerAdvanced.filter((p: any) => n(p.receptions) > 0).map((p: any) => n(p.rec_yards ?? 0));
+            const recTdsArr = peerAdvanced.filter((p: any) => n(p.rec_tds) > 0).map((p: any) => n(p.rec_tds));
+            const yprr2Arr  = peerAdvanced.filter((p: any) => p.yprr_wavg != null).map((p: any) => n(p.yprr_wavg));
+            const yacArr    = peerAdvanced.filter((p: any) => n(p.yac) > 0).map((p: any) => n(p.yac));
+
+            if (routesArr.length > 0 && carTotals.routes > 0) advRankingMetrics.push({ label: 'Routes', value: String(carTotals.routes), rank: classRankFn(carTotals.routes, routesArr), total: routesArr.length });
+            if (tgtsArr.length > 0 && carTotals.targets > 0) advRankingMetrics.push({ label: 'Targets', value: String(carTotals.targets), rank: classRankFn(carTotals.targets, tgtsArr), total: tgtsArr.length });
+            if (recYdsArr.length > 0 && carTotals.recYds > 0) advRankingMetrics.push({ label: 'Rec Yards', value: String(carTotals.recYds), rank: classRankFn(carTotals.recYds, recYdsArr), total: recYdsArr.length });
+            if (recTdsArr.length > 0 && carTotals.recTds > 0) advRankingMetrics.push({ label: 'Rec TDs', value: String(carTotals.recTds), rank: classRankFn(carTotals.recTds, recTdsArr), total: recTdsArr.length });
+            if (yprr2Arr.length > 0 && carYPRR != null) advRankingMetrics.push({ label: 'YPRR', value: carYPRR.toFixed(2), rank: classRankFn(carYPRR, yprr2Arr), total: yprr2Arr.length });
+            if (yacArr.length > 0 && carTotals.yac > 0) advRankingMetrics.push({ label: 'YAC', value: String(carTotals.yac), rank: classRankFn(carTotals.yac, yacArr), total: yacArr.length });
+        }
+
+    } else if (pos === 'RB') {
+        const catchRate = sd(carTotals.rec, carTotals.targets);
+        const yacAtt = sd(carTotals.yacCont, carTotals.rushAtt);
+        const ypc = sd(carTotals.rushYds, carTotals.rushAtt);
+        const carBreakaway = stats.length > 0 ? (() => {
+            const wSum = stats.reduce((s, r) => s + (r.rush_attempts ?? 0), 0);
+            if (wSum === 0) return null;
+            return stats.reduce((s, r) => s + (r.breakaway_run_rate ?? 0) * (r.rush_attempts ?? 0), 0) / wSum;
+        })() : null;
+
+        if (yacAtt != null) advGauges.push({ label: 'YAC/Att', displayValue: yacAtt.toFixed(2), pct: Math.min(100, (yacAtt / 3.5) * 100) });
+        if (carBreakaway != null) advGauges.push({ label: 'Breakaway%', displayValue: `${(carBreakaway*100).toFixed(1)}%`, pct: Math.min(100, (carBreakaway / 0.12) * 100) });
+        if (carTotals.mtf > 0) advGauges.push({ label: 'MTF', displayValue: String(carTotals.mtf), pct: Math.min(100, (carTotals.mtf / 50) * 100) });
+        if (catchRate != null) advGauges.push({ label: 'Catch Rate', displayValue: `${(catchRate*100).toFixed(1)}%`, pct: catchRate * 100 });
+
+        const scrimYds = carTotals.rushYds + carTotals.recYds;
+        if (scrimYds > 0) {
+            advDonutA = { title: 'Rush / Receiving Split', labelA: 'Rush Yards', valueA: carTotals.rushYds, colorA: '#10b981', labelB: 'Rec Yards', valueB: carTotals.recYds, colorB: '#06b6d4' };
+        }
+
+        const visionScore = ypc != null && yacAtt != null ? clamp((ypc/6)*5 + (yacAtt/2.5)*5) : null;
+        const contactScore = carTotals.mtf > 0 && carBreakaway != null ? clamp((carTotals.mtf/40)*5 + (carBreakaway/0.10)*5) : null;
+        const recvScore = catchRate != null && carTotals.rec > 0 ? clamp((sd(carTotals.rec, carTotals.gp) ?? 0)/5*5 + (catchRate/0.80)*5) : null;
+
+        advComposites.push(
+            { label: 'Vision', score: visionScore, description: 'YPC + YAC/Att' },
+            { label: 'Contact Balance', score: contactScore, description: 'MTF + Breakaway%' },
+            { label: 'Receiving', score: recvScore, description: 'Rec/G + Catch%' },
+        );
+
+        if (myAdv && peerAdvanced.length > 3) {
+            const n = (x: any) => Number(x) || 0;
+            const rushYdsArr = peerAdvanced.filter((p: any) => n(p.rush_yards) > 0).map((p: any) => n(p.rush_yards));
+            const ypcArr     = peerAdvanced.filter((p: any) => n(p.rush_att) > 0).map((p: any) => n(p.rush_yards) / n(p.rush_att));
+            const mtfArr     = peerAdvanced.filter((p: any) => n(p.mtf) > 0).map((p: any) => n(p.mtf));
+
+            if (rushYdsArr.length > 0) advRankingMetrics.push({ label: 'Rush Yards', value: String(carTotals.rushYds), rank: classRankFn(carTotals.rushYds, rushYdsArr), total: rushYdsArr.length });
+            if (ypcArr.length > 0 && ypc != null) advRankingMetrics.push({ label: 'YPC', value: ypc.toFixed(2), rank: classRankFn(ypc, ypcArr), total: ypcArr.length });
+            if (mtfArr.length > 0 && carTotals.mtf > 0) advRankingMetrics.push({ label: 'MTF', value: String(carTotals.mtf), rank: classRankFn(carTotals.mtf, mtfArr), total: mtfArr.length });
+        }
+
+    } else if (pos === 'QB') {
+        const carComp = stats.reduce((a, s) => a + (s.completions ?? 0), 0);
+        const carAtt  = stats.reduce((a, s) => a + (s.pass_attempts ?? 0), 0);
+        const carPassYds = stats.reduce((a, s) => a + (s.pass_yards ?? 0), 0);
+        const compPct = sd(carComp, carAtt);
+        const ypa = sd(carPassYds, carAtt);
+        const carQBR = stats.length > 0 ? (() => {
+            const wSum = stats.reduce((s, r) => s + (r.pass_attempts ?? 0), 0);
+            if (wSum === 0) return null;
+            return stats.reduce((s, r) => s + (r.qbr ?? 0) * (r.pass_attempts ?? 0), 0) / wSum;
+        })() : null;
+
+        if (compPct != null) advGauges.push({ label: 'Comp%', displayValue: `${(compPct*100).toFixed(1)}%`, pct: Math.min(100, ((compPct - 0.50) / 0.20) * 100) });
+        if (ypa != null) advGauges.push({ label: 'YPA', displayValue: ypa.toFixed(1), pct: Math.min(100, ((ypa - 5) / 6) * 100) });
+        if (carQBR != null) advGauges.push({ label: 'QBR', displayValue: carQBR.toFixed(1), pct: carQBR });
+        if (carTotals.rushYds > 0 && carTotals.gp > 0) advGauges.push({ label: 'Rush Yds/G', displayValue: (carTotals.rushYds/carTotals.gp).toFixed(1), pct: Math.min(100, (carTotals.rushYds/carTotals.gp / 60) * 100) });
+
+        const carTds = stats.reduce((a, s) => a + (s.pass_tds ?? 0), 0);
+        const carInts = stats.reduce((a, s) => a + (s.interceptions ?? 0), 0);
+        const tdInt = sd(carTds, carInts);
+        const passYpg = sd(carPassYds, carTotals.gp);
+        const accScore = compPct != null && ypa != null ? clamp((compPct/0.66)*5 + (ypa/9.0)*5) : null;
+        const mobilityScore = carTotals.gp > 0 ? clamp((carTotals.rushYds/carTotals.gp / 50) * 10) : null;
+        const prodScore = passYpg != null && tdInt != null ? clamp((passYpg/280)*5 + (tdInt/4)*5) : null;
+
+        advComposites.push(
+            { label: 'Accuracy', score: accScore, description: 'Comp% + YPA' },
+            { label: 'Mobility', score: mobilityScore, description: 'Rush Yards/G' },
+            { label: 'Production', score: prodScore, description: 'Pass Yds/G + TD:INT' },
+        );
+    }
+
+    const hasAdvancedAnalytics = stats.length > 0 && ['WR', 'TE', 'RB', 'QB'].includes(pos);
+
+    // Early declare detection: first stat season >= 2023 means they're entering before senior year
+    const firstStatSeason = stats.length > 0 ? Math.min(...stats.map(s => s.season ?? 9999)) : null;
+    const isEarlyDeclare = firstStatSeason != null && firstStatSeason >= 2023 && player.draft_year === 2026;
+    const earlyDeclareLabel = firstStatSeason === 2024 ? 'Sophomore Declare' : firstStatSeason === 2023 ? 'Junior Declare' : null;
+
     return (
         <div className="min-h-screen bg-background text-foreground">
             {/* Top nav bar */}
@@ -555,7 +768,7 @@ export default async function PlayerPage({ params }: PageProps) {
 
                 {/* ── Headline stats row (if we have stats) ── */}
                 {recentStat && headlines.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-8">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-8">
                         {headlines.map((m, i) => {
                             const val = (recentStat as any)[m.key];
                             const display = val != null && val !== 0 && val !== '0' && val !== '0.0' ? val : '—';
@@ -567,7 +780,7 @@ export default async function PlayerPage({ params }: PageProps) {
                             ];
                             const accent = accentColors[i % accentColors.length];
                             return (
-                                <div key={m.key} className="bg-card border border-border/50 rounded-xl px-3 py-3.5 flex flex-col items-center justify-center gap-1 shadow-sm hover:border-border transition-colors">
+                                <div key={m.key} className="bg-card border border-border/50 rounded-xl px-3 py-4 flex flex-col items-center justify-center gap-2 shadow-sm hover:border-border transition-colors">
                                     <span className="text-[9px] text-muted-foreground/60 font-bold uppercase tracking-widest leading-none">{m.label}</span>
                                     <span className={`text-2xl font-black leading-none font-mono ${hasVal ? accent : 'text-muted-foreground/20'}`}>
                                         {display}
@@ -598,7 +811,7 @@ export default async function PlayerPage({ params }: PageProps) {
                     {/* Stats Tab */}
                     <TabsContent value="stats">
                         {stats.length > 0 ? (
-                            <div className="space-y-6">
+                            <div className="space-y-8">
                                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">College Career Stats</h3>
                                 <StatsTable stats={stats} position={player.position} />
 
@@ -611,21 +824,26 @@ export default async function PlayerPage({ params }: PageProps) {
                                             <span className="text-sm font-bold text-foreground">College Production</span>
                                             <span className="ml-auto text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Career Aggregated</span>
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                                             {statsGrid.map((m, i) => {
                                                 const hasVal = m.val != null && m.val !== 0 && m.val !== '—';
                                                 const accentColors = [
                                                     'text-[#FF9A50]', 'text-emerald-400', 'text-cyan-400', 'text-violet-400',
                                                     'text-amber-400', 'text-fuchsia-400', 'text-sky-400', 'text-rose-400',
                                                 ];
+                                                const borderColors = [
+                                                    'border-t-[#FF6B00]/50', 'border-t-emerald-500/50', 'border-t-cyan-500/50', 'border-t-violet-500/50',
+                                                    'border-t-amber-500/50', 'border-t-fuchsia-500/50', 'border-t-sky-500/50', 'border-t-rose-500/50',
+                                                ];
                                                 const accent = accentColors[i % accentColors.length];
+                                                const topBorder = borderColors[i % borderColors.length];
                                                 return (
-                                                    <div key={m.label} className="bg-card border border-border/40 rounded-xl p-4 flex flex-col gap-1">
+                                                    <div key={m.label} className={`bg-card border border-border/40 border-t-2 ${topBorder} rounded-xl p-4 flex flex-col gap-2`}>
                                                         <div className="text-[9px] text-muted-foreground/60 uppercase tracking-widest font-bold leading-none">{m.label}</div>
-                                                        <div className={`text-2xl font-black font-mono leading-none mt-1 ${hasVal ? accent : 'text-muted-foreground/20'}`}>
+                                                        <div className={`text-2xl font-black font-mono leading-none ${hasVal ? accent : 'text-muted-foreground/20'}`}>
                                                             {hasVal ? m.val : '—'}
                                                         </div>
-                                                        <div className="text-[9px] text-muted-foreground/40 leading-none mt-0.5">{m.hint}</div>
+                                                        <div className="text-[9px] text-muted-foreground/40 leading-none">{m.hint}</div>
                                                     </div>
                                                 );
                                             })}
@@ -670,6 +888,7 @@ export default async function PlayerPage({ params }: PageProps) {
                                     </div>
                                 )}
 
+
                                 <div className="text-right text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">
                                     {data.trustIndicator}
                                 </div>
@@ -689,7 +908,7 @@ export default async function PlayerPage({ params }: PageProps) {
                         {/* Combine / athletic testing */}
                         <div className="mt-6">
                             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Athletic Testing</h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                 {([
                                     {
                                         label: '40 Yard Dash', key: 'forty_yard', unit: 's', src: measurables,
@@ -745,7 +964,7 @@ export default async function PlayerPage({ params }: PageProps) {
 
                     {/* Scout Tab — comprehensive visual dashboard */}
                     <TabsContent value="scout">
-                        <div className="space-y-6">
+                        <div className="space-y-8">
 
                             {/* ── Dynasty Snapshot ── */}
                             <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card via-card to-primary/5 p-5">
@@ -903,33 +1122,51 @@ export default async function PlayerPage({ params }: PageProps) {
                                         </div>
                                     )}
 
-                                    {/* Breakout age card */}
-                                    {player.breakout_age && (
+                                    {/* Breakout + Draft Entry Profile */}
+                                    {(player.breakout_age || isEarlyDeclare) && (
                                         <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
                                             <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
                                                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Breakout Profile</span>
                                             </div>
-                                            <div className="p-4 grid grid-cols-2 gap-4">
-                                                <div className="text-center">
-                                                    <div className={`text-4xl font-black leading-none ${player.breakout_age <= 19 ? 'text-emerald-400' : player.breakout_age <= 20 ? 'text-cyan-400' : player.breakout_age <= 21 ? 'text-yellow-400' : 'text-foreground'}`}>
-                                                        {player.breakout_age}
+                                            <div className={`p-4 grid gap-4 ${player.breakout_age && isEarlyDeclare ? 'grid-cols-3' : player.breakout_age ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                                {player.breakout_age && (
+                                                    <>
+                                                        <div className="text-center">
+                                                            <div className={`text-4xl font-black leading-none ${player.breakout_age <= 19 ? 'text-emerald-400' : player.breakout_age <= 20 ? 'text-cyan-400' : player.breakout_age <= 21 ? 'text-yellow-400' : 'text-foreground'}`}>
+                                                                {player.breakout_age}
+                                                            </div>
+                                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Breakout Age</div>
+                                                            <div className="text-[10px] mt-1 font-bold">
+                                                                {player.breakout_age <= 19 ? <span className="text-emerald-400">Elite early</span>
+                                                                    : player.breakout_age <= 20 ? <span className="text-cyan-400">Early breakout</span>
+                                                                    : player.breakout_age <= 21 ? <span className="text-yellow-400">On schedule</span>
+                                                                    : <span className="text-muted-foreground/60">Late bloomer</span>}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <div className="text-4xl font-black text-foreground leading-none">{player.breakout_year}</div>
+                                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Season</div>
+                                                            <div className="text-[10px] text-muted-foreground/50 mt-1">First elite season</div>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                {isEarlyDeclare && (
+                                                    <div className="text-center">
+                                                        <div className="text-2xl font-black text-amber-400 leading-none">{stats.length}</div>
+                                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">College Seasons</div>
+                                                        <div className="text-[10px] mt-1 font-bold">
+                                                            <span className={`${firstStatSeason === 2024 ? 'text-amber-400' : 'text-yellow-400'}`}>
+                                                                {earlyDeclareLabel ?? 'Early Declare'}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Breakout Age</div>
-                                                    <div className="text-[10px] mt-1 font-bold">
-                                                        {player.breakout_age <= 19 ? <span className="text-emerald-400">Elite early</span>
-                                                            : player.breakout_age <= 20 ? <span className="text-cyan-400">Early breakout</span>
-                                                            : player.breakout_age <= 21 ? <span className="text-yellow-400">On schedule</span>
-                                                            : <span className="text-muted-foreground/60">Late bloomer</span>}
-                                                    </div>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="text-4xl font-black text-foreground leading-none">{player.breakout_year}</div>
-                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Season</div>
-                                                    <div className="text-[10px] text-muted-foreground/50 mt-1">First elite season</div>
-                                                </div>
+                                                )}
                                             </div>
                                             <div className="px-4 py-2 border-t border-border/20">
-                                                <p className="text-[9px] text-muted-foreground/40">Age of first season with ≥20% dominator rating. Earlier = stronger dynasty prospect.</p>
+                                                <p className="text-[9px] text-muted-foreground/40">
+                                                    {player.breakout_age ? 'Age of first season with ≥20% dominator rating. Earlier = stronger dynasty prospect.' : ''}
+                                                    {isEarlyDeclare ? (player.breakout_age ? ' · ' : '') + 'Entering draft with college eligibility remaining.' : ''}
+                                                </p>
                                             </div>
                                         </div>
                                     )}
@@ -1068,6 +1305,74 @@ export default async function PlayerPage({ params }: PageProps) {
                                 )}
 
                             </div>
+
+                            {/* ── Advanced Analytics Panel ── */}
+                            {hasAdvancedAnalytics && (
+                                <div className="space-y-5">
+                                    <div className="flex items-center gap-2 pt-1">
+                                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Advanced Analytics</h3>
+                                        <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold border border-primary/20">
+                                            {player.position} · CLASS 2026
+                                        </span>
+                                    </div>
+
+                                    {/* Ring Gauges */}
+                                    {advGauges.length > 0 && (
+                                        <div className={`grid gap-3 ${advGauges.length <= 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+                                            {advGauges.map(g => (
+                                                <div key={g.label} className="bg-card border border-border/40 rounded-xl p-3 flex justify-center">
+                                                    <StatRingGauge {...g} />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Donut Splits */}
+                                    {(advDonutA != null || advDonutB != null) && (
+                                        <div className={`grid gap-3 ${advDonutA != null && advDonutB != null ? 'grid-cols-2' : 'grid-cols-1 max-w-xs'}`}>
+                                            {advDonutA != null && <DonutSplit title={(advDonutA as DonutProps).title} labelA={(advDonutA as DonutProps).labelA} valueA={(advDonutA as DonutProps).valueA} labelB={(advDonutA as DonutProps).labelB} valueB={(advDonutA as DonutProps).valueB} colorA={(advDonutA as DonutProps).colorA} colorB={(advDonutA as DonutProps).colorB} />}
+                                            {advDonutB != null && <DonutSplit title={(advDonutB as DonutProps).title} labelA={(advDonutB as DonutProps).labelA} valueA={(advDonutB as DonutProps).valueA} labelB={(advDonutB as DonutProps).labelB} valueB={(advDonutB as DonutProps).valueB} colorA={(advDonutB as DonutProps).colorA} colorB={(advDonutB as DonutProps).colorB} />}
+                                        </div>
+                                    )}
+
+                                    {/* Composite Score Cards */}
+                                    {advComposites.length > 0 && (
+                                        <div className={`grid gap-3 ${advComposites.length <= 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+                                            {advComposites.map(c => {
+                                                const scoreColor = c.score == null ? 'text-muted-foreground/20' : c.score >= 8 ? 'text-emerald-400' : c.score >= 6 ? 'text-cyan-400' : c.score >= 4 ? 'text-yellow-400' : 'text-orange-400';
+                                                const barPct = c.score != null ? (c.score / 10) * 100 : 0;
+                                                const barColor = c.score == null ? 'bg-white/5' : c.score >= 8 ? 'bg-emerald-500/50' : c.score >= 6 ? 'bg-cyan-500/50' : c.score >= 4 ? 'bg-yellow-500/50' : 'bg-orange-500/50';
+                                                return (
+                                                    <div key={c.label} className="bg-card border border-border/40 rounded-xl p-3 flex flex-col gap-2">
+                                                        <div className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-bold">{c.label}</div>
+                                                        <div className={`text-2xl font-black font-mono leading-none ${scoreColor}`}>
+                                                            {c.score != null ? c.score.toFixed(1) : '—'}
+                                                        </div>
+                                                        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                                            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${barPct}%` }} />
+                                                        </div>
+                                                        <div className="text-[9px] text-muted-foreground/35 leading-none">{c.description}</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
+                                    {/* Class Rankings Chart */}
+                                    {advRankingMetrics.length > 0 && (
+                                        <SeasonRankingsChart
+                                            metrics={advRankingMetrics}
+                                            title={`Career Class Rankings · ${player.position}`}
+                                        />
+                                    )}
+
+                                    {/* Advanced Stats Table */}
+                                    <div>
+                                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">Advanced Season Stats</h4>
+                                        <AdvancedStatsTable stats={stats} position={player.position} />
+                                    </div>
+                                </div>
+                            )}
 
                         </div>
                     </TabsContent>

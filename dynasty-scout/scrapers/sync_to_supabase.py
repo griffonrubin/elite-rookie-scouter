@@ -54,6 +54,11 @@ def ensure_pg_schema(pg):
         "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS sp_rating REAL",
         "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS dominator_rating REAL",
         "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS market_share REAL",
+        "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS air_yards REAL",
+        "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS adot REAL",
+        "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS ppa_avg REAL",
+        "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS ppa_total REAL",
+        "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS usage_pct REAL",
         # players
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS recruiting_composite REAL",
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS recruiting_stars INTEGER",

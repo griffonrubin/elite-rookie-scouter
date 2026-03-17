@@ -29,15 +29,19 @@ export function WatchlistButton({ playerSlug, variant = 'icon', className }: Pro
         // Listen for cross-component updates
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'dynasty_watchlist') {
-                const newList = e.newValue ? JSON.parse(e.newValue) : [];
-                setIsWatched(newList.includes(playerSlug));
+                try {
+                    const newList = e.newValue ? JSON.parse(e.newValue) : [];
+                    setIsWatched(Array.isArray(newList) && newList.includes(playerSlug));
+                } catch { setIsWatched(false); }
             }
         };
 
         // Custom event for same-tab updates
         const handleLocalChange = () => {
-            const current = JSON.parse(localStorage.getItem('dynasty_watchlist') || '[]');
-            setIsWatched(current.includes(playerSlug));
+            try {
+                const current = JSON.parse(localStorage.getItem('dynasty_watchlist') || '[]');
+                setIsWatched(Array.isArray(current) && current.includes(playerSlug));
+            } catch { setIsWatched(false); }
         };
 
         window.addEventListener('storage', handleStorageChange);

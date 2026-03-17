@@ -82,6 +82,11 @@ export interface CollegeStats {
     drop_rate?: number;
     contested_catch_rate?: number;
     first_downs?: number;
+    air_yards?: number;
+    adot?: number;
+    ppa_avg?: number;
+    ppa_total?: number;
+    usage_pct?: number;
     // Advanced
     dominator_rating?: number;
     routes_run?: number;

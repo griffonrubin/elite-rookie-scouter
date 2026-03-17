@@ -62,6 +62,12 @@ CREATE TABLE IF NOT EXISTS college_stats (
   target_share REAL, yprr REAL,
   yards_after_catch REAL, drop_rate REAL,
   contested_catch_rate REAL, first_downs INTEGER,
+  air_yards REAL,            -- total receiving air yards for the season
+  adot REAL,                 -- average depth of target = air_yards / targets
+  -- Advanced metrics from CFBD / PFF
+  ppa_avg REAL,              -- average predicted points added per play
+  ppa_total REAL,            -- total predicted points added
+  usage_pct REAL,            -- snap usage % (from CFBD)
   -- Advanced (position-dependent, many nullable)
   dominator_rating REAL,
   routes_run INTEGER,

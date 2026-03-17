@@ -133,7 +133,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     return (
         <div className="space-y-0">
             {/* ── Controls ── */}
-            <div className="flex flex-col gap-3" style={{ marginBottom: '36px' }}>
+            <div className="flex flex-col gap-3" style={{ marginBottom: '18px' }}>
                 {/* Row 1: Search + view mode + sort */}
                 <div className="flex items-center gap-3 flex-wrap">
                     <div style={{ position: 'relative', width: '280px', minWidth: '220px', flexShrink: 0 }}>
@@ -158,7 +158,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir(DEFAULT_DESC.includes(v as SortKey) ? 'desc' : 'asc'); }}>
                             <SelectTrigger className="w-[180px] bg-card border-border/60 text-xs" style={{ height: '34px', paddingLeft: '14px', paddingRight: '14px', gap: '10px' }}>
                                 <SelectValue>
-                                    {{ rank: 'Consensus', ktc: 'KTC', sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FantasyCalc', dn: 'DynNerds', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit ★', proj: 'Proj Pick', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC' }[sortKey] ?? 'Consensus'}
+                                    {{ rank: 'Consensus', ktc: 'KTC', sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FantasyCalc', dn: 'DynNerds', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit ★', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC' }[sortKey] ?? 'Consensus'}
                                 </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
@@ -327,8 +327,8 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                     <div key={player.id}>
                                         {showTierHeader && (
                                             <div
-                                                className="flex items-center gap-3 ml-8 mr-5 px-4 py-2 text-[11px] font-black uppercase tracking-[0.15em] mb-0.5 mt-2"
-                                                style={{ background: tier.accent, color: '#000', borderRadius: '6px' }}
+                                                className="flex items-center gap-3 px-10 py-2 text-[11px] font-black uppercase tracking-[0.15em] mb-0.5 mt-2"
+                                                style={{ background: tier.accent, color: '#000', borderRadius: '0' }}
                                             >
                                                 <span>{tier.label}</span>
                                                 <span className="opacity-60 font-bold">

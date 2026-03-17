@@ -3,7 +3,7 @@
 // to guarantee the header and data columns are ALWAYS pixel-perfectly aligned.
 
 export type SortKey =
-    | 'rank' | 'ktc' | 'sleeper' | 'fp' | 'fc' | 'dn' | 'proj'
+    | 'rank' | 'ktc' | 'sleeper' | 'fp' | 'fc' | 'dn'
     | 'forty' | 'spd' | 'ras' | 'height' | 'arm' | 'hand' | 'stars'
     | 'dom' | 'scrim_ypg' | 'pass_ypg' | 'comp_pct' | 'ypa' | 'ypr' | 'ypc';
 
