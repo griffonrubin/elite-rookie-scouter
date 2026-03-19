@@ -175,6 +175,37 @@ CREATE TABLE IF NOT EXISTS social_posts (
   UNIQUE(platform, post_id)
 );
 
+-- WR career-level advanced metrics (from community/PFF data sources)
+CREATE TABLE IF NOT EXISTS wr_advanced_career (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  player_id INTEGER REFERENCES players(id) UNIQUE,
+  -- Route/Target Metrics
+  qbr_when_targeted REAL,     -- Passer rating when throwing to this WR
+  adot REAL,                  -- Average depth of target
+  yprr REAL,                  -- Yards per route run
+  zone_yprr REAL,             -- YPRR vs zone coverage
+  man_yprr REAL,              -- YPRR vs man coverage
+  first_down_rate REAL,       -- 1st downs per route run
+  td_per_route REAL,          -- TDs per route run
+  first_down_per_target REAL, -- 1st downs per target
+  td_per_target REAL,         -- TDs per target
+  yac_per_rec REAL,           -- YAC per reception
+  air_yards_per_rec REAL,     -- Air yards per reception
+  -- Rate Metrics
+  catch_rate REAL,            -- Career catch rate (rec/targets)
+  target_rate REAL,           -- Target share / target rate
+  open_target_rate REAL,      -- % of targets where WR was open
+  drop_rate REAL,             -- Career drop rate
+  contested_catch_rate REAL,  -- % catches that were contested
+  forced_mtf_pct REAL,        -- Forced missed tackle %
+  yac_rate REAL,              -- YAC / total receiving yards
+  air_yards_rate REAL,        -- Air yards / total receiving yards
+  wide_rate REAL,             -- % of routes from wide alignment
+  slot_rate REAL,             -- % of routes from slot alignment
+  data_source TEXT DEFAULT 'manual_2026',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes (SQLite uses simpler syntax usually, but these work)
 CREATE INDEX IF NOT EXISTS idx_players_position ON players(position);
 CREATE INDEX IF NOT EXISTS idx_players_draft_year ON players(draft_year);

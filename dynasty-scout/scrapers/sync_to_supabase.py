@@ -66,6 +66,24 @@ def ensure_pg_schema(pg):
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS breakout_age REAL",
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS breakout_year INTEGER",
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS espn_college_id BIGINT",
+        # wr_advanced_career table
+        """
+        CREATE TABLE IF NOT EXISTS wr_advanced_career (
+            id SERIAL PRIMARY KEY,
+            player_id INTEGER UNIQUE REFERENCES players(id),
+            qbr_when_targeted REAL, adot REAL, yprr REAL,
+            zone_yprr REAL, man_yprr REAL,
+            first_down_rate REAL, td_per_route REAL,
+            first_down_per_target REAL, td_per_target REAL,
+            yac_per_rec REAL, air_yards_per_rec REAL,
+            catch_rate REAL, target_rate REAL, open_target_rate REAL,
+            drop_rate REAL, contested_catch_rate REAL, forced_mtf_pct REAL,
+            yac_rate REAL, air_yards_rate REAL,
+            wide_rate REAL, slot_rate REAL,
+            data_source TEXT DEFAULT 'manual_2026',
+            updated_at TIMESTAMP DEFAULT NOW()
+        )
+        """,
         # historical_comps table
         """
         CREATE TABLE IF NOT EXISTS historical_comps (
@@ -388,6 +406,36 @@ def sync_consensus_rankings(pg, sq):
     print(f"Consensus rankings: {upserted} rows upserted")
 
 
+# ── Sync WR advanced career ───────────────────────────────────────────────
+
+def sync_wr_advanced_career(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    rows = cur_sq.execute("""
+        SELECT * FROM wr_advanced_career
+    """).fetchall()
+
+    cols = [d[0] for d in cur_sq.description if d[0] not in ('id', 'updated_at')]
+    upserted = 0
+    for r in rows:
+        vals = [r[c] for c in cols]
+        set_clause = ", ".join(
+            f"{c} = COALESCE(EXCLUDED.{c}, wr_advanced_career.{c})"
+            for c in cols if c != 'player_id'
+        )
+        cur_pg.execute(f"""
+            INSERT INTO wr_advanced_career ({', '.join(cols)})
+            VALUES ({', '.join('%s' for _ in cols)})
+            ON CONFLICT (player_id) DO UPDATE SET {set_clause},
+                updated_at = NOW()
+        """, vals)
+        upserted += 1
+
+    pg.commit()
+    print(f"WR advanced career: {upserted} rows upserted")
+
+
 # ── Main ──────────────────────────────────────────────────────────────────
 
 def run():
@@ -418,6 +466,9 @@ def run():
 
     print("\n[5b] Syncing individual rankings...")
     sync_individual_rankings(pg, sq)
+
+    print("\n[5c] Syncing WR advanced career stats...")
+    sync_wr_advanced_career(pg, sq)
 
     print("\n[6/6] Syncing consensus rankings...")
     sync_consensus_rankings(pg, sq)

@@ -12,6 +12,7 @@ import { StatRingGauge } from '@/components/StatRingGauge';
 import { DonutSplit } from '@/components/DonutSplit';
 import { SeasonRankingsChart, type RankingMetric } from '@/components/SeasonRankingsChart';
 import { AdvancedStatsTable } from '@/components/AdvancedStatsTable';
+import { ButterflyChart, type ButterflyRow } from '@/components/ButterflyChart';
 import { POSITION_COLORS, POSITION_HEADLINE_STATS } from '@/lib/constants';
 import { ArrowLeft, ArrowRight, GraduationCap, Calendar, Ruler, Weight, Star, Newspaper, BarChart2, ExternalLink, Scale, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -236,7 +237,26 @@ async function getPlayer(slug: string) {
             [player.id]
         ).catch(() => [] as any[]);
 
-        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer };
+        // WR advanced career stats
+        const wrAdvanced = (player.position === 'WR' || player.position === 'TE')
+            ? await queryOne<any>("SELECT * FROM wr_advanced_career WHERE player_id = $1", [player.id]).catch(() => null)
+            : null;
+
+        // Peer WR advanced career for class rankings in butterfly chart
+        const peerWrAdv = (player.position === 'WR' || player.position === 'TE')
+            ? await query<any>(`
+                SELECT wac.yprr, wac.zone_yprr, wac.man_yprr, wac.catch_rate, wac.drop_rate,
+                       wac.adot, wac.yac_per_rec, wac.qbr_when_targeted, wac.td_per_route,
+                       wac.first_down_rate, wac.forced_mtf_pct, wac.open_target_rate,
+                       wac.air_yards_per_rec, wac.td_per_target, wac.first_down_per_target,
+                       wac.target_rate, wac.contested_catch_rate, wac.yac_rate, wac.air_yards_rate
+                FROM wr_advanced_career wac
+                JOIN players p ON p.id = wac.player_id
+                WHERE p.position = $1 AND p.draft_year = 2026
+              `, [player.position]).catch(() => [] as any[])
+            : [];
+
+        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [] };
     } catch (e) {
         console.error("DB Error:", e);
         return null;
@@ -260,7 +280,7 @@ export default async function PlayerPage({ params }: PageProps) {
         );
     }
 
-    const { player, stats, rankings, measurables, speedScore, news, peerCareer, peerAdvanced, historicalComps, epaStats, dominatorStats, prevPlayer, nextPlayer } = data;
+    const { player, stats, rankings, measurables, speedScore, news, peerCareer, peerAdvanced, historicalComps, epaStats, dominatorStats, prevPlayer, nextPlayer, wrAdvanced, peerWrAdv } = data;
     const posStyle = POS_STYLES[player.position] || 'bg-gray-500/20 text-gray-400 border-gray-500/40 text-gray-300';
     const avatarBgMap: Record<string, string> = {
         QB: 'rgba(34, 211, 238, 0.12)',
@@ -492,36 +512,60 @@ export default async function PlayerPage({ params }: PageProps) {
 
     const pos = player.position;
 
+    // Butterfly chart rows — built from wrAdvanced + peerWrAdv
+    const butterflyRows: ButterflyRow[] = [];
+
     if (pos === 'WR' || pos === 'TE') {
-        const catchRate = sd(carTotals.rec, carTotals.targets);
-        const yacRec = sd(carTotals.yac, carTotals.rec);
-        const adotCar = sd(carTotals.airYds, carTotals.targets);
-        const rprr = sd(carTotals.rec, carTotals.routes);
+        const wa = wrAdvanced as any;  // seeded career data
+        const pw = peerWrAdv as any[]; // peer data for class ranks
 
-        if (catchRate != null) advGauges.push({ label: 'Catch Rate', displayValue: `${(catchRate*100).toFixed(1)}%`, pct: catchRate * 100 });
-        if (carDropRate != null) advGauges.push({ label: 'Drop Rate', displayValue: `${(carDropRate*100).toFixed(1)}%`, pct: 100 - carDropRate * 100 });
-        if (yacRec != null) advGauges.push({ label: 'YAC/Rec', displayValue: yacRec.toFixed(1), pct: Math.min(100, (yacRec / 8) * 100) });
-        if (carContestedRate != null) advGauges.push({ label: 'Contested%', displayValue: `${(carContestedRate*100).toFixed(1)}%`, pct: carContestedRate * 100 });
+        // Prefer seeded values; fall back to computed
+        const catchRate  = wa?.catch_rate   ?? sd(carTotals.rec, carTotals.targets);
+        const dropRate   = wa?.drop_rate    ?? carDropRate;
+        const yacRec     = wa?.yac_per_rec  ?? sd(carTotals.yac, carTotals.rec);
+        const adotVal    = wa?.adot         ?? sd(carTotals.airYds, carTotals.targets);
+        const yprr       = wa?.yprr         ?? carYPRR;
+        const contRate   = wa?.contested_catch_rate ?? carContestedRate;
+        const rprr       = sd(carTotals.rec, carTotals.routes);
 
-        // Donuts
-        if (carTotals.airYds > 0 && carTotals.yac > 0) {
+        const fmt1 = (v: number | null | undefined, d = 1) => v != null ? v.toFixed(d) : '—';
+        const fmtPct = (v: number | null | undefined) => v != null ? `${(v * 100).toFixed(1)}%` : '—';
+
+        // ── Ring Gauges row 1: core efficiency ──────────────────────────────
+        if (catchRate != null)  advGauges.push({ label: 'Catch Rate',    displayValue: fmtPct(catchRate),  pct: catchRate * 100 });
+        if (wa?.open_target_rate != null) advGauges.push({ label: 'Open Tgt Rate', displayValue: fmtPct(wa.open_target_rate), pct: wa.open_target_rate * 100 });
+        if (dropRate != null)   advGauges.push({ label: 'Drop Rate',     displayValue: fmtPct(dropRate),   pct: 100 - dropRate * 100 });
+        if (contRate != null)   advGauges.push({ label: 'Contested%',    displayValue: fmtPct(contRate),   pct: contRate * 100 });
+        if (wa?.forced_mtf_pct != null) advGauges.push({ label: 'FMT%', displayValue: fmtPct(wa.forced_mtf_pct), pct: Math.min(100, (wa.forced_mtf_pct / 0.35) * 100) });
+        if (wa?.qbr_when_targeted != null) advGauges.push({ label: 'QBR When Tgt', displayValue: wa.qbr_when_targeted.toFixed(1), pct: Math.min(100, ((wa.qbr_when_targeted - 80) / 80) * 100) });
+        if (yprr != null)       advGauges.push({ label: 'YPRR',          displayValue: fmt1(yprr, 2),       pct: Math.min(100, (yprr / 3.5) * 100) });
+        if (wa?.zone_yprr != null) advGauges.push({ label: 'Zone YPRR',  displayValue: fmt1(wa.zone_yprr, 2), pct: Math.min(100, (wa.zone_yprr / 3.5) * 100) });
+        if (wa?.man_yprr != null)  advGauges.push({ label: 'Man YPRR',   displayValue: fmt1(wa.man_yprr, 2),  pct: Math.min(100, (wa.man_yprr / 3.5) * 100) });
+
+        // ── Donut splits ─────────────────────────────────────────────────────
+        if (wa?.air_yards_rate != null && wa?.yac_rate != null) {
+            advDonutA = { title: 'Air Yds / YAC Split', labelA: 'Air Yards', valueA: Math.round(wa.air_yards_rate * 100), colorA: '#06b6d4', labelB: 'YAC', valueB: Math.round(wa.yac_rate * 100), colorB: '#a78bfa' };
+        } else if (carTotals.airYds > 0 && carTotals.yac > 0) {
             advDonutA = { title: 'Air Yds / YAC Split', labelA: 'Air Yards', valueA: carTotals.airYds, colorA: '#06b6d4', labelB: 'YAC', valueB: carTotals.yac, colorB: '#a78bfa' };
         }
+        if (wa?.wide_rate != null && wa?.slot_rate != null) {
+            advDonutB = { title: 'Alignment Split', labelA: 'Wide', valueA: Math.round(wa.wide_rate * 100), colorA: '#10b981', labelB: 'Slot', valueB: Math.round(wa.slot_rate * 100), colorB: '#f59e0b' };
+        }
 
-        // Composite scores
-        const prodScore = carDominator != null && carYPRR != null ? clamp((carDominator/30)*4 + (carYPRR/3)*3 + (catchRate ?? 0.65)/0.70*3) : null;
-        const yacScore = yacRec != null ? clamp((yacRec / 8) * 10) : null;
-        const playmakerScore = carYPRR != null ? clamp((carYPRR/3)*5 + ((carContestedRate ?? 0)/0.5)*2.5 + (Math.min(carTotals.mtf,40)/40)*2.5) : null;
-        const effScore = rprr != null ? clamp((rprr/0.65)*3.5 + ((catchRate ?? 0)/0.72)*3.5 + ((1-(carDropRate ?? 0.08))/0.94)*3) : null;
+        // ── Composite scores ─────────────────────────────────────────────────
+        const prodScore = carDominator != null && yprr != null ? clamp((carDominator/30)*4 + (yprr/3)*3 + (catchRate ?? 0.65)/0.70*3) : null;
+        const yacScore  = yacRec != null ? clamp((yacRec / 8) * 10) : null;
+        const playmakerScore = yprr != null ? clamp((yprr/3)*5 + ((contRate ?? 0)/0.5)*2.5 + (Math.min(carTotals.mtf,40)/40)*2.5) : null;
+        const effScore  = rprr != null ? clamp((rprr/0.65)*3.5 + ((catchRate ?? 0)/0.72)*3.5 + ((1-(dropRate ?? 0.08))/0.94)*3) : null;
 
         advComposites.push(
-            { label: 'Production', score: prodScore, description: 'DOM + YPRR + Catch%' },
-            { label: 'YAC', score: yacScore, description: 'Yards after catch per rec' },
-            { label: 'Playmaker', score: playmakerScore, description: 'YPRR + Contested + MTF' },
-            { label: 'Efficiency', score: effScore, description: 'RPRR + Catch% + Drop%' },
+            { label: 'Production',  score: prodScore,      description: 'DOM + YPRR + Catch%' },
+            { label: 'YAC',         score: yacScore,       description: 'Yards after catch per rec' },
+            { label: 'Playmaker',   score: playmakerScore, description: 'YPRR + Contested + MTF' },
+            { label: 'Efficiency',  score: effScore,       description: 'RPRR + Catch% + Drop%' },
         );
 
-        // Class rankings from peerAdvanced
+        // ── Class rankings (SeasonRankingsChart) from peerAdvanced ──────────
         if (myAdv && peerAdvanced.length > 3) {
             const n = (x: any) => Number(x) || 0;
             const routesArr = peerAdvanced.filter((p: any) => n(p.routes) > 0).map((p: any) => n(p.routes));
@@ -535,8 +579,46 @@ export default async function PlayerPage({ params }: PageProps) {
             if (tgtsArr.length > 0 && carTotals.targets > 0) advRankingMetrics.push({ label: 'Targets', value: String(carTotals.targets), rank: classRankFn(carTotals.targets, tgtsArr), total: tgtsArr.length });
             if (recYdsArr.length > 0 && carTotals.recYds > 0) advRankingMetrics.push({ label: 'Rec Yards', value: String(carTotals.recYds), rank: classRankFn(carTotals.recYds, recYdsArr), total: recYdsArr.length });
             if (recTdsArr.length > 0 && carTotals.recTds > 0) advRankingMetrics.push({ label: 'Rec TDs', value: String(carTotals.recTds), rank: classRankFn(carTotals.recTds, recTdsArr), total: recTdsArr.length });
-            if (yprr2Arr.length > 0 && carYPRR != null) advRankingMetrics.push({ label: 'YPRR', value: carYPRR.toFixed(2), rank: classRankFn(carYPRR, yprr2Arr), total: yprr2Arr.length });
+            if (yprr2Arr.length > 0 && yprr != null) advRankingMetrics.push({ label: 'YPRR', value: yprr.toFixed(2), rank: classRankFn(yprr, yprr2Arr), total: yprr2Arr.length });
             if (yacArr.length > 0 && carTotals.yac > 0) advRankingMetrics.push({ label: 'YAC', value: String(carTotals.yac), rank: classRankFn(carTotals.yac, yacArr), total: yacArr.length });
+        }
+
+        // ── Butterfly chart — efficiency vs production ───────────────────────
+        if (wa && pw.length > 3) {
+            const pRank = (val: number | null | undefined, arr: (number | null | undefined)[], higherBetter = true) => {
+                if (val == null) return null;
+                const clean = arr.filter((v): v is number => v != null);
+                if (clean.length === 0) return null;
+                return higherBetter
+                    ? clean.filter(v => v > val).length + 1
+                    : clean.filter(v => v < val).length + 1;
+            };
+            const peerArr = (key: string) => pw.map((r: any) => r[key] as number | null);
+            const tot = (key: string) => pw.filter((r: any) => r[key] != null).length;
+
+            const bRow = (effLabel: string, effVal: number | null | undefined, effKey: string,
+                          prodLabel: string, prodVal: number | null | undefined,
+                          higherBetter = true): ButterflyRow => ({
+                effLabel,
+                effValue: effVal != null ? (effVal < 1 ? fmtPct(effVal) : fmt1(effVal, 2)) : '—',
+                rank: pRank(effVal ?? null, peerArr(effKey), higherBetter),
+                total: tot(effKey),
+                prodLabel,
+                prodValue: prodVal != null ? String(Math.round(prodVal as number)) : '—',
+            });
+
+            butterflyRows.push(
+                bRow('YPRR',       wa.yprr,               'yprr',              'Rec Yards', carTotals.recYds),
+                bRow('Zone YPRR',  wa.zone_yprr,          'zone_yprr',         'Targets',   carTotals.targets),
+                bRow('Man YPRR',   wa.man_yprr,           'man_yprr',          'Routes',    carTotals.routes),
+                bRow('Catch Rate', wa.catch_rate,         'catch_rate',        'Rec TDs',   carTotals.recTds),
+                bRow('Drop Rate',  wa.drop_rate,          'drop_rate',         'Air Yards', carTotals.airYds, false),
+                bRow('TD/Route',   wa.td_per_route,       'td_per_route',      'YAC',       carTotals.yac),
+                bRow('1D/Route',   wa.first_down_rate,    'first_down_rate',   'MTF',       carTotals.mtf),
+                bRow('ADOT',       wa.adot,               'adot',              'First Downs', carTotals.firstDs),
+                bRow('YAC/Rec',    wa.yac_per_rec,        'yac_per_rec',       'Air Yds/Rec', wa.air_yards_per_rec != null ? wa.air_yards_per_rec * (carTotals.rec || 1) : null),
+                bRow('FMT%',       wa.forced_mtf_pct,     'forced_mtf_pct',    'QBR When Tgt', wa.qbr_when_targeted),
+            );
         }
 
     } else if (pos === 'RB') {
@@ -642,17 +724,6 @@ export default async function PlayerPage({ params }: PageProps) {
                         ) : (
                             <div className="w-[120px] sm:w-[160px]" />
                         )}
-
-                        <div className="flex items-center gap-2 px-3 shrink-0">
-                            {player.consensus_rank && (
-                                <span className="text-[11px] text-muted-foreground/50 tabular-nums">
-                                    #{player.consensus_rank}
-                                </span>
-                            )}
-                            <span className="text-sm font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">
-                                {player.full_name}
-                            </span>
-                        </div>
 
                         {nextPlayer ? (
                             <Link
@@ -1377,27 +1448,35 @@ export default async function PlayerPage({ params }: PageProps) {
                                         </div>
                                     )}
 
-                                    {/* Composite Score Cards */}
+                                    {/* Composite Score Rings */}
                                     {advComposites.length > 0 && (
-                                        <div className={`grid gap-3 ${advComposites.length <= 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
-                                            {advComposites.map(c => {
-                                                const scoreColor = c.score == null ? 'text-muted-foreground/20' : c.score >= 8 ? 'text-emerald-400' : c.score >= 6 ? 'text-cyan-400' : c.score >= 4 ? 'text-yellow-400' : 'text-orange-400';
-                                                const barPct = c.score != null ? (c.score / 10) * 100 : 0;
-                                                const barColor = c.score == null ? 'bg-white/5' : c.score >= 8 ? 'bg-emerald-500/50' : c.score >= 6 ? 'bg-cyan-500/50' : c.score >= 4 ? 'bg-yellow-500/50' : 'bg-orange-500/50';
-                                                return (
-                                                    <div key={c.label} className="bg-card border border-border/40 rounded-xl p-3 flex flex-col gap-2">
-                                                        <div className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-bold">{c.label}</div>
-                                                        <div className={`text-2xl font-black font-mono leading-none ${scoreColor}`}>
-                                                            {c.score != null ? c.score.toFixed(1) : '—'}
-                                                        </div>
-                                                        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                                            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${barPct}%` }} />
-                                                        </div>
-                                                        <div className="text-[9px] text-muted-foreground/35 leading-none">{c.description}</div>
+                                        <div>
+                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">Composite Scores</h4>
+                                            <div className={`grid gap-3 ${advComposites.length <= 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+                                                {advComposites.map(c => (
+                                                    <div key={c.label} className="bg-card border border-border/40 rounded-xl p-3 flex flex-col items-center gap-1.5">
+                                                        <StatRingGauge
+                                                            label={c.label}
+                                                            displayValue={c.score != null ? c.score.toFixed(1) : '—'}
+                                                            pct={c.score != null ? (c.score / 10) * 100 : 0}
+                                                            size={80}
+                                                            strokeWidth={8}
+                                                        />
+                                                        <div className="text-[9px] text-muted-foreground/35 text-center leading-tight">{c.description}</div>
                                                     </div>
-                                                );
-                                            })}
+                                                ))}
+                                            </div>
                                         </div>
+                                    )}
+
+                                    {/* Butterfly Chart */}
+                                    {butterflyRows.length > 0 && (
+                                        <ButterflyChart
+                                            rows={butterflyRows}
+                                            effTitle="Efficiency"
+                                            prodTitle="Production"
+                                            rankTitle="Percentile Rank"
+                                        />
                                     )}
 
                                     {/* Class Rankings Chart */}

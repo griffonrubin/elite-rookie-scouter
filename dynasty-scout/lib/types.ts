@@ -148,6 +148,32 @@ export interface ConsensusRanking {
     calculated_at: string;
 }
 
+export interface WrAdvancedCareer {
+    id: number;
+    player_id: number;
+    qbr_when_targeted?: number;
+    adot?: number;
+    yprr?: number;
+    zone_yprr?: number;
+    man_yprr?: number;
+    first_down_rate?: number;
+    td_per_route?: number;
+    first_down_per_target?: number;
+    td_per_target?: number;
+    yac_per_rec?: number;
+    air_yards_per_rec?: number;
+    catch_rate?: number;
+    target_rate?: number;
+    open_target_rate?: number;
+    drop_rate?: number;
+    contested_catch_rate?: number;
+    forced_mtf_pct?: number;
+    yac_rate?: number;
+    air_yards_rate?: number;
+    wide_rate?: number;
+    slot_rate?: number;
+}
+
 export interface NFLTeam {
     id: number;
     abbreviation: string;
