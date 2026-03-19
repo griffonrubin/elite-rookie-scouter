@@ -712,29 +712,31 @@ export default async function PlayerPage({ params }: PageProps) {
                     </Link>
 
                     {/* Player prev/next navigation */}
-                    <div className="flex items-center gap-1 flex-1 justify-center min-w-0">
+                    <div className="flex items-center gap-6 flex-1 justify-center min-w-0">
                         {prevPlayer ? (
                             <Link
                                 href={`/players/${prevPlayer.slug}`}
-                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors group max-w-[160px] sm:max-w-[200px]"
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors group min-w-0 max-w-[180px] sm:max-w-[240px]"
                             >
-                                <ChevronLeft className="w-3.5 h-3.5 shrink-0 group-hover:-translate-x-0.5 transition-transform" />
+                                <ChevronLeft className="w-4 h-4 shrink-0 group-hover:-translate-x-0.5 transition-transform" />
                                 <span className="truncate">{prevPlayer.full_name}</span>
                             </Link>
                         ) : (
-                            <div className="w-[120px] sm:w-[160px]" />
+                            <div className="w-[140px] sm:w-[180px]" />
                         )}
+
+                        <div className="w-px h-4 bg-border/50 shrink-0" />
 
                         {nextPlayer ? (
                             <Link
                                 href={`/players/${nextPlayer.slug}`}
-                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors group max-w-[160px] sm:max-w-[200px]"
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors group min-w-0 max-w-[180px] sm:max-w-[240px]"
                             >
                                 <span className="truncate">{nextPlayer.full_name}</span>
-                                <ChevronRight className="w-3.5 h-3.5 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                                <ChevronRight className="w-4 h-4 shrink-0 group-hover:translate-x-0.5 transition-transform" />
                             </Link>
                         ) : (
-                            <div className="w-[120px] sm:w-[160px]" />
+                            <div className="w-[140px] sm:w-[180px]" />
                         )}
                     </div>
 
@@ -904,25 +906,14 @@ export default async function PlayerPage({ params }: PageProps) {
                     </div>
                 )}
 
-                {/* ── Tabs ── */}
-                <Tabs defaultValue="stats">
-                    <TabsList className="bg-card border border-border/60 mb-6 h-12 w-full justify-start rounded-xl overflow-x-auto overflow-y-hidden">
-                        <TabsTrigger value="stats" className="text-xs font-semibold gap-1.5 px-5 py-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
-                            📊 <span className="ml-0.5">Stats</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="rankings" className="text-xs font-semibold gap-1.5 px-5 py-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
-                            🏆 <span className="ml-0.5">Rankings</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="scout" className="text-xs font-semibold gap-1.5 px-5 py-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
-                            🔬 <span className="ml-0.5">Scout</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="news" className="text-xs font-semibold gap-1.5 px-5 py-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none flex-1">
-                            📰 <span className="ml-0.5">News</span> {news.length > 0 && <span className="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded-full font-bold">{news.length}</span>}
-                        </TabsTrigger>
-                    </TabsList>
-
-                    {/* Stats Tab */}
-                    <TabsContent value="stats">
+                {/* ── Sections ── */}
+                <div className="space-y-14">
+                    {/* ── Stats Section ── */}
+                    <section id="stats">
+                        <div className="flex items-center gap-3 mb-6">
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">College Stats</h2>
+                            <div className="flex-1 h-px bg-border/30" />
+                        </div>
                         {stats.length > 0 ? (
                             <div className="space-y-8">
                                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">College Career Stats</h3>
@@ -1064,19 +1055,27 @@ export default async function PlayerPage({ params }: PageProps) {
                                 })}
                             </div>
                         </div>
-                    </TabsContent>
+                    </section>
 
-                    {/* Rankings Tab */}
-                    <TabsContent value="rankings">
+                    {/* ── Rankings Section ── */}
+                    <section id="rankings">
+                        <div className="flex items-center gap-3 mb-6">
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">Expert Rankings</h2>
+                            <div className="flex-1 h-px bg-border/30" />
+                        </div>
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Ranking Sources</h3>
                         <SourceRankings
                             rankings={rankings}
                             consensusRank={player.consensus_rank ?? null}
                         />
-                    </TabsContent>
+                    </section>
 
-                    {/* Scout Tab — comprehensive visual dashboard */}
-                    <TabsContent value="scout">
+                    {/* ── Scout Section ── */}
+                    <section id="scout">
+                        <div className="flex items-center gap-3 mb-6">
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">Scout Report</h2>
+                            <div className="flex-1 h-px bg-border/30" />
+                        </div>
                         <div className="space-y-8">
 
                             {/* ── Dynasty Snapshot ── */}
@@ -1496,10 +1495,14 @@ export default async function PlayerPage({ params }: PageProps) {
                             )}
 
                         </div>
-                    </TabsContent>
+                    </section>
 
-                    {/* News Tab */}
-                    <TabsContent value="news">
+                    {/* ── News Section ── */}
+                    <section id="news">
+                        <div className="flex items-center gap-3 mb-6">
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">Latest News</h2>
+                            <div className="flex-1 h-px bg-border/30" />
+                        </div>
                         {news.length > 0 ? (
                             <div className="space-y-4">
                                 {/* Top summary header removed (Latest Buzz) */}
@@ -1540,8 +1543,8 @@ export default async function PlayerPage({ params }: PageProps) {
                                 <p className="text-muted-foreground text-sm">No recent news for this player</p>
                             </div>
                         )}
-                    </TabsContent>
-                </Tabs>
+                    </section>
+                </div>
             </div>
         </div>
     );

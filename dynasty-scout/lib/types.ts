@@ -118,6 +118,7 @@ export interface Measurables {
     bmi?: number;
     hand_size?: number;
     arm_length?: number;
+    wingspan?: number;
 }
 
 export interface Ranking {

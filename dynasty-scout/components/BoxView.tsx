@@ -108,7 +108,7 @@ function GradeCell({ label, val, pos, benchKey, displayVal }: {
         <div className="flex flex-col gap-1 p-2 rounded-lg bg-muted/[0.07] border border-border/20">
             <div className="flex items-center justify-between">
                 <span className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground/50">{label}</span>
-                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border font-mono ${g.badge}`}>{g.label}</span>
+                <span className={`text-[10px] font-black px-2 py-0.5 min-w-[30px] inline-flex items-center justify-center rounded border font-mono ${g.badge}`}>{g.label}</span>
             </div>
             <div className={`text-[11px] font-black font-mono ${g.text}`}>
                 {displayVal ?? String(val)}

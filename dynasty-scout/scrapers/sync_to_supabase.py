@@ -49,6 +49,7 @@ def ensure_pg_schema(pg):
         # measurables
         "ALTER TABLE measurables ADD COLUMN IF NOT EXISTS hand_size REAL",
         "ALTER TABLE measurables ADD COLUMN IF NOT EXISTS arm_length REAL",
+        "ALTER TABLE measurables ADD COLUMN IF NOT EXISTS wingspan REAL",
         # college_stats
         "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS epa_per_play REAL",
         "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS sp_rating REAL",
@@ -128,7 +129,7 @@ def sync_measurables(pg, sq):
     rows = cur_sq.execute("""
         SELECT m.player_id, m.forty_yard, m.ten_yard_split, m.bench_press,
                m.vertical_jump, m.broad_jump, m.three_cone, m.twenty_yard_shuttle,
-               m.speed_score, m.ras, m.hand_size, m.arm_length,
+               m.speed_score, m.ras, m.hand_size, m.arm_length, m.wingspan,
                p.headshot_url
         FROM measurables m
         JOIN players p ON p.id = m.player_id
@@ -140,8 +141,8 @@ def sync_measurables(pg, sq):
         cur_pg.execute("""
             INSERT INTO measurables (player_id, forty_yard, ten_yard_split, bench_press,
                 vertical_jump, broad_jump, three_cone, twenty_yard_shuttle,
-                speed_score, ras, hand_size, arm_length)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                speed_score, ras, hand_size, arm_length, wingspan)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (player_id) DO UPDATE SET
                 forty_yard           = COALESCE(EXCLUDED.forty_yard, measurables.forty_yard),
                 ten_yard_split       = COALESCE(EXCLUDED.ten_yard_split, measurables.ten_yard_split),
@@ -153,10 +154,11 @@ def sync_measurables(pg, sq):
                 speed_score          = COALESCE(EXCLUDED.speed_score, measurables.speed_score),
                 ras                  = COALESCE(EXCLUDED.ras, measurables.ras),
                 hand_size            = COALESCE(EXCLUDED.hand_size, measurables.hand_size),
-                arm_length           = COALESCE(EXCLUDED.arm_length, measurables.arm_length)
+                arm_length           = COALESCE(EXCLUDED.arm_length, measurables.arm_length),
+                wingspan             = COALESCE(EXCLUDED.wingspan, measurables.wingspan)
         """, (r["player_id"], r["forty_yard"], r["ten_yard_split"], r["bench_press"],
               r["vertical_jump"], r["broad_jump"], r["three_cone"], r["twenty_yard_shuttle"],
-              r["speed_score"], r["ras"], r["hand_size"], r["arm_length"]))
+              r["speed_score"], r["ras"], r["hand_size"], r["arm_length"], r["wingspan"]))
         upserted += 1
 
         # Also sync headshot_url to players table
