@@ -13,7 +13,7 @@ import { DonutSplit } from '@/components/DonutSplit';
 import { SeasonRankingsChart, type RankingMetric } from '@/components/SeasonRankingsChart';
 import { AdvancedStatsTable } from '@/components/AdvancedStatsTable';
 import { POSITION_COLORS, POSITION_HEADLINE_STATS } from '@/lib/constants';
-import { ArrowLeft, GraduationCap, Calendar, Ruler, Weight, Star, Newspaper, BarChart2, ExternalLink, Scale, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, GraduationCap, Calendar, Ruler, Weight, Star, Newspaper, BarChart2, ExternalLink, Scale, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Zap } from 'lucide-react';
@@ -100,16 +100,19 @@ async function getPlayer(slug: string) {
         if (!player) return null;
 
         // Retrieve true board rank (array index)
-        const orderedSlugs = await query<{ slug: string }>(`
-            SELECT p.slug
+        const orderedSlugs = await query<{ slug: string; full_name: string; position: string }>(`
+            SELECT p.slug, p.full_name, p.position
             FROM players p
             LEFT JOIN consensus_rankings c ON p.id = c.player_id AND c.calculated_at = (SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id)
             WHERE p.draft_year = 2026
-            ORDER BY c.rank_overall ASC NULLS LAST
+            ORDER BY c.rank_overall ASC NULLS LAST, p.id ASC
         `, []);
 
         const idx = orderedSlugs.findIndex(s => s.slug === slug);
         player.consensus_rank = idx >= 0 ? idx + 1 : null;
+
+        const prevPlayer = idx > 0 ? orderedSlugs[idx - 1] : null;
+        const nextPlayer = idx >= 0 && idx < orderedSlugs.length - 1 ? orderedSlugs[idx + 1] : null;
 
         const stats = await query<CollegeStats>(
             `SELECT * FROM (
@@ -233,7 +236,7 @@ async function getPlayer(slug: string) {
             [player.id]
         ).catch(() => [] as any[]);
 
-        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [] };
+        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer };
     } catch (e) {
         console.error("DB Error:", e);
         return null;
@@ -257,7 +260,7 @@ export default async function PlayerPage({ params }: PageProps) {
         );
     }
 
-    const { player, stats, rankings, measurables, speedScore, news, peerCareer, peerAdvanced, historicalComps, epaStats, dominatorStats } = data;
+    const { player, stats, rankings, measurables, speedScore, news, peerCareer, peerAdvanced, historicalComps, epaStats, dominatorStats, prevPlayer, nextPlayer } = data;
     const posStyle = POS_STYLES[player.position] || 'bg-gray-500/20 text-gray-400 border-gray-500/40 text-gray-300';
     const avatarBgMap: Record<string, string> = {
         QB: 'rgba(34, 211, 238, 0.12)',
@@ -620,12 +623,51 @@ export default async function PlayerPage({ params }: PageProps) {
         <div className="min-h-screen bg-background text-foreground">
             {/* Top nav bar */}
             <header className="border-b border-border/60 bg-card/60 backdrop-blur-md sticky top-0 z-50">
-                <div className="w-full mx-auto px-8 sm:px-12 h-14 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <div className="w-full mx-auto px-8 sm:px-12 h-14 flex items-center justify-between gap-4">
+                    <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0">
                         <ArrowLeft className="w-4 h-4" />
-                        <span>Draft Board</span>
+                        <span className="hidden sm:block">Draft Board</span>
                     </Link>
-                    <div className="flex items-center gap-2.5">
+
+                    {/* Player prev/next navigation */}
+                    <div className="flex items-center gap-1 flex-1 justify-center min-w-0">
+                        {prevPlayer ? (
+                            <Link
+                                href={`/players/${prevPlayer.slug}`}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors group max-w-[160px] sm:max-w-[200px]"
+                            >
+                                <ChevronLeft className="w-3.5 h-3.5 shrink-0 group-hover:-translate-x-0.5 transition-transform" />
+                                <span className="truncate">{prevPlayer.full_name}</span>
+                            </Link>
+                        ) : (
+                            <div className="w-[120px] sm:w-[160px]" />
+                        )}
+
+                        <div className="flex items-center gap-2 px-3 shrink-0">
+                            {player.consensus_rank && (
+                                <span className="text-[11px] text-muted-foreground/50 tabular-nums">
+                                    #{player.consensus_rank}
+                                </span>
+                            )}
+                            <span className="text-sm font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">
+                                {player.full_name}
+                            </span>
+                        </div>
+
+                        {nextPlayer ? (
+                            <Link
+                                href={`/players/${nextPlayer.slug}`}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors group max-w-[160px] sm:max-w-[200px]"
+                            >
+                                <span className="truncate">{nextPlayer.full_name}</span>
+                                <ChevronRight className="w-3.5 h-3.5 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                            </Link>
+                        ) : (
+                            <div className="w-[120px] sm:w-[160px]" />
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2.5 shrink-0">
                         <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
                             <Zap className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={2.5} />
                         </div>
