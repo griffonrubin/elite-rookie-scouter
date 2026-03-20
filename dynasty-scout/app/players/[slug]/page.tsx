@@ -908,168 +908,6 @@ export default async function PlayerPage({ params }: PageProps) {
 
                 {/* ── Sections ── */}
                 <div className="space-y-14">
-                    {/* ── Stats Section ── */}
-                    <section id="stats">
-                        <div className="flex items-center gap-3 mb-6">
-                            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">College Stats</h2>
-                            <div className="flex-1 h-px bg-border/30" />
-                        </div>
-                        {stats.length > 0 ? (
-                            <div className="space-y-8">
-                                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">College Career Stats</h3>
-                                <StatsTable stats={stats} position={player.position} />
-
-                                <StatTrendChart stats={stats} position={player.position} />
-
-                                {hasAdvancedMetrics && (
-                                    <div className="bg-card border border-border/60 rounded-xl p-5">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <BarChart2 className="w-5 h-5 text-primary/60" />
-                                            <span className="text-sm font-bold text-foreground">College Production</span>
-                                            <span className="ml-auto text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Career Aggregated</span>
-                                        </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                            {statsGrid.map((m, i) => {
-                                                const hasVal = m.val != null && m.val !== 0 && m.val !== '—';
-                                                const accentColors = [
-                                                    'text-[#FF9A50]', 'text-emerald-400', 'text-cyan-400', 'text-violet-400',
-                                                    'text-amber-400', 'text-fuchsia-400', 'text-sky-400', 'text-rose-400',
-                                                ];
-                                                const borderColors = [
-                                                    'border-t-[#FF6B00]/50', 'border-t-emerald-500/50', 'border-t-cyan-500/50', 'border-t-violet-500/50',
-                                                    'border-t-amber-500/50', 'border-t-fuchsia-500/50', 'border-t-sky-500/50', 'border-t-rose-500/50',
-                                                ];
-                                                const accent = accentColors[i % accentColors.length];
-                                                const topBorder = borderColors[i % borderColors.length];
-                                                return (
-                                                    <div key={m.label} className={`bg-card border border-border/40 border-t-2 ${topBorder} rounded-xl p-4 flex flex-col gap-2`}>
-                                                        <div className="text-[9px] text-muted-foreground/60 uppercase tracking-widest font-bold leading-none">{m.label}</div>
-                                                        <div className={`text-2xl font-black font-mono leading-none ${hasVal ? accent : 'text-muted-foreground/20'}`}>
-                                                            {hasVal ? m.val : '—'}
-                                                        </div>
-                                                        <div className="text-[9px] text-muted-foreground/40 leading-none">{m.hint}</div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {percentileMetrics.length > 0 && (
-                                    <PercentileChart metrics={percentileMetrics} position={player.position} />
-                                )}
-
-                                {/* EPA / Competition-Adjusted Stats */}
-                                {epaStats && epaStats.length > 0 && (
-                                    <div className="rounded-xl border border-border/60 bg-card/40 p-4">
-                                        <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">EPA & Competition Adjustment</h3>
-                                        <div className="space-y-2">
-                                            {epaStats.map((row: any) => (
-                                                <div key={row.season} className="flex items-center justify-between text-sm">
-                                                    <span className="text-muted-foreground font-mono">{row.season}</span>
-                                                    <div className="flex items-center gap-4">
-                                                        {row.sp_rating != null && (
-                                                            <div className="text-right">
-                                                                <span className="text-[10px] text-muted-foreground uppercase mr-1">SP+</span>
-                                                                <span className={`font-bold font-mono text-xs ${row.sp_rating >= 20 ? 'text-emerald-400' : row.sp_rating >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
-                                                                    {row.sp_rating > 0 ? '+' : ''}{Number(row.sp_rating).toFixed(1)}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {row.epa_per_play != null && (
-                                                            <div className="text-right">
-                                                                <span className="text-[10px] text-muted-foreground uppercase mr-1">EPA/play</span>
-                                                                <span className={`font-bold font-mono text-xs ${row.epa_per_play >= 1.0 ? 'text-emerald-400' : row.epa_per_play >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
-                                                                    {Number(row.epa_per_play).toFixed(3)}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground/50 mt-2">SP+ = team strength vs. avg (higher = stronger competition). EPA/play = expected points added per play.</p>
-                                    </div>
-                                )}
-
-
-                                <div className="text-right text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">
-                                    {data.trustIndicator}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="bg-card border border-dashed border-border/60 rounded-xl p-8 text-center">
-                                    <BarChart2 className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
-                                    <p className="text-muted-foreground text-sm font-semibold">Season stats not yet available</p>
-                                    <div className="text-center mt-4 text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">
-                                        {data.trustIndicator}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Combine / athletic testing */}
-                        <div className="mt-6">
-                            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Athletic Testing</h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                {([
-                                    {
-                                        label: '40 Yard Dash', key: 'forty_yard', unit: 's', src: measurables,
-                                        disputed: measurables && (measurables as any).forty_disputed,
-                                        proDay: measurables && (measurables as any).is_pro_day,
-                                    },
-                                    { label: 'Vertical Jump', key: 'vertical_jump', unit: '"', src: measurables, proDay: measurables && (measurables as any).is_pro_day },
-                                    { label: 'Broad Jump', key: 'broad_jump', unit: '"', src: measurables, proDay: measurables && (measurables as any).is_pro_day },
-                                    { label: '3-Cone Drill', key: 'three_cone', unit: 's', src: measurables, proDay: measurables && (measurables as any).is_pro_day },
-                                    { label: 'RAS Score', key: 'ras', unit: '', src: measurables },
-                                    { label: 'Speed Score', key: '__speed__', unit: '', src: { __speed__: speedScore } },
-                                    { label: 'Height', key: 'height_inches', unit: '', src: player, fmt: (v: number) => `${Math.floor(v / 12)}'${v % 12}"` },
-                                    { label: 'Weight', key: 'weight_lbs', unit: 'lb', src: player },
-                                ] as any[]).map(m => {
-                                    const val = m.src ? (m.src as any)[m.key] : null;
-                                    const display = val != null ? (m.fmt ? m.fmt(val) : `${val}${m.unit}`) : null;
-                                    return (
-                                        <div key={m.key} className={`bg-card border rounded-xl p-3 text-center ${display ? 'border-border/60' : 'border-dashed border-border/30 opacity-60'} flex flex-col justify-center items-center relative`}>
-                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                                                {m.label}
-                                            </div>
-                                            <div className={`text-xl font-black mt-1 flex items-center justify-center gap-1 ${display ? 'text-foreground' : 'text-muted-foreground/20'}`}>
-                                                {display ?? '—'}
-                                                {m.proDay ? <span className="text-[9px] font-medium text-muted-foreground uppercase opacity-80">(Pro Day)</span> : null}
-                                                {m.disputed ? (
-                                                    <TooltipProvider>
-                                                        <Tooltip delayDuration={200}>
-                                                            <TooltipTrigger asChild>
-                                                                <AlertTriangle className="w-4 h-4 text-amber-500 cursor-help" />
-                                                            </TooltipTrigger>
-                                                            <TooltipContent side="top" className="max-w-[280px] bg-card text-foreground border-border text-xs leading-relaxed p-3 shadow-lg z-50">
-                                                                Official time disputed — multiple teams clocked this player significantly faster. Treat with caution until Pro Day confirmation.
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                ) : null}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* ── Rankings Section ── */}
-                    <section id="rankings">
-                        <div className="flex items-center gap-3 mb-6">
-                            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">Expert Rankings</h2>
-                            <div className="flex-1 h-px bg-border/30" />
-                        </div>
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Ranking Sources</h3>
-                        <SourceRankings
-                            rankings={rankings}
-                            consensusRank={player.consensus_rank ?? null}
-                        />
-                    </section>
-
                     {/* ── Scout Section ── */}
                     <section id="scout">
                         <div className="flex items-center gap-3 mb-6">
@@ -1495,6 +1333,168 @@ export default async function PlayerPage({ params }: PageProps) {
                             )}
 
                         </div>
+                    </section>
+
+                    {/* ── Stats Section ── */}
+                    <section id="stats">
+                        <div className="flex items-center gap-3 mb-6">
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">College Stats</h2>
+                            <div className="flex-1 h-px bg-border/30" />
+                        </div>
+                        {stats.length > 0 ? (
+                            <div className="space-y-8">
+                                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">College Career Stats</h3>
+                                <StatsTable stats={stats} position={player.position} />
+
+                                <StatTrendChart stats={stats} position={player.position} />
+
+                                {hasAdvancedMetrics && (
+                                    <div className="bg-card border border-border/60 rounded-xl p-5">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <BarChart2 className="w-5 h-5 text-primary/60" />
+                                            <span className="text-sm font-bold text-foreground">College Production</span>
+                                            <span className="ml-auto text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Career Aggregated</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                            {statsGrid.map((m, i) => {
+                                                const hasVal = m.val != null && m.val !== 0 && m.val !== '—';
+                                                const accentColors = [
+                                                    'text-[#FF9A50]', 'text-emerald-400', 'text-cyan-400', 'text-violet-400',
+                                                    'text-amber-400', 'text-fuchsia-400', 'text-sky-400', 'text-rose-400',
+                                                ];
+                                                const borderColors = [
+                                                    'border-t-[#FF6B00]/50', 'border-t-emerald-500/50', 'border-t-cyan-500/50', 'border-t-violet-500/50',
+                                                    'border-t-amber-500/50', 'border-t-fuchsia-500/50', 'border-t-sky-500/50', 'border-t-rose-500/50',
+                                                ];
+                                                const accent = accentColors[i % accentColors.length];
+                                                const topBorder = borderColors[i % borderColors.length];
+                                                return (
+                                                    <div key={m.label} className={`bg-card border border-border/40 border-t-2 ${topBorder} rounded-xl p-4 flex flex-col gap-2`}>
+                                                        <div className="text-[9px] text-muted-foreground/60 uppercase tracking-widest font-bold leading-none">{m.label}</div>
+                                                        <div className={`text-2xl font-black font-mono leading-none ${hasVal ? accent : 'text-muted-foreground/20'}`}>
+                                                            {hasVal ? m.val : '—'}
+                                                        </div>
+                                                        <div className="text-[9px] text-muted-foreground/40 leading-none">{m.hint}</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {percentileMetrics.length > 0 && (
+                                    <PercentileChart metrics={percentileMetrics} position={player.position} />
+                                )}
+
+                                {/* EPA / Competition-Adjusted Stats */}
+                                {epaStats && epaStats.length > 0 && (
+                                    <div className="rounded-xl border border-border/60 bg-card/40 p-4">
+                                        <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">EPA & Competition Adjustment</h3>
+                                        <div className="space-y-2">
+                                            {epaStats.map((row: any) => (
+                                                <div key={row.season} className="flex items-center justify-between text-sm">
+                                                    <span className="text-muted-foreground font-mono">{row.season}</span>
+                                                    <div className="flex items-center gap-4">
+                                                        {row.sp_rating != null && (
+                                                            <div className="text-right">
+                                                                <span className="text-[10px] text-muted-foreground uppercase mr-1">SP+</span>
+                                                                <span className={`font-bold font-mono text-xs ${row.sp_rating >= 20 ? 'text-emerald-400' : row.sp_rating >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
+                                                                    {row.sp_rating > 0 ? '+' : ''}{Number(row.sp_rating).toFixed(1)}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {row.epa_per_play != null && (
+                                                            <div className="text-right">
+                                                                <span className="text-[10px] text-muted-foreground uppercase mr-1">EPA/play</span>
+                                                                <span className={`font-bold font-mono text-xs ${row.epa_per_play >= 1.0 ? 'text-emerald-400' : row.epa_per_play >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
+                                                                    {Number(row.epa_per_play).toFixed(3)}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground/50 mt-2">SP+ = team strength vs. avg (higher = stronger competition). EPA/play = expected points added per play.</p>
+                                    </div>
+                                )}
+
+
+                                <div className="text-right text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">
+                                    {data.trustIndicator}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="bg-card border border-dashed border-border/60 rounded-xl p-8 text-center">
+                                    <BarChart2 className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+                                    <p className="text-muted-foreground text-sm font-semibold">Season stats not yet available</p>
+                                    <div className="text-center mt-4 text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">
+                                        {data.trustIndicator}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Combine / athletic testing */}
+                        <div className="mt-6">
+                            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Athletic Testing</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                {([
+                                    {
+                                        label: '40 Yard Dash', key: 'forty_yard', unit: 's', src: measurables,
+                                        disputed: measurables && (measurables as any).forty_disputed,
+                                        proDay: measurables && (measurables as any).is_pro_day,
+                                    },
+                                    { label: 'Vertical Jump', key: 'vertical_jump', unit: '"', src: measurables, proDay: measurables && (measurables as any).is_pro_day },
+                                    { label: 'Broad Jump', key: 'broad_jump', unit: '"', src: measurables, proDay: measurables && (measurables as any).is_pro_day },
+                                    { label: '3-Cone Drill', key: 'three_cone', unit: 's', src: measurables, proDay: measurables && (measurables as any).is_pro_day },
+                                    { label: 'RAS Score', key: 'ras', unit: '', src: measurables },
+                                    { label: 'Speed Score', key: '__speed__', unit: '', src: { __speed__: speedScore } },
+                                    { label: 'Height', key: 'height_inches', unit: '', src: player, fmt: (v: number) => `${Math.floor(v / 12)}'${v % 12}"` },
+                                    { label: 'Weight', key: 'weight_lbs', unit: 'lb', src: player },
+                                ] as any[]).map(m => {
+                                    const val = m.src ? (m.src as any)[m.key] : null;
+                                    const display = val != null ? (m.fmt ? m.fmt(val) : `${val}${m.unit}`) : null;
+                                    return (
+                                        <div key={m.key} className={`bg-card border rounded-xl p-3 text-center ${display ? 'border-border/60' : 'border-dashed border-border/30 opacity-60'} flex flex-col justify-center items-center relative`}>
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                                                {m.label}
+                                            </div>
+                                            <div className={`text-xl font-black mt-1 flex items-center justify-center gap-1 ${display ? 'text-foreground' : 'text-muted-foreground/20'}`}>
+                                                {display ?? '—'}
+                                                {m.proDay ? <span className="text-[9px] font-medium text-muted-foreground uppercase opacity-80">(Pro Day)</span> : null}
+                                                {m.disputed ? (
+                                                    <TooltipProvider>
+                                                        <Tooltip delayDuration={200}>
+                                                            <TooltipTrigger asChild>
+                                                                <AlertTriangle className="w-4 h-4 text-amber-500 cursor-help" />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="top" className="max-w-[280px] bg-card text-foreground border-border text-xs leading-relaxed p-3 shadow-lg z-50">
+                                                                Official time disputed — multiple teams clocked this player significantly faster. Treat with caution until Pro Day confirmation.
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ── Rankings Section ── */}
+                    <section id="rankings">
+                        <div className="flex items-center gap-3 mb-6">
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">Expert Rankings</h2>
+                            <div className="flex-1 h-px bg-border/30" />
+                        </div>
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Ranking Sources</h3>
+                        <SourceRankings
+                            rankings={rankings}
+                            consensusRank={player.consensus_rank ?? null}
+                        />
                     </section>
 
                     {/* ── News Section ── */}
