@@ -141,12 +141,12 @@ function mkRow(
 
 function MetricBar({ row }: { row: MetricRow }) {
     return (
-        <div className="grid grid-cols-[130px_1fr_40px] items-center gap-3">
+        <div className="grid grid-cols-[110px_1fr_44px] items-center gap-3">
             <div>
-                <div className="text-[11px] text-muted-foreground leading-none mb-0.5">{row.label}</div>
+                <div className="text-[10px] text-muted-foreground/60 leading-none mb-0.5">{row.label}</div>
                 <div className={`text-sm font-black font-mono leading-none ${row.g.text}`}>{row.display}</div>
             </div>
-            <div className="relative h-2 bg-border/25 rounded-full overflow-hidden">
+            <div className="relative h-2.5 bg-border/20 rounded-full overflow-hidden">
                 <div
                     className={`absolute left-0 top-0 h-full rounded-full ${row.g.bar} transition-all duration-700`}
                     style={{ width: `${Math.max(3, row.pct)}%` }}
@@ -225,42 +225,42 @@ export function AthleticsCard({ position, heightInches, weightLbs, measurables, 
     if (totalRows === 0) return null;
 
     return (
-        <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
-            <div className="px-4 py-3 border-b border-border/40 bg-muted/20 flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Athletic Profile</span>
-                <span className="text-[10px] text-muted-foreground/50 font-mono">graded vs. 2026 {pos}s</span>
+        <div className="rounded-xl border border-border/40 bg-card/40 overflow-hidden">
+            <div className="px-5 py-4 border-b border-border/30 bg-muted/10 flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Athletic Profile</span>
+                <span className="text-[10px] text-muted-foreground/40 font-mono">graded vs. 2026 {pos}s</span>
             </div>
 
-            <div className="p-4 space-y-5">
+            <div className="p-5 space-y-6">
                 {groups.map(group => (
                     <div key={group.label}>
-                        <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40 mb-2.5">
+                        <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40 mb-3">
                             {group.label}
                         </div>
-                        <div className="space-y-2.5">
+                        <div className="space-y-3">
                             {group.rows.map(row => <MetricBar key={row.key} row={row} />)}
                         </div>
                     </div>
                 ))}
             </div>
 
-            <div className="px-4 py-2 border-t border-border/20 flex items-center gap-3 flex-wrap">
+            <div className="px-5 py-3 border-t border-border/20 flex items-center gap-4 flex-wrap">
                 {[
                     { pct: 90, desc: 'Elite' },
                     { pct: 70, desc: 'Good' },
-                    { pct: 55, desc: 'Average' },
-                    { pct: 32, desc: 'Below Avg' },
+                    { pct: 55, desc: 'Avg' },
+                    { pct: 32, desc: 'Below' },
                     { pct: 10, desc: 'Poor' },
                 ].map(({ pct, desc }) => {
                     const g = gradeOf(pct);
                     return (
-                        <div key={desc} className="flex items-center gap-1">
+                        <div key={desc} className="flex items-center gap-1.5">
                             <span className={`text-[9px] font-black font-mono ${g.text}`}>{g.label}</span>
-                            <span className="text-[9px] text-muted-foreground/40">{desc}</span>
+                            <span className="text-[9px] text-muted-foreground/35">{desc}</span>
                         </div>
                     );
                 })}
-                <span className="text-[9px] text-muted-foreground/30 ml-auto">| = avg</span>
+                <span className="text-[9px] text-muted-foreground/25 ml-auto">| avg</span>
             </div>
         </div>
     );

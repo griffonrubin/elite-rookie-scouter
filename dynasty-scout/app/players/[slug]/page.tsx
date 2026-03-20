@@ -749,9 +749,9 @@ export default async function PlayerPage({ params }: PageProps) {
                 </div>
             </header>
 
-            <div className="w-full mx-auto px-8 sm:px-12 py-8">
+            <div className="max-w-6xl mx-auto px-6 sm:px-10 py-10">
                 {/* ── Profile Section ── */}
-                <div className="flex flex-col lg:flex-row gap-6 mb-8">
+                <div className="flex flex-col lg:flex-row gap-8 mb-10">
                     {/* Avatar */}
                     <div className="flex-shrink-0">
                         <div
@@ -843,7 +843,7 @@ export default async function PlayerPage({ params }: PageProps) {
                         </div>
 
                         {/* Standardized 4-Col Header Badges */}
-                        <div className="flex flex-wrap gap-3 mt-4">
+                        <div className="flex flex-wrap gap-3 mt-5">
                             {/* Class Rank — tier-colored accent */}
                             <div className={cn(
                                 'rounded-xl px-4 py-3 flex-1 min-w-[110px] text-center shadow-sm border relative overflow-hidden',
@@ -883,21 +883,16 @@ export default async function PlayerPage({ params }: PageProps) {
 
                 {/* ── Headline stats row (if we have stats) ── */}
                 {recentStat && headlines.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-8">
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-8">
                         {headlines.map((m, i) => {
                             const val = (recentStat as any)[m.key];
                             const display = val != null && val !== 0 && val !== '0' && val !== '0.0' ? val : '—';
                             const hasVal = display !== '—';
                             // Rotate accent colors across the stat strip
-                            const accentColors = [
-                                'text-[#FF9A50]', 'text-emerald-400', 'text-cyan-400',
-                                'text-violet-400', 'text-amber-400', 'text-fuchsia-400',
-                            ];
-                            const accent = accentColors[i % accentColors.length];
                             return (
-                                <div key={m.key} className="bg-card border border-border/50 rounded-xl px-3 py-4 flex flex-col items-center justify-center gap-2 shadow-sm hover:border-border transition-colors">
-                                    <span className="text-[9px] text-muted-foreground/60 font-bold uppercase tracking-widest leading-none">{m.label}</span>
-                                    <span className={`text-2xl font-black leading-none font-mono ${hasVal ? accent : 'text-muted-foreground/20'}`}>
+                                <div key={m.key} className="bg-card border border-border/40 rounded-xl px-3 py-5 flex flex-col items-center justify-center gap-2 hover:border-border/70 transition-colors">
+                                    <span className="text-[9px] text-muted-foreground/50 font-bold uppercase tracking-widest leading-none">{m.label}</span>
+                                    <span className={`text-2xl font-black leading-none font-mono ${hasVal ? 'text-foreground' : 'text-muted-foreground/20'}`}>
                                         {display}
                                     </span>
                                 </div>
@@ -907,21 +902,21 @@ export default async function PlayerPage({ params }: PageProps) {
                 )}
 
                 {/* ── Sections ── */}
-                <div className="space-y-14">
+                <div className="space-y-16">
                     {/* ── Scout Section ── */}
                     <section id="scout">
-                        <div className="flex items-center gap-3 mb-6">
+                        <div className="flex items-center gap-3 mb-8">
                             <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">Scout Report</h2>
                             <div className="flex-1 h-px bg-border/30" />
                         </div>
-                        <div className="space-y-8">
+                        <div className="space-y-10">
 
                             {/* ── Dynasty Snapshot ── */}
                             <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card via-card to-primary/5 p-5">
                                 <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[96px] font-black text-foreground/[0.03] leading-none select-none pointer-events-none">
                                     {player.position}
                                 </div>
-                                <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-4">
+                                <div className="relative z-10 flex items-center gap-4 flex-wrap">
                                     <div className="flex items-center gap-3 flex-wrap">
                                         <span className={cn('border text-sm font-black px-3 py-1 rounded-full', tier.color)}>
                                             {tier.label}
@@ -931,28 +926,6 @@ export default async function PlayerPage({ params }: PageProps) {
                                                 {projRank <= 12 ? '1st-Round Dynasty Pick' : projRank <= 24 ? '2nd-Round Dynasty Pick' : projRank <= 36 ? '3rd-Round Dynasty Pick' : 'Late-Round Dynasty Pick'}
                                             </span>
                                         )}
-                                    </div>
-                                    <div className="flex items-center gap-6 sm:ml-auto flex-wrap">
-                                        <div className="text-center">
-                                            <div className="text-2xl font-black text-foreground leading-none">#{classRank ?? '—'}</div>
-                                            <div className="text-[9px] text-muted-foreground uppercase tracking-wide mt-0.5">Class Rank</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-xl font-black text-primary leading-none">{draftSlot ?? '—'}</div>
-                                            <div className="text-[9px] text-muted-foreground uppercase tracking-wide mt-0.5">Proj Pick</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-2xl font-black text-cyan-400 leading-none">{player.ktc_rank ? `#${player.ktc_rank}` : '—'}</div>
-                                            <div className="text-[9px] text-muted-foreground uppercase tracking-wide mt-0.5">KTC</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-2xl font-black text-emerald-400 leading-none">{player.fp_rank ? `#${player.fp_rank}` : '—'}</div>
-                                            <div className="text-[9px] text-muted-foreground uppercase tracking-wide mt-0.5">FP</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-2xl font-black text-foreground/70 leading-none">{(player as any).num_sources ?? '—'}</div>
-                                            <div className="text-[9px] text-muted-foreground uppercase tracking-wide mt-0.5">Sources</div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1011,10 +984,10 @@ export default async function PlayerPage({ params }: PageProps) {
                             })()}
 
                             {/* ── Two-column layout ── */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                                 {/* Left: Athletic profile + recruiting */}
-                                <div className="space-y-5">
+                                <div className="space-y-6">
 
                                     {/* Athletic grades */}
                                     <AthleticsCard
@@ -1124,7 +1097,7 @@ export default async function PlayerPage({ params }: PageProps) {
                                 </div>
 
                                 {/* Right: Production visualizations */}
-                                <div className="space-y-5">
+                                <div className="space-y-6">
 
                                     {/* Career production bar chart */}
                                     {stats.length > 0 && (
@@ -1163,7 +1136,7 @@ export default async function PlayerPage({ params }: PageProps) {
                             </div>
 
                             {/* ── Dynasty Context + Historical Comps ── */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                                 {/* Dynasty context narrative */}
                                 <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
@@ -1337,41 +1310,28 @@ export default async function PlayerPage({ params }: PageProps) {
 
                     {/* ── Stats Section ── */}
                     <section id="stats">
-                        <div className="flex items-center gap-3 mb-6">
+                        <div className="flex items-center gap-3 mb-8">
                             <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">College Stats</h2>
                             <div className="flex-1 h-px bg-border/30" />
                         </div>
                         {stats.length > 0 ? (
-                            <div className="space-y-8">
-                                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">College Career Stats</h3>
+                            <div className="space-y-7">
                                 <StatsTable stats={stats} position={player.position} />
 
-                                <StatTrendChart stats={stats} position={player.position} />
-
                                 {hasAdvancedMetrics && (
-                                    <div className="bg-card border border-border/60 rounded-xl p-5">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <BarChart2 className="w-5 h-5 text-primary/60" />
-                                            <span className="text-sm font-bold text-foreground">College Production</span>
-                                            <span className="ml-auto text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Career Aggregated</span>
+                                    <div className="bg-card border border-border/40 rounded-xl p-6">
+                                        <div className="flex items-center gap-2 mb-5">
+                                            <BarChart2 className="w-4 h-4 text-muted-foreground/50" />
+                                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Career Production</span>
+                                            <span className="ml-auto text-[10px] text-muted-foreground/50 bg-muted/50 px-2 py-0.5 rounded-full">Aggregated</span>
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                            {statsGrid.map((m, i) => {
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                                            {statsGrid.map((m) => {
                                                 const hasVal = m.val != null && m.val !== 0 && m.val !== '—';
-                                                const accentColors = [
-                                                    'text-[#FF9A50]', 'text-emerald-400', 'text-cyan-400', 'text-violet-400',
-                                                    'text-amber-400', 'text-fuchsia-400', 'text-sky-400', 'text-rose-400',
-                                                ];
-                                                const borderColors = [
-                                                    'border-t-[#FF6B00]/50', 'border-t-emerald-500/50', 'border-t-cyan-500/50', 'border-t-violet-500/50',
-                                                    'border-t-amber-500/50', 'border-t-fuchsia-500/50', 'border-t-sky-500/50', 'border-t-rose-500/50',
-                                                ];
-                                                const accent = accentColors[i % accentColors.length];
-                                                const topBorder = borderColors[i % borderColors.length];
                                                 return (
-                                                    <div key={m.label} className={`bg-card border border-border/40 border-t-2 ${topBorder} rounded-xl p-4 flex flex-col gap-2`}>
-                                                        <div className="text-[9px] text-muted-foreground/60 uppercase tracking-widest font-bold leading-none">{m.label}</div>
-                                                        <div className={`text-2xl font-black font-mono leading-none ${hasVal ? accent : 'text-muted-foreground/20'}`}>
+                                                    <div key={m.label} className="bg-muted/30 border border-border/30 rounded-xl p-4 flex flex-col gap-1.5">
+                                                        <div className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-bold leading-none">{m.label}</div>
+                                                        <div className={`text-2xl font-black font-mono leading-none ${hasVal ? 'text-foreground' : 'text-muted-foreground/20'}`}>
                                                             {hasVal ? m.val : '—'}
                                                         </div>
                                                         <div className="text-[9px] text-muted-foreground/40 leading-none">{m.hint}</div>
@@ -1382,42 +1342,6 @@ export default async function PlayerPage({ params }: PageProps) {
                                     </div>
                                 )}
 
-                                {percentileMetrics.length > 0 && (
-                                    <PercentileChart metrics={percentileMetrics} position={player.position} />
-                                )}
-
-                                {/* EPA / Competition-Adjusted Stats */}
-                                {epaStats && epaStats.length > 0 && (
-                                    <div className="rounded-xl border border-border/60 bg-card/40 p-4">
-                                        <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">EPA & Competition Adjustment</h3>
-                                        <div className="space-y-2">
-                                            {epaStats.map((row: any) => (
-                                                <div key={row.season} className="flex items-center justify-between text-sm">
-                                                    <span className="text-muted-foreground font-mono">{row.season}</span>
-                                                    <div className="flex items-center gap-4">
-                                                        {row.sp_rating != null && (
-                                                            <div className="text-right">
-                                                                <span className="text-[10px] text-muted-foreground uppercase mr-1">SP+</span>
-                                                                <span className={`font-bold font-mono text-xs ${row.sp_rating >= 20 ? 'text-emerald-400' : row.sp_rating >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
-                                                                    {row.sp_rating > 0 ? '+' : ''}{Number(row.sp_rating).toFixed(1)}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {row.epa_per_play != null && (
-                                                            <div className="text-right">
-                                                                <span className="text-[10px] text-muted-foreground uppercase mr-1">EPA/play</span>
-                                                                <span className={`font-bold font-mono text-xs ${row.epa_per_play >= 1.0 ? 'text-emerald-400' : row.epa_per_play >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
-                                                                    {Number(row.epa_per_play).toFixed(3)}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground/50 mt-2">SP+ = team strength vs. avg (higher = stronger competition). EPA/play = expected points added per play.</p>
-                                    </div>
-                                )}
 
 
                                 <div className="text-right text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">
@@ -1437,9 +1361,9 @@ export default async function PlayerPage({ params }: PageProps) {
                         )}
 
                         {/* Combine / athletic testing */}
-                        <div className="mt-6">
-                            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Athletic Testing</h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div className="mt-8 pt-6 border-t border-border/20">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 mb-4">Athletic Testing</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {([
                                     {
                                         label: '40 Yard Dash', key: 'forty_yard', unit: 's', src: measurables,
@@ -1457,7 +1381,7 @@ export default async function PlayerPage({ params }: PageProps) {
                                     const val = m.src ? (m.src as any)[m.key] : null;
                                     const display = val != null ? (m.fmt ? m.fmt(val) : `${val}${m.unit}`) : null;
                                     return (
-                                        <div key={m.key} className={`bg-card border rounded-xl p-3 text-center ${display ? 'border-border/60' : 'border-dashed border-border/30 opacity-60'} flex flex-col justify-center items-center relative`}>
+                                        <div key={m.key} className={`bg-card border rounded-xl p-5 text-center ${display ? 'border-border/40' : 'border-dashed border-border/20 opacity-50'} flex flex-col justify-center items-center relative gap-1`}>
                                             <div className="text-[10px] text-muted-foreground uppercase tracking-wide flex items-center gap-1">
                                                 {m.label}
                                             </div>
@@ -1486,11 +1410,10 @@ export default async function PlayerPage({ params }: PageProps) {
 
                     {/* ── Rankings Section ── */}
                     <section id="rankings">
-                        <div className="flex items-center gap-3 mb-6">
+                        <div className="flex items-center gap-3 mb-8">
                             <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">Expert Rankings</h2>
                             <div className="flex-1 h-px bg-border/30" />
                         </div>
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Ranking Sources</h3>
                         <SourceRankings
                             rankings={rankings}
                             consensusRank={player.consensus_rank ?? null}
@@ -1499,7 +1422,7 @@ export default async function PlayerPage({ params }: PageProps) {
 
                     {/* ── News Section ── */}
                     <section id="news">
-                        <div className="flex items-center gap-3 mb-6">
+                        <div className="flex items-center gap-3 mb-8">
                             <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">Latest News</h2>
                             <div className="flex-1 h-px bg-border/30" />
                         </div>

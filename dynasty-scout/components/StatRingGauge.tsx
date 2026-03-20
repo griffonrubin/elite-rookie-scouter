@@ -15,7 +15,7 @@ function pctColor(pct: number): string {
     return '#ef4444';                // red
 }
 
-export function StatRingGauge({ label, displayValue, pct, size = 88, strokeWidth = 9 }: StatRingGaugeProps) {
+export function StatRingGauge({ label, displayValue, pct, size = 96, strokeWidth = 9 }: StatRingGaugeProps) {
     const hasData = displayValue !== '—' && !isNaN(pct);
     const radius = (size - strokeWidth) / 2;
     const cx = size / 2;
@@ -40,7 +40,7 @@ export function StatRingGauge({ label, displayValue, pct, size = 88, strokeWidth
     }
 
     return (
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-2">
             <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
                 {/* Track arc */}
                 <path
@@ -67,7 +67,7 @@ export function StatRingGauge({ label, displayValue, pct, size = 88, strokeWidth
                     y={cy - 2}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fontSize={size < 80 ? 11 : 13}
+                    fontSize={size < 80 ? 11 : size < 96 ? 13 : 14}
                     fontFamily="monospace"
                     fontWeight="700"
                     fill={hasData ? color : 'rgba(255,255,255,0.3)'}
@@ -75,7 +75,7 @@ export function StatRingGauge({ label, displayValue, pct, size = 88, strokeWidth
                     {displayValue}
                 </text>
             </svg>
-            <span className="text-[10px] text-muted-foreground/70 font-medium text-center leading-tight">
+            <span className="text-[10px] text-muted-foreground/60 font-semibold text-center leading-tight max-w-[90px]">
                 {label}
             </span>
         </div>

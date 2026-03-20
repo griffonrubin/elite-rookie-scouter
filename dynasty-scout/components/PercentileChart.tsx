@@ -46,42 +46,41 @@ export function PercentileChart({ metrics, position }: Props) {
     if (!metrics || metrics.length === 0) return null;
 
     return (
-        <div className="rounded-xl border border-border/60 bg-card/40 p-4">
-            <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        <div className="rounded-xl border border-border/40 bg-card/40 p-5">
+            <div className="flex items-center justify-between mb-5">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">
                     Position Percentiles
                 </h3>
-                <span className="text-[10px] text-muted-foreground/60 font-mono">
+                <span className="text-[10px] text-muted-foreground/50 font-mono">
                     vs. 2026 {position}s
                 </span>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
                 {metrics.map((m) => (
                     <div key={m.label} className="group">
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-muted-foreground font-medium">{m.label}</span>
-                            <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[11px] text-muted-foreground font-medium">{m.label}</span>
+                            <div className="flex items-center gap-2.5">
                                 <span className="text-xs font-mono font-semibold text-foreground">
                                     {m.value}{m.unit ? ` ${m.unit}` : ''}
                                 </span>
-                                <span className={`text-[10px] font-bold font-mono ${pctTextColor(m.percentile)}`}>
+                                <span className={`text-[10px] font-bold font-mono w-[34px] text-right ${pctTextColor(m.percentile)}`}>
                                     {Math.round(m.percentile)}th
                                 </span>
                             </div>
                         </div>
-                        <div className="relative h-1.5 bg-border/40 rounded-full overflow-hidden">
+                        <div className="relative h-2 bg-border/30 rounded-full overflow-hidden">
                             <div
                                 className={`absolute left-0 top-0 h-full rounded-full transition-all duration-700 ${pctColor(m.percentile)}`}
                                 style={{ width: `${Math.max(2, m.percentile)}%` }}
                             />
+                            <div className="absolute top-0 h-full w-px bg-white/10" style={{ left: '50%' }} />
                         </div>
-                        <div className="flex justify-between mt-0.5">
-                            <span className="text-[9px] text-muted-foreground/40 font-mono">0</span>
-                            <span className={`text-[9px] font-mono ${pctTextColor(m.percentile)}`}>
+                        <div className="flex justify-end mt-0.5">
+                            <span className={`text-[9px] font-mono opacity-70 ${pctTextColor(m.percentile)}`}>
                                 {pctLabel(m.percentile)}
                             </span>
-                            <span className="text-[9px] text-muted-foreground/40 font-mono">100</span>
                         </div>
                     </div>
                 ))}

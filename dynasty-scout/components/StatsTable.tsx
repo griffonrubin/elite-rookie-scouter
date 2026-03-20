@@ -22,7 +22,7 @@ export function StatsTable({ stats, position }: StatsTableProps) {
     const isTE = position === 'TE';
 
     return (
-        <div className="rounded-md border">
+        <div className="rounded-xl border border-border/40 overflow-hidden">
             <Table>
                 <TableHeader>
                     <TableRow>
