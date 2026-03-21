@@ -282,15 +282,6 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                                     <span className="font-bold text-[15px] text-foreground group-hover:text-primary transition-colors leading-snug truncate">
                                         {player.full_name}
                                     </span>
-                                    <span
-                                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 7px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 10, fontWeight: 800, letterSpacing: '0.03em' }}
-                                        className={cn('border', positionColor)}
-                                    >{player.position}</span>
-                                    <span
-                                        style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 6px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 9, fontWeight: 700 }}
-                                        className={cn('border', projDC.color)}
-                                        title="Projected NFL draft capital based on consensus fantasy rank"
-                                    >{projDC.label}</span>
                                 </div>
                                 <div className="flex items-center text-[11px] text-muted-foreground/60 gap-1.5 leading-none">
                                     <span className="truncate">{schoolDisplay || 'School TBD'}</span>
