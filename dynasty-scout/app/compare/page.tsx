@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { notFound } from 'next/navigation';
 import { ComparePlayerPicker } from '@/components/ComparePlayerPicker';
 import { WatchlistButton } from '@/components/WatchlistButton';
+import { RadarChart, type RadarMetric } from '@/components/RadarChart';
 
 export const dynamic = 'force-dynamic';
 
@@ -133,6 +134,28 @@ export default async function ComparePage({ searchParams }: Props) {
         notFound();
     }
 
+    // Build radar metrics — normalize each to 0-100
+    const norm = (val: number | null | undefined, lo: number, hi: number) =>
+        val != null ? Math.min(100, Math.max(0, Math.round(((val - lo) / (hi - lo)) * 100))) : 0;
+    const normInv = (val: number | null | undefined, lo: number, hi: number) =>
+        val != null ? Math.min(100, Math.max(0, Math.round(((hi - val) / (hi - lo)) * 100))) : 0;
+
+    const saCS = (playerA as any).careerStat || {};
+    const sbCS = (playerB as any).careerStat || {};
+    const totalScrimA = (saCS.rush_yards || 0) + (saCS.rec_yards || 0) + (saCS.pass_yards || 0) / 4;
+    const totalScrimB = (sbCS.rush_yards || 0) + (sbCS.rec_yards || 0) + (sbCS.pass_yards || 0) / 4;
+
+    const radarMetrics: RadarMetric[] = [
+        { label: 'Rank',      a: normInv(playerA.consensus_rank, 1, 120), b: normInv(playerB.consensus_rank, 1, 120) },
+        { label: 'RAS',       a: norm(playerA.ras, 0, 10),                b: norm(playerB.ras, 0, 10) },
+        { label: 'Speed',     a: norm((playerA as any).speedScore, 60, 130), b: norm((playerB as any).speedScore, 60, 130) },
+        { label: 'Size',      a: norm((playerA.height_inches || 0) + (playerA.weight_lbs || 0) / 20, 76, 94), b: norm((playerB.height_inches || 0) + (playerB.weight_lbs || 0) / 20, 76, 94) },
+        { label: 'Dominator', a: norm(playerA.best_dominator, 0, 45),    b: norm(playerB.best_dominator, 0, 45) },
+        { label: 'Youth',     a: normInv(playerA.age_at_draft, 20, 25),  b: normInv(playerB.age_at_draft, 20, 25) },
+        { label: 'Production', a: norm(totalScrimA, 0, 4500),            b: norm(totalScrimB, 0, 4500) },
+        { label: 'Recruiting', a: norm(playerA.recruiting_stars, 2, 5),  b: norm(playerB.recruiting_stars, 2, 5) },
+    ].filter(m => m.a > 0 || m.b > 0);
+
     return (
         <div className="min-h-screen bg-background text-foreground">
             {/* Nav */}
@@ -169,6 +192,17 @@ export default async function ComparePage({ searchParams }: Props) {
                     </div>
                     <PlayerHeader player={playerB} side="right" />
                 </div>
+
+                {/* Radar chart */}
+                {radarMetrics.length >= 3 && (
+                    <div className="mb-6">
+                        <RadarChart
+                            metrics={radarMetrics}
+                            nameA={playerA.full_name}
+                            nameB={playerB.full_name}
+                        />
+                    </div>
+                )}
 
                 {/* Comparison sections */}
                 <div className="space-y-6">

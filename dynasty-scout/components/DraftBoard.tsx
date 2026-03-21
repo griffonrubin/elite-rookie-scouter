@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Player } from '@/lib/types';
 import { PlayerMiniCard } from '@/components/PlayerMiniCard';
 import { Search, ChevronUp, ChevronDown, ChevronsUpDown, Star } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Fuse from 'fuse.js';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -39,6 +40,9 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     const [sortDir, setSortDir]             = useState<SortDir>('asc');
     const [favoritesOnly, setFavoritesOnly] = useState(false);
     const [watchlist, setWatchlist]         = useState<string[]>([]);
+    const [draftCapFilter, setDraftCapFilter] = useState<'all' | 'r1' | 'r2plus' | 'day3'>('all');
+    const [ageFilter, setAgeFilter]           = useState<'all' | 'u21' | 'u22'>('all');
+    const [rasFilter, setRasFilter]           = useState<'all' | 'ras7' | 'ras8'>('all');
 
     // Load watchlist from localStorage on mount and keep in sync
     useEffect(() => {
@@ -83,6 +87,27 @@ function DraftBoardContent({ players }: DraftBoardProps) {
         if (searchQuery.trim()) result = fuse.search(searchQuery).map(r => r.item);
         if (positionFilter !== 'ALL') result = result.filter(p => p.position === positionFilter);
         if (favoritesOnly) result = result.filter(p => watchlist.includes(p.slug));
+        if (draftCapFilter !== 'all') result = result.filter(p => {
+            const rank = (p as any).consensus_rank ?? 9999;
+            if (draftCapFilter === 'r1')     return rank <= 32;
+            if (draftCapFilter === 'r2plus') return rank > 32 && rank <= 96;
+            if (draftCapFilter === 'day3')   return rank > 96;
+            return true;
+        });
+        if (ageFilter !== 'all') result = result.filter(p => {
+            const age = (p as any).age_at_draft;
+            if (!age) return false;
+            if (ageFilter === 'u21') return age <= 21;
+            if (ageFilter === 'u22') return age <= 22;
+            return true;
+        });
+        if (rasFilter !== 'all') result = result.filter(p => {
+            const ras = (p as any).ras;
+            if (!ras) return false;
+            if (rasFilter === 'ras7') return ras >= 7;
+            if (rasFilter === 'ras8') return ras >= 8.5;
+            return true;
+        });
         return [...result].sort((a, b) => {
             const MISS = sortDir === 'asc' ? 999999 : -999999;
             let va: number, vb: number;
@@ -114,7 +139,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
             }
             return sortDir === 'asc' ? va - vb : vb - va;
         });
-    }, [searchQuery, positionFilter, favoritesOnly, watchlist, players, fuse, sortKey, sortDir]);
+    }, [searchQuery, positionFilter, favoritesOnly, watchlist, draftCapFilter, ageFilter, rasFilter, players, fuse, sortKey, sortDir]);
 
     const counts = useMemo(() => {
         const all = players || [];
@@ -126,7 +151,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
         };
     }, [players]);
 
-    const showTiers = sortKey === 'rank' && sortDir === 'asc' && !searchQuery.trim() && !favoritesOnly;
+    const showTiers = sortKey === 'rank' && sortDir === 'asc' && !searchQuery.trim() && !favoritesOnly && draftCapFilter === 'all' && ageFilter === 'all' && rasFilter === 'all';
     const colDefs = getColDefs(positionFilter);
     const gridTemplate = getGridTemplate(positionFilter);
 
@@ -225,10 +250,72 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         {watchlist.length > 0 && <span style={{ opacity: favoritesOnly ? 1 : 0.6 }}>{watchlist.length}</span>}
                     </button>
 
-                    {(positionFilter !== 'ALL' || searchQuery.trim() || favoritesOnly) && (
+                    {(positionFilter !== 'ALL' || searchQuery.trim() || favoritesOnly || draftCapFilter !== 'all' || ageFilter !== 'all' || rasFilter !== 'all') && (
                         <span className="text-[11px] text-muted-foreground ml-1">
                             Showing <span className="text-foreground font-semibold">{filteredPlayers.length}</span> of <span className="text-foreground font-semibold">{(players || []).length}</span>
                         </span>
+                    )}
+                </div>
+
+                {/* Row 3: Quick filters */}
+                <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">Filter:</span>
+
+                    {/* Draft Capital */}
+                    <div className="flex items-center gap-1">
+                        {([['all', 'All Rounds'], ['r1', 'Rd 1'], ['r2plus', 'Rd 2–3'], ['day3', 'Day 3']] as const).map(([val, label]) => (
+                            <button
+                                key={val}
+                                onClick={() => setDraftCapFilter(val)}
+                                className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border transition-all duration-150 ${
+                                    draftCapFilter === val
+                                        ? 'bg-primary/20 text-primary border-primary/50'
+                                        : 'text-muted-foreground/60 border-border/40 hover:text-foreground hover:border-border'
+                                }`}
+                            >{label}</button>
+                        ))}
+                    </div>
+
+                    <div className="w-px h-4 bg-border/30" />
+
+                    {/* Age */}
+                    <div className="flex items-center gap-1">
+                        {([['all', 'Any Age'], ['u22', '≤22'], ['u21', '≤21']] as const).map(([val, label]) => (
+                            <button
+                                key={val}
+                                onClick={() => setAgeFilter(val)}
+                                className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border transition-all duration-150 ${
+                                    ageFilter === val
+                                        ? 'bg-primary/20 text-primary border-primary/50'
+                                        : 'text-muted-foreground/60 border-border/40 hover:text-foreground hover:border-border'
+                                }`}
+                            >{label}</button>
+                        ))}
+                    </div>
+
+                    <div className="w-px h-4 bg-border/30" />
+
+                    {/* RAS */}
+                    <div className="flex items-center gap-1">
+                        {([['all', 'Any RAS'], ['ras7', 'RAS ≥7'], ['ras8', 'RAS ≥8.5']] as const).map(([val, label]) => (
+                            <button
+                                key={val}
+                                onClick={() => setRasFilter(val)}
+                                className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border transition-all duration-150 ${
+                                    rasFilter === val
+                                        ? 'bg-primary/20 text-primary border-primary/50'
+                                        : 'text-muted-foreground/60 border-border/40 hover:text-foreground hover:border-border'
+                                }`}
+                            >{label}</button>
+                        ))}
+                    </div>
+
+                    {/* Reset all quick filters */}
+                    {(draftCapFilter !== 'all' || ageFilter !== 'all' || rasFilter !== 'all') && (
+                        <button
+                            onClick={() => { setDraftCapFilter('all'); setAgeFilter('all'); setRasFilter('all'); }}
+                            className="text-[11px] text-muted-foreground/50 hover:text-foreground underline decoration-dotted transition-colors ml-1"
+                        >reset</button>
                     )}
                 </div>
             </div>
@@ -267,10 +354,10 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                             style={{ gridTemplateColumns: gridTemplate }}
                         >
                             {colDefs.map((col, i) => (
+                                <Tooltip key={col.key} delayDuration={300}>
+                                <TooltipTrigger asChild>
                                 <div
-                                    key={col.key}
                                     className={`flex items-center justify-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''}`}
-                                    title={col.tooltip}
                                 >
                                     {col.sortKey ? (
                                         <button
@@ -296,6 +383,13 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                         </div>
                                     )}
                                 </div>
+                                </TooltipTrigger>
+                                {col.tooltip && (
+                                    <TooltipContent side="bottom" className="max-w-[240px] text-xs leading-snug">
+                                        {col.tooltip}
+                                    </TooltipContent>
+                                )}
+                                </Tooltip>
                             ))}
                         </div>
                     </div>

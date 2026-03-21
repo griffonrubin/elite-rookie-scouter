@@ -215,8 +215,10 @@ async function getPlayer(slug: string) {
         // Historical athletic comps
         const historicalComps = await query<any>(
             `SELECT comp_name, comp_year, comp_round, comp_pick, comp_team,
-                    comp_position, comp_w_av, comp_probowls, similarity, shared_metrics
-             FROM historical_comps WHERE player_id = $1 ORDER BY similarity DESC LIMIT 3`,
+                    comp_position, comp_w_av, comp_probowls, MAX(similarity) as similarity, shared_metrics
+             FROM historical_comps WHERE player_id = $1
+             GROUP BY comp_name
+             ORDER BY similarity DESC LIMIT 3`,
             [player.id]
         ).catch(() => [] as any[]);
 
@@ -308,7 +310,7 @@ export default async function PlayerPage({ params }: PageProps) {
         return { label: 'Depth', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40' };
     }
     const tier = classRank ? getTierInfo(classRank) : { label: 'Unranked', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40' };
-    const recentStat = stats[0] || null;
+    const recentStat = stats[0] ? { ...stats[0] } : null;
 
     // Derived stats for the summary bubbles calculated directly from accurate career database aggregations
     // For per-game averages, we must only sum attempts/yards for seasons where games_played is known!

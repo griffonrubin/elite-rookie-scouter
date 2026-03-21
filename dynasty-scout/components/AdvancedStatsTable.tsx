@@ -6,8 +6,8 @@ interface Props {
     position: string;
 }
 
-const fmt1 = (v: number | null | undefined) => v != null ? v.toFixed(1) : '—';
-const fmt2 = (v: number | null | undefined) => v != null ? v.toFixed(2) : '—';
+const fmt1 = (v: number | null | undefined) => v != null ? Number(v).toFixed(1) : '—';
+const fmt2 = (v: number | null | undefined) => v != null ? Number(v).toFixed(2) : '—';
 const fmtInt = (v: number | null | undefined) => v != null ? String(Math.round(v)) : '—';
 const fmtPct = (v: number | null | undefined) => v != null ? `${(v * 100).toFixed(1)}%` : '—';
 

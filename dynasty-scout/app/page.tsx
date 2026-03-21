@@ -1,7 +1,8 @@
 import { query } from '@/lib/db';
 import { DraftBoard } from '@/components/DraftBoard';
 import { Player } from '@/lib/types';
-import { Zap, TrendingUp, Users } from 'lucide-react';
+import { Zap, TrendingUp, Users, Scale } from 'lucide-react';
+import Link from 'next/link';
 
 export const dynamic = "force-dynamic";
 
@@ -134,6 +135,11 @@ export default async function Home() {
           </div>
 
           <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
+            <Link href="/compare" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors font-semibold">
+              <Scale className="w-3.5 h-3.5" />
+              Compare
+            </Link>
+            <div className="w-px h-4 bg-border/50" />
             <div className="flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" />
               <span className="text-foreground font-semibold">{players.length}</span> players

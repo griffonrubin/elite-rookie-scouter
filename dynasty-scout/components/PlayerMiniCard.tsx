@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { ConsensusRanking, Player } from '@/lib/types';
 import { WatchlistButton } from './WatchlistButton';
 import { getColDefs, getGridTemplate, ColDef } from '@/lib/boardColumns';
+import { Scale } from 'lucide-react';
 
 interface PlayerMiniCardProps {
     player: Player;
@@ -72,6 +73,15 @@ function getArmColor(v: number, pos: string): string {
     if (p === 'RB') { if (v >= 32.0) return 'text-emerald-400 font-bold'; if (v >= 30.5) return 'text-foreground/80'; return 'text-orange-400'; }
     if (p === 'TE') { if (v >= 34.0) return 'text-emerald-400 font-bold'; if (v >= 32.5) return 'text-foreground/80'; return 'text-red-400'; }
     return 'text-foreground/80';
+}
+
+function rankColor(v: number | null | undefined): string {
+    if (!v) return 'text-muted-foreground/30';
+    if (v <= 5)  return 'text-emerald-400 font-extrabold';
+    if (v <= 12) return 'text-cyan-400 font-bold';
+    if (v <= 24) return 'text-yellow-400 font-bold';
+    if (v <= 36) return 'text-orange-400';
+    return 'text-muted-foreground/50';
 }
 
 function getHandColor(v: number, pos: string): string {
@@ -178,10 +188,10 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                 );
 
             // ── Ranking sources ────────────────────────────────────────────────
-            case 'fp':  return <StatVal val={p.fantasypros_rank}   />;
-            case 'ktc': return <StatVal val={p.ktc_rank}           />;
-            case 'fc':  return <StatVal val={p.fantasycalc_rank}   />;
-            case 'dn':  return <StatVal val={p.dynasty_nerds_rank} />;
+            case 'fp':  return <StatVal val={p.fantasypros_rank}   highlight={rankColor(p.fantasypros_rank)}   />;
+            case 'ktc': return <StatVal val={p.ktc_rank}           highlight={rankColor(p.ktc_rank)}           />;
+            case 'fc':  return <StatVal val={p.fantasycalc_rank}   highlight={rankColor(p.fantasycalc_rank)}   />;
+            case 'dn':  return <StatVal val={p.dynasty_nerds_rank} highlight={rankColor(p.dynasty_nerds_rank)} />;
             case 'adp': return <span className="font-mono font-bold text-sm text-foreground/80">{draftSlot}</span>;
 
             // ── Tier badge ────────────────────────────────────────────────────
@@ -230,6 +240,17 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                     <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="cursor-pointer flex items-center">
                         <WatchlistButton playerSlug={player.slug} />
                     </div>
+                </div>
+
+                {/* Compare quick-launch */}
+                <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="flex-shrink-0">
+                    <Link
+                        href={`/compare?a=${player.slug}`}
+                        className="flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground/30 hover:text-primary hover:bg-primary/10 transition-colors"
+                        title="Compare player"
+                    >
+                        <Scale className="w-3.5 h-3.5" />
+                    </Link>
                 </div>
 
                 {/* 2. Player info */}
