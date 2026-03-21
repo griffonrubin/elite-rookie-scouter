@@ -56,13 +56,17 @@
   --radius: 0.5rem;
 
   /* Dark mode as default — the app is always dark */
-  --background: #0d1117;
-  /* GitHub-dark level deep navy */
+  --background: #0a1118;
   --foreground: #e6edf3;
-  --card: #161b22;
-  /* slightly lighter card bg */
+  --card: #111d27;
   --card-foreground: #e6edf3;
   --popover: #161b22;
+
+  /* Depth layer system */
+  --bg-base: #0a1118;
+  --bg-card: #111d27;
+  --bg-elevated: #1a2a38;
+  --bg-hover: #243444;
   --popover-foreground: #e6edf3;
 
   /* Orange primary — Flock Fantasy inspired */
@@ -107,9 +111,9 @@
 
 /* Keep a .dark class alias so shadcn components work */
 .dark {
-  --background: #0d1117;
+  --background: #0a1118;
   --foreground: #e6edf3;
-  --card: #161b22;
+  --card: #111d27;
   --card-foreground: #e6edf3;
   --popover: #161b22;
   --popover-foreground: #e6edf3;

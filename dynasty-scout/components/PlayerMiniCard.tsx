@@ -235,6 +235,8 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                 className={`flex items-center px-4 py-2.5 hover:bg-accent/50 transition-all duration-100 border-b border-border/20 gap-3 ${zebraClass}`}
                 style={{ borderLeft: `3px solid ${tier.border}` }}
             >
+                {/* Sticky identity group: rank + compare + player */}
+                <div className="sticky left-0 z-10 flex items-center gap-3 bg-background pr-2 flex-shrink-0" style={{ width: '304px' }}>
                 {/* 1. Rank + inline watchlist */}
                 <div className="w-16 flex-shrink-0 flex flex-row items-center justify-center gap-1.5">
                     <span className={`text-sm font-mono leading-none ${rankColor}`}>{rookieRank}</span>
@@ -355,6 +357,7 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                         </div>
                     </HoverCardContent>
                 </HoverCard>
+                </div>{/* end sticky identity group */}
 
                 {/* 3. Dynamic stat columns — CSS grid */}
                 <div
@@ -364,7 +367,7 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                     {colDefs.map((col, i) => (
                         <div
                             key={col.key}
-                            className={`flex items-center min-h-[36px] overflow-hidden ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'tier' ? 'justify-center' : 'justify-end pr-3'}`}
+                            className={`flex items-center min-h-[36px] overflow-hidden ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'fp' || col.key === 'tier' ? 'border-l-2 border-border/25' : ''} ${col.key === 'tier' ? 'justify-center' : 'justify-end pr-3'}`}
                         >
                             {renderCell(col)}
                         </div>

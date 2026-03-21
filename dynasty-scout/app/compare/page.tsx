@@ -1,12 +1,13 @@
 import { query, queryOne } from '@/lib/db';
 import Link from 'next/link';
-import { ArrowLeft, Zap, Scale, TrendingUp, Users, Dumbbell, BookOpen, Activity } from 'lucide-react';
+import { ArrowLeft, Dumbbell, BookOpen, Activity, Scale, TrendingUp, Users } from 'lucide-react';
 import { POSITION_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { notFound } from 'next/navigation';
 import { ComparePlayerPicker } from '@/components/ComparePlayerPicker';
 import { WatchlistButton } from '@/components/WatchlistButton';
 import { RadarChart, type RadarMetric } from '@/components/RadarChart';
+import { AppHeader } from '@/components/AppHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -191,22 +192,7 @@ export default async function ComparePage({ searchParams }: Props) {
 
     return (
         <div className="min-h-screen bg-background text-foreground">
-            {/* Nav */}
-            <header className="border-b border-border/60 bg-card/60 backdrop-blur-md sticky top-0 z-50">
-                <div className="w-full mx-auto px-6 sm:px-8 h-14 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>Draft Board</span>
-                    </Link>
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-                            <Zap className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={2.5} />
-                        </div>
-                        <span className="text-sm font-semibold hidden sm:block">Player Comparison</span>
-                        <Scale className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                </div>
-            </header>
+            <AppHeader />
 
             <div className="w-full mx-auto px-6 sm:px-8 py-8">
 
@@ -287,6 +273,57 @@ export default async function ComparePage({ searchParams }: Props) {
                         ]}
                     />
                 </div>
+
+                {/* Verdict strip */}
+                {(() => {
+                    const allRows = [
+                        ...([
+                            { numA: playerA.consensus_rank, numB: playerB.consensus_rank, lowerWins: true, label: 'Class Rank' },
+                            { numA: playerA.ktc_rank, numB: playerB.ktc_rank, lowerWins: true, label: 'KTC' },
+                            { numA: playerA.fp_rank, numB: playerB.fp_rank, lowerWins: true, label: 'FantasyPros' },
+                            { numA: playerA.height_inches, numB: playerB.height_inches, lowerWins: false, label: 'Height' },
+                            { numA: playerA.weight_lbs, numB: playerB.weight_lbs, lowerWins: false, label: 'Weight' },
+                            { numA: playerA.forty_yard, numB: playerB.forty_yard, lowerWins: true, label: '40 Yard Dash' },
+                            { numA: playerA.ras, numB: playerB.ras, lowerWins: false, label: 'RAS' },
+                            { numA: playerA.age_at_draft, numB: playerB.age_at_draft, lowerWins: true, label: 'Age' },
+                        ].filter(r => r.numA != null && r.numB != null && r.numA !== r.numB)),
+                    ];
+                    const aWins = allRows.filter(r => r.lowerWins ? r.numA! < r.numB! : r.numA! > r.numB!);
+                    const bWins = allRows.filter(r => r.lowerWins ? r.numB! < r.numA! : r.numB! > r.numA!);
+                    const aCount = aWins.length;
+                    const bCount = bWins.length;
+                    const total = allRows.length;
+                    if (total === 0) return null;
+                    const winner = aCount > bCount ? playerA : aCount < bCount ? playerB : null;
+                    const winnerName = winner?.full_name ?? 'Tie';
+                    const winnerCount = Math.max(aCount, bCount);
+                    const topAdvantages = (aCount > bCount ? aWins : bWins).slice(0, 3).map(r => r.label);
+                    return (
+                        <div className="mt-6 rounded-xl border border-border/60 bg-card/40 p-5">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70 mb-3">Verdict</h3>
+                            <div className="text-sm text-muted-foreground">
+                                {winner ? (
+                                    <><strong className="text-foreground">{winnerName}</strong> wins <strong className="text-foreground">{winnerCount}</strong> of {total} categories.{topAdvantages.length > 0 && <> Key advantages: <span className="text-primary font-semibold">{topAdvantages.join(', ')}</span>.</>}</>
+                                ) : (
+                                    <span>Even matchup across {total} categories.</span>
+                                )}
+                            </div>
+                            <div className="mt-3 flex gap-3 items-center">
+                                <div className="flex-1 bg-border/20 rounded-full h-2 overflow-hidden">
+                                    <div className="h-full bg-primary rounded-full transition-all" style={{ width: total > 0 ? `${(aCount / total) * 100}%` : '50%' }} />
+                                </div>
+                                <div className="text-[10px] font-mono font-bold text-muted-foreground/60">{aCount}–{bCount}</div>
+                                <div className="flex-1 bg-border/20 rounded-full h-2 overflow-hidden">
+                                    <div className="h-full bg-cyan-500 rounded-full transition-all ml-auto" style={{ width: total > 0 ? `${(bCount / total) * 100}%` : '50%' }} />
+                                </div>
+                            </div>
+                            <div className="flex justify-between mt-1 text-[9px] text-muted-foreground/40">
+                                <span>{playerA.full_name}</span>
+                                <span>{playerB.full_name}</span>
+                            </div>
+                        </div>
+                    );
+                })()}
 
                 {/* Profile links */}
                 <div className="grid grid-cols-2 gap-4 mt-8">

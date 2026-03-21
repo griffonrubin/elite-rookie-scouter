@@ -389,8 +389,10 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 <div className="bg-card rounded-xl border border-border/60 shadow-lg shadow-black/20">
 
                     {/* Column headers — sticky below the app header bar (h-14 = 56px) */}
-                    <div className="flex items-stretch px-4 py-0 border-b-2 border-border/60 bg-muted/20 gap-3 min-h-[40px] sticky top-14 z-20 rounded-t-xl"
+                    <div className="flex items-stretch px-4 py-0 border-b-2 border-border/60 bg-muted/20 gap-0 min-h-[40px] sticky top-14 z-20 rounded-t-xl"
                          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
+                        {/* Sticky identity group: rank + player */}
+                        <div className="sticky left-0 z-10 bg-muted/20 flex items-center gap-3 pr-2 flex-shrink-0" style={{ width: '304px' }}>
                         {/* Rank */}
                         <div className="w-16 flex-shrink-0 flex items-center justify-center">
                             <button
@@ -406,11 +408,15 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                             </button>
                         </div>
 
+                        {/* Spacer for compare button column */}
+                        <div className="w-6 flex-shrink-0" />
+
                         {/* Player */}
                         <div style={{ width: '220px', minWidth: '220px' }}
                             className="flex-shrink-0 flex items-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                             Player
                         </div>
+                        </div>{/* end sticky identity group */}
 
                         {/* Dynamic stat columns — CSS grid, same template as PlayerMiniCard */}
                         <div
@@ -421,7 +427,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 <Tooltip key={col.key} delayDuration={300}>
                                 <TooltipTrigger asChild>
                                 <div
-                                    className={`flex items-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'tier' ? 'justify-center' : 'justify-end pr-3'}`}
+                                    className={`flex items-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'fp' || col.key === 'tier' ? 'border-l-2 border-border/25' : ''} ${col.key === 'tier' ? 'justify-center' : 'justify-end pr-3'}`}
                                 >
                                     {col.sortKey ? (
                                         <button

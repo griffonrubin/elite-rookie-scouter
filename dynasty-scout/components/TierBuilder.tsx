@@ -22,7 +22,7 @@ import {
 import { Tier, Player } from '@/lib/types';
 import { DraggablePlayerCard } from './DraggablePlayerCard';
 import { Button } from '@/components/ui/button';
-import { Plus, GripHorizontal, Trash2 } from 'lucide-react';
+import { Plus, GripHorizontal, Search } from 'lucide-react';
 
 interface TierBuilderProps {
     initialTiers?: Tier[];
@@ -34,6 +34,8 @@ export function TierBuilder() {
     const [activeId, setActiveId] = useState<number | null>(null);
     const [activePlayer, setActivePlayer] = useState<Player | null>(null);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [posFilter, setPosFilter] = useState<'ALL' | 'QB' | 'RB' | 'WR' | 'TE'>('ALL');
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -62,7 +64,7 @@ export function TierBuilder() {
 
     const fetchAvailablePlayers = async () => {
         try {
-            const res = await fetch('/api/players?limit=100');
+            const res = await fetch('/api/players?limit=300');
             const data = await res.json();
 
             // Filter out players already in tiers (this logic should ideally happen on backend or efficiently here)
@@ -80,7 +82,10 @@ export function TierBuilder() {
 
     // Computed available players (removing those in tiers)
     const tieredPlayerIds = new Set(tiers.flatMap((t: Tier) => t.players?.map((p: Player) => p.id) || []));
-    const reallyAvailablePlayers = availablePlayers.filter((p: Player) => !tieredPlayerIds.has(p.id));
+    const reallyAvailablePlayers = availablePlayers
+        .filter((p: Player) => !tieredPlayerIds.has(p.id))
+        .filter((p: Player) => posFilter === 'ALL' || p.position === posFilter)
+        .filter((p: Player) => !search.trim() || p.full_name.toLowerCase().includes(search.toLowerCase()));
 
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
@@ -232,20 +237,52 @@ export function TierBuilder() {
         >
             <div className="flex gap-6 h-[calc(100vh-100px)]">
                 {/* Available Pool */}
-                <div className="w-1/3 border-r pr-4 overflow-y-auto">
-                    <h3 className="font-bold mb-4 sticky top-0 bg-background py-2">Available Players</h3>
+                <div className="w-1/3 border-r border-border/30 pr-4 flex flex-col overflow-hidden">
+                    {/* Sticky controls */}
+                    <div className="sticky top-0 z-10 bg-background pb-3">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70 mb-3">Available Players</h3>
+                        {/* Search */}
+                        <div className="relative mb-2">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" />
+                            <input
+                                placeholder="Search players..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                className="w-full bg-card border border-border/40 rounded-lg pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50"
+                            />
+                        </div>
+                        {/* Position filters */}
+                        <div className="flex gap-1">
+                            {(['ALL','QB','RB','WR','TE'] as const).map(pos => (
+                                <button
+                                    key={pos}
+                                    onClick={() => setPosFilter(pos)}
+                                    className={`px-2 py-1 rounded text-[10px] font-bold transition-colors ${posFilter === pos ? 'bg-primary text-white' : 'bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                                >
+                                    {pos}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    {/* Player list */}
+                    <div className="overflow-y-auto flex-1">
                     <SortableContext
                         id="available"
                         items={reallyAvailablePlayers.map(p => p.id)}
                         strategy={verticalListSortingStrategy}
                     >
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                             {reallyAvailablePlayers.map(player => (
                                 <DraggablePlayerCard key={player.id} player={player} />
                             ))}
-                            {reallyAvailablePlayers.length === 0 && <div className="text-muted-foreground text-sm">No players available</div>}
+                            {reallyAvailablePlayers.length === 0 && (
+                                <div className="text-muted-foreground/50 text-xs py-4 text-center">
+                                    {search || posFilter !== 'ALL' ? 'No players match filters' : 'No players available'}
+                                </div>
+                            )}
                         </div>
                     </SortableContext>
+                    </div>
                 </div>
 
                 {/* Tiers Area */}
@@ -257,9 +294,9 @@ export function TierBuilder() {
 
                     <div className="space-y-4">
                         {tiers.map((tier) => (
-                            <div key={tier.id} className="border rounded-lg bg-card/50">
+                            <div key={tier.id} className="border border-border/30 rounded-lg bg-card/30">
                                 {/* Tier Header */}
-                                <div className={`p-3 rounded-t-lg flex items-center justify-between border-b ${tier.tier_color.replace('/10', '/15')} ${tier.tier_color.replace('text-', 'border-').replace('/10', '/30')}`}>
+                                <div className={`p-3 rounded-t-lg flex items-center justify-between border-b border-border/20 border-l-4 ${tier.tier_color.replace('/10', '/10')} ${tier.tier_color.replace('text-', 'border-l-').replace('/10', '/60').replace('bg-', '').split(' ')[0]}`}>
                                     <div className="flex items-center gap-2">
                                         <GripHorizontal className="w-4 h-4 opacity-50 cursor-grab" />
                                         <span className="font-bold">{tier.tier_name}</span>
@@ -284,7 +321,7 @@ export function TierBuilder() {
                                                 />
                                             ))}
                                             {tier.players?.length === 0 && (
-                                                <div className="text-center text-xs text-muted-foreground py-4 border-dashed border-2 border-border/50 rounded-md">
+                                                <div className="text-center text-xs text-muted-foreground/40 py-4 border-dashed border border-border/30 rounded-md">
                                                     Drop players here
                                                 </div>
                                             )}

@@ -1,8 +1,8 @@
 import { query } from '@/lib/db';
 import { DraftBoard } from '@/components/DraftBoard';
 import { Player } from '@/lib/types';
-import { Zap, TrendingUp, Users, Scale, Layers } from 'lucide-react';
-import Link from 'next/link';
+import { TrendingUp, Users } from 'lucide-react';
+import { AppHeader } from '@/components/AppHeader';
 
 export const dynamic = "force-dynamic";
 
@@ -119,45 +119,21 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* ── Top Bar ── */}
-      <header className="border-b border-border/60 bg-card/60 backdrop-blur-md sticky top-0 z-50">
-        <div className="w-full px-8 sm:px-12 h-14 flex items-center justify-between mx-auto">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
-            </div>
-            <span className="font-bold text-base tracking-tight text-foreground">
-              Elite Rookie Scouter
-            </span>
-            <span className="text-xs text-muted-foreground font-medium hidden sm:block">
-              / 2026 Class
-            </span>
+      <AppHeader>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5" />
+            <span className="text-foreground font-semibold">{players.length}</span> players
           </div>
-
-          <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
-            <Link href="/compare" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors font-semibold">
-              <Scale className="w-3.5 h-3.5" />
-              Compare
-            </Link>
-            <Link href="/tier-builder" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors font-semibold">
-              <Layers className="w-3.5 h-3.5" />
-              Tier Builder
-            </Link>
-            <div className="w-px h-4 bg-border/50" />
-            <div className="flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" />
-              <span className="text-foreground font-semibold">{players.length}</span> players
-            </div>
-            <div className="flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span className="text-foreground font-semibold">{rankedCount}</span> ranked
-            </div>
-            {lastUpdateDate && (
-              <span className="text-muted-foreground/60">Updated {lastUpdateDate}</span>
-            )}
+          <div className="flex items-center gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span className="text-foreground font-semibold">{rankedCount}</span> ranked
           </div>
+          {lastUpdateDate && (
+            <span className="text-muted-foreground/60 hidden sm:block">Updated {lastUpdateDate}</span>
+          )}
         </div>
-      </header>
+      </AppHeader>
 
       {/* ── Board ── */}
       <main className="w-full px-8 sm:px-12 py-6 mx-auto">
