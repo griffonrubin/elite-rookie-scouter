@@ -1,7 +1,7 @@
 import { query } from '@/lib/db';
 import { DraftBoard } from '@/components/DraftBoard';
 import { Player } from '@/lib/types';
-import { Zap, TrendingUp, Users, Scale } from 'lucide-react';
+import { Zap, TrendingUp, Users, Scale, Layers } from 'lucide-react';
 import Link from 'next/link';
 
 export const dynamic = "force-dynamic";
@@ -138,6 +138,10 @@ export default async function Home() {
             <Link href="/compare" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors font-semibold">
               <Scale className="w-3.5 h-3.5" />
               Compare
+            </Link>
+            <Link href="/tier-builder" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors font-semibold">
+              <Layers className="w-3.5 h-3.5" />
+              Tier Builder
             </Link>
             <div className="w-px h-4 bg-border/50" />
             <div className="flex items-center gap-1.5">

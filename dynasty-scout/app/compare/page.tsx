@@ -119,10 +119,43 @@ export default async function ComparePage({ searchParams }: Props) {
     const { a, b } = await searchParams;
 
     if (!a || !b) {
+        const SUGGESTED = [
+            { label: 'Love vs. Price',   sub: 'RB vs RB — Top 2 backs',      slugA: 'jeremiyah-love',   slugB: 'jadarian-price'   },
+            { label: 'Tate vs. Lemon',   sub: 'WR vs WR — Top receiver duel', slugA: 'carnell-tate',     slugB: 'jack-lemon'       },
+            { label: 'Mendoza vs. Gendron', sub: 'QB vs QB — Signal callers', slugA: 'fernando-mendoza', slugB: 'will-gendron'     },
+            { label: 'Love vs. Tate',    sub: 'RB vs WR — Cross-position',    slugA: 'jeremiyah-love',   slugB: 'carnell-tate'     },
+        ];
         return (
             <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-                <div className="text-center max-w-md w-full p-8">
+                <div className="text-center max-w-lg w-full p-8 space-y-8">
+                    {/* Header */}
+                    <div>
+                        <div className="flex items-center justify-center gap-2 mb-3">
+                            <Scale className="w-5 h-5 text-primary" />
+                            <h1 className="text-xl font-black tracking-tight">Compare Players</h1>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Search for two players to see a side-by-side breakdown with radar chart, measurables, and stats.</p>
+                    </div>
+
+                    {/* Picker */}
                     <ComparePlayerPicker currentSlugA={a} currentSlugB={b} />
+
+                    {/* Suggested matchups */}
+                    <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-3">Popular Matchups</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            {SUGGESTED.map((s) => (
+                                <Link
+                                    key={s.label}
+                                    href={`/compare?a=${s.slugA}&b=${s.slugB}`}
+                                    className="text-left px-4 py-3 rounded-xl border border-border/50 bg-card/40 hover:border-primary/40 hover:bg-primary/5 transition-all group"
+                                >
+                                    <div className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">{s.label}</div>
+                                    <div className="text-[10px] text-muted-foreground/60 mt-0.5">{s.sub}</div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         );

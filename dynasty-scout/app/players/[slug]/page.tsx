@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { Zap } from 'lucide-react';
 import { WatchlistButton } from '@/components/WatchlistButton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { SectionNav } from '@/components/SectionNav';
 
 export const dynamic = "force-dynamic";
 
@@ -705,6 +706,7 @@ export default async function PlayerPage({ params }: PageProps) {
 
     return (
         <div className="min-h-screen bg-background text-foreground">
+            <SectionNav />
             {/* Top nav bar */}
             <header className="border-b border-border/60 bg-card/60 backdrop-blur-md sticky top-0 z-50">
                 <div className="w-full mx-auto px-8 sm:px-12 h-14 flex items-center justify-between gap-4">
@@ -753,7 +755,7 @@ export default async function PlayerPage({ params }: PageProps) {
 
             <div className="max-w-6xl mx-auto px-6 sm:px-10 py-10">
                 {/* ── Profile Section ── */}
-                <div className="flex flex-col lg:flex-row gap-8 mb-10">
+                <div id="overview" className="flex flex-col lg:flex-row gap-8 mb-10">
                     {/* Avatar */}
                     <div className="flex-shrink-0">
                         <div
@@ -986,7 +988,7 @@ export default async function PlayerPage({ params }: PageProps) {
                             })()}
 
                             {/* ── Two-column layout ── */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div id="athletics" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                                 {/* Left: Athletic profile + recruiting */}
                                 <div className="space-y-6">
@@ -1233,7 +1235,7 @@ export default async function PlayerPage({ params }: PageProps) {
 
                             {/* ── Advanced Analytics Panel ── */}
                             {hasAdvancedAnalytics && (
-                                <div className="space-y-5">
+                                <div id="analytics" className="space-y-5">
                                     <div className="flex items-center gap-2 pt-1">
                                         <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Advanced Analytics</h3>
                                         <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold border border-primary/20">

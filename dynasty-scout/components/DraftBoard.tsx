@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Player } from '@/lib/types';
 import { PlayerMiniCard } from '@/components/PlayerMiniCard';
@@ -43,6 +43,8 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     const [draftCapFilter, setDraftCapFilter] = useState<'all' | 'r1' | 'r2plus' | 'day3'>('all');
     const [ageFilter, setAgeFilter]           = useState<'all' | 'u21' | 'u22'>('all');
     const [rasFilter, setRasFilter]           = useState<'all' | 'ras7' | 'ras8'>('all');
+    const [showHelp, setShowHelp]             = useState(false);
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Load watchlist from localStorage on mount and keep in sync
     useEffect(() => {
@@ -69,6 +71,29 @@ function DraftBoardContent({ players }: DraftBoardProps) {
         if (positionFilter !== 'ALL') params.set('position', positionFilter);
         router.replace(`/?${params.toString()}`, { scroll: false });
     }, [debouncedSearch, positionFilter, router]);
+
+    // Keyboard shortcuts
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            const focused = document.activeElement;
+            const inInput = focused instanceof HTMLInputElement || focused instanceof HTMLTextAreaElement;
+
+            if (e.key === '/' && !inInput) {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            } else if (e.key === 'Escape') {
+                if (showHelp) { setShowHelp(false); return; }
+                if (inInput) { (focused as HTMLElement).blur(); return; }
+                setSearchQuery('');
+            } else if (e.key === 'f' && !inInput) {
+                setFavoritesOnly(v => !v);
+            } else if (e.key === '?' && !inInput) {
+                setShowHelp(v => !v);
+            }
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [showHelp]);
 
     const fuse = useMemo(() => new Fuse(players || [], {
         keys: ['full_name', 'position', 'school'], threshold: 0.3,
@@ -157,6 +182,38 @@ function DraftBoardContent({ players }: DraftBoardProps) {
 
     return (
         <div className="space-y-0">
+            {/* ── Keyboard Shortcuts Help Modal ── */}
+            {showHelp && (
+                <div
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                    onClick={() => setShowHelp(false)}
+                >
+                    <div
+                        className="bg-card border border-border/60 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-foreground">Keyboard Shortcuts</h2>
+                            <button onClick={() => setShowHelp(false)} className="text-muted-foreground/50 hover:text-foreground text-lg leading-none">×</button>
+                        </div>
+                        <div className="space-y-2.5">
+                            {[
+                                { key: '/',   desc: 'Focus search'      },
+                                { key: 'Esc', desc: 'Clear / blur search' },
+                                { key: 'F',   desc: 'Toggle favorites'  },
+                                { key: '?',   desc: 'Show this help'    },
+                            ].map(({ key, desc }) => (
+                                <div key={key} className="flex items-center justify-between">
+                                    <span className="text-sm text-muted-foreground">{desc}</span>
+                                    <kbd className="text-[11px] font-mono font-bold bg-muted/60 border border-border/60 px-2 py-0.5 rounded text-foreground">{key}</kbd>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground/40 mt-5 text-center">Shortcuts work when not typing in a field</p>
+                    </div>
+                </div>
+            )}
+
             {/* ── Controls ── */}
             <div className="flex flex-col gap-3" style={{ marginBottom: '18px' }}>
                 {/* Row 1: Search + view mode + sort */}
@@ -164,7 +221,8 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                     <div style={{ position: 'relative', width: '280px', minWidth: '220px', flexShrink: 0 }}>
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" style={{ zIndex: 1 }} />
                         <input
-                            placeholder="Search players, schools..."
+                            ref={searchInputRef}
+                            placeholder="Search players, schools…  /"
                             style={{
                                 width: '100%', paddingLeft: '2.25rem', height: '36px',
                                 background: 'hsl(var(--card))', border: '1px solid hsl(var(--border) / 0.6)',
@@ -209,6 +267,12 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                             </SelectContent>
                         </Select>
                     </div>
+                    {/* ? shortcut help */}
+                    <button
+                        onClick={() => setShowHelp(true)}
+                        title="Keyboard shortcuts (?)"
+                        className="ml-auto flex items-center justify-center w-8 h-8 rounded-lg border border-border/50 text-muted-foreground/50 hover:text-foreground hover:border-border transition-colors text-xs font-bold"
+                    >?</button>
                 </div>
 
                 {/* Row 2: Position pills + Favorites filter */}

@@ -5,6 +5,7 @@ import { ConsensusRanking, Player } from '@/lib/types';
 import { WatchlistButton } from './WatchlistButton';
 import { getColDefs, getGridTemplate, ColDef } from '@/lib/boardColumns';
 import { Scale } from 'lucide-react';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 
 interface PlayerMiniCardProps {
     player: Player;
@@ -253,32 +254,107 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                     </Link>
                 </div>
 
-                {/* 2. Player info */}
-                <div style={{ width: '220px', minWidth: '220px' }} className="flex-shrink-0">
-                    <div className="flex items-center gap-1.5 mb-0.5 overflow-hidden">
-                        <span className="font-bold text-[14px] text-foreground group-hover:text-primary transition-colors leading-snug">
-                            {player.full_name}
-                        </span>
-                        <span
-                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 6px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 10, fontWeight: 800 }}
-                            className={cn('border', positionColor)}
-                        >{player.position}</span>
-                        <span
-                            style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 5px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 9, fontWeight: 700 }}
-                            className={cn('border', projDC.color)}
-                            title="Projected NFL draft capital based on consensus fantasy rank"
-                        >{projDC.label}</span>
-                    </div>
-                    <div className="flex items-center text-[11px] text-muted-foreground/70 gap-1.5 leading-none">
-                        <span className="truncate">{schoolDisplay || 'School TBD'}</span>
-                        {player.age_at_draft && (
-                            <><span className="opacity-40">•</span><span className="whitespace-nowrap">Age {player.age_at_draft}</span></>
-                        )}
-                        {(player.height_inches || player.weight_lbs) && (
-                            <><span className="opacity-40">•</span><span className="whitespace-nowrap font-mono">{ht}{player.weight_lbs ? ` ${player.weight_lbs}` : ''}</span></>
-                        )}
-                    </div>
-                </div>
+                {/* 2. Player info — wrapped in hover card for quick stats preview */}
+                <HoverCard openDelay={500} closeDelay={100}>
+                    <HoverCardTrigger asChild>
+                        <div style={{ width: '220px', minWidth: '220px' }} className="flex-shrink-0 cursor-default">
+                            <div className="flex items-center gap-1.5 mb-0.5 overflow-hidden">
+                                <span className="font-bold text-[14px] text-foreground group-hover:text-primary transition-colors leading-snug">
+                                    {player.full_name}
+                                </span>
+                                <span
+                                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 6px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 10, fontWeight: 800 }}
+                                    className={cn('border', positionColor)}
+                                >{player.position}</span>
+                                <span
+                                    style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 5px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 9, fontWeight: 700 }}
+                                    className={cn('border', projDC.color)}
+                                    title="Projected NFL draft capital based on consensus fantasy rank"
+                                >{projDC.label}</span>
+                            </div>
+                            <div className="flex items-center text-[11px] text-muted-foreground/70 gap-1.5 leading-none">
+                                <span className="truncate">{schoolDisplay || 'School TBD'}</span>
+                                {player.age_at_draft && (
+                                    <><span className="opacity-40">•</span><span className="whitespace-nowrap">Age {player.age_at_draft}</span></>
+                                )}
+                                {(player.height_inches || player.weight_lbs) && (
+                                    <><span className="opacity-40">•</span><span className="whitespace-nowrap font-mono">{ht}{player.weight_lbs ? ` ${player.weight_lbs}` : ''}</span></>
+                                )}
+                            </div>
+                        </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent side="right" align="start" className="w-64 p-0 overflow-hidden">
+                        {/* Mini player preview card */}
+                        <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-muted/20">
+                            {p.headshot_url ? (
+                                <img src={p.headshot_url} alt={player.full_name} className="w-10 h-12 rounded-lg object-cover object-top flex-shrink-0" />
+                            ) : (
+                                <div className="w-10 h-12 rounded-lg bg-muted/40 flex items-center justify-center flex-shrink-0 text-lg font-black text-muted-foreground/30">
+                                    {player.position}
+                                </div>
+                            )}
+                            <div className="min-w-0">
+                                <div className="font-bold text-sm text-foreground leading-tight truncate">{player.full_name}</div>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded border', positionColor)}>{player.position}</span>
+                                    <span className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded border', tier.color)}>{tier.label}</span>
+                                </div>
+                                <div className="text-[10px] text-muted-foreground/60 mt-1 truncate">{schoolDisplay || 'School TBD'}</div>
+                            </div>
+                        </div>
+                        <div className="px-4 py-3 space-y-2">
+                            {/* Position-specific top stats */}
+                            {player.position === 'RB' && [
+                                { label: 'Best YPC',   val: p.best_ypc    != null ? Number(p.best_ypc).toFixed(2)    : null },
+                                { label: 'Scrim/G',    val: scrimYpg },
+                                { label: 'Best DOM%',  val: p.best_dominator != null ? Number(p.best_dominator).toFixed(1) + '%' : null },
+                                { label: 'RAS',        val: p.ras  != null ? Number(p.ras).toFixed(1)  : null },
+                            ].filter(s => s.val).map(s => (
+                                <div key={s.label} className="flex justify-between items-center">
+                                    <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wide font-semibold">{s.label}</span>
+                                    <span className="text-xs font-mono font-bold text-foreground">{s.val}</span>
+                                </div>
+                            ))}
+                            {player.position === 'WR' && [
+                                { label: 'Best YDS/REC', val: p.best_ypr   != null ? Number(p.best_ypr).toFixed(1)   : null },
+                                { label: 'Best DOM%',    val: p.best_dominator != null ? Number(p.best_dominator).toFixed(1) + '%' : null },
+                                { label: 'RAS',          val: p.ras  != null ? Number(p.ras).toFixed(1)  : null },
+                                { label: 'Speed Score',  val: p.speed_score != null ? Math.round(Number(p.speed_score)).toString() : null },
+                            ].filter(s => s.val).map(s => (
+                                <div key={s.label} className="flex justify-between items-center">
+                                    <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wide font-semibold">{s.label}</span>
+                                    <span className="text-xs font-mono font-bold text-foreground">{s.val}</span>
+                                </div>
+                            ))}
+                            {player.position === 'TE' && [
+                                { label: 'Best YDS/REC', val: p.best_ypr   != null ? Number(p.best_ypr).toFixed(1)   : null },
+                                { label: 'Best DOM%',    val: p.best_dominator != null ? Number(p.best_dominator).toFixed(1) + '%' : null },
+                                { label: 'RAS',          val: p.ras  != null ? Number(p.ras).toFixed(1)  : null },
+                            ].filter(s => s.val).map(s => (
+                                <div key={s.label} className="flex justify-between items-center">
+                                    <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wide font-semibold">{s.label}</span>
+                                    <span className="text-xs font-mono font-bold text-foreground">{s.val}</span>
+                                </div>
+                            ))}
+                            {player.position === 'QB' && [
+                                { label: 'Comp %',   val: compPct },
+                                { label: 'YPA',      val: ypa     },
+                                { label: 'Best Pass/G', val: p.best_pass_ypg != null ? Number(p.best_pass_ypg).toFixed(1) : null },
+                                { label: 'RAS',      val: p.ras   != null ? Number(p.ras).toFixed(1) : null },
+                            ].filter(s => s.val).map(s => (
+                                <div key={s.label} className="flex justify-between items-center">
+                                    <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wide font-semibold">{s.label}</span>
+                                    <span className="text-xs font-mono font-bold text-foreground">{s.val}</span>
+                                </div>
+                            ))}
+                            {/* Proj pick row */}
+                            <div className="pt-1 border-t border-border/30 flex justify-between items-center">
+                                <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wide font-semibold">Proj. Pick</span>
+                                <span className="text-xs font-mono font-bold text-primary">{draftSlot}</span>
+                            </div>
+                        </div>
+                    </HoverCardContent>
+                </HoverCard>
 
                 {/* 3. Dynamic stat columns — CSS grid */}
                 <div
