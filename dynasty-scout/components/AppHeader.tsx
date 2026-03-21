@@ -17,20 +17,42 @@ export function AppHeader({ children }: AppHeaderProps) {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border/40">
-      <div className="px-6 sm:px-10 h-14 flex items-center gap-6">
+    <header className="sticky top-0 z-50 border-b border-white/[0.06]"
+      style={{
+        background: 'linear-gradient(180deg, rgba(12,21,32,0.92) 0%, rgba(6,10,16,0.88) 100%)',
+        backdropFilter: 'blur(20px) saturate(1.4)',
+        WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+      }}
+    >
+      {/* Gradient accent line at very top */}
+      <div className="h-[2px] w-full" style={{
+        background: 'linear-gradient(90deg, transparent 5%, var(--primary) 30%, #fb923c 50%, var(--primary) 70%, transparent 95%)',
+        opacity: 0.6,
+      }} />
+
+      <div className="px-6 sm:px-10 h-[52px] flex items-center gap-5">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-white text-xs font-black">ERS</span>
+        <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center relative overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #f59e0b 100%)',
+              boxShadow: '0 0 14px rgba(249, 115, 22, 0.25)',
+            }}
+          >
+            <span className="text-white text-[11px] font-black tracking-tight relative z-10">ERS</span>
           </div>
-          <span className="text-sm font-bold text-foreground hidden sm:block tracking-tight">
-            Elite Rookie Scouter
-          </span>
+          <div className="hidden sm:flex flex-col">
+            <span className="text-sm font-bold text-foreground tracking-tight leading-tight">
+              Elite Rookie Scouter
+            </span>
+            <span className="text-[10px] font-semibold text-primary/70 tracking-wide uppercase leading-none">
+              2026 Draft Class
+            </span>
+          </div>
         </Link>
 
         {/* Nav links */}
-        <nav className="flex items-stretch h-full gap-1">
+        <nav className="flex items-stretch h-full gap-0.5 ml-2">
           {NAV_LINKS.map(({ href, label }) => {
             const isActive = href === '/'
               ? pathname === '/'
@@ -40,13 +62,22 @@ export function AppHeader({ children }: AppHeaderProps) {
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center px-3 text-sm font-semibold transition-colors border-b-2 ${
+                className={`relative flex items-center px-4 text-[13px] font-semibold transition-all duration-200 ${
                   isActive
-                    ? 'text-primary border-primary'
-                    : 'text-muted-foreground border-transparent hover:text-foreground hover:border-border'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground hover:text-foreground/80'
                 }`}
               >
                 {label}
+                {/* Active indicator bar */}
+                {isActive && (
+                  <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full"
+                    style={{
+                      background: 'var(--primary)',
+                      boxShadow: '0 0 8px rgba(249, 115, 22, 0.4)',
+                    }}
+                  />
+                )}
               </Link>
             );
           })}
@@ -54,7 +85,7 @@ export function AppHeader({ children }: AppHeaderProps) {
 
         {/* Children slot (breadcrumbs, player nav, etc.) */}
         {children && (
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-3 ml-auto text-[12px]">
             {children}
           </div>
         )}

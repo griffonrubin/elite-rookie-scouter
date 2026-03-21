@@ -17,13 +17,15 @@ import { getColDefs, getGridTemplate, SortKey } from '@/lib/boardColumns';
 interface DraftBoardProps { players: Player[]; }
 type SortDir = 'asc' | 'desc';
 
+import { POSITION_PILL_ACTIVE } from '@/lib/constants';
+
 const TIERS = [
-    { label: 'S Tier', minRank: 1,  maxRank: 5,    accent: '#FF6B00', bg: 'rgba(255,107,0,0.08)',   border: 'rgba(255,107,0,0.3)'   },
-    { label: 'A Tier', minRank: 6,  maxRank: 12,   accent: '#22c55e', bg: 'rgba(34,197,94,0.08)',   border: 'rgba(34,197,94,0.3)'   },
-    { label: 'B Tier', minRank: 13, maxRank: 24,   accent: '#00b4d8', bg: 'rgba(0,180,216,0.07)',   border: 'rgba(0,180,216,0.25)'  },
-    { label: 'C Tier', minRank: 25, maxRank: 48,   accent: '#a78bfa', bg: 'rgba(167,139,250,0.07)', border: 'rgba(167,139,250,0.25)' },
-    { label: 'D Tier', minRank: 49, maxRank: 80,   accent: '#f59e0b', bg: 'rgba(245,158,11,0.06)',  border: 'rgba(245,158,11,0.25)' },
-    { label: 'Depth',  minRank: 81, maxRank: 9999, accent: '#6b7280', bg: 'rgba(107,114,128,0.05)', border: 'rgba(107,114,128,0.2)' },
+    { label: 'S Tier', minRank: 1,  maxRank: 5,    accent: '#f97316', bg: 'rgba(249,115,22,0.06)',   border: 'rgba(249,115,22,0.25)'  },
+    { label: 'A Tier', minRank: 6,  maxRank: 12,   accent: '#22c55e', bg: 'rgba(34,197,94,0.06)',    border: 'rgba(34,197,94,0.25)'   },
+    { label: 'B Tier', minRank: 13, maxRank: 24,   accent: '#38bdf8', bg: 'rgba(56,189,248,0.05)',   border: 'rgba(56,189,248,0.2)'   },
+    { label: 'C Tier', minRank: 25, maxRank: 48,   accent: '#a78bfa', bg: 'rgba(167,139,250,0.05)',  border: 'rgba(167,139,250,0.2)'  },
+    { label: 'D Tier', minRank: 49, maxRank: 80,   accent: '#f59e0b', bg: 'rgba(245,158,11,0.05)',   border: 'rgba(245,158,11,0.2)'   },
+    { label: 'Depth',  minRank: 81, maxRank: 9999, accent: '#475569', bg: 'rgba(71,85,105,0.04)',    border: 'rgba(71,85,105,0.15)'   },
 ];
 function getTierForRank(rank: number) {
     return TIERS.find(t => rank >= t.minRank && rank <= t.maxRank) ?? TIERS[TIERS.length - 1];
@@ -215,25 +217,27 @@ function DraftBoardContent({ players }: DraftBoardProps) {
             )}
 
             {/* ── Controls ── */}
-            <div className="flex flex-col gap-3" style={{ marginBottom: '18px' }}>
+            <div className="flex flex-col gap-3 mb-5 p-4 rounded-2xl border border-white/[0.05]" style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(12px)' }}>
                 {/* Row 1: Search + view mode + sort */}
                 <div className="flex items-center gap-3 flex-wrap">
-                    <div style={{ position: 'relative', width: '280px', minWidth: '220px', flexShrink: 0 }}>
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" style={{ zIndex: 1 }} />
+                    <div style={{ position: 'relative', width: '340px', minWidth: '240px', flexShrink: 0 }}>
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" style={{ zIndex: 1 }} />
                         <input
                             ref={searchInputRef}
-                            placeholder="Search players, schools…  /"
+                            placeholder="Search players, schools…"
                             style={{
-                                width: '100%', paddingLeft: '2.25rem', height: '36px',
-                                background: 'hsl(var(--card))', border: '1px solid hsl(var(--border) / 0.6)',
-                                borderRadius: '0.5rem', fontSize: '0.875rem', color: 'hsl(var(--foreground))',
+                                width: '100%', paddingLeft: '2.5rem', paddingRight: '3rem', height: '40px',
+                                background: 'var(--bg-base)', border: '1px solid rgba(255,255,255,0.06)',
+                                borderRadius: '0.75rem', fontSize: '0.875rem', color: 'var(--foreground)',
                                 outline: 'none', boxSizing: 'border-box',
+                                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
                             }}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            onFocus={(e) => { e.target.style.borderColor = 'hsl(var(--primary))'; e.target.style.boxShadow = '0 0 0 3px hsl(var(--primary) / 0.18)'; }}
-                            onBlur={(e)  => { e.target.style.borderColor = 'hsl(var(--border) / 0.6)'; e.target.style.boxShadow = 'none'; }}
+                            onFocus={(e) => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = 'inset 0 1px 3px rgba(0,0,0,0.3), 0 0 0 3px rgba(249,115,22,0.15)'; }}
+                            onBlur={(e)  => { e.target.style.borderColor = 'rgba(255,255,255,0.06)'; e.target.style.boxShadow = 'inset 0 1px 3px rgba(0,0,0,0.3)'; }}
                         />
+                        <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-[var(--font-jetbrains),monospace] font-bold text-muted-foreground/30 bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.5 rounded">/</kbd>
                     </div>
                     <ViewModeSelector mode={viewMode} onChange={setViewMode} />
                     <div className="flex items-center gap-1.5">
@@ -280,21 +284,15 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                     {(['ALL', 'QB', 'RB', 'WR', 'TE'] as const).map(pos => {
                         const active = positionFilter === pos;
                         const displayCount = pos === 'ALL' ? filteredPlayers.length : counts[pos as keyof typeof counts];
-                        const posMap: Record<string, { active: string; inactive: string }> = {
-                            ALL: { active: 'bg-[#FF6B00] text-white border-[#FF6B00]',                       inactive: 'text-muted-foreground border-border/60 hover:border-[#FF6B00]/50 hover:text-[#FF6B00]' },
-                            QB:  { active: 'bg-cyan-500/40 text-cyan-100 border-cyan-500',                    inactive: 'text-muted-foreground border-border/60 hover:border-cyan-500/40 hover:text-cyan-400' },
-                            RB:  { active: 'bg-emerald-500/40 text-emerald-100 border-emerald-500',           inactive: 'text-muted-foreground border-border/60 hover:border-emerald-500/40 hover:text-emerald-400' },
-                            WR:  { active: 'bg-fuchsia-500/40 text-fuchsia-100 border-fuchsia-500',           inactive: 'text-muted-foreground border-border/60 hover:border-fuchsia-500/40 hover:text-fuchsia-400' },
-                            TE:  { active: 'bg-violet-500/40 text-violet-100 border-violet-500',              inactive: 'text-muted-foreground border-border/60 hover:border-violet-500/40 hover:text-violet-400' },
-                        };
+                        const pill = POSITION_PILL_ACTIVE[pos];
                         return (
                             <button
                                 key={pos}
                                 onClick={() => setPositionFilter(pos)}
-                                style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 14px', borderRadius: 9999, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', lineHeight: 1, gap: 4 }}
-                                className={`border transition-all duration-150 ${active ? posMap[pos].active : posMap[pos].inactive}`}
+                                style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 16px', borderRadius: 9999, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', lineHeight: 1, gap: 5 }}
+                                className={`border transition-all duration-200 ${active ? pill.active : pill.inactive}`}
                             >
-                                {pos} <span style={{ opacity: active ? 1 : 0.6 }}>{displayCount}</span>
+                                {pos} <span style={{ opacity: active ? 1 : 0.5, fontSize: 12 }}>{displayCount}</span>
                             </button>
                         );
                     })}
@@ -323,7 +321,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
 
                 {/* Row 3: Quick filters */}
                 <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">Filter:</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/40">Filter:</span>
 
                     {/* Draft Capital */}
                     <div className="flex items-center gap-1">
@@ -334,7 +332,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border transition-all duration-150 ${
                                     draftCapFilter === val
                                         ? 'bg-primary/20 text-primary border-primary/50'
-                                        : 'text-muted-foreground/60 border-border/40 hover:text-foreground hover:border-border'
+                                        : 'text-muted-foreground/50 border-white/[0.06] hover:text-foreground hover:border-white/[0.12]'
                                 }`}
                             >{label}</button>
                         ))}
@@ -351,7 +349,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border transition-all duration-150 ${
                                     ageFilter === val
                                         ? 'bg-primary/20 text-primary border-primary/50'
-                                        : 'text-muted-foreground/60 border-border/40 hover:text-foreground hover:border-border'
+                                        : 'text-muted-foreground/50 border-white/[0.06] hover:text-foreground hover:border-white/[0.12]'
                                 }`}
                             >{label}</button>
                         ))}
@@ -368,7 +366,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border transition-all duration-150 ${
                                     rasFilter === val
                                         ? 'bg-primary/20 text-primary border-primary/50'
-                                        : 'text-muted-foreground/60 border-border/40 hover:text-foreground hover:border-border'
+                                        : 'text-muted-foreground/50 border-white/[0.06] hover:text-foreground hover:border-white/[0.12]'
                                 }`}
                             >{label}</button>
                         ))}
@@ -386,20 +384,20 @@ function DraftBoardContent({ players }: DraftBoardProps) {
 
             {/* ── Table View ── */}
             {viewMode === 'table' && (
-                <div className="bg-card rounded-xl border border-border/60 shadow-lg shadow-black/20">
+                <div className="rounded-2xl border border-white/[0.05] overflow-hidden" style={{ background: 'var(--bg-card)' }}>
 
-                    {/* Column headers — sticky below the app header bar (h-14 = 56px) */}
-                    <div className="flex items-stretch px-4 py-0 border-b-2 border-border/60 bg-muted/20 gap-0 min-h-[40px] sticky top-14 z-20 rounded-t-xl"
-                         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
+                    {/* Column headers — sticky below the app header bar */}
+                    <div className="flex items-stretch px-4 py-0 border-b border-white/[0.06] gap-0 min-h-[46px] sticky top-[54px] z-20"
+                         style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(16px)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
                         {/* Sticky identity group: rank + player */}
-                        <div className="sticky left-0 z-10 bg-muted/20 flex items-center gap-3 pr-2 flex-shrink-0" style={{ width: '304px' }}>
+                        <div className="sticky left-0 z-10 flex items-center gap-3 pr-2 flex-shrink-0" style={{ width: '304px', background: 'var(--bg-elevated)' }}>
                         {/* Rank */}
                         <div className="w-16 flex-shrink-0 flex items-center justify-center">
                             <button
                                 onClick={() => handleSort('rank')}
                                 className="flex items-center gap-0.5 cursor-pointer group bg-transparent border-0"
                             >
-                                <span className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-0.5 ${sortKey === 'rank' ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                                <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-0.5 ${sortKey === 'rank' ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
                                     RANK
                                     {sortKey === 'rank'
                                         ? (sortDir === 'asc' ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />)
@@ -413,7 +411,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
 
                         {/* Player */}
                         <div style={{ width: '220px', minWidth: '220px' }}
-                            className="flex-shrink-0 flex items-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            className="flex-shrink-0 flex items-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                             Player
                         </div>
                         </div>{/* end sticky identity group */}
@@ -434,7 +432,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                             onClick={() => handleSort(col.sortKey!)}
                                             className="flex flex-col items-center justify-center cursor-pointer select-none bg-transparent border-0 p-0 gap-0 group w-full"
                                         >
-                                            <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest leading-none transition-colors ${sortKey === col.sortKey ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                                            <div className={`flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider leading-none transition-colors ${sortKey === col.sortKey ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
                                                 {col.label}
                                                 {sortKey === col.sortKey
                                                     ? (sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-primary" /> : <ChevronDown className="w-3 h-3 text-primary" />)
@@ -448,7 +446,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                         </button>
                                     ) : (
                                         <div className="flex flex-col items-center gap-0.5 w-full">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground leading-none">{col.label}</span>
+                                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground leading-none">{col.label}</span>
                                             {col.subLabel && <span className="text-[9px] text-muted-foreground/50 leading-none">{col.subLabel}</span>}
                                         </div>
                                     )}
@@ -491,21 +489,26 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                     <div key={player.id}>
                                         {showTierHeader && (
                                             <div
-                                                className="flex items-center gap-3 px-10 py-2 text-[11px] font-black uppercase tracking-[0.15em] mb-0.5 mt-2"
-                                                style={{ background: tier.accent, color: '#000', borderRadius: '0' }}
+                                                className="flex items-center gap-3 px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] mt-1 first:mt-0"
+                                                style={{
+                                                    background: `linear-gradient(90deg, ${tier.accent}12, transparent 60%)`,
+                                                    borderLeft: `3px solid ${tier.accent}`,
+                                                    color: tier.accent,
+                                                }}
                                             >
-                                                <span>{tier.label}</span>
-                                                <span className="opacity-60 font-bold">
+                                                <span style={{ opacity: 0.9 }}>{tier.label}</span>
+                                                <span style={{ opacity: 0.45, fontSize: 10 }} className="font-bold tracking-wider">
                                                     {positionFilter === 'ALL'
-                                                        ? (tier.maxRank < 9999 ? `— Ranks ${tier.minRank}–${tier.maxRank}` : `— Ranks ${tier.minRank}+`)
+                                                        ? (tier.maxRank < 9999 ? `Ranks ${tier.minRank}–${tier.maxRank}` : `Ranks ${tier.minRank}+`)
                                                         : bounds && bounds.first === bounds.last
-                                                            ? `— Rank ${bounds.first}`
-                                                            : `— Ranks ${bounds?.first ?? tier.minRank}–${bounds?.last ?? tier.maxRank}`
+                                                            ? `Rank ${bounds.first}`
+                                                            : `Ranks ${bounds?.first ?? tier.minRank}–${bounds?.last ?? tier.maxRank}`
                                                     }
-                                                    {tierCounts[tier.label] && <span className="ml-3 font-normal tracking-normal text-[10px] opacity-75 hidden sm:inline-block">
-                                                        · {Object.entries(tierCounts[tier.label]).filter(([_, c]) => c > 0).map(([pos, c]) => `${pos}×${c}`).join(' ')}
-                                                    </span>}
                                                 </span>
+                                                <span className="flex-1" />
+                                                {tierCounts[tier.label] && <span className="font-semibold tracking-normal text-[10px] hidden sm:inline-block" style={{ opacity: 0.3 }}>
+                                                    {Object.entries(tierCounts[tier.label]).filter(([_, c]) => c > 0).map(([pos, c]) => `${pos}×${c}`).join('  ')}
+                                                </span>}
                                             </div>
                                         )}
                                         <PlayerMiniCard

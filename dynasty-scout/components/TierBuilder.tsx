@@ -237,10 +237,10 @@ export function TierBuilder() {
         >
             <div className="flex gap-6 h-[calc(100vh-100px)]">
                 {/* Available Pool */}
-                <div className="w-1/3 border-r border-border/30 pr-4 flex flex-col overflow-hidden">
+                <div className="w-1/3 border-r border-white/[0.05] pr-4 flex flex-col overflow-hidden">
                     {/* Sticky controls */}
                     <div className="sticky top-0 z-10 bg-background pb-3">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70 mb-3">Available Players</h3>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/50 mb-3">Available Players</h3>
                         {/* Search */}
                         <div className="relative mb-2">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" />
@@ -292,23 +292,33 @@ export function TierBuilder() {
                         <Button size="sm"><Plus className="w-4 h-4 mr-2" /> Add Tier</Button>
                     </div>
 
-                    <div className="space-y-4">
-                        {tiers.map((tier) => (
-                            <div key={tier.id} className="border border-border/30 rounded-lg bg-card/30">
+                    <div className="space-y-5">
+                        {tiers.map((tier, idx) => {
+                            // Map tier index to refined accent colors
+                            const tierAccents = ['#f97316', '#38bdf8', '#22c55e', '#f59e0b', '#ef4444', '#a78bfa'];
+                            const accent = tierAccents[idx % tierAccents.length];
+                            return (
+                            <div key={tier.id} className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: 'var(--bg-card)' }}>
                                 {/* Tier Header */}
-                                <div className={`p-3 rounded-t-lg flex items-center justify-between border-b border-border/20 border-l-4 ${tier.tier_color.replace('/10', '/10')} ${tier.tier_color.replace('text-', 'border-l-').replace('/10', '/60').replace('bg-', '').split(' ')[0]}`}>
-                                    <div className="flex items-center gap-2">
-                                        <GripHorizontal className="w-4 h-4 opacity-50 cursor-grab" />
-                                        <span className="font-bold">{tier.tier_name}</span>
-                                        <span className="text-xs opacity-80">({tier.players?.length || 0})</span>
+                                <div
+                                    className="px-4 py-3 flex items-center justify-between"
+                                    style={{
+                                        background: `linear-gradient(90deg, ${accent}18, transparent 60%)`,
+                                        borderLeft: `3px solid ${accent}`,
+                                        borderBottom: '1px solid rgba(255,255,255,0.04)',
+                                    }}
+                                >
+                                    <div className="flex items-center gap-2.5">
+                                        <GripHorizontal className="w-4 h-4 opacity-30 cursor-grab" />
+                                        <span className="font-bold text-sm" style={{ color: accent }}>{tier.tier_name}</span>
+                                        <span className="text-xs text-muted-foreground/40 font-semibold">({tier.players?.length || 0})</span>
                                     </div>
-                                    {/* <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20"><Trash2 className="w-3 h-3" /></Button> */}
                                 </div>
 
                                 {/* Sortable Area */}
-                                <div className="p-2 min-h-[50px]">
+                                <div className="p-3 min-h-[50px]">
                                     <SortableContext
-                                        id={tier.id.toString()} // Use string ID for context
+                                        id={tier.id.toString()}
                                         items={tier.players?.map(p => p.id) || []}
                                         strategy={verticalListSortingStrategy}
                                     >
@@ -321,7 +331,7 @@ export function TierBuilder() {
                                                 />
                                             ))}
                                             {tier.players?.length === 0 && (
-                                                <div className="text-center text-xs text-muted-foreground/40 py-4 border-dashed border border-border/30 rounded-md">
+                                                <div className="text-center text-xs text-muted-foreground/30 py-5 border-dashed border border-white/[0.05] rounded-xl">
                                                     Drop players here
                                                 </div>
                                             )}
@@ -329,7 +339,7 @@ export function TierBuilder() {
                                     </SortableContext>
                                 </div>
                             </div>
-                        ))}
+                        );})}
                     </div>
                 </div>
             </div>

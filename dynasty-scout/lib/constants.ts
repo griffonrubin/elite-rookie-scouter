@@ -21,11 +21,39 @@ export const POSITION_HEADLINE_STATS: Record<string, { key: string, label: strin
     ],
 };
 
+// Canonical position color system — single source of truth
+export const POSITION_RAW: Record<string, string> = {
+    QB: '#ef4444', RB: '#38bdf8', WR: '#34d399', TE: '#a78bfa',
+};
+
 export const POSITION_COLORS: Record<string, string> = {
-    QB: 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40',
-    RB: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
-    WR: 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40',
-    TE: 'bg-violet-500/20 text-violet-300 border border-violet-500/40',
+    QB: 'bg-red-500/15 text-red-400 border border-red-500/35',
+    RB: 'bg-sky-400/15 text-sky-400 border border-sky-400/35',
+    WR: 'bg-emerald-400/15 text-emerald-400 border border-emerald-400/35',
+    TE: 'bg-violet-400/15 text-violet-400 border border-violet-400/35',
+};
+
+export const POSITION_PILL_ACTIVE: Record<string, { active: string; inactive: string }> = {
+    ALL: {
+        active: 'bg-primary text-white border-primary shadow-[0_0_12px_rgba(249,115,22,0.3)]',
+        inactive: 'text-muted-foreground border-white/10 hover:border-primary/40 hover:text-primary',
+    },
+    QB: {
+        active: 'bg-red-500/25 text-red-300 border-red-500/60 shadow-[0_0_12px_rgba(239,68,68,0.2)]',
+        inactive: 'text-muted-foreground border-white/10 hover:border-red-500/40 hover:text-red-400',
+    },
+    RB: {
+        active: 'bg-sky-400/25 text-sky-200 border-sky-400/60 shadow-[0_0_12px_rgba(56,189,248,0.2)]',
+        inactive: 'text-muted-foreground border-white/10 hover:border-sky-400/40 hover:text-sky-400',
+    },
+    WR: {
+        active: 'bg-emerald-400/25 text-emerald-200 border-emerald-400/60 shadow-[0_0_12px_rgba(52,211,153,0.2)]',
+        inactive: 'text-muted-foreground border-white/10 hover:border-emerald-400/40 hover:text-emerald-400',
+    },
+    TE: {
+        active: 'bg-violet-400/25 text-violet-200 border-violet-400/60 shadow-[0_0_12px_rgba(167,139,250,0.2)]',
+        inactive: 'text-muted-foreground border-white/10 hover:border-violet-400/40 hover:text-violet-400',
+    },
 };
 
 export const SOURCES = [

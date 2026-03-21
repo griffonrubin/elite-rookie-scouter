@@ -52,41 +52,46 @@ function timeAgo(dateStr: string) {
 }
 
 const POS_STYLES: Record<string, string> = {
-    QB: 'bg-red-500/20 text-red-400 border-red-500/40',
-    RB: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40',
-    WR: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
-    TE: 'bg-violet-500/20 text-violet-400 border-violet-500/40',
+    QB: 'bg-red-500/15 text-red-400 border-red-500/35',
+    RB: 'bg-sky-400/15 text-sky-400 border-sky-400/35',
+    WR: 'bg-emerald-400/15 text-emerald-400 border-emerald-400/35',
+    TE: 'bg-violet-400/15 text-violet-400 border-violet-400/35',
 };
 
-function getTierInfo(rank: number): { label: string; color: string } {
-    if (rank <= 5)  return { label: 'S Tier', color: 'bg-[#FF6B00]/20 text-[#FF9A50] border-[#FF6B00]/40' };
-    if (rank <= 12) return { label: 'A Tier', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
-    if (rank <= 24) return { label: 'B Tier', color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' };
-    if (rank <= 48) return { label: 'C Tier', color: 'bg-violet-500/20 text-violet-300 border-violet-500/40' };
-    return { label: 'Depth', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40' };
+const POS_RAW: Record<string, string> = {
+    QB: '#ef4444', RB: '#38bdf8', WR: '#34d399', TE: '#a78bfa',
+};
+
+function getTierInfo(rank: number): { label: string; color: string; accent: string } {
+    if (rank <= 5)  return { label: 'S Tier', color: 'bg-orange-500/15 text-orange-300 border-orange-500/35', accent: '#f97316' };
+    if (rank <= 12) return { label: 'A Tier', color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35', accent: '#22c55e' };
+    if (rank <= 24) return { label: 'B Tier', color: 'bg-sky-400/15 text-sky-300 border-sky-400/35', accent: '#38bdf8' };
+    if (rank <= 48) return { label: 'C Tier', color: 'bg-violet-500/15 text-violet-300 border-violet-500/35', accent: '#a78bfa' };
+    return { label: 'Depth', color: 'bg-slate-500/15 text-slate-400 border-slate-500/30', accent: '#475569' };
 }
 
 // ─── Local UI components ──────────────────────────────────────────────────────
 
 function SectionLabel({ label }: { label: string }) {
     return (
-        <div className="flex items-center gap-3 mb-5">
-            <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-muted-foreground/50 whitespace-nowrap">{label}</span>
-            <div className="flex-1 h-px bg-border/20" />
+        <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-4 rounded-full bg-primary/60" />
+            <span className="text-sm font-black tracking-wider uppercase text-muted-foreground/60 whitespace-nowrap">{label}</span>
+            <div className="flex-1 h-px bg-white/[0.04]" />
         </div>
     );
 }
 
 function AnalyticCard({ label, value, pct }: { label: string; value: string; pct: number }) {
     const p = Math.min(100, Math.max(0, pct));
-    const color = p >= 80 ? 'text-emerald-400' : p >= 60 ? 'text-cyan-400' : p >= 40 ? 'text-yellow-400' : p >= 20 ? 'text-orange-400' : 'text-red-400';
-    const bar   = p >= 80 ? 'bg-emerald-400' : p >= 60 ? 'bg-cyan-400'    : p >= 40 ? 'bg-yellow-400'   : p >= 20 ? 'bg-orange-400'   : 'bg-red-400';
+    const color = p >= 80 ? 'text-emerald-400' : p >= 60 ? 'text-sky-400' : p >= 40 ? 'text-yellow-400' : p >= 20 ? 'text-orange-400' : 'text-red-400';
+    const bar   = p >= 80 ? 'bg-emerald-400' : p >= 60 ? 'bg-sky-400'    : p >= 40 ? 'bg-yellow-400'   : p >= 20 ? 'bg-orange-400'   : 'bg-red-400';
     return (
-        <div className="bg-card/60 border border-border/30 rounded-lg px-3 py-3 text-center min-w-0">
-            <div className={`text-lg font-black font-mono leading-none ${color}`}>{value || '—'}</div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground/50 mt-1.5 leading-tight">{label}</div>
-            <div className="mt-2 h-0.5 bg-border/20 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full ${bar} opacity-70`} style={{ width: `${p}%` }} />
+        <div className="rounded-xl px-3.5 py-3.5 text-center min-w-0 border border-white/[0.06]" style={{ background: 'var(--bg-elevated)' }}>
+            <div className={`text-lg font-black font-[var(--font-jetbrains),monospace] leading-none ${color}`}>{value || '—'}</div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground/40 mt-1.5 leading-tight">{label}</div>
+            <div className="mt-2.5 h-1 bg-white/[0.04] rounded-full overflow-hidden">
+                <div className={`h-full rounded-full ${bar} opacity-60`} style={{ width: `${p}%` }} />
             </div>
         </div>
     );
@@ -123,13 +128,8 @@ export function PlayerProfileClient({
     const pos = player.position as string;
     const posStyle = POS_STYLES[pos] || 'bg-gray-500/20 text-gray-400 border-gray-500/40';
 
-    const avatarBgMap: Record<string, string> = {
-        QB: 'rgba(34, 211, 238, 0.12)',
-        RB: 'rgba(52, 211, 153, 0.12)',
-        WR: 'rgba(232, 121, 249, 0.12)',
-        TE: 'rgba(167, 139, 250, 0.12)',
-    };
-    const avatarBg = avatarBgMap[pos] || avatarBgMap.WR;
+    const posColor = POS_RAW[pos] || '#a78bfa';
+    const avatarBg = `linear-gradient(135deg, ${posColor}18, ${posColor}08)`;
 
     const headshotUrl: string | null =
         player.headshot_url ??
@@ -138,7 +138,7 @@ export function PlayerProfileClient({
     const classRank: number | null = player.consensus_rank && player.consensus_rank > 0 ? player.consensus_rank : null;
     const projRank: number | null = player.ktc_rank ?? player.consensus_rank ?? player.best_rank ?? null;
     const draftSlot = projRank ? getDraftSlot(projRank) : null;
-    const tier = classRank ? getTierInfo(classRank) : { label: 'Unranked', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40' };
+    const tier = classRank ? getTierInfo(classRank) : { label: 'Unranked', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40', accent: '#6b7280' };
 
     const headlines = POSITION_HEADLINE_STATS[pos] || [];
 
@@ -571,22 +571,31 @@ export function PlayerProfileClient({
             </AppHeader>
 
             {/* ── Sticky Hero + Section Nav ────────────────────────────────────────── */}
-            <div className="sticky top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-border/30">
+            <div className="sticky top-[54px] z-20 border-b border-white/[0.05]"
+                style={{
+                    background: 'linear-gradient(180deg, rgba(6,10,16,0.96) 0%, rgba(12,21,32,0.94) 100%)',
+                    backdropFilter: 'blur(20px) saturate(1.3)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(1.3)',
+                }}
+            >
                 {/* Hero card */}
-                <div className="px-6 sm:px-10 pt-4 pb-3">
+                <div className="px-6 sm:px-10 pt-5 pb-4">
                     <div className="flex items-start gap-5">
-                        {/* Compact photo */}
+                        {/* Photo with position-colored ring */}
                         <div className="flex-shrink-0 hidden sm:block">
                             <div
-                                className="w-16 h-20 rounded-xl border border-border/40 overflow-hidden shadow-lg relative"
-                                style={{ background: avatarBg }}
+                                className="w-[72px] h-[88px] rounded-xl overflow-hidden shadow-lg relative"
+                                style={{
+                                    background: avatarBg,
+                                    border: `2px solid ${posColor}40`,
+                                    boxShadow: `0 4px 16px rgba(0,0,0,0.4), 0 0 0 1px ${posColor}15`,
+                                }}
                             >
                                 {headshotUrl ? (
                                     <img src={headshotUrl} alt={player.full_name} className="w-full h-full object-cover object-top" />
                                 ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                                        <div className="text-2xl text-muted-foreground/20 leading-none select-none">🏈</div>
-                                        <div className={`text-[10px] font-black px-1.5 py-0.5 rounded-full border ${posStyle}`}>{pos}</div>
+                                        <div className={`text-sm font-black px-2 py-1 rounded-full border ${posStyle}`}>{pos}</div>
                                     </div>
                                 )}
                             </div>
@@ -594,8 +603,8 @@ export function PlayerProfileClient({
 
                         {/* Identity block */}
                         <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground truncate">
+                            <div className="flex items-center gap-2.5 mb-1.5">
+                                <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-foreground truncate leading-tight">
                                     {player.full_name}
                                 </h1>
                                 <Badge variant="outline" className={cn("text-xs font-bold border shrink-0", posStyle)}>
@@ -605,35 +614,38 @@ export function PlayerProfileClient({
                             </div>
 
                             {/* Bio pills */}
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground mb-2">
-                                {player.school && <span className="flex items-center gap-1"><GraduationCap className="w-3 h-3" /> {player.school}</span>}
-                                {player.age_at_draft && <><span className="opacity-30">·</span><span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> Age {player.age_at_draft}</span></>}
-                                {player.height_inches && <><span className="opacity-30">·</span><span className="flex items-center gap-1"><Ruler className="w-3 h-3" /> {formatHeight(player.height_inches)}</span></>}
-                                {player.weight_lbs && <><span className="opacity-30">·</span><span className="flex items-center gap-1"><Weight className="w-3 h-3" /> {player.weight_lbs}lb</span></>}
-                                {player.star_rating && <><span className="opacity-30">·</span><span className="flex items-center gap-1 text-yellow-400"><Star className="w-3 h-3 fill-yellow-400" /> {player.star_rating}-star</span></>}
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground/70 mb-3">
+                                {player.school && <span className="flex items-center gap-1.5"><GraduationCap className="w-3 h-3 text-muted-foreground/40" /> {player.school}</span>}
+                                {player.age_at_draft && <span className="flex items-center gap-1.5"><Calendar className="w-3 h-3 text-muted-foreground/40" /> Age {player.age_at_draft}</span>}
+                                {player.height_inches && <span className="flex items-center gap-1.5"><Ruler className="w-3 h-3 text-muted-foreground/40" /> {formatHeight(player.height_inches)}</span>}
+                                {player.weight_lbs && <span className="flex items-center gap-1.5"><Weight className="w-3 h-3 text-muted-foreground/40" /> {player.weight_lbs}lb</span>}
+                                {player.star_rating && <span className="flex items-center gap-1 text-yellow-400/80"><Star className="w-3 h-3 fill-yellow-400/80" /> {player.star_rating}-star</span>}
                             </div>
 
                             {/* Key rank badges */}
                             <div className="flex items-center gap-2 flex-wrap">
-                                <div className={cn('rounded-lg px-2.5 py-1 flex items-center gap-1.5 border text-xs', tier.color)}>
-                                    <span className="font-black font-mono">#{classRank ?? '—'}</span>
-                                    <span className="text-[10px] uppercase tracking-widest opacity-70 font-bold">{tier.label}</span>
+                                <div className={cn('rounded-lg px-3 py-1.5 flex items-center gap-2 border text-xs', tier.color)}
+                                    style={{ boxShadow: `0 0 10px ${tier.accent}15` }}
+                                >
+                                    <span className="font-black font-[var(--font-jetbrains),monospace] text-sm">#{classRank ?? '—'}</span>
+                                    <span className="text-[10px] uppercase tracking-widest opacity-60 font-bold">{tier.label}</span>
                                 </div>
                                 {draftSlot && (
-                                    <div className="rounded-lg px-2.5 py-1 bg-card border border-border/60 flex items-center gap-1.5 text-xs">
-                                        <span className="font-black font-mono text-foreground">{draftSlot}</span>
-                                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Proj Pick</span>
+                                    <div className="rounded-lg px-3 py-1.5 border border-white/[0.08] flex items-center gap-2 text-xs" style={{ background: 'var(--bg-elevated)' }}>
+                                        <span className="font-black font-[var(--font-jetbrains),monospace] text-foreground">{draftSlot}</span>
+                                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-bold">Proj Pick</span>
                                     </div>
                                 )}
                                 {player.ktc_rank && (
-                                    <div className="rounded-lg px-2.5 py-1 bg-cyan-500/5 border border-cyan-500/30 flex items-center gap-1.5 text-xs">
-                                        <span className="font-black font-mono text-cyan-400">#{player.ktc_rank}</span>
-                                        <span className="text-[10px] uppercase tracking-widest text-cyan-400/60 font-bold">KTC</span>
+                                    <div className="rounded-lg px-3 py-1.5 bg-sky-400/5 border border-sky-400/25 flex items-center gap-2 text-xs">
+                                        <span className="font-black font-[var(--font-jetbrains),monospace] text-sky-400">#{player.ktc_rank}</span>
+                                        <span className="text-[10px] uppercase tracking-widest text-sky-400/50 font-bold">KTC</span>
                                     </div>
                                 )}
                                 <Link
                                     href={`/compare?a=${player.slug}`}
-                                    className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-card border border-border/60 text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all"
+                                    className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.08] text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
+                                    style={{ background: 'var(--bg-elevated)' }}
                                 >
                                     <Scale className="w-3.5 h-3.5" /> Compare
                                 </Link>
@@ -642,11 +654,13 @@ export function PlayerProfileClient({
 
                         {/* KPI strip */}
                         {kpiStrip.length > 0 && (
-                            <div className="hidden lg:grid grid-cols-2 gap-1.5 shrink-0" style={{ minWidth: 188 }}>
+                            <div className="hidden lg:grid grid-cols-2 gap-2 shrink-0" style={{ minWidth: 200 }}>
                                 {kpiStrip.map(kpi => (
-                                    <div key={kpi.label} className="bg-[var(--bg-card)] border border-border/40 rounded-lg px-3 py-2 text-center">
-                                        <div className="text-base font-black font-mono text-foreground leading-none">{kpi.value}</div>
-                                        <div className="text-[9px] uppercase tracking-widest text-muted-foreground/50 font-bold mt-0.5">{kpi.label}</div>
+                                    <div key={kpi.label} className="rounded-xl px-3.5 py-2.5 text-center border border-white/[0.06]"
+                                        style={{ background: 'var(--bg-elevated)' }}
+                                    >
+                                        <div className="text-lg font-black font-[var(--font-jetbrains),monospace] text-foreground leading-none">{kpi.value}</div>
+                                        <div className="text-[9px] uppercase tracking-widest text-muted-foreground/40 font-bold mt-1">{kpi.label}</div>
                                     </div>
                                 ))}
                             </div>
@@ -655,12 +669,12 @@ export function PlayerProfileClient({
                 </div>
 
                 {/* Section jump nav */}
-                <div className="px-6 sm:px-10 flex gap-0 overflow-x-auto border-t border-border/20">
+                <div className="px-6 sm:px-10 flex gap-0 overflow-x-auto border-t border-white/[0.04]">
                     {SECTIONS.map(s => (
                         <button
                             key={s.id}
                             onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                            className="px-4 py-2.5 text-xs font-semibold tracking-wide text-muted-foreground border-b-2 border-transparent hover:text-foreground hover:border-border/60 transition-colors flex-shrink-0"
+                            className="px-4 py-2.5 text-[12px] font-semibold tracking-wide text-muted-foreground/60 border-b-2 border-transparent hover:text-foreground hover:border-primary/40 transition-all flex-shrink-0"
                         >
                             {s.label}
                         </button>
@@ -699,8 +713,8 @@ export function PlayerProfileClient({
                         ].filter(s => s.rank != null) as { label: string; rank: number; bar: string }[];
                         const maxScale = Math.max(50, ...sources.map(s => s.rank));
                         return (
-                            <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden mb-6">
-                                <div className="px-4 py-3 border-b border-border/40 bg-muted/20 flex items-center justify-between">
+                            <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden mb-6">
+                                <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between">
                                     <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Source Rankings</span>
                                     <span className="text-[10px] text-muted-foreground/50 font-mono">1 → {maxScale} scale</span>
                                 </div>
@@ -738,8 +752,8 @@ export function PlayerProfileClient({
                     })()}
 
                     {/* Dynasty Context */}
-                    <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden mb-6">
-                        <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
+                    <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden mb-6">
+                        <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02]">
                             <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Dynasty Context</span>
                         </div>
                         <div className="p-4 space-y-3 text-sm text-muted-foreground">
@@ -785,8 +799,8 @@ export function PlayerProfileClient({
 
                     {/* Historical Athletic Comps */}
                     {historicalComps && historicalComps.length > 0 && (
-                        <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
-                            <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
+                        <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden">
+                            <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02]">
                                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Athletic Comps</span>
                                 <p className="text-[10px] text-muted-foreground/50 mt-0.5">Most similar 2010–2024 draft prospects by athleticism</p>
                             </div>
@@ -840,8 +854,8 @@ export function PlayerProfileClient({
 
                         {/* Recruiting Pedigree — compressed summary */}
                         {(player.recruiting_composite || player.recruiting_stars) && (
-                            <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
-                                <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
+                            <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden">
+                                <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02]">
                                     <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Recruiting Pedigree</span>
                                 </div>
                                 <div className="p-4 space-y-3">
@@ -886,8 +900,8 @@ export function PlayerProfileClient({
 
                         {/* Breakout Profile */}
                         {(player.breakout_age || isEarlyDeclare) && (
-                            <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
-                                <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
+                            <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden">
+                                <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02]">
                                     <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Breakout Profile</span>
                                 </div>
                                 <div className={`p-4 grid gap-4 ${player.breakout_age && isEarlyDeclare ? 'grid-cols-3' : player.breakout_age ? 'grid-cols-2' : 'grid-cols-1'}`}>
@@ -985,7 +999,7 @@ export function PlayerProfileClient({
 
                         {/* EPA / SP+ if available */}
                         {epaStats && epaStats.length > 0 && dominatorStats.length === 0 && (
-                            <div className="rounded-xl border border-border/60 bg-card/40 p-4">
+                            <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] p-4">
                                 <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Competition Adjustment</h3>
                                 <div className="space-y-2">
                                     {epaStats.map((row: any) => (

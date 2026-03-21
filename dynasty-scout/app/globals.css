@@ -48,89 +48,104 @@
 }
 
 /* ============================================================
-   ELITE ROOKIE SCOUTER — Dark Mode by Default
-   Inspired by Sleeper, Flock Fantasy, Dynasty Data Labs
+   ELITE ROOKIE SCOUTER — Refined Dark Theme
+   "Draft War Room" aesthetic: deep navy base, warm orange accents,
+   glassmorphic surfaces, data that glows.
    ============================================================ */
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 
-  /* Dark mode as default — the app is always dark */
-  --background: #0a1118;
-  --foreground: #e6edf3;
-  --card: #111d27;
-  --card-foreground: #e6edf3;
-  --popover: #161b22;
+  /* ── Surface system ── */
+  --background: #060a10;
+  --foreground: #eaf0f6;
+  --card: #0c1520;
+  --card-foreground: #eaf0f6;
+  --popover: #101c28;
+  --popover-foreground: #eaf0f6;
 
-  /* Depth layer system */
-  --bg-base: #0a1118;
-  --bg-card: #111d27;
-  --bg-elevated: #1a2a38;
-  --bg-hover: #243444;
-  --popover-foreground: #e6edf3;
+  /* Depth layers for manual use */
+  --bg-base: #060a10;
+  --bg-card: #0c1520;
+  --bg-elevated: #131f2e;
+  --bg-hover: #1a2d40;
+  --bg-surface: #0f1a26;
 
-  /* Orange primary — Flock Fantasy inspired */
-  --primary: #FF6B00;
+  /* ── Primary: warm orange ── */
+  --primary: #f97316;
   --primary-foreground: #ffffff;
 
-  --secondary: #1f2937;
-  --secondary-foreground: #e6edf3;
+  --secondary: #172033;
+  --secondary-foreground: #eaf0f6;
 
-  --muted: #1f2937;
-  --muted-foreground: #8b949e;
+  --muted: #172033;
+  --muted-foreground: #64748b;
 
-  --accent: #1f2937;
-  --accent-foreground: #e6edf3;
+  --accent: #172033;
+  --accent-foreground: #eaf0f6;
 
-  --destructive: #f85149;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.08);
-  --ring: #FF6B00;
+  --destructive: #ef4444;
+  --border: rgba(255, 255, 255, 0.07);
+  --input: rgba(255, 255, 255, 0.07);
+  --ring: #f97316;
 
-  /* Charts */
-  --chart-1: #00e676;
-  /* neon green */
-  --chart-2: #00b4d8;
-  /* neon blue */
+  /* ── Charts ── */
+  --chart-1: #34d399;
+  --chart-2: #38bdf8;
   --chart-3: #a78bfa;
-  /* neon purple */
   --chart-4: #fb923c;
-  /* orange */
   --chart-5: #f43f5e;
-  /* red */
 
-  --sidebar: #161b22;
-  --sidebar-foreground: #e6edf3;
-  --sidebar-primary: #FF6B00;
+  /* ── Sidebar ── */
+  --sidebar: #0a1018;
+  --sidebar-foreground: #eaf0f6;
+  --sidebar-primary: #f97316;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1f2937;
-  --sidebar-accent-foreground: #e6edf3;
-  --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-ring: #FF6B00;
+  --sidebar-accent: #172033;
+  --sidebar-accent-foreground: #eaf0f6;
+  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --sidebar-ring: #f97316;
+
+  /* ── Position colors ── */
+  --pos-qb: #ef4444;
+  --pos-rb: #38bdf8;
+  --pos-wr: #34d399;
+  --pos-te: #a78bfa;
+
+  /* ── Tier accents ── */
+  --tier-s: #f97316;
+  --tier-a: #22c55e;
+  --tier-b: #38bdf8;
+  --tier-c: #a78bfa;
+  --tier-d: #f59e0b;
+  --tier-depth: #475569;
 }
 
-/* Keep a .dark class alias so shadcn components work */
+/* Alias for shadcn dark mode */
 .dark {
-  --background: #0a1118;
-  --foreground: #e6edf3;
-  --card: #111d27;
-  --card-foreground: #e6edf3;
-  --popover: #161b22;
-  --popover-foreground: #e6edf3;
-  --primary: #FF6B00;
+  --background: #060a10;
+  --foreground: #eaf0f6;
+  --card: #0c1520;
+  --card-foreground: #eaf0f6;
+  --popover: #101c28;
+  --popover-foreground: #eaf0f6;
+  --primary: #f97316;
   --primary-foreground: #ffffff;
-  --secondary: #1f2937;
-  --secondary-foreground: #e6edf3;
-  --muted: #1f2937;
-  --muted-foreground: #8b949e;
-  --accent: #1f2937;
-  --accent-foreground: #e6edf3;
-  --destructive: #f85149;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.08);
-  --ring: #FF6B00;
+  --secondary: #172033;
+  --secondary-foreground: #eaf0f6;
+  --muted: #172033;
+  --muted-foreground: #64748b;
+  --accent: #172033;
+  --accent-foreground: #eaf0f6;
+  --destructive: #ef4444;
+  --border: rgba(255, 255, 255, 0.07);
+  --input: rgba(255, 255, 255, 0.07);
+  --ring: #f97316;
 }
 
+/* ============================================================
+   BASE LAYER
+   ============================================================ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -138,43 +153,60 @@
 
   html {
     color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  /* Subtle ambient glow behind the page */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+      radial-gradient(ellipse 60% 50% at 15% 20%, rgba(249, 115, 22, 0.03) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 85% 70%, rgba(56, 189, 248, 0.025) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
 }
 
 /* ============================================================
-   POSITION COLOR PILLS — used across the app
+   POSITION COLOR PILLS
    ============================================================ */
 .pos-qb {
-  background: rgba(248, 81, 73, 0.2);
-  color: #f85149;
-  border-color: rgba(248, 81, 73, 0.4);
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
 }
 
 .pos-rb {
-  background: rgba(0, 180, 216, 0.2);
-  color: #00b4d8;
-  border-color: rgba(0, 180, 216, 0.4);
+  background: rgba(56, 189, 248, 0.15);
+  color: #7dd3fc;
+  border-color: rgba(56, 189, 248, 0.35);
 }
 
 .pos-wr {
-  background: rgba(0, 230, 118, 0.2);
-  color: #00e676;
-  border-color: rgba(0, 230, 118, 0.4);
+  background: rgba(52, 211, 153, 0.15);
+  color: #6ee7b7;
+  border-color: rgba(52, 211, 153, 0.35);
 }
 
 .pos-te {
-  background: rgba(167, 139, 250, 0.2);
-  color: #a78bfa;
-  border-color: rgba(167, 139, 250, 0.4);
+  background: rgba(167, 139, 250, 0.15);
+  color: #c4b5fd;
+  border-color: rgba(167, 139, 250, 0.35);
 }
 
 /* ============================================================
-   TIER ROW DIVIDERS — main board
+   TIER ROW DIVIDERS
    ============================================================ */
 .tier-header {
   display: flex;
@@ -186,7 +218,7 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted-foreground);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.015);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
@@ -194,22 +226,67 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================================
+   GLASSMORPHIC SURFACES
+   ============================================================ */
+.surface-glass {
+  background: rgba(12, 21, 32, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.surface-elevated {
+  background: var(--bg-elevated);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* ============================================================
    GLOW EFFECTS
    ============================================================ */
 .glow-green {
-  box-shadow: 0 0 16px rgba(0, 230, 118, 0.25);
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.2);
 }
 
 .glow-blue {
-  box-shadow: 0 0 16px rgba(0, 180, 216, 0.25);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+}
+
+.glow-orange {
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.2);
 }
 
 .text-glow {
-  text-shadow: 0 0 12px rgba(0, 230, 118, 0.4);
+  text-shadow: 0 0 12px rgba(52, 211, 153, 0.3);
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.4s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
 }
 
 /* ============================================================
@@ -225,10 +302,30 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.10);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.20);
+}
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+h1 {
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+h2 {
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.25;
 }
