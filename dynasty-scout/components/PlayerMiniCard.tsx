@@ -75,7 +75,7 @@ function getArmColor(v: number, pos: string): string {
     return 'text-foreground/80';
 }
 
-function rankColor(v: number | null | undefined): string {
+function sourceRankColor(v: number | null | undefined): string {
     if (!v) return 'text-muted-foreground/30';
     if (v <= 5)  return 'text-emerald-400 font-extrabold';
     if (v <= 12) return 'text-cyan-400 font-bold';
@@ -188,10 +188,10 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                 );
 
             // ── Ranking sources ────────────────────────────────────────────────
-            case 'fp':  return <StatVal val={p.fantasypros_rank}   highlight={rankColor(p.fantasypros_rank)}   />;
-            case 'ktc': return <StatVal val={p.ktc_rank}           highlight={rankColor(p.ktc_rank)}           />;
-            case 'fc':  return <StatVal val={p.fantasycalc_rank}   highlight={rankColor(p.fantasycalc_rank)}   />;
-            case 'dn':  return <StatVal val={p.dynasty_nerds_rank} highlight={rankColor(p.dynasty_nerds_rank)} />;
+            case 'fp':  return <StatVal val={p.fantasypros_rank}   highlight={sourceRankColor(p.fantasypros_rank)}   />;
+            case 'ktc': return <StatVal val={p.ktc_rank}           highlight={sourceRankColor(p.ktc_rank)}           />;
+            case 'fc':  return <StatVal val={p.fantasycalc_rank}   highlight={sourceRankColor(p.fantasycalc_rank)}   />;
+            case 'dn':  return <StatVal val={p.dynasty_nerds_rank} highlight={sourceRankColor(p.dynasty_nerds_rank)} />;
             case 'adp': return <span className="font-mono font-bold text-sm text-foreground/80">{draftSlot}</span>;
 
             // ── Tier badge ────────────────────────────────────────────────────
