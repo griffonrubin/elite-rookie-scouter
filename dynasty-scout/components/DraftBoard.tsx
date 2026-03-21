@@ -389,7 +389,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 <div className="bg-card rounded-xl border border-border/60 shadow-lg shadow-black/20">
 
                     {/* Column headers — sticky below the app header bar (h-14 = 56px) */}
-                    <div className="flex items-stretch px-4 py-0 border-b border-border/40 bg-card gap-3 min-h-[40px] sticky top-14 z-20 rounded-t-xl"
+                    <div className="flex items-stretch px-4 py-0 border-b-2 border-border/60 bg-muted/20 gap-3 min-h-[40px] sticky top-14 z-20 rounded-t-xl"
                          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
                         {/* Rank */}
                         <div className="w-16 flex-shrink-0 flex items-center justify-center">
@@ -421,7 +421,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 <Tooltip key={col.key} delayDuration={300}>
                                 <TooltipTrigger asChild>
                                 <div
-                                    className={`flex items-center justify-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''}`}
+                                    className={`flex items-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'tier' ? 'justify-center' : 'justify-end pr-3'}`}
                                 >
                                     {col.sortKey ? (
                                         <button

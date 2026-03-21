@@ -364,7 +364,7 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                     {colDefs.map((col, i) => (
                         <div
                             key={col.key}
-                            className={`flex items-center justify-center min-h-[36px] overflow-hidden ${i === 0 ? 'border-l border-border/30' : ''}`}
+                            className={`flex items-center min-h-[36px] overflow-hidden ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'tier' ? 'justify-center' : 'justify-end pr-3'}`}
                         >
                             {renderCell(col)}
                         </div>

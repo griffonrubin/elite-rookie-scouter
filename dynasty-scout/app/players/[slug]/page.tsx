@@ -753,7 +753,7 @@ export default async function PlayerPage({ params }: PageProps) {
                 </div>
             </header>
 
-            <div className="w-full px-8 sm:px-12 py-10">
+            <div className="w-full px-8 sm:px-12 xl:pl-28 py-10 max-w-screen-2xl mx-auto">
                 {/* ── Hero Card ── */}
                 <div id="overview" className="bg-card/30 border border-border/40 rounded-2xl p-6 mb-12 shadow-sm">
                 <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -911,7 +911,7 @@ export default async function PlayerPage({ params }: PageProps) {
                     {/* ── Scout Section ── */}
                     <section id="scout">
                         <div className="flex items-center gap-3 mb-8">
-                            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">Scout Report</h2>
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/80 shrink-0">Scout Report</h2>
                             <div className="flex-1 h-px bg-border/30" />
                         </div>
                         <div className="space-y-12">
@@ -1316,7 +1316,7 @@ export default async function PlayerPage({ params }: PageProps) {
                     {/* ── Stats Section ── */}
                     <section id="stats">
                         <div className="flex items-center gap-3 mb-8">
-                            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">College Stats</h2>
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/80 shrink-0">College Stats</h2>
                             <div className="flex-1 h-px bg-border/30" />
                         </div>
                         {stats.length > 0 ? (
@@ -1416,7 +1416,7 @@ export default async function PlayerPage({ params }: PageProps) {
                     {/* ── Rankings Section ── */}
                     <section id="rankings">
                         <div className="flex items-center gap-3 mb-8">
-                            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">Expert Rankings</h2>
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/80 shrink-0">Expert Rankings</h2>
                             <div className="flex-1 h-px bg-border/30" />
                         </div>
                         <SourceRankings
@@ -1428,7 +1428,7 @@ export default async function PlayerPage({ params }: PageProps) {
                     {/* ── News Section ── */}
                     <section id="news">
                         <div className="flex items-center gap-3 mb-8">
-                            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">Latest News</h2>
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/80 shrink-0">Latest News</h2>
                             <div className="flex-1 h-px bg-border/30" />
                         </div>
                         {news.length > 0 ? (

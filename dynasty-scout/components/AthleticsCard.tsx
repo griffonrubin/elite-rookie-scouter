@@ -141,21 +141,22 @@ function mkRow(
 
 function MetricBar({ row }: { row: MetricRow }) {
     return (
-        <div className="grid grid-cols-[110px_1fr_44px] items-center gap-3 py-1">
-            <div>
-                <div className="text-[10px] text-muted-foreground/60 leading-none mb-0.5">{row.label}</div>
-                <div className={`text-sm font-black font-mono leading-none ${row.g.text}`}>{row.display}</div>
+        <div className="py-1.5">
+            <div className="flex items-baseline justify-between mb-1">
+                <span className="text-[10px] text-muted-foreground/60 leading-none">{row.label}</span>
+                <div className="flex items-center gap-1.5">
+                    <span className={`text-xs font-black font-mono leading-none ${row.g.text}`}>{row.display}</span>
+                    <span className={`text-[10px] font-black py-0.5 px-1.5 rounded border font-mono ${row.g.badge}`}>
+                        {row.g.label}
+                    </span>
+                </div>
             </div>
-            <div className="relative h-2.5 bg-border/20 rounded-full overflow-hidden">
+            <div className="relative h-2 bg-border/20 rounded-full overflow-hidden">
                 <div
                     className={`absolute left-0 top-0 h-full rounded-full ${row.g.bar} transition-all duration-700`}
                     style={{ width: `${Math.max(3, row.pct)}%` }}
                 />
-                {/* avg marker at 50% */}
                 <div className="absolute top-0 h-full w-px bg-white/15" style={{ left: '50%' }} />
-            </div>
-            <div className={`text-center text-[10px] font-black py-0.5 rounded border font-mono ${row.g.badge}`}>
-                {row.g.label}
             </div>
         </div>
     );
@@ -233,11 +234,11 @@ export function AthleticsCard({ position, heightInches, weightLbs, measurables, 
 
             <div className="p-5 space-y-6">
                 {groups.map((group, gi) => (
-                    <div key={group.label} className={gi > 0 ? 'mt-2' : ''}>
-                        <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-4 border-l-2 border-primary/30 pl-2">
+                    <div key={group.label} className={gi > 0 ? 'pt-3 border-t border-border/10' : ''}>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-2 border-l-2 border-primary/40 pl-2">
                             {group.label}
                         </div>
-                        <div className="space-y-4">
+                        <div className="space-y-1">
                             {group.rows.map(row => <MetricBar key={row.key} row={row} />)}
                         </div>
                     </div>
