@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { StatsTable } from '@/components/StatsTable';
@@ -9,7 +8,6 @@ import { PercentileChart } from '@/components/PercentileChart';
 import { SourceRankings } from '@/components/SourceRankings';
 import { AthleticsCard } from '@/components/AthleticsCard';
 import { DominatorChart } from '@/components/DominatorChart';
-import { StatRingGauge } from '@/components/StatRingGauge';
 import { DonutSplit } from '@/components/DonutSplit';
 import { SeasonRankingsChart, type RankingMetric } from '@/components/SeasonRankingsChart';
 import { AdvancedStatsTable } from '@/components/AdvancedStatsTable';
@@ -68,17 +66,31 @@ function getTierInfo(rank: number): { label: string; color: string } {
     return { label: 'Depth', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40' };
 }
 
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
+// ─── Local UI components ──────────────────────────────────────────────────────
 
-const TABS = [
-    { id: 'scout',      label: 'Scout'      },
-    { id: 'athletics',  label: 'Athletics'  },
-    { id: 'production', label: 'Production' },
-    { id: 'stats',      label: 'Stats'      },
-    { id: 'rankings',   label: 'Rankings'   },
-    { id: 'news',       label: 'News'       },
-] as const;
-type Tab = typeof TABS[number]['id'];
+function SectionLabel({ label }: { label: string }) {
+    return (
+        <div className="flex items-center gap-3 mb-5">
+            <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-muted-foreground/50 whitespace-nowrap">{label}</span>
+            <div className="flex-1 h-px bg-border/20" />
+        </div>
+    );
+}
+
+function AnalyticCard({ label, value, pct }: { label: string; value: string; pct: number }) {
+    const p = Math.min(100, Math.max(0, pct));
+    const color = p >= 80 ? 'text-emerald-400' : p >= 60 ? 'text-cyan-400' : p >= 40 ? 'text-yellow-400' : p >= 20 ? 'text-orange-400' : 'text-red-400';
+    const bar   = p >= 80 ? 'bg-emerald-400' : p >= 60 ? 'bg-cyan-400'    : p >= 40 ? 'bg-yellow-400'   : p >= 20 ? 'bg-orange-400'   : 'bg-red-400';
+    return (
+        <div className="bg-card/60 border border-border/30 rounded-lg px-3 py-3 text-center min-w-0">
+            <div className={`text-lg font-black font-mono leading-none ${color}`}>{value || '—'}</div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground/50 mt-1.5 leading-tight">{label}</div>
+            <div className="mt-2 h-0.5 bg-border/20 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full ${bar} opacity-70`} style={{ width: `${p}%` }} />
+            </div>
+        </div>
+    );
+}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -108,8 +120,6 @@ export function PlayerProfileClient({
     peerCareer, peerAdvanced, historicalComps, epaStats, dominatorStats,
     prevPlayer, nextPlayer, wrAdvanced, peerWrAdv,
 }: Props) {
-    const [activeTab, setActiveTab] = useState<Tab>('scout');
-
     const pos = player.position as string;
     const posStyle = POS_STYLES[pos] || 'bg-gray-500/20 text-gray-400 border-gray-500/40';
 
@@ -515,6 +525,22 @@ export function PlayerProfileClient({
         );
     }
 
+    // Breakout age percentile for AnalyticCard
+    const breakoutAgePct = player.breakout_age
+        ? player.breakout_age <= 19 ? 95 : player.breakout_age <= 20 ? 80 : player.breakout_age <= 21 ? 60 : player.breakout_age <= 22 ? 40 : 25
+        : 0;
+
+    // Section jump nav
+    const SECTIONS = [
+        { id: 'scout',      label: 'Scout'      },
+        { id: 'athletics',  label: 'Athletics'  },
+        { id: 'production', label: 'Production' },
+        { id: 'analytics',  label: 'Analytics'  },
+        { id: 'stats',      label: 'Stats'      },
+        { id: 'rankings',   label: 'Rankings'   },
+        { id: 'news',       label: 'News'       },
+    ];
+
     // ── Render ─────────────────────────────────────────────────────────────────
 
     return (
@@ -544,22 +570,23 @@ export function PlayerProfileClient({
                 </div>
             </AppHeader>
 
-            {/* ── Hero Card ───────────────────────────────────────────────────────── */}
-            <div className="px-6 sm:px-10 pt-6 pb-0">
-                <div className="bg-card/30 border border-border/40 rounded-2xl p-5 shadow-sm">
+            {/* ── Sticky Hero + Section Nav ────────────────────────────────────────── */}
+            <div className="sticky top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-border/30">
+                {/* Hero card */}
+                <div className="px-6 sm:px-10 pt-4 pb-3">
                     <div className="flex items-start gap-5">
                         {/* Compact photo */}
-                        <div className="flex-shrink-0">
+                        <div className="flex-shrink-0 hidden sm:block">
                             <div
-                                className="w-20 h-28 rounded-xl border border-border/40 overflow-hidden shadow-lg relative"
+                                className="w-16 h-20 rounded-xl border border-border/40 overflow-hidden shadow-lg relative"
                                 style={{ background: avatarBg }}
                             >
                                 {headshotUrl ? (
                                     <img src={headshotUrl} alt={player.full_name} className="w-full h-full object-cover object-top" />
                                 ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                                        <div className="text-3xl text-muted-foreground/20 leading-none select-none">🏈</div>
-                                        <div className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${posStyle}`}>{pos}</div>
+                                        <div className="text-2xl text-muted-foreground/20 leading-none select-none">🏈</div>
+                                        <div className={`text-[10px] font-black px-1.5 py-0.5 rounded-full border ${posStyle}`}>{pos}</div>
                                     </div>
                                 )}
                             </div>
@@ -568,7 +595,7 @@ export function PlayerProfileClient({
                         {/* Identity block */}
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground truncate">
+                                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground truncate">
                                     {player.full_name}
                                 </h1>
                                 <Badge variant="outline" className={cn("text-xs font-bold border shrink-0", posStyle)}>
@@ -578,7 +605,7 @@ export function PlayerProfileClient({
                             </div>
 
                             {/* Bio pills */}
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-3">
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground mb-2">
                                 {player.school && <span className="flex items-center gap-1"><GraduationCap className="w-3 h-3" /> {player.school}</span>}
                                 {player.age_at_draft && <><span className="opacity-30">·</span><span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> Age {player.age_at_draft}</span></>}
                                 {player.height_inches && <><span className="opacity-30">·</span><span className="flex items-center gap-1"><Ruler className="w-3 h-3" /> {formatHeight(player.height_inches)}</span></>}
@@ -586,27 +613,27 @@ export function PlayerProfileClient({
                                 {player.star_rating && <><span className="opacity-30">·</span><span className="flex items-center gap-1 text-yellow-400"><Star className="w-3 h-3 fill-yellow-400" /> {player.star_rating}-star</span></>}
                             </div>
 
-                            {/* Key rank badges (3 only) */}
+                            {/* Key rank badges */}
                             <div className="flex items-center gap-2 flex-wrap">
-                                <div className={cn('rounded-lg px-3 py-1.5 flex items-center gap-2 border text-sm', tier.color)}>
+                                <div className={cn('rounded-lg px-2.5 py-1 flex items-center gap-1.5 border text-xs', tier.color)}>
                                     <span className="font-black font-mono">#{classRank ?? '—'}</span>
                                     <span className="text-[10px] uppercase tracking-widest opacity-70 font-bold">{tier.label}</span>
                                 </div>
                                 {draftSlot && (
-                                    <div className="rounded-lg px-3 py-1.5 bg-card border border-border/60 flex items-center gap-2 text-sm">
+                                    <div className="rounded-lg px-2.5 py-1 bg-card border border-border/60 flex items-center gap-1.5 text-xs">
                                         <span className="font-black font-mono text-foreground">{draftSlot}</span>
                                         <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Proj Pick</span>
                                     </div>
                                 )}
                                 {player.ktc_rank && (
-                                    <div className="rounded-lg px-3 py-1.5 bg-cyan-500/5 border border-cyan-500/30 flex items-center gap-2 text-sm">
+                                    <div className="rounded-lg px-2.5 py-1 bg-cyan-500/5 border border-cyan-500/30 flex items-center gap-1.5 text-xs">
                                         <span className="font-black font-mono text-cyan-400">#{player.ktc_rank}</span>
                                         <span className="text-[10px] uppercase tracking-widest text-cyan-400/60 font-bold">KTC</span>
                                     </div>
                                 )}
                                 <Link
                                     href={`/compare?a=${player.slug}`}
-                                    className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border/60 text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all"
+                                    className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-card border border-border/60 text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all"
                                 >
                                     <Scale className="w-3.5 h-3.5" /> Compare
                                 </Link>
@@ -615,10 +642,10 @@ export function PlayerProfileClient({
 
                         {/* KPI strip */}
                         {kpiStrip.length > 0 && (
-                            <div className="hidden lg:grid grid-cols-2 gap-2 shrink-0" style={{ minWidth: 200 }}>
+                            <div className="hidden lg:grid grid-cols-2 gap-1.5 shrink-0" style={{ minWidth: 188 }}>
                                 {kpiStrip.map(kpi => (
                                     <div key={kpi.label} className="bg-[var(--bg-card)] border border-border/40 rounded-lg px-3 py-2 text-center">
-                                        <div className="text-lg font-black font-mono text-foreground leading-none">{kpi.value}</div>
+                                        <div className="text-base font-black font-mono text-foreground leading-none">{kpi.value}</div>
                                         <div className="text-[9px] uppercase tracking-widest text-muted-foreground/50 font-bold mt-0.5">{kpi.label}</div>
                                     </div>
                                 ))}
@@ -626,291 +653,289 @@ export function PlayerProfileClient({
                         )}
                     </div>
                 </div>
+
+                {/* Section jump nav */}
+                <div className="px-6 sm:px-10 flex gap-0 overflow-x-auto border-t border-border/20">
+                    {SECTIONS.map(s => (
+                        <button
+                            key={s.id}
+                            onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                            className="px-4 py-2.5 text-xs font-semibold tracking-wide text-muted-foreground border-b-2 border-transparent hover:text-foreground hover:border-border/60 transition-colors flex-shrink-0"
+                        >
+                            {s.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            {/* ── Sticky Tab Bar ──────────────────────────────────────────────────── */}
-            <div className="sticky top-14 z-30 bg-background/95 backdrop-blur-sm border-b border-border/40 px-6 sm:px-10 flex gap-0 mt-0">
-                {TABS.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`px-4 py-3 text-sm font-semibold tracking-wide transition-colors border-b-2 ${
-                            activeTab === tab.id
-                                ? 'text-primary border-primary'
-                                : 'text-muted-foreground border-transparent hover:text-foreground hover:border-border'
-                        }`}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
+            {/* ── Page Content ─────────────────────────────────────────────────────── */}
+            <div className="max-w-screen-xl mx-auto px-6 sm:px-10 py-10 space-y-14">
 
-            {/* ── Tab Content ──────────────────────────────────────────────────────── */}
-            <div className="px-6 sm:px-10 py-8">
+                {/* ── ZONE 1: Scout Report ─────────────────────────────────────────── */}
+                <section id="scout" className="scroll-mt-56">
+                    <SectionLabel label="Scout Report" />
 
-                {/* ── SCOUT TAB ─────────────────────────────────────────────────────── */}
-                {activeTab === 'scout' && (
-                    <div className="space-y-8 max-w-4xl">
-                        {/* Dynasty Snapshot */}
-                        <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card via-card to-primary/5 p-5">
-                            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[96px] font-black text-foreground/[0.03] leading-none select-none pointer-events-none">{pos}</div>
-                            <div className="relative z-10 flex items-center gap-4 flex-wrap">
-                                <span className={cn('border text-sm font-black px-3 py-1 rounded-full', tier.color)}>{tier.label}</span>
-                                {projRank && (
-                                    <span className="text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full border border-border/40">
-                                        {projRank <= 12 ? '1st-Round Dynasty Pick' : projRank <= 24 ? '2nd-Round Dynasty Pick' : projRank <= 36 ? '3rd-Round Dynasty Pick' : 'Late-Round Dynasty Pick'}
-                                    </span>
-                                )}
-                            </div>
+                    {/* Dynasty Snapshot */}
+                    <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card via-card to-primary/5 p-5 mb-6">
+                        <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[96px] font-black text-foreground/[0.03] leading-none select-none pointer-events-none">{pos}</div>
+                        <div className="relative z-10 flex items-center gap-4 flex-wrap">
+                            <span className={cn('border text-sm font-black px-3 py-1 rounded-full', tier.color)}>{tier.label}</span>
+                            {projRank && (
+                                <span className="text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full border border-border/40">
+                                    {projRank <= 12 ? '1st-Round Dynasty Pick' : projRank <= 24 ? '2nd-Round Dynasty Pick' : projRank <= 36 ? '3rd-Round Dynasty Pick' : 'Late-Round Dynasty Pick'}
+                                </span>
+                            )}
                         </div>
+                    </div>
 
-                        {/* Source Rankings Visual */}
-                        {[classRank, player.ktc_rank, player.fp_rank, player.fc_rank, player.dn_rank].some((r: any) => r != null) && (() => {
-                            const sources = [
-                                { label: 'Consensus', rank: classRank, bar: 'bg-primary' },
-                                { label: 'KTC Dynasty', rank: player.ktc_rank as number | null, bar: 'bg-cyan-400' },
-                                { label: 'FantasyPros', rank: player.fp_rank as number | null, bar: 'bg-emerald-400' },
-                                { label: 'FantasyCalc', rank: player.fc_rank as number | null, bar: 'bg-blue-400' },
-                                { label: 'Dyn. Nerds', rank: player.dn_rank as number | null, bar: 'bg-violet-400' },
-                            ].filter(s => s.rank != null) as { label: string; rank: number; bar: string }[];
-                            const maxScale = Math.max(50, ...sources.map(s => s.rank));
-                            return (
-                                <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
-                                    <div className="px-4 py-3 border-b border-border/40 bg-muted/20 flex items-center justify-between">
-                                        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Source Rankings</span>
-                                        <span className="text-[10px] text-muted-foreground/50 font-mono">1 → {maxScale} scale</span>
-                                    </div>
-                                    <div className="p-4 space-y-3">
-                                        {sources.map(src => {
-                                            const pct = Math.max(3, Math.round(((maxScale - src.rank + 1) / maxScale) * 100));
-                                            const rankCol = src.rank <= 12 ? 'text-emerald-400' : src.rank <= 24 ? 'text-cyan-400' : src.rank <= 36 ? 'text-yellow-400' : 'text-muted-foreground/80';
-                                            const avg = sources.reduce((s, x) => s + x.rank, 0) / sources.length;
-                                            const isHigh = src.rank < avg - 2;
-                                            const isLow  = src.rank > avg + 2;
-                                            return (
-                                                <div key={src.label} className="grid grid-cols-[100px_1fr_52px_24px] items-center gap-3">
-                                                    <span className="text-[11px] text-muted-foreground font-medium">{src.label}</span>
-                                                    <div className="relative h-3.5 bg-border/20 rounded-full overflow-hidden">
-                                                        <div className={`absolute left-0 top-0 h-full rounded-full ${src.bar} opacity-75 transition-all duration-700`} style={{ width: `${pct}%` }} />
-                                                        <div className="absolute top-0 h-full w-px bg-emerald-400/30" style={{ left: `${Math.round(((maxScale - 12 + 1) / maxScale) * 100)}%` }} />
-                                                        <div className="absolute top-0 h-full w-px bg-white/10"    style={{ left: `${Math.round(((maxScale - 24 + 1) / maxScale) * 100)}%` }} />
-                                                    </div>
-                                                    <span className={`text-sm font-black font-mono text-right ${rankCol}`}>#{src.rank}</span>
-                                                    <span className={`text-[10px] font-bold text-right ${isHigh ? 'text-emerald-400' : isLow ? 'text-red-400' : 'text-transparent'}`}>
-                                                        {isHigh ? '▲' : isLow ? '▼' : '·'}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    <div className="px-4 py-2 border-t border-border/20 flex gap-4 text-[9px] text-muted-foreground/40">
-                                        <span>Bar extends right = better rank</span>
-                                        <span className="text-emerald-400/50">│ R1 cutoff</span>
-                                        <span className="text-emerald-400 ml-auto">▲ bullish vs. consensus</span>
-                                        <span className="text-red-400">▼ bearish</span>
-                                    </div>
+                    {/* Source Rankings — full width */}
+                    {[classRank, player.ktc_rank, player.fp_rank, player.fc_rank, player.dn_rank].some((r: any) => r != null) && (() => {
+                        const sources = [
+                            { label: 'Consensus', rank: classRank, bar: 'bg-primary' },
+                            { label: 'KTC Dynasty', rank: player.ktc_rank as number | null, bar: 'bg-cyan-400' },
+                            { label: 'FantasyPros', rank: player.fp_rank as number | null, bar: 'bg-emerald-400' },
+                            { label: 'FantasyCalc', rank: player.fc_rank as number | null, bar: 'bg-blue-400' },
+                            { label: 'Dyn. Nerds', rank: player.dn_rank as number | null, bar: 'bg-violet-400' },
+                        ].filter(s => s.rank != null) as { label: string; rank: number; bar: string }[];
+                        const maxScale = Math.max(50, ...sources.map(s => s.rank));
+                        return (
+                            <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden mb-6">
+                                <div className="px-4 py-3 border-b border-border/40 bg-muted/20 flex items-center justify-between">
+                                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Source Rankings</span>
+                                    <span className="text-[10px] text-muted-foreground/50 font-mono">1 → {maxScale} scale</span>
                                 </div>
-                            );
-                        })()}
+                                <div className="p-4 space-y-3">
+                                    {sources.map(src => {
+                                        const pct = Math.max(3, Math.round(((maxScale - src.rank + 1) / maxScale) * 100));
+                                        const rankCol = src.rank <= 12 ? 'text-emerald-400' : src.rank <= 24 ? 'text-cyan-400' : src.rank <= 36 ? 'text-yellow-400' : 'text-muted-foreground/80';
+                                        const avg = sources.reduce((s, x) => s + x.rank, 0) / sources.length;
+                                        const isHigh = src.rank < avg - 2;
+                                        const isLow  = src.rank > avg + 2;
+                                        return (
+                                            <div key={src.label} className="grid grid-cols-[110px_1fr_52px_24px] items-center gap-3">
+                                                <span className="text-[11px] text-muted-foreground font-medium">{src.label}</span>
+                                                <div className="relative h-3.5 bg-border/20 rounded-full overflow-hidden">
+                                                    <div className={`absolute left-0 top-0 h-full rounded-full ${src.bar} opacity-75 transition-all duration-700`} style={{ width: `${pct}%` }} />
+                                                    <div className="absolute top-0 h-full w-px bg-emerald-400/30" style={{ left: `${Math.round(((maxScale - 12 + 1) / maxScale) * 100)}%` }} />
+                                                    <div className="absolute top-0 h-full w-px bg-white/10"    style={{ left: `${Math.round(((maxScale - 24 + 1) / maxScale) * 100)}%` }} />
+                                                </div>
+                                                <span className={`text-sm font-black font-mono text-right ${rankCol}`}>#{src.rank}</span>
+                                                <span className={`text-[10px] font-bold text-right ${isHigh ? 'text-emerald-400' : isLow ? 'text-red-400' : 'text-transparent'}`}>
+                                                    {isHigh ? '▲' : isLow ? '▼' : '·'}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="px-4 py-2 border-t border-border/20 flex gap-4 text-[9px] text-muted-foreground/40">
+                                    <span>Bar extends right = better rank</span>
+                                    <span className="text-emerald-400/50">│ R1 cutoff</span>
+                                    <span className="text-emerald-400 ml-auto">▲ bullish vs. consensus</span>
+                                    <span className="text-red-400">▼ bearish</span>
+                                </div>
+                            </div>
+                        );
+                    })()}
 
-                        {/* Dynasty Context */}
+                    {/* Dynasty Context */}
+                    <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden mb-6">
+                        <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
+                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Dynasty Context</span>
+                        </div>
+                        <div className="p-4 space-y-3 text-sm text-muted-foreground">
+                            <div className="flex items-start gap-2">
+                                <span className="text-primary font-bold mt-0.5 shrink-0">→</span>
+                                <span>Projected as a <strong className="text-foreground">{projRank ? (projRank <= 12 ? '1st-round' : projRank <= 24 ? '2nd-round' : projRank <= 36 ? '3rd-round' : 'late-round') : 'unranked'}</strong> dynasty pick based on consensus ranking.</span>
+                            </div>
+                            {pos === 'RB' && recentStat && (() => {
+                                const scrimYds = (recentStat?.rush_yards || 0) + (recentStat?.rec_yards || 0);
+                                const scrimYpg = recentStat?.games_played ? (scrimYds / recentStat.games_played).toFixed(1) : '—';
+                                const rasScore = (measurables as any)?.ras || '—';
+                                const yr = recentStat?.season || '2025';
+                                const projStr = projRank ? (projRank <= 12 ? '1st' : projRank <= 24 ? '2nd' : projRank <= 36 ? '3rd' : 'late') : 'unranked';
+                                return <div className="flex items-start gap-2"><span className="text-amber-400 font-bold mt-0.5 shrink-0">→</span><span>{player.last_name} averaged <strong className="text-foreground">{scrimYpg} scrim. yds/G</strong> in {yr} with a <strong className="text-foreground">{rasScore} RAS</strong> — {projStr}-round dynasty asset.</span></div>;
+                            })()}
+                            {pos === 'WR' && recentStat && (() => {
+                                const ypg = recentStat?.yds_per_game || '—';
+                                const rpg = recentStat?.rec_per_game || '—';
+                                const yr = recentStat?.season || '2025';
+                                const rasScore = (measurables as any)?.ras || '—';
+                                const ht = player.height_inches || 72;
+                                const sizeDesc = ht >= 74 ? `big-bodied (${Math.floor(ht / 12)}'${ht % 12}")` : `slot-frame (${Math.floor(ht / 12)}'${ht % 12}")`;
+                                return <div className="flex items-start gap-2"><span className="text-fuchsia-400 font-bold mt-0.5 shrink-0">→</span><span>{player.last_name} averaged <strong className="text-foreground">{ypg} rec yds/G</strong> ({rpg} rec/G) in {yr} — {sizeDesc} with <strong className="text-foreground">{rasScore} RAS</strong>.</span></div>;
+                            })()}
+                            {pos === 'QB' && recentStat && (() => {
+                                const cmp = recentStat?.completion_pct || '—';
+                                const pyds = recentStat?.pass_yards || '—';
+                                const ptds = recentStat?.pass_tds || '—';
+                                const ryds = recentStat?.rush_yards || 0;
+                                const yr = recentStat?.season || '2025';
+                                const mob = ryds >= 300 ? 'dual-threat' : 'pocket passer';
+                                return <div className="flex items-start gap-2"><span className="text-cyan-400 font-bold mt-0.5 shrink-0">→</span><span>{player.last_name} completed <strong className="text-foreground">{cmp}</strong> of passes for <strong className="text-foreground">{pyds} yds / {ptds} TDs</strong> in {yr} — <strong className="text-foreground">{mob}</strong> profile.</span></div>;
+                            })()}
+                            {pos === 'TE' && <div className="flex items-start gap-2"><span className="text-violet-400 font-bold mt-0.5 shrink-0">→</span><span>Elite TEs are extremely rare — top-12 TEs in the 1st round represent <strong className="text-foreground">generational dynasty value</strong>.</span></div>}
+                            {player.age_at_draft && (
+                                <div className="flex items-start gap-2">
+                                    <span className="text-muted-foreground/50 font-bold mt-0.5 shrink-0">→</span>
+                                    <span>Draft age <strong className="text-foreground">{player.age_at_draft}</strong> — {player.age_at_draft <= 21 ? <span className="text-emerald-400 font-bold">young prospect with long NFL runway</span> : player.age_at_draft <= 23 ? <span className="text-cyan-400 font-bold">prime age for NFL entry</span> : <span className="text-yellow-400 font-bold">older prospect, shorter dynasty window</span>}.</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Historical Athletic Comps */}
+                    {historicalComps && historicalComps.length > 0 && (
                         <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
                             <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
-                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Dynasty Context</span>
+                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Athletic Comps</span>
+                                <p className="text-[10px] text-muted-foreground/50 mt-0.5">Most similar 2010–2024 draft prospects by athleticism</p>
                             </div>
-                            <div className="p-4 space-y-3 text-sm text-muted-foreground">
-                                <div className="flex items-start gap-2">
-                                    <span className="text-primary font-bold mt-0.5 shrink-0">→</span>
-                                    <span>Projected as a <strong className="text-foreground">{projRank ? (projRank <= 12 ? '1st-round' : projRank <= 24 ? '2nd-round' : projRank <= 36 ? '3rd-round' : 'late-round') : 'unranked'}</strong> dynasty pick based on consensus ranking.</span>
-                                </div>
-                                {pos === 'RB' && recentStat && (() => {
-                                    const scrimYds = (recentStat?.rush_yards || 0) + (recentStat?.rec_yards || 0);
-                                    const scrimYpg = recentStat?.games_played ? (scrimYds / recentStat.games_played).toFixed(1) : '—';
-                                    const rasScore = (measurables as any)?.ras || '—';
-                                    const yr = recentStat?.season || '2025';
-                                    const projStr = projRank ? (projRank <= 12 ? '1st' : projRank <= 24 ? '2nd' : projRank <= 36 ? '3rd' : 'late') : 'unranked';
-                                    return <div className="flex items-start gap-2"><span className="text-amber-400 font-bold mt-0.5 shrink-0">→</span><span>{player.last_name} averaged <strong className="text-foreground">{scrimYpg} scrim. yds/G</strong> in {yr} with a <strong className="text-foreground">{rasScore} RAS</strong> — {projStr}-round dynasty asset.</span></div>;
-                                })()}
-                                {pos === 'WR' && recentStat && (() => {
-                                    const ypg = recentStat?.yds_per_game || '—';
-                                    const rpg = recentStat?.rec_per_game || '—';
-                                    const yr = recentStat?.season || '2025';
-                                    const rasScore = (measurables as any)?.ras || '—';
-                                    const ht = player.height_inches || 72;
-                                    const sizeDesc = ht >= 74 ? `big-bodied (${Math.floor(ht / 12)}'${ht % 12}")` : `slot-frame (${Math.floor(ht / 12)}'${ht % 12}")`;
-                                    return <div className="flex items-start gap-2"><span className="text-fuchsia-400 font-bold mt-0.5 shrink-0">→</span><span>{player.last_name} averaged <strong className="text-foreground">{ypg} rec yds/G</strong> ({rpg} rec/G) in {yr} — {sizeDesc} with <strong className="text-foreground">{rasScore} RAS</strong>.</span></div>;
-                                })()}
-                                {pos === 'QB' && recentStat && (() => {
-                                    const cmp = recentStat?.completion_pct || '—';
-                                    const pyds = recentStat?.pass_yards || '—';
-                                    const ptds = recentStat?.pass_tds || '—';
-                                    const ryds = recentStat?.rush_yards || 0;
-                                    const yr = recentStat?.season || '2025';
-                                    const mob = ryds >= 300 ? 'dual-threat' : 'pocket passer';
-                                    return <div className="flex items-start gap-2"><span className="text-cyan-400 font-bold mt-0.5 shrink-0">→</span><span>{player.last_name} completed <strong className="text-foreground">{cmp}</strong> of passes for <strong className="text-foreground">{pyds} yds / {ptds} TDs</strong> in {yr} — <strong className="text-foreground">{mob}</strong> profile.</span></div>;
-                                })()}
-                                {pos === 'TE' && <div className="flex items-start gap-2"><span className="text-violet-400 font-bold mt-0.5 shrink-0">→</span><span>Elite TEs are extremely rare — top-12 TEs in the 1st round represent <strong className="text-foreground">generational dynasty value</strong>.</span></div>}
-                                {player.age_at_draft && (
-                                    <div className="flex items-start gap-2">
-                                        <span className="text-muted-foreground/50 font-bold mt-0.5 shrink-0">→</span>
-                                        <span>Draft age <strong className="text-foreground">{player.age_at_draft}</strong> — {player.age_at_draft <= 21 ? <span className="text-emerald-400 font-bold">young prospect with long NFL runway</span> : player.age_at_draft <= 23 ? <span className="text-cyan-400 font-bold">prime age for NFL entry</span> : <span className="text-yellow-400 font-bold">older prospect, shorter dynasty window</span>}.</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Historical athletic comps */}
-                        {historicalComps && historicalComps.length > 0 ? (
-                            <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
-                                <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
-                                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Athletic Comps</span>
-                                    <p className="text-[10px] text-muted-foreground/50 mt-0.5">Most similar 2010–2024 draft prospects by athleticism</p>
-                                </div>
-                                <div className="divide-y divide-border/20">
-                                    {historicalComps.map((comp: any, i: number) => (
-                                        <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-muted/10 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-xs font-bold font-mono text-muted-foreground/30 w-4">{i + 1}</span>
-                                                <div>
-                                                    <div className="text-sm font-bold text-foreground">{comp.comp_name}</div>
-                                                    <div className="text-[11px] text-muted-foreground">
-                                                        {comp.comp_year} · {comp.comp_round ? `Rd ${comp.comp_round}` : 'UDFA'}
-                                                        {comp.comp_team ? ` · ${comp.comp_team}` : ''}
-                                                        {comp.comp_probowls ? ` · ${comp.comp_probowls}× Pro Bowl` : ''}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 text-right">
-                                                {comp.comp_w_av != null && (
-                                                    <div>
-                                                        <div className="text-[9px] text-muted-foreground/50 uppercase">Career AV</div>
-                                                        <div className={`text-sm font-black font-mono ${comp.comp_w_av >= 40 ? 'text-emerald-400' : comp.comp_w_av >= 15 ? 'text-cyan-400' : 'text-muted-foreground'}`}>{comp.comp_w_av}</div>
-                                                    </div>
-                                                )}
-                                                <div>
-                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Sim.</div>
-                                                    <div className="text-sm font-bold font-mono text-foreground">{comp.similarity}%</div>
+                            <div className="divide-y divide-border/20">
+                                {historicalComps.map((comp: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-muted/10 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xs font-bold font-mono text-muted-foreground/30 w-4">{i + 1}</span>
+                                            <div>
+                                                <div className="text-sm font-bold text-foreground">{comp.comp_name}</div>
+                                                <div className="text-[11px] text-muted-foreground">
+                                                    {comp.comp_year} · {comp.comp_round ? `Rd ${comp.comp_round}` : 'UDFA'}
+                                                    {comp.comp_team ? ` · ${comp.comp_team}` : ''}
+                                                    {comp.comp_probowls ? ` · ${comp.comp_probowls}× Pro Bowl` : ''}
                                                 </div>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : null}
-                    </div>
-                )}
-
-                {/* ── ATHLETICS TAB ─────────────────────────────────────────────────── */}
-                {activeTab === 'athletics' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl">
-                        <div className="space-y-6">
-                            <AthleticsCard
-                                position={player.position}
-                                heightInches={player.height_inches}
-                                weightLbs={player.weight_lbs}
-                                measurables={measurables}
-                                speedScore={speedScore}
-                            />
-
-                            {/* Recruiting Pedigree */}
-                            {(player.recruiting_composite || player.recruiting_stars) && (
-                                <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
-                                    <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
-                                        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Recruiting Pedigree</span>
-                                    </div>
-                                    <div className="p-4 space-y-3">
-                                        {player.recruiting_stars && (
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs text-muted-foreground">Star Rating</span>
-                                                <span className="text-yellow-400 font-black text-lg">{'★'.repeat(player.recruiting_stars)}</span>
-                                            </div>
-                                        )}
-                                        {player.recruiting_composite && (
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs text-muted-foreground">Composite Rating</span>
-                                                <span className="text-sm font-black font-mono text-foreground">{Number(player.recruiting_composite).toFixed(4)}</span>
-                                            </div>
-                                        )}
-                                        {player.recruiting_year && (() => {
-                                            const composite = Number(player.recruiting_composite || 0);
-                                            const pct = Math.max(2, Math.min(100, ((composite - 0.85) / 0.15) * 100));
-                                            const barColor = composite >= 0.98 ? 'bg-yellow-400' : composite >= 0.95 ? 'bg-emerald-400' : composite >= 0.90 ? 'bg-cyan-400' : 'bg-yellow-500';
-                                            return (
-                                                <>
-                                                    {composite > 0 && (
-                                                        <div className="space-y-1">
-                                                            <div className="flex justify-between text-[9px] text-muted-foreground/50">
-                                                                <span>0.8500</span><span>Natl. avg: 0.9000</span><span>Elite: 0.9800+</span>
-                                                            </div>
-                                                            <div className="relative h-2 bg-border/25 rounded-full overflow-hidden">
-                                                                <div className={`absolute left-0 top-0 h-full rounded-full ${barColor} transition-all duration-700`} style={{ width: `${pct}%` }} />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-xs text-muted-foreground">Recruit Class</span>
-                                                        <span className="text-xs font-bold text-foreground/70">{player.recruiting_year}</span>
-                                                    </div>
-                                                </>
-                                            );
-                                        })()}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Breakout Profile */}
-                            {(player.breakout_age || isEarlyDeclare) && (
-                                <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
-                                    <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
-                                        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Breakout Profile</span>
-                                    </div>
-                                    <div className={`p-4 grid gap-4 ${player.breakout_age && isEarlyDeclare ? 'grid-cols-3' : player.breakout_age ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                                        {player.breakout_age && (
-                                            <>
-                                                <div className="text-center">
-                                                    <div className={`text-4xl font-black leading-none ${player.breakout_age <= 19 ? 'text-emerald-400' : player.breakout_age <= 20 ? 'text-cyan-400' : player.breakout_age <= 21 ? 'text-yellow-400' : 'text-foreground'}`}>
-                                                        {player.breakout_age}
-                                                    </div>
-                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Breakout Age</div>
-                                                    <div className="text-[10px] mt-1 font-bold">
-                                                        {player.breakout_age <= 19 ? <span className="text-emerald-400">Elite early</span>
-                                                            : player.breakout_age <= 20 ? <span className="text-cyan-400">Early breakout</span>
-                                                            : player.breakout_age <= 21 ? <span className="text-yellow-400">On schedule</span>
-                                                            : <span className="text-muted-foreground/60">Late bloomer</span>}
-                                                    </div>
+                                        <div className="flex items-center gap-3 text-right">
+                                            {comp.comp_w_av != null && (
+                                                <div>
+                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Career AV</div>
+                                                    <div className={`text-sm font-black font-mono ${comp.comp_w_av >= 40 ? 'text-emerald-400' : comp.comp_w_av >= 15 ? 'text-cyan-400' : 'text-muted-foreground'}`}>{comp.comp_w_av}</div>
                                                 </div>
-                                                <div className="text-center">
-                                                    <div className="text-4xl font-black text-foreground leading-none">{player.breakout_year}</div>
-                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Season</div>
-                                                    <div className="text-[10px] text-muted-foreground/50 mt-1">First elite season</div>
+                                            )}
+                                            <div>
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase">Sim.</div>
+                                                <div className="text-sm font-bold font-mono text-foreground">{comp.similarity}%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </section>
+
+                {/* ── ZONE 2+3: Two-column Analysis ────────────────────────────────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                    {/* LEFT — Athletic Profile */}
+                    <div id="athletics" className="scroll-mt-56 space-y-6">
+                        <SectionLabel label="Athletic Profile" />
+
+                        <AthleticsCard
+                            position={player.position}
+                            heightInches={player.height_inches}
+                            weightLbs={player.weight_lbs}
+                            measurables={measurables}
+                            speedScore={speedScore}
+                        />
+
+                        {/* Recruiting Pedigree — compressed summary */}
+                        {(player.recruiting_composite || player.recruiting_stars) && (
+                            <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
+                                <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
+                                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Recruiting Pedigree</span>
+                                </div>
+                                <div className="p-4 space-y-3">
+                                    {player.recruiting_stars && (
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-muted-foreground">Star Rating</span>
+                                            <span className="text-yellow-400 font-black text-lg">{'★'.repeat(player.recruiting_stars)}</span>
+                                        </div>
+                                    )}
+                                    {player.recruiting_composite && (
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-muted-foreground">Composite Rating</span>
+                                            <span className="text-sm font-black font-mono text-foreground">{Number(player.recruiting_composite).toFixed(4)}</span>
+                                        </div>
+                                    )}
+                                    {player.recruiting_year && (() => {
+                                        const composite = Number(player.recruiting_composite || 0);
+                                        const pct = Math.max(2, Math.min(100, ((composite - 0.85) / 0.15) * 100));
+                                        const barColor = composite >= 0.98 ? 'bg-yellow-400' : composite >= 0.95 ? 'bg-emerald-400' : composite >= 0.90 ? 'bg-cyan-400' : 'bg-yellow-500';
+                                        return (
+                                            <>
+                                                {composite > 0 && (
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between text-[9px] text-muted-foreground/50">
+                                                            <span>0.8500</span><span>Natl. avg: 0.9000</span><span>Elite: 0.9800+</span>
+                                                        </div>
+                                                        <div className="relative h-2 bg-border/25 rounded-full overflow-hidden">
+                                                            <div className={`absolute left-0 top-0 h-full rounded-full ${barColor} transition-all duration-700`} style={{ width: `${pct}%` }} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs text-muted-foreground">Recruit Class</span>
+                                                    <span className="text-xs font-bold text-foreground/70">{player.recruiting_year}</span>
                                                 </div>
                                             </>
-                                        )}
-                                        {isEarlyDeclare && (
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Breakout Profile */}
+                        {(player.breakout_age || isEarlyDeclare) && (
+                            <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
+                                <div className="px-4 py-3 border-b border-border/40 bg-muted/20">
+                                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Breakout Profile</span>
+                                </div>
+                                <div className={`p-4 grid gap-4 ${player.breakout_age && isEarlyDeclare ? 'grid-cols-3' : player.breakout_age ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                    {player.breakout_age && (
+                                        <>
                                             <div className="text-center">
-                                                <div className="text-2xl font-black text-amber-400 leading-none">{stats.length}</div>
-                                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">College Seasons</div>
+                                                <div className={`text-4xl font-black leading-none ${player.breakout_age <= 19 ? 'text-emerald-400' : player.breakout_age <= 20 ? 'text-cyan-400' : player.breakout_age <= 21 ? 'text-yellow-400' : 'text-foreground'}`}>
+                                                    {player.breakout_age}
+                                                </div>
+                                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Breakout Age</div>
                                                 <div className="text-[10px] mt-1 font-bold">
-                                                    <span className={`${firstStatSeason === 2024 ? 'text-amber-400' : 'text-yellow-400'}`}>
-                                                        {earlyDeclareLabel ?? 'Early Declare'}
-                                                    </span>
+                                                    {player.breakout_age <= 19 ? <span className="text-emerald-400">Elite early</span>
+                                                        : player.breakout_age <= 20 ? <span className="text-cyan-400">Early breakout</span>
+                                                        : player.breakout_age <= 21 ? <span className="text-yellow-400">On schedule</span>
+                                                        : <span className="text-muted-foreground/60">Late bloomer</span>}
                                                 </div>
                                             </div>
-                                        )}
-                                    </div>
-                                    <div className="px-4 py-2 border-t border-border/20">
-                                        <p className="text-[9px] text-muted-foreground/40">
-                                            {player.breakout_age ? 'Age of first season with ≥20% dominator rating. Earlier = stronger dynasty prospect.' : ''}
-                                            {isEarlyDeclare ? (player.breakout_age ? ' · ' : '') + 'Entering draft with college eligibility remaining.' : ''}
-                                        </p>
-                                    </div>
+                                            <div className="text-center">
+                                                <div className="text-4xl font-black text-foreground leading-none">{player.breakout_year}</div>
+                                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Season</div>
+                                                <div className="text-[10px] text-muted-foreground/50 mt-1">First elite season</div>
+                                            </div>
+                                        </>
+                                    )}
+                                    {isEarlyDeclare && (
+                                        <div className="text-center">
+                                            <div className="text-2xl font-black text-amber-400 leading-none">{stats.length}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">College Seasons</div>
+                                            <div className="text-[10px] mt-1 font-bold">
+                                                <span className={`${firstStatSeason === 2024 ? 'text-amber-400' : 'text-yellow-400'}`}>
+                                                    {earlyDeclareLabel ?? 'Early Declare'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
+                                <div className="px-4 py-2 border-t border-border/20">
+                                    <p className="text-[9px] text-muted-foreground/40">
+                                        {player.breakout_age ? 'Age of first season with ≥20% dominator rating. Earlier = stronger dynasty prospect.' : ''}
+                                        {isEarlyDeclare ? (player.breakout_age ? ' · ' : '') + 'Entering draft with college eligibility remaining.' : ''}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
-                        {/* Athletic Testing Grid */}
-                        <div className="space-y-4">
-                            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70 mb-4">Athletic Testing</h3>
+                        {/* Athletic Testing */}
+                        <div>
+                            <SectionLabel label="Athletic Testing" />
                             <div className="grid grid-cols-2 gap-3">
                                 {([
                                     { label: '40 Yard Dash', key: 'forty_yard', unit: 's', src: measurables, disputed: measurables && (measurables as any).forty_disputed, proDay: measurables && (measurables as any).is_pro_day },
@@ -949,161 +974,159 @@ export function PlayerProfileClient({
                             </div>
                         </div>
                     </div>
-                )}
 
-                {/* ── PRODUCTION TAB ────────────────────────────────────────────────── */}
-                {activeTab === 'production' && (
-                    <div className="space-y-8 max-w-5xl">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="space-y-6">
-                                {stats.length > 0 && <StatTrendChart stats={stats} position={player.position} />}
-                                {dominatorStats.length > 0 && <DominatorChart data={dominatorStats} position={player.position} />}
-                            </div>
-                            <div className="space-y-6">
-                                {percentileMetrics.length > 0 && <PercentileChart metrics={percentileMetrics} position={player.position} />}
-                                {epaStats && epaStats.length > 0 && dominatorStats.length === 0 && (
-                                    <div className="rounded-xl border border-border/60 bg-card/40 p-4">
-                                        <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Competition Adjustment</h3>
-                                        <div className="space-y-2">
-                                            {epaStats.map((row: any) => (
-                                                <div key={row.season} className="flex items-center justify-between text-sm">
-                                                    <span className="text-muted-foreground font-mono text-xs">{row.season}</span>
-                                                    <div className="flex gap-5">
-                                                        {row.sp_rating != null && <span className={`font-bold font-mono text-xs ${row.sp_rating >= 20 ? 'text-emerald-400' : row.sp_rating >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>SP+ {row.sp_rating > 0 ? '+' : ''}{Number(row.sp_rating).toFixed(1)}</span>}
-                                                        {row.epa_per_play != null && <span className={`font-bold font-mono text-xs ${row.epa_per_play >= 1.0 ? 'text-emerald-400' : row.epa_per_play >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>EPA {Number(row.epa_per_play).toFixed(3)}</span>}
-                                                    </div>
-                                                </div>
-                                            ))}
+                    {/* RIGHT — Production */}
+                    <div id="production" className="scroll-mt-56 space-y-6">
+                        <SectionLabel label="Production" />
+
+                        {stats.length > 0 && <StatTrendChart stats={stats} position={player.position} />}
+                        {dominatorStats.length > 0 && <DominatorChart data={dominatorStats} position={player.position} />}
+                        {percentileMetrics.length > 0 && <PercentileChart metrics={percentileMetrics} position={player.position} />}
+
+                        {/* EPA / SP+ if available */}
+                        {epaStats && epaStats.length > 0 && dominatorStats.length === 0 && (
+                            <div className="rounded-xl border border-border/60 bg-card/40 p-4">
+                                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Competition Adjustment</h3>
+                                <div className="space-y-2">
+                                    {epaStats.map((row: any) => (
+                                        <div key={row.season} className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground font-mono text-xs">{row.season}</span>
+                                            <div className="flex gap-5">
+                                                {row.sp_rating != null && <span className={`font-bold font-mono text-xs ${row.sp_rating >= 20 ? 'text-emerald-400' : row.sp_rating >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>SP+ {row.sp_rating > 0 ? '+' : ''}{Number(row.sp_rating).toFixed(1)}</span>}
+                                                {row.epa_per_play != null && <span className={`font-bold font-mono text-xs ${row.epa_per_play >= 1.0 ? 'text-emerald-400' : row.epa_per_play >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>EPA {Number(row.epa_per_play).toFixed(3)}</span>}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    ))}
+                                </div>
                             </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* ── ZONE 4: Advanced Analytics ───────────────────────────────────── */}
+                {hasAdvancedAnalytics && (
+                    <section id="analytics" className="scroll-mt-56">
+                        <div className="flex items-center gap-3 mb-5">
+                            <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-muted-foreground/50 whitespace-nowrap">Advanced Analytics</span>
+                            <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold border border-primary/20">{pos} · CLASS 2026</span>
+                            <div className="flex-1 h-px bg-border/20" />
                         </div>
 
-                        {/* Advanced Analytics */}
-                        {hasAdvancedAnalytics && (
-                            <div className="space-y-5">
-                                <div className="flex items-center gap-2">
-                                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Advanced Analytics</h3>
-                                    <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold border border-primary/20">{pos} · CLASS 2026</span>
-                                </div>
-                                {advGauges.length > 0 && (
-                                    <div className={`grid gap-3 ${advGauges.length <= 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
-                                        {advGauges.map(g => (
-                                            <div key={g.label} className="bg-card border border-border/40 rounded-xl p-3 flex justify-center">
-                                                <StatRingGauge {...g} />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                {(advDonutA != null || advDonutB != null) && (
-                                    <div className={`grid gap-3 ${advDonutA != null && advDonutB != null ? 'grid-cols-2' : 'grid-cols-1 max-w-xs'}`}>
-                                        {advDonutA != null && <DonutSplit title={(advDonutA as DonutProps).title} labelA={(advDonutA as DonutProps).labelA} valueA={(advDonutA as DonutProps).valueA} labelB={(advDonutA as DonutProps).labelB} valueB={(advDonutA as DonutProps).valueB} colorA={(advDonutA as DonutProps).colorA} colorB={(advDonutA as DonutProps).colorB} />}
-                                        {advDonutB != null && <DonutSplit title={(advDonutB as DonutProps).title} labelA={(advDonutB as DonutProps).labelA} valueA={(advDonutB as DonutProps).valueA} labelB={(advDonutB as DonutProps).labelB} valueB={(advDonutB as DonutProps).valueB} colorA={(advDonutB as DonutProps).colorA} colorB={(advDonutB as DonutProps).colorB} />}
-                                    </div>
-                                )}
-                                {advComposites.filter(c => c.score != null).length > 0 && (
-                                    <div>
-                                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">Composite Scores</h4>
-                                        <div className={`grid gap-3 ${advComposites.filter(c => c.score != null).length <= 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
-                                            {advComposites.filter(c => c.score != null).map(c => (
-                                                <div key={c.label} className="bg-card border border-border/40 rounded-xl p-3 flex flex-col items-center gap-1.5">
-                                                    <StatRingGauge label={c.label} displayValue={c.score != null ? c.score.toFixed(1) : '—'} pct={c.score != null ? (c.score / 10) * 100 : 0} size={80} strokeWidth={8} />
-                                                    <div className="text-[9px] text-muted-foreground/35 text-center leading-tight">{c.description}</div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                                {butterflyRows.length > 0 && <ButterflyChart rows={butterflyRows} effTitle="Efficiency" prodTitle="Production" rankTitle="Percentile Rank" />}
-                                {advRankingMetrics.length > 0 && <SeasonRankingsChart metrics={advRankingMetrics} title={`Career Class Rankings · ${pos}`} />}
-                                <div>
-                                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">Advanced Season Stats</h4>
-                                    <AdvancedStatsTable stats={stats} position={player.position} />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* ── STATS TAB ─────────────────────────────────────────────────────── */}
-                {activeTab === 'stats' && (
-                    <div className="space-y-8 max-w-5xl">
-                        {stats.length > 0 ? (
-                            <>
-                                <StatsTable stats={stats} position={player.position} />
-                                {hasAdvancedMetrics && (
-                                    <div className="bg-card border border-border/40 rounded-xl p-6">
-                                        <div className="flex items-center gap-2 mb-5">
-                                            <BarChart2 className="w-4 h-4 text-muted-foreground/50" />
-                                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Career Production</span>
-                                            <span className="ml-auto text-[10px] text-muted-foreground/50 bg-muted/50 px-2 py-0.5 rounded-full">Aggregated</span>
-                                        </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                                            {statsGrid.map((m) => {
-                                                const hasVal = m.val != null && m.val !== 0 && m.val !== '—';
-                                                return (
-                                                    <div key={m.label} className="bg-muted/30 border border-border/30 rounded-xl p-4 flex flex-col gap-1.5">
-                                                        <div className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-bold leading-none">{m.label}</div>
-                                                        <div className={`text-2xl font-black font-mono leading-none ${hasVal ? 'text-foreground' : 'text-muted-foreground/20'}`}>{hasVal ? m.val : '—'}</div>
-                                                        <div className="text-[9px] text-muted-foreground/40 leading-none">{m.hint}</div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="text-right text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">{trustIndicator}</div>
-                            </>
-                        ) : (
-                            <div className="bg-card border border-dashed border-border/60 rounded-xl p-8 text-center">
-                                <BarChart2 className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
-                                <p className="text-muted-foreground text-sm font-semibold">Season stats not yet available</p>
-                                <div className="text-center mt-4 text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">{trustIndicator}</div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* ── RANKINGS TAB ──────────────────────────────────────────────────── */}
-                {activeTab === 'rankings' && (
-                    <div className="max-w-3xl">
-                        <SourceRankings rankings={rankings} consensusRank={player.consensus_rank ?? null} />
-                    </div>
-                )}
-
-                {/* ── NEWS TAB ──────────────────────────────────────────────────────── */}
-                {activeTab === 'news' && (
-                    <div className="max-w-3xl">
-                        {news.length > 0 ? (
-                            <div className="space-y-2">
-                                {news.map((article: any) => (
-                                    <a
-                                        key={article.id}
-                                        href={article.source_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-start gap-3 p-4 bg-card border border-border/60 rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-all group"
-                                    >
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2 mb-1">{article.title}</p>
-                                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                                                <span className="font-medium">{article.source}</span>
-                                                {article.published_at && <><span>·</span><span>{timeAgo(article.published_at)}</span></>}
-                                            </div>
-                                        </div>
-                                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary/60 flex-shrink-0 mt-0.5" />
-                                    </a>
+                        {/* Analytic cards — replaces ring gauges */}
+                        {(advGauges.length > 0 || advComposites.filter(c => c.score != null).length > 0) && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 mb-6">
+                                {advGauges.map(g => (
+                                    <AnalyticCard key={g.label} label={g.label} value={g.displayValue} pct={g.pct} />
+                                ))}
+                                {advComposites.filter(c => c.score != null).map(c => (
+                                    <AnalyticCard
+                                        key={c.label}
+                                        label={c.label}
+                                        value={c.score != null ? c.score.toFixed(1) : '—'}
+                                        pct={c.score != null ? (c.score / 10) * 100 : 0}
+                                    />
                                 ))}
                             </div>
-                        ) : (
-                            <div className="bg-card border border-dashed border-border/60 rounded-xl p-12 text-center">
-                                <Newspaper className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                                <p className="text-muted-foreground text-sm">No recent news for this player</p>
+                        )}
+
+                        {/* Donut splits */}
+                        {(advDonutA != null || advDonutB != null) && (
+                            <div className={`grid gap-3 mb-6 ${advDonutA != null && advDonutB != null ? 'grid-cols-2 max-w-md' : 'grid-cols-1 max-w-xs'}`}>
+                                {advDonutA != null && <DonutSplit title={(advDonutA as DonutProps).title} labelA={(advDonutA as DonutProps).labelA} valueA={(advDonutA as DonutProps).valueA} labelB={(advDonutA as DonutProps).labelB} valueB={(advDonutA as DonutProps).valueB} colorA={(advDonutA as DonutProps).colorA} colorB={(advDonutA as DonutProps).colorB} />}
+                                {advDonutB != null && <DonutSplit title={(advDonutB as DonutProps).title} labelA={(advDonutB as DonutProps).labelA} valueA={(advDonutB as DonutProps).valueA} labelB={(advDonutB as DonutProps).labelB} valueB={(advDonutB as DonutProps).valueB} colorA={(advDonutB as DonutProps).colorA} colorB={(advDonutB as DonutProps).colorB} />}
                             </div>
                         )}
-                    </div>
+
+                        {/* Butterfly chart */}
+                        {butterflyRows.length > 0 && (
+                            <div className="mb-6">
+                                <ButterflyChart rows={butterflyRows} effTitle="Efficiency" prodTitle="Production" rankTitle="Percentile Rank" />
+                            </div>
+                        )}
+
+                        {/* Season class rankings */}
+                        {advRankingMetrics.length > 0 && (
+                            <div className="mb-6">
+                                <SeasonRankingsChart metrics={advRankingMetrics} title={`Career Class Rankings · ${pos}`} />
+                            </div>
+                        )}
+
+                        {/* Advanced season stats table */}
+                        <div>
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">Advanced Season Stats</h4>
+                            <AdvancedStatsTable stats={stats} position={player.position} />
+                        </div>
+                    </section>
                 )}
+
+                {/* ── ZONE 5: College Stats ─────────────────────────────────────────── */}
+                <section id="stats" className="scroll-mt-56">
+                    <SectionLabel label="College Stats" />
+
+                    {stats.length > 0 ? (
+                        <>
+                            <StatsTable stats={stats} position={player.position} />
+                            {hasAdvancedMetrics && (
+                                <div className="mt-3 grid grid-cols-4 sm:grid-cols-8 gap-1">
+                                    {statsGrid.map((m) => {
+                                        const hasVal = m.val != null && m.val !== 0 && m.val !== '—';
+                                        return (
+                                            <div key={m.label} className="bg-card/40 border border-border/20 rounded-lg px-2 py-2.5 text-center">
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-bold leading-none mb-1">{m.label}</div>
+                                                <div className={`text-base font-black font-mono leading-none ${hasVal ? 'text-foreground' : 'text-muted-foreground/20'}`}>{hasVal ? m.val : '—'}</div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            <div className="text-right text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60 mt-2">{trustIndicator}</div>
+                        </>
+                    ) : (
+                        <div className="bg-card border border-dashed border-border/60 rounded-xl p-8 text-center">
+                            <BarChart2 className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+                            <p className="text-muted-foreground text-sm font-semibold">Season stats not yet available</p>
+                            <div className="text-center mt-4 text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">{trustIndicator}</div>
+                        </div>
+                    )}
+                </section>
+
+                {/* ── ZONE 6: Expert Rankings ───────────────────────────────────────── */}
+                <section id="rankings" className="scroll-mt-56">
+                    <SectionLabel label="Expert Rankings" />
+                    <SourceRankings rankings={rankings} consensusRank={player.consensus_rank ?? null} />
+                </section>
+
+                {/* ── ZONE 7: News ──────────────────────────────────────────────────── */}
+                <section id="news" className="scroll-mt-56">
+                    <SectionLabel label="Latest News" />
+                    {news.length > 0 ? (
+                        <div className="space-y-2">
+                            {news.map((article: any) => (
+                                <a
+                                    key={article.id}
+                                    href={article.source_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-start gap-3 p-4 bg-card border border-border/60 rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-all group"
+                                >
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2 mb-1">{article.title}</p>
+                                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                            <span className="font-medium">{article.source}</span>
+                                            {article.published_at && <><span>·</span><span>{timeAgo(article.published_at)}</span></>}
+                                        </div>
+                                    </div>
+                                    <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary/60 flex-shrink-0 mt-0.5" />
+                                </a>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-card border border-dashed border-border/60 rounded-xl p-12 text-center">
+                            <Newspaper className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                            <p className="text-muted-foreground text-sm">No recent news for this player</p>
+                        </div>
+                    )}
+                </section>
 
             </div>
         </div>
