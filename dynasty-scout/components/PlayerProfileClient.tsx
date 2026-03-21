@@ -138,7 +138,7 @@ export function PlayerProfileClient({
     const classRank: number | null = player.consensus_rank && player.consensus_rank > 0 ? player.consensus_rank : null;
     const projRank: number | null = player.ktc_rank ?? player.consensus_rank ?? player.best_rank ?? null;
     const draftSlot = projRank ? getDraftSlot(projRank) : null;
-    const tier = classRank ? getTierInfo(classRank) : { label: 'Unranked', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40' };
+    const tier = classRank ? getTierInfo(classRank) : { label: 'Unranked', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40', accent: '#6b7280' };
 
     const headlines = POSITION_HEADLINE_STATS[pos] || [];
 
