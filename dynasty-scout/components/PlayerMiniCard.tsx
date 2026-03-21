@@ -21,27 +21,28 @@ function getDraftSlot(rank: number): string {
     return `${round}.${String(pick).padStart(2, '0')}`;
 }
 
-function getTier(rank: number): { label: string; color: string; border: string } {
-    if (rank <= 5)  return { label: 'S Tier', color: 'bg-[#FF6B00]/20 text-[#FF9A50] border-[#FF6B00]/40',    border: 'rgba(255,107,0,0.55)'    };
-    if (rank <= 12) return { label: 'A Tier', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40', border: 'rgba(34,197,94,0.55)'    };
-    if (rank <= 24) return { label: 'B Tier', color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',         border: 'rgba(0,180,216,0.55)'    };
-    if (rank <= 48) return { label: 'C Tier', color: 'bg-violet-500/20 text-violet-300 border-violet-500/40',   border: 'rgba(167,139,250,0.55)'  };
-    if (rank <= 80) return { label: 'D Tier', color: 'bg-amber-500/20 text-amber-300 border-amber-500/40',      border: 'rgba(245,158,11,0.55)'   };
-    return            { label: 'Depth',  color: 'bg-gray-500/20 text-gray-400 border-gray-500/40',              border: 'rgba(107,114,128,0.35)'  };
+function getTier(rank: number): { label: string; color: string; border: string; accent: string } {
+    if (rank <= 5)  return { label: 'S Tier', color: 'bg-orange-500/15 text-orange-300 border-orange-500/35',   border: 'rgba(249,115,22,0.5)',   accent: '#f97316' };
+    if (rank <= 12) return { label: 'A Tier', color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35', border: 'rgba(34,197,94,0.5)',   accent: '#22c55e' };
+    if (rank <= 24) return { label: 'B Tier', color: 'bg-sky-500/15 text-sky-300 border-sky-500/35',             border: 'rgba(56,189,248,0.5)',  accent: '#38bdf8' };
+    if (rank <= 48) return { label: 'C Tier', color: 'bg-violet-500/15 text-violet-300 border-violet-500/35',   border: 'rgba(167,139,250,0.5)',  accent: '#a78bfa' };
+    if (rank <= 80) return { label: 'D Tier', color: 'bg-amber-500/15 text-amber-300 border-amber-500/35',      border: 'rgba(245,158,11,0.45)', accent: '#f59e0b' };
+    return            { label: 'Depth',  color: 'bg-slate-500/15 text-slate-400 border-slate-500/30',            border: 'rgba(71,85,105,0.3)',   accent: '#475569' };
 }
 
 function getProjDC(rank: number): { label: string; color: string } {
-    if (rank <= 12) return { label: '1st Rd', color: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/40' };
-    if (rank <= 32) return { label: 'Day 2',  color: 'bg-sky-500/15 text-sky-300 border-sky-500/40'          };
-    if (rank <= 72) return { label: 'Day 3',  color: 'bg-muted/40 text-muted-foreground/80 border-border/50' };
-    return                 { label: 'UDFA',   color: 'bg-muted/20 text-muted-foreground/40 border-border/30' };
+    if (rank <= 12) return { label: '1st Rd', color: 'bg-yellow-500/12 text-yellow-300/90 border-yellow-500/30' };
+    if (rank <= 32) return { label: 'Day 2',  color: 'bg-sky-500/12 text-sky-300/90 border-sky-500/30'          };
+    if (rank <= 72) return { label: 'Day 3',  color: 'bg-muted/30 text-muted-foreground/70 border-border/40' };
+    return                 { label: 'UDFA',   color: 'bg-muted/15 text-muted-foreground/35 border-border/25' };
 }
 
 function getRankColor(rank: number): string {
+    if (rank <= 5)  return 'text-orange-400 font-extrabold';
     if (rank <= 12) return 'text-emerald-400 font-extrabold';
-    if (rank <= 24) return 'text-[#FF9A50] font-bold';
+    if (rank <= 24) return 'text-sky-400 font-bold';
     if (rank <= 48) return 'text-violet-400 font-bold';
-    return 'text-muted-foreground font-semibold';
+    return 'text-muted-foreground/70 font-semibold';
 }
 
 function formatHeight(inches?: number | null) {
@@ -77,12 +78,12 @@ function getArmColor(v: number, pos: string): string {
 }
 
 function sourceRankColor(v: number | null | undefined): string {
-    if (!v) return 'text-muted-foreground/30';
+    if (!v) return 'text-muted-foreground/25';
     if (v <= 5)  return 'text-emerald-400 font-extrabold';
-    if (v <= 12) return 'text-cyan-400 font-bold';
+    if (v <= 12) return 'text-sky-400 font-bold';
     if (v <= 24) return 'text-yellow-400 font-bold';
     if (v <= 36) return 'text-orange-400';
-    return 'text-muted-foreground/50';
+    return 'text-muted-foreground/45';
 }
 
 function getHandColor(v: number, pos: string): string {
@@ -98,7 +99,7 @@ function StatVal({ val, highlight }: { val: string | number | null | undefined; 
     const display = val != null && val !== '' ? String(val) : '—';
     const empty   = display === '—';
     return (
-        <span className={`font-mono font-bold text-xs ${empty ? 'text-muted-foreground/30' : (highlight || 'text-foreground/80')}`}>
+        <span className={`font-[var(--font-jetbrains),monospace] font-bold text-[13px] ${empty ? 'text-muted-foreground/25' : (highlight || 'text-foreground/75')}`}>
             {display}
         </span>
     );
@@ -106,8 +107,8 @@ function StatVal({ val, highlight }: { val: string | number | null | undefined; 
 
 function RecruitStars({ stars }: { stars: number | null | undefined }) {
     if (!stars) return <StatVal val={null} />;
-    const color = stars >= 5 ? 'text-yellow-400' : stars >= 4 ? 'text-yellow-300/80' : 'text-muted-foreground/60';
-    return <span className={`text-xs font-bold ${color}`}>{'★'.repeat(stars)}</span>;
+    const color = stars >= 5 ? 'text-yellow-400' : stars >= 4 ? 'text-yellow-300/80' : 'text-muted-foreground/50';
+    return <span className={`text-[13px] font-bold ${color}`}>{'★'.repeat(stars)}</span>;
 }
 
 export function PlayerMiniCard({ player, ranking, period, index, positionFilter = 'ALL' }: PlayerMiniCardProps) {
@@ -140,37 +141,37 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
             case 'hw':
                 return (
                     <div className="flex flex-col items-center leading-tight">
-                        <span className="font-mono font-bold text-xs text-foreground/80">{ht}</span>
-                        <span className="font-mono text-[10px] text-muted-foreground/50">{wt}</span>
+                        <span className="font-[var(--font-jetbrains),monospace] font-bold text-[13px] text-foreground/80">{ht}</span>
+                        <span className="font-[var(--font-jetbrains),monospace] text-[10px] text-muted-foreground/50">{wt}</span>
                     </div>
                 );
 
             case 'forty':
                 return fortyYard
-                    ? <span className={`font-mono font-bold text-xs ${getFortyColor(fortyYard, player.position)}`}>{fortyYard.toFixed(2)}s</span>
+                    ? <span className={`font-[var(--font-jetbrains),monospace] font-bold text-[13px] ${getFortyColor(fortyYard, player.position)}`}>{fortyYard.toFixed(2)}s</span>
                     : <StatVal val={null} />;
 
             case 'spd': {
                 const ss = p.speed_score as number | null | undefined;
                 return ss
-                    ? <span className={`font-mono font-bold text-xs ${getSpeedScoreColor(Number(ss), player.position)}`}>{Math.round(Number(ss))}</span>
+                    ? <span className={`font-[var(--font-jetbrains),monospace] font-bold text-[13px] ${getSpeedScoreColor(Number(ss), player.position)}`}>{Math.round(Number(ss))}</span>
                     : <StatVal val={null} />;
             }
 
             case 'ras':
-                return <span className={`font-mono font-bold text-xs ${p.ras ? 'text-purple-400' : 'text-muted-foreground/30'}`}>{p.ras ? Number(p.ras).toFixed(1) : '—'}</span>;
+                return <span className={`font-[var(--font-jetbrains),monospace] font-bold text-[13px] ${p.ras ? 'text-violet-400' : 'text-muted-foreground/25'}`}>{p.ras ? Number(p.ras).toFixed(1) : '—'}</span>;
 
             case 'arm': {
                 const av = p.arm_length as number | null | undefined;
                 return av
-                    ? <span className={`font-mono font-bold text-xs ${getArmColor(Number(av), player.position)}`}>{Number(av).toFixed(1)}"</span>
+                    ? <span className={`font-[var(--font-jetbrains),monospace] font-bold text-[13px] ${getArmColor(Number(av), player.position)}`}>{Number(av).toFixed(1)}"</span>
                     : <StatVal val={null} />;
             }
 
             case 'hand': {
                 const hv = p.hand_size as number | null | undefined;
                 return hv
-                    ? <span className={`font-mono font-bold text-xs ${getHandColor(Number(hv), player.position)}`}>{Number(hv).toFixed(1)}"</span>
+                    ? <span className={`font-[var(--font-jetbrains),monospace] font-bold text-[13px] ${getHandColor(Number(hv), player.position)}`}>{Number(hv).toFixed(1)}"</span>
                     : <StatVal val={null} />;
             }
 
@@ -180,11 +181,11 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
             // ── Legacy compact measurables (fallback) ─────────────────────────
             case 'measurables':
                 return (
-                    <div className="flex items-center justify-center gap-1.5 text-[11px] font-mono text-foreground/80 truncate">
+                    <div className="flex items-center justify-center gap-1.5 text-[11px] font-[var(--font-jetbrains),monospace] text-foreground/80 truncate">
                         <span className="shrink-0">{ht} / {wt}</span>
                         {fortyYard ? <span className={`shrink-0 ${getFortyColor(fortyYard, player.position)}`}>· {fortyYard.toFixed(2)}s</span> : null}
-                        {p.ras      ? <span className="text-purple-400 shrink-0">· RAS {Number(p.ras).toFixed(1)}</span> : null}
-                        {p.speed_score && !p.ras ? <span className="text-cyan-400/80 shrink-0 text-[10px]">· Spd {Number(p.speed_score).toFixed(0)}</span> : null}
+                        {p.ras      ? <span className="text-violet-400 shrink-0">· RAS {Number(p.ras).toFixed(1)}</span> : null}
+                        {p.speed_score && !p.ras ? <span className="text-sky-400/80 shrink-0 text-[10px]">· Spd {Number(p.speed_score).toFixed(0)}</span> : null}
                     </div>
                 );
 
@@ -193,32 +194,32 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
             case 'ktc': return <StatVal val={p.ktc_rank}           highlight={sourceRankColor(p.ktc_rank)}           />;
             case 'fc':  return <StatVal val={p.fantasycalc_rank}   highlight={sourceRankColor(p.fantasycalc_rank)}   />;
             case 'dn':  return <StatVal val={p.dynasty_nerds_rank} highlight={sourceRankColor(p.dynasty_nerds_rank)} />;
-            case 'adp': return <span className="font-mono font-bold text-sm text-foreground/80">{draftSlot}</span>;
+            case 'adp': return <span className="font-[var(--font-jetbrains),monospace] font-bold text-sm text-foreground/80">{draftSlot}</span>;
 
             // ── Tier badge ────────────────────────────────────────────────────
             case 'tier':
                 return (ranking?.num_sources ?? 0) < 1 ? (
                     <span
                         title={`Not yet ranked by any tracked sources — check back after more rankings drop`}
-                        style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 8px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 600 }}
-                        className={cn('border', 'bg-gray-500/10 text-gray-400/80 border-gray-500/30')}
+                        style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 700, letterSpacing: '0.03em' }}
+                        className={cn('border', 'bg-slate-500/10 text-slate-400/70 border-slate-500/25')}
                     >⚠ Limited</span>
                 ) : (
                     <span
-                        style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 8px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 600 }}
+                        style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, fontSize: 10, fontWeight: 700, letterSpacing: '0.03em' }}
                         className={cn('border', tier.color)}
                     >{tier.label}</span>
                 );
 
             // ── Position-specific stats ────────────────────────────────────────
             case 'career_pass_yards': return <StatVal val={p.career_pass_yards > 0 ? Number(p.career_pass_yards).toLocaleString() : null} />;
-            case 'best_pass_ypg':     return <StatVal val={p.best_pass_ypg != null ? `${Number(p.best_pass_ypg).toFixed(1)}` : null} highlight="text-cyan-400 font-bold" />;
+            case 'best_pass_ypg':     return <StatVal val={p.best_pass_ypg != null ? `${Number(p.best_pass_ypg).toFixed(1)}` : null} highlight="text-sky-400 font-bold" />;
             case 'comp_pct':          return <StatVal val={compPct} />;
             case 'ypa':               return <StatVal val={ypa} />;
-            case 'best_ypr':          return <StatVal val={p.best_ypr != null ? Number(p.best_ypr).toFixed(1) : null} highlight={p.best_ypr >= 16 ? 'text-emerald-400 font-bold' : p.best_ypr >= 12 ? 'text-cyan-400' : undefined} />;
-            case 'best_ypc':          return <StatVal val={p.best_ypc != null ? Number(p.best_ypc).toFixed(2) : null} highlight={p.best_ypc >= 6.5 ? 'text-emerald-400 font-bold' : p.best_ypc >= 5.5 ? 'text-cyan-400' : undefined} />;
-            case 'breakout_age':      return <StatVal val={p.breakout_age ? Number(p.breakout_age).toFixed(1) : null} highlight={p.breakout_age && p.breakout_age <= 19 ? 'text-emerald-400 font-extrabold' : p.breakout_age <= 20 ? 'text-cyan-400 font-bold' : undefined} />;
-            case 'best_dominator':    return <StatVal val={domPct} highlight={p.best_dominator >= 30 ? 'text-emerald-400 font-bold' : p.best_dominator >= 20 ? 'text-cyan-400' : undefined} />;
+            case 'best_ypr':          return <StatVal val={p.best_ypr != null ? Number(p.best_ypr).toFixed(1) : null} highlight={p.best_ypr >= 16 ? 'text-emerald-400 font-bold' : p.best_ypr >= 12 ? 'text-sky-400' : undefined} />;
+            case 'best_ypc':          return <StatVal val={p.best_ypc != null ? Number(p.best_ypc).toFixed(2) : null} highlight={p.best_ypc >= 6.5 ? 'text-emerald-400 font-bold' : p.best_ypc >= 5.5 ? 'text-sky-400' : undefined} />;
+            case 'breakout_age':      return <StatVal val={p.breakout_age ? Number(p.breakout_age).toFixed(1) : null} highlight={p.breakout_age && p.breakout_age <= 19 ? 'text-emerald-400 font-extrabold' : p.breakout_age <= 20 ? 'text-sky-400 font-bold' : undefined} />;
+            case 'best_dominator':    return <StatVal val={domPct} highlight={p.best_dominator >= 30 ? 'text-emerald-400 font-bold' : p.best_dominator >= 20 ? 'text-sky-400' : undefined} />;
             case 'scrim_ypg':         return <StatVal val={scrimYpg} />;
             case 'recruiting_stars':  return <RecruitStars stars={p.recruiting_stars} />;
 
@@ -227,136 +228,163 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
     }
 
     const projDC   = getProjDC(rookieRank);
-    const zebraClass = index % 2 === 1 ? 'bg-muted/[0.035]' : '';
+    const isEven   = index % 2 === 0;
 
     return (
         <Link href={`/players/${player.slug}`} className="block group">
             <div
-                className={`flex items-center px-4 py-2.5 hover:bg-accent/50 transition-all duration-100 border-b border-border/20 gap-3 ${zebraClass}`}
+                className={cn(
+                    'flex items-center px-4 py-3 transition-all duration-150 gap-3',
+                    'border-b border-white/[0.04]',
+                    'hover:bg-white/[0.03]',
+                    isEven ? 'bg-transparent' : 'bg-white/[0.015]',
+                )}
                 style={{ borderLeft: `3px solid ${tier.border}` }}
             >
-                {/* Sticky identity group: rank + compare + player */}
-                <div className="sticky left-0 z-10 flex items-center gap-3 bg-background pr-2 flex-shrink-0" style={{ width: '304px' }}>
-                {/* 1. Rank + inline watchlist */}
-                <div className="w-16 flex-shrink-0 flex flex-row items-center justify-center gap-1.5">
-                    <span className={`text-sm font-mono leading-none ${rankColor}`}>{rookieRank}</span>
-                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="cursor-pointer flex items-center">
-                        <WatchlistButton playerSlug={player.slug} />
+                {/* Sticky identity group: rank + compare + headshot + player */}
+                <div className="sticky left-0 z-10 flex items-center gap-2.5 bg-background pr-2 flex-shrink-0" style={{ width: '304px' }}>
+                    {/* Rank number */}
+                    <div className="w-12 flex-shrink-0 flex flex-row items-center justify-center gap-1">
+                        <span className={`text-base font-[var(--font-jetbrains),monospace] leading-none ${rankColor}`}>{rookieRank}</span>
+                        <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="cursor-pointer flex items-center">
+                            <WatchlistButton playerSlug={player.slug} />
+                        </div>
                     </div>
-                </div>
 
-                {/* Compare quick-launch */}
-                <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="flex-shrink-0">
-                    <Link
-                        href={`/compare?a=${player.slug}`}
-                        className="flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground/30 hover:text-primary hover:bg-primary/10 transition-colors"
-                        title="Compare player"
-                    >
-                        <Scale className="w-3.5 h-3.5" />
-                    </Link>
-                </div>
+                    {/* Compare quick-launch — uses <form> to avoid nested <a> inside row <Link> */}
+                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="flex-shrink-0">
+                        <form action={`/compare`} method="GET">
+                            <input type="hidden" name="a" value={player.slug} />
+                            <button
+                                type="submit"
+                                className="flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground/25 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                                title="Compare player"
+                            >
+                                <Scale className="w-3.5 h-3.5" />
+                            </button>
+                        </form>
+                    </div>
 
-                {/* 2. Player info — wrapped in hover card for quick stats preview */}
-                <HoverCard openDelay={500} closeDelay={100}>
-                    <HoverCardTrigger asChild>
-                        <div style={{ width: '220px', minWidth: '220px' }} className="flex-shrink-0 cursor-default">
-                            <div className="flex items-center gap-1.5 mb-0.5 overflow-hidden">
-                                <span className="font-bold text-[14px] text-foreground group-hover:text-primary transition-colors leading-snug">
-                                    {player.full_name}
-                                </span>
-                                <span
-                                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 6px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 10, fontWeight: 800 }}
-                                    className={cn('border', positionColor)}
-                                >{player.position}</span>
-                                <span
-                                    style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 5px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 9, fontWeight: 700 }}
-                                    className={cn('border', projDC.color)}
-                                    title="Projected NFL draft capital based on consensus fantasy rank"
-                                >{projDC.label}</span>
+                    {/* Headshot */}
+                    {p.headshot_url ? (
+                        <img
+                            src={p.headshot_url}
+                            alt=""
+                            className="w-8 h-10 rounded-lg object-cover object-top flex-shrink-0 border border-white/[0.08]"
+                            loading="lazy"
+                        />
+                    ) : (
+                        <div className="w-8 h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-[10px] font-black border border-white/[0.06]"
+                            style={{
+                                background: `linear-gradient(135deg, ${tier.accent}15, ${tier.accent}08)`,
+                                color: `${tier.accent}60`,
+                            }}
+                        >
+                            {player.position}
+                        </div>
+                    )}
+
+                    {/* Player info — wrapped in hover card for quick stats preview */}
+                    <HoverCard openDelay={500} closeDelay={100}>
+                        <HoverCardTrigger asChild>
+                            <div style={{ width: '190px', minWidth: '190px' }} className="flex-shrink-0 cursor-default">
+                                <div className="flex items-center gap-1.5 mb-0.5 overflow-hidden">
+                                    <span className="font-bold text-[15px] text-foreground group-hover:text-primary transition-colors leading-snug truncate">
+                                        {player.full_name}
+                                    </span>
+                                    <span
+                                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 7px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 10, fontWeight: 800, letterSpacing: '0.03em' }}
+                                        className={cn('border', positionColor)}
+                                    >{player.position}</span>
+                                    <span
+                                        style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 6px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 9, fontWeight: 700 }}
+                                        className={cn('border', projDC.color)}
+                                        title="Projected NFL draft capital based on consensus fantasy rank"
+                                    >{projDC.label}</span>
+                                </div>
+                                <div className="flex items-center text-[11px] text-muted-foreground/60 gap-1.5 leading-none">
+                                    <span className="truncate">{schoolDisplay || 'School TBD'}</span>
+                                    {player.age_at_draft && (
+                                        <><span className="opacity-30">·</span><span className="whitespace-nowrap">Age {player.age_at_draft}</span></>
+                                    )}
+                                    {(player.height_inches || player.weight_lbs) && (
+                                        <><span className="opacity-30">·</span><span className="whitespace-nowrap font-[var(--font-jetbrains),monospace] text-[10px]">{ht}{player.weight_lbs ? ` ${player.weight_lbs}` : ''}</span></>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex items-center text-[11px] text-muted-foreground/70 gap-1.5 leading-none">
-                                <span className="truncate">{schoolDisplay || 'School TBD'}</span>
-                                {player.age_at_draft && (
-                                    <><span className="opacity-40">•</span><span className="whitespace-nowrap">Age {player.age_at_draft}</span></>
+                        </HoverCardTrigger>
+                        <HoverCardContent side="right" align="start" className="w-64 p-0 overflow-hidden border-white/[0.08]">
+                            {/* Mini player preview card */}
+                            <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]" style={{ background: 'var(--bg-elevated)' }}>
+                                {p.headshot_url ? (
+                                    <img src={p.headshot_url} alt={player.full_name} className="w-10 h-12 rounded-lg object-cover object-top flex-shrink-0" />
+                                ) : (
+                                    <div className="w-10 h-12 rounded-lg bg-muted/40 flex items-center justify-center flex-shrink-0 text-lg font-black text-muted-foreground/30">
+                                        {player.position}
+                                    </div>
                                 )}
-                                {(player.height_inches || player.weight_lbs) && (
-                                    <><span className="opacity-40">•</span><span className="whitespace-nowrap font-mono">{ht}{player.weight_lbs ? ` ${player.weight_lbs}` : ''}</span></>
-                                )}
+                                <div className="min-w-0">
+                                    <div className="font-bold text-sm text-foreground leading-tight truncate">{player.full_name}</div>
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded border', positionColor)}>{player.position}</span>
+                                        <span className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded border', tier.color)}>{tier.label}</span>
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground/50 mt-1 truncate">{schoolDisplay || 'School TBD'}</div>
+                                </div>
                             </div>
-                        </div>
-                    </HoverCardTrigger>
-                    <HoverCardContent side="right" align="start" className="w-64 p-0 overflow-hidden">
-                        {/* Mini player preview card */}
-                        <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-muted/20">
-                            {p.headshot_url ? (
-                                <img src={p.headshot_url} alt={player.full_name} className="w-10 h-12 rounded-lg object-cover object-top flex-shrink-0" />
-                            ) : (
-                                <div className="w-10 h-12 rounded-lg bg-muted/40 flex items-center justify-center flex-shrink-0 text-lg font-black text-muted-foreground/30">
-                                    {player.position}
+                            <div className="px-4 py-3 space-y-2">
+                                {/* Position-specific top stats */}
+                                {player.position === 'RB' && [
+                                    { label: 'Best YPC',   val: p.best_ypc    != null ? Number(p.best_ypc).toFixed(2)    : null },
+                                    { label: 'Scrim/G',    val: scrimYpg },
+                                    { label: 'Best DOM%',  val: p.best_dominator != null ? Number(p.best_dominator).toFixed(1) + '%' : null },
+                                    { label: 'RAS',        val: p.ras  != null ? Number(p.ras).toFixed(1)  : null },
+                                ].filter(s => s.val).map(s => (
+                                    <div key={s.label} className="flex justify-between items-center">
+                                        <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wide font-semibold">{s.label}</span>
+                                        <span className="text-xs font-[var(--font-jetbrains),monospace] font-bold text-foreground">{s.val}</span>
+                                    </div>
+                                ))}
+                                {player.position === 'WR' && [
+                                    { label: 'Best YDS/REC', val: p.best_ypr   != null ? Number(p.best_ypr).toFixed(1)   : null },
+                                    { label: 'Best DOM%',    val: p.best_dominator != null ? Number(p.best_dominator).toFixed(1) + '%' : null },
+                                    { label: 'RAS',          val: p.ras  != null ? Number(p.ras).toFixed(1)  : null },
+                                    { label: 'Speed Score',  val: p.speed_score != null ? Math.round(Number(p.speed_score)).toString() : null },
+                                ].filter(s => s.val).map(s => (
+                                    <div key={s.label} className="flex justify-between items-center">
+                                        <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wide font-semibold">{s.label}</span>
+                                        <span className="text-xs font-[var(--font-jetbrains),monospace] font-bold text-foreground">{s.val}</span>
+                                    </div>
+                                ))}
+                                {player.position === 'TE' && [
+                                    { label: 'Best YDS/REC', val: p.best_ypr   != null ? Number(p.best_ypr).toFixed(1)   : null },
+                                    { label: 'Best DOM%',    val: p.best_dominator != null ? Number(p.best_dominator).toFixed(1) + '%' : null },
+                                    { label: 'RAS',          val: p.ras  != null ? Number(p.ras).toFixed(1)  : null },
+                                ].filter(s => s.val).map(s => (
+                                    <div key={s.label} className="flex justify-between items-center">
+                                        <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wide font-semibold">{s.label}</span>
+                                        <span className="text-xs font-[var(--font-jetbrains),monospace] font-bold text-foreground">{s.val}</span>
+                                    </div>
+                                ))}
+                                {player.position === 'QB' && [
+                                    { label: 'Comp %',   val: compPct },
+                                    { label: 'YPA',      val: ypa     },
+                                    { label: 'Best Pass/G', val: p.best_pass_ypg != null ? Number(p.best_pass_ypg).toFixed(1) : null },
+                                    { label: 'RAS',      val: p.ras   != null ? Number(p.ras).toFixed(1) : null },
+                                ].filter(s => s.val).map(s => (
+                                    <div key={s.label} className="flex justify-between items-center">
+                                        <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wide font-semibold">{s.label}</span>
+                                        <span className="text-xs font-[var(--font-jetbrains),monospace] font-bold text-foreground">{s.val}</span>
+                                    </div>
+                                ))}
+                                {/* Proj pick row */}
+                                <div className="pt-1 border-t border-white/[0.06] flex justify-between items-center">
+                                    <span className="text-[10px] text-muted-foreground/40 uppercase tracking-wide font-semibold">Proj. Pick</span>
+                                    <span className="text-xs font-[var(--font-jetbrains),monospace] font-bold text-primary">{draftSlot}</span>
                                 </div>
-                            )}
-                            <div className="min-w-0">
-                                <div className="font-bold text-sm text-foreground leading-tight truncate">{player.full_name}</div>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded border', positionColor)}>{player.position}</span>
-                                    <span className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded border', tier.color)}>{tier.label}</span>
-                                </div>
-                                <div className="text-[10px] text-muted-foreground/60 mt-1 truncate">{schoolDisplay || 'School TBD'}</div>
                             </div>
-                        </div>
-                        <div className="px-4 py-3 space-y-2">
-                            {/* Position-specific top stats */}
-                            {player.position === 'RB' && [
-                                { label: 'Best YPC',   val: p.best_ypc    != null ? Number(p.best_ypc).toFixed(2)    : null },
-                                { label: 'Scrim/G',    val: scrimYpg },
-                                { label: 'Best DOM%',  val: p.best_dominator != null ? Number(p.best_dominator).toFixed(1) + '%' : null },
-                                { label: 'RAS',        val: p.ras  != null ? Number(p.ras).toFixed(1)  : null },
-                            ].filter(s => s.val).map(s => (
-                                <div key={s.label} className="flex justify-between items-center">
-                                    <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wide font-semibold">{s.label}</span>
-                                    <span className="text-xs font-mono font-bold text-foreground">{s.val}</span>
-                                </div>
-                            ))}
-                            {player.position === 'WR' && [
-                                { label: 'Best YDS/REC', val: p.best_ypr   != null ? Number(p.best_ypr).toFixed(1)   : null },
-                                { label: 'Best DOM%',    val: p.best_dominator != null ? Number(p.best_dominator).toFixed(1) + '%' : null },
-                                { label: 'RAS',          val: p.ras  != null ? Number(p.ras).toFixed(1)  : null },
-                                { label: 'Speed Score',  val: p.speed_score != null ? Math.round(Number(p.speed_score)).toString() : null },
-                            ].filter(s => s.val).map(s => (
-                                <div key={s.label} className="flex justify-between items-center">
-                                    <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wide font-semibold">{s.label}</span>
-                                    <span className="text-xs font-mono font-bold text-foreground">{s.val}</span>
-                                </div>
-                            ))}
-                            {player.position === 'TE' && [
-                                { label: 'Best YDS/REC', val: p.best_ypr   != null ? Number(p.best_ypr).toFixed(1)   : null },
-                                { label: 'Best DOM%',    val: p.best_dominator != null ? Number(p.best_dominator).toFixed(1) + '%' : null },
-                                { label: 'RAS',          val: p.ras  != null ? Number(p.ras).toFixed(1)  : null },
-                            ].filter(s => s.val).map(s => (
-                                <div key={s.label} className="flex justify-between items-center">
-                                    <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wide font-semibold">{s.label}</span>
-                                    <span className="text-xs font-mono font-bold text-foreground">{s.val}</span>
-                                </div>
-                            ))}
-                            {player.position === 'QB' && [
-                                { label: 'Comp %',   val: compPct },
-                                { label: 'YPA',      val: ypa     },
-                                { label: 'Best Pass/G', val: p.best_pass_ypg != null ? Number(p.best_pass_ypg).toFixed(1) : null },
-                                { label: 'RAS',      val: p.ras   != null ? Number(p.ras).toFixed(1) : null },
-                            ].filter(s => s.val).map(s => (
-                                <div key={s.label} className="flex justify-between items-center">
-                                    <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wide font-semibold">{s.label}</span>
-                                    <span className="text-xs font-mono font-bold text-foreground">{s.val}</span>
-                                </div>
-                            ))}
-                            {/* Proj pick row */}
-                            <div className="pt-1 border-t border-border/30 flex justify-between items-center">
-                                <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wide font-semibold">Proj. Pick</span>
-                                <span className="text-xs font-mono font-bold text-primary">{draftSlot}</span>
-                            </div>
-                        </div>
-                    </HoverCardContent>
-                </HoverCard>
+                        </HoverCardContent>
+                    </HoverCard>
                 </div>{/* end sticky identity group */}
 
                 {/* 3. Dynamic stat columns — CSS grid */}
@@ -367,7 +395,7 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                     {colDefs.map((col, i) => (
                         <div
                             key={col.key}
-                            className={`flex items-center min-h-[36px] overflow-hidden ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'fp' || col.key === 'tier' ? 'border-l-2 border-border/25' : ''} ${col.key === 'tier' ? 'justify-center' : 'justify-end pr-3'}`}
+                            className={`flex items-center min-h-[38px] overflow-hidden ${i === 0 ? 'border-l border-white/[0.05]' : ''} ${col.key === 'fp' || col.key === 'tier' ? 'border-l border-white/[0.05]' : ''} ${col.key === 'tier' ? 'justify-center' : 'justify-end pr-3'}`}
                         >
                             {renderCell(col)}
                         </div>
