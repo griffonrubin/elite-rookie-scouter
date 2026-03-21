@@ -410,7 +410,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         <div className="w-6 flex-shrink-0" />
 
                         {/* Player */}
-                        <div style={{ width: '220px', minWidth: '220px' }}
+                        <div style={{ width: '224px', minWidth: '224px' }}
                             className="flex-shrink-0 flex items-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                             Player
                         </div>
@@ -425,7 +425,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 <Tooltip key={col.key} delayDuration={300}>
                                 <TooltipTrigger asChild>
                                 <div
-                                    className={`flex items-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'fp' || col.key === 'tier' ? 'border-l-2 border-border/25' : ''} ${col.key === 'tier' ? 'justify-center' : 'justify-end pr-3'}`}
+                                    className={`flex items-center justify-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'fp' || col.key === 'tier' ? 'border-l border-border/20' : ''}`}
                                 >
                                     {col.sortKey ? (
                                         <button

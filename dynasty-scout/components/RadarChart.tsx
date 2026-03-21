@@ -37,18 +37,19 @@ function polyPath(vals: number[], maxR: number, cx: number, cy: number, n: numbe
 export function RadarChart({ metrics, nameA, nameB, colorA = '#f97316', colorB = '#06b6d4' }: Props) {
     if (!metrics || metrics.length < 3) return null;
 
-    const size = 280;
+    const size = 340;
     const cx = size / 2;
     const cy = size / 2;
-    const maxR = size * 0.38;
+    const maxR = size * 0.37;
+    const labelR = maxR + 26;
     const n = metrics.length;
     const rings = [25, 50, 75, 100];
 
     return (
-        <div className="rounded-xl border border-border/40 bg-card/40 overflow-hidden">
+        <div className="rounded-xl border border-border/40 bg-card/40">
             <div className="px-5 py-4 border-b border-border/30 bg-muted/10 flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Attribute Radar</span>
-                <div className="flex items-center gap-4 text-[10px]">
+                <div className="flex items-center gap-4 text-xs">
                     <span className="flex items-center gap-1.5">
                         <span className="inline-block w-3 h-1 rounded" style={{ background: colorA }} />
                         <span className="font-semibold text-muted-foreground/70">{nameA.split(' ').slice(-1)[0]}</span>
@@ -60,8 +61,8 @@ export function RadarChart({ metrics, nameA, nameB, colorA = '#f97316', colorB =
                 </div>
             </div>
 
-            <div className="flex justify-center py-4">
-                <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+            <div className="flex justify-center py-6 overflow-visible">
+                <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} overflow="visible">
                     {/* Ring guides */}
                     {rings.map(pct => {
                         const r = (pct / 100) * maxR;
@@ -130,10 +131,9 @@ export function RadarChart({ metrics, nameA, nameB, colorA = '#f97316', colorB =
                         return <circle key={`b${i}`} cx={p.x} cy={p.y} r={2.5} fill={colorB} />;
                     })}
 
-                    {/* Axis labels */}
+                    {/* Axis labels — overflow=visible lets them render outside SVG bounds */}
                     {metrics.map((m, i) => {
                         const angle = (360 / n) * i;
-                        const labelR = maxR + 22;
                         const p = polarToXY(angle, labelR, cx, cy);
                         return (
                             <text
@@ -142,10 +142,10 @@ export function RadarChart({ metrics, nameA, nameB, colorA = '#f97316', colorB =
                                 y={p.y}
                                 textAnchor="middle"
                                 dominantBaseline="middle"
-                                fontSize={9}
+                                fontSize={11}
                                 fontFamily="monospace"
                                 fontWeight="600"
-                                fill="rgba(255,255,255,0.45)"
+                                fill="rgba(255,255,255,0.55)"
                             >
                                 {m.label}
                             </text>
@@ -155,24 +155,24 @@ export function RadarChart({ metrics, nameA, nameB, colorA = '#f97316', colorB =
             </div>
 
             {/* Score bars below chart */}
-            <div className="px-5 pb-5 space-y-2">
+            <div className="px-5 pb-5 space-y-2.5">
                 {metrics.map((m) => (
-                    <div key={m.label} className="grid grid-cols-[1fr_60px_1fr] items-center gap-2">
+                    <div key={m.label} className="grid grid-cols-[1fr_80px_1fr] items-center gap-2">
                         {/* A bar (right-aligned) */}
-                        <div className="flex items-center gap-1.5 justify-end">
-                            <span className="text-[9px] font-mono font-bold" style={{ color: colorA }}>{Math.round(m.a)}</span>
+                        <div className="flex items-center gap-2 justify-end">
+                            <span className="text-xs font-mono font-bold" style={{ color: colorA }}>{Math.round(m.a)}</span>
                             <div className="h-1.5 bg-border/20 rounded-full overflow-hidden w-full max-w-[80px]">
                                 <div className="h-full rounded-full" style={{ width: `${m.a}%`, background: colorA, marginLeft: 'auto' }} />
                             </div>
                         </div>
                         {/* Label */}
-                        <span className="text-[9px] text-muted-foreground/50 font-medium text-center uppercase tracking-wide">{m.label}</span>
+                        <span className="text-xs text-muted-foreground/55 font-medium text-center uppercase tracking-wide">{m.label}</span>
                         {/* B bar (left-aligned) */}
-                        <div className="flex items-center gap-1.5 justify-start">
+                        <div className="flex items-center gap-2 justify-start">
                             <div className="h-1.5 bg-border/20 rounded-full overflow-hidden w-full max-w-[80px]">
                                 <div className="h-full rounded-full" style={{ width: `${m.b}%`, background: colorB }} />
                             </div>
-                            <span className="text-[9px] font-mono font-bold" style={{ color: colorB }}>{Math.round(m.b)}</span>
+                            <span className="text-xs font-mono font-bold" style={{ color: colorB }}>{Math.round(m.b)}</span>
                         </div>
                     </div>
                 ))}

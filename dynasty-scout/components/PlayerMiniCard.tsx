@@ -234,15 +234,24 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
         <Link href={`/players/${player.slug}`} className="block group">
             <div
                 className={cn(
-                    'flex items-center px-4 py-3 transition-all duration-150 gap-3',
+                    'relative flex items-center px-4 py-3 transition-all duration-150 gap-3',
                     'border-b border-white/[0.04]',
                     'hover:bg-white/[0.03]',
                     isEven ? 'bg-transparent' : 'bg-white/[0.015]',
                 )}
-                style={{ borderLeft: `3px solid ${tier.border}` }}
             >
-                {/* Sticky identity group: rank + compare + headshot + player */}
-                <div className="sticky left-0 z-10 flex items-center gap-2.5 bg-background pr-2 flex-shrink-0" style={{ width: '304px' }}>
+                {/* Tier accent bar — absolutely positioned so it never shifts layout */}
+                <div className="absolute inset-y-0 left-0 w-[3px]" style={{ background: tier.border }} />
+
+                {/* Sticky identity group: rank + compare + player */}
+                <div
+                    className={cn(
+                        'sticky left-0 z-10 flex items-center self-stretch gap-2.5 pr-2 flex-shrink-0',
+                        isEven ? 'bg-[var(--bg-base)]' : 'bg-[rgba(255,255,255,0.015)]',
+                        'group-hover:bg-[rgba(255,255,255,0.03)]',
+                    )}
+                    style={{ width: '304px' }}
+                >
                     {/* Rank number */}
                     <div className="w-12 flex-shrink-0 flex flex-row items-center justify-center gap-1">
                         <span className={`text-base font-[var(--font-jetbrains),monospace] leading-none ${rankColor}`}>{rookieRank}</span>
@@ -265,29 +274,10 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                         </form>
                     </div>
 
-                    {/* Headshot */}
-                    {p.headshot_url ? (
-                        <img
-                            src={p.headshot_url}
-                            alt=""
-                            className="w-8 h-10 rounded-lg object-cover object-top flex-shrink-0 border border-white/[0.08]"
-                            loading="lazy"
-                        />
-                    ) : (
-                        <div className="w-8 h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-[10px] font-black border border-white/[0.06]"
-                            style={{
-                                background: `linear-gradient(135deg, ${tier.accent}15, ${tier.accent}08)`,
-                                color: `${tier.accent}60`,
-                            }}
-                        >
-                            {player.position}
-                        </div>
-                    )}
-
                     {/* Player info — wrapped in hover card for quick stats preview */}
                     <HoverCard openDelay={500} closeDelay={100}>
                         <HoverCardTrigger asChild>
-                            <div style={{ width: '190px', minWidth: '190px' }} className="flex-shrink-0 cursor-default">
+                            <div style={{ width: '224px', minWidth: '224px' }} className="flex-shrink-0 cursor-default">
                                 <div className="flex items-center gap-1.5 mb-0.5 overflow-hidden">
                                     <span className="font-bold text-[15px] text-foreground group-hover:text-primary transition-colors leading-snug truncate">
                                         {player.full_name}
@@ -395,7 +385,7 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                     {colDefs.map((col, i) => (
                         <div
                             key={col.key}
-                            className={`flex items-center min-h-[38px] overflow-hidden ${i === 0 ? 'border-l border-white/[0.05]' : ''} ${col.key === 'fp' || col.key === 'tier' ? 'border-l border-white/[0.05]' : ''} ${col.key === 'tier' ? 'justify-center' : 'justify-end pr-3'}`}
+                            className={`flex items-center justify-center min-h-[38px] overflow-hidden ${i === 0 ? 'border-l border-white/[0.05]' : ''} ${col.key === 'fp' || col.key === 'tier' ? 'border-l border-white/[0.05]' : ''}`}
                         >
                             {renderCell(col)}
                         </div>
