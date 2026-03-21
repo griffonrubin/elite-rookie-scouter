@@ -753,7 +753,7 @@ export default async function PlayerPage({ params }: PageProps) {
                 </div>
             </header>
 
-            <div className="max-w-6xl mx-auto px-6 sm:px-10 py-10">
+            <div className="w-full px-8 sm:px-12 py-10">
                 {/* ── Profile Section ── */}
                 <div id="overview" className="flex flex-col lg:flex-row gap-8 mb-10">
                     {/* Avatar */}
