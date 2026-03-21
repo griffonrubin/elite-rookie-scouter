@@ -754,8 +754,9 @@ export default async function PlayerPage({ params }: PageProps) {
             </header>
 
             <div className="w-full px-8 sm:px-12 py-10">
-                {/* ── Profile Section ── */}
-                <div id="overview" className="flex flex-col lg:flex-row gap-8 mb-10">
+                {/* ── Hero Card ── */}
+                <div id="overview" className="bg-card/30 border border-border/40 rounded-2xl p-6 mb-12 shadow-sm">
+                <div className="flex flex-col lg:flex-row gap-8 items-start">
                     {/* Avatar */}
                     <div className="flex-shrink-0">
                         <div
@@ -884,10 +885,9 @@ export default async function PlayerPage({ params }: PageProps) {
                     </div>
                 </div>
 
-
                 {/* ── Headline stats row (if we have stats) ── */}
                 {recentStat && headlines.length > 0 && (
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-8">
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mt-5">
                         {headlines.map((m, i) => {
                             const val = (recentStat as any)[m.key];
                             const display = val != null && val !== 0 && val !== '0' && val !== '0.0' ? val : '—';
@@ -904,6 +904,7 @@ export default async function PlayerPage({ params }: PageProps) {
                         })}
                     </div>
                 )}
+                </div>{/* end hero card */}
 
                 {/* ── Sections ── */}
                 <div className="space-y-16">
@@ -913,7 +914,7 @@ export default async function PlayerPage({ params }: PageProps) {
                             <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 shrink-0">Scout Report</h2>
                             <div className="flex-1 h-px bg-border/30" />
                         </div>
-                        <div className="space-y-10">
+                        <div className="space-y-12">
 
                             {/* ── Dynasty Snapshot ── */}
                             <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card via-card to-primary/5 p-5">
@@ -1263,11 +1264,11 @@ export default async function PlayerPage({ params }: PageProps) {
                                     )}
 
                                     {/* Composite Score Rings */}
-                                    {advComposites.length > 0 && (
+                                    {advComposites.filter(c => c.score != null).length > 0 && (
                                         <div>
                                             <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">Composite Scores</h4>
-                                            <div className={`grid gap-3 ${advComposites.length <= 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
-                                                {advComposites.map(c => (
+                                            <div className={`grid gap-3 ${advComposites.filter(c => c.score != null).length <= 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+                                                {advComposites.filter(c => c.score != null).map(c => (
                                                     <div key={c.label} className="bg-card border border-border/40 rounded-xl p-3 flex flex-col items-center gap-1.5">
                                                         <StatRingGauge
                                                             label={c.label}

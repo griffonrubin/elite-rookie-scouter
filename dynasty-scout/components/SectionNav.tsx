@@ -56,7 +56,7 @@ export function SectionNav() {
 
     return (
         <nav
-            className="hidden xl:flex fixed left-6 top-1/2 -translate-y-1/2 z-40 flex-col gap-1.5"
+            className="hidden xl:flex fixed left-4 top-1/2 -translate-y-1/2 z-40 flex-col gap-2"
             aria-label="Page sections"
         >
             {visible.map((section) => {
@@ -69,28 +69,25 @@ export function SectionNav() {
                             e.preventDefault();
                             document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         }}
-                        className={`
-                            group flex items-center gap-2 transition-all duration-200
-                            ${isActive ? 'opacity-100' : 'opacity-40 hover:opacity-75'}
-                        `}
+                        className="group flex items-center gap-2 transition-all duration-200"
                     >
                         {/* Dot indicator */}
                         <span
                             className={`
-                                block rounded-full transition-all duration-200 flex-shrink-0
+                                block w-2 h-2 rounded-full transition-all duration-200 flex-shrink-0
                                 ${isActive
-                                    ? 'w-2 h-2 bg-primary'
-                                    : 'w-1.5 h-1.5 bg-muted-foreground/60 group-hover:bg-muted-foreground'
+                                    ? 'bg-primary scale-110'
+                                    : 'bg-muted-foreground/40 group-hover:bg-muted-foreground/70'
                                 }
                             `}
                         />
-                        {/* Label — only visible when active or hovered */}
+                        {/* Label — always visible, dimmed when inactive */}
                         <span
                             className={`
                                 text-[10px] font-bold uppercase tracking-widest transition-all duration-200
                                 ${isActive
-                                    ? 'text-primary translate-x-0 opacity-100'
-                                    : 'text-muted-foreground -translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
+                                    ? 'text-primary opacity-100'
+                                    : 'text-muted-foreground/40 group-hover:text-muted-foreground/70'
                                 }
                             `}
                         >

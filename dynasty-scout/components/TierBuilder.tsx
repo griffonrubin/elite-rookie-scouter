@@ -259,7 +259,7 @@ export function TierBuilder() {
                         {tiers.map((tier) => (
                             <div key={tier.id} className="border rounded-lg bg-card/50">
                                 {/* Tier Header */}
-                                <div className={`p-3 rounded-t-lg flex items-center justify-between ${tier.tier_color.replace('text-', 'bg-').replace('/10', '/80')} text-white`}>
+                                <div className={`p-3 rounded-t-lg flex items-center justify-between border-b ${tier.tier_color.replace('/10', '/15')} ${tier.tier_color.replace('text-', 'border-').replace('/10', '/30')}`}>
                                     <div className="flex items-center gap-2">
                                         <GripHorizontal className="w-4 h-4 opacity-50 cursor-grab" />
                                         <span className="font-bold">{tier.tier_name}</span>

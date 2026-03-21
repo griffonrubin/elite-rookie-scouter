@@ -141,7 +141,7 @@ function mkRow(
 
 function MetricBar({ row }: { row: MetricRow }) {
     return (
-        <div className="grid grid-cols-[110px_1fr_44px] items-center gap-3">
+        <div className="grid grid-cols-[110px_1fr_44px] items-center gap-3 py-1">
             <div>
                 <div className="text-[10px] text-muted-foreground/60 leading-none mb-0.5">{row.label}</div>
                 <div className={`text-sm font-black font-mono leading-none ${row.g.text}`}>{row.display}</div>
@@ -232,12 +232,12 @@ export function AthleticsCard({ position, heightInches, weightLbs, measurables, 
             </div>
 
             <div className="p-5 space-y-6">
-                {groups.map(group => (
-                    <div key={group.label}>
-                        <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40 mb-3">
+                {groups.map((group, gi) => (
+                    <div key={group.label} className={gi > 0 ? 'mt-2' : ''}>
+                        <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-4 border-l-2 border-primary/30 pl-2">
                             {group.label}
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {group.rows.map(row => <MetricBar key={row.key} row={row} />)}
                         </div>
                     </div>
