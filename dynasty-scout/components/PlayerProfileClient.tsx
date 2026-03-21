@@ -89,7 +89,7 @@ function AnalyticCard({ label, value, pct }: { label: string; value: string; pct
     return (
         <div className="rounded-xl px-3.5 py-3.5 text-center min-w-0 border border-white/[0.06]" style={{ background: 'var(--bg-elevated)' }}>
             <div className={`text-lg font-black font-[var(--font-jetbrains),monospace] leading-none ${color}`}>{value || '—'}</div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground/40 mt-1.5 leading-tight">{label}</div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground/50 mt-1.5 leading-tight">{label}</div>
             <div className="mt-2.5 h-1 bg-white/[0.04] rounded-full overflow-hidden">
                 <div className={`h-full rounded-full ${bar} opacity-60`} style={{ width: `${p}%` }} />
             </div>
@@ -579,12 +579,12 @@ export function PlayerProfileClient({
                 }}
             >
                 {/* Hero card */}
-                <div className="px-6 sm:px-10 pt-5 pb-4">
-                    <div className="flex items-start gap-5">
+                <div className="max-w-screen-2xl mx-auto px-8 sm:px-14 pt-5 pb-4">
+                    <div className="flex items-start gap-8">
                         {/* Photo with position-colored ring */}
                         <div className="flex-shrink-0 hidden sm:block">
                             <div
-                                className="w-[72px] h-[88px] rounded-xl overflow-hidden shadow-lg relative"
+                                className="w-[100px] h-[124px] rounded-2xl overflow-hidden shadow-lg relative"
                                 style={{
                                     background: avatarBg,
                                     border: `2px solid ${posColor}40`,
@@ -614,7 +614,7 @@ export function PlayerProfileClient({
                             </div>
 
                             {/* Bio pills */}
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground/70 mb-3">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground/70 mb-3">
                                 {player.school && <span className="flex items-center gap-1.5"><GraduationCap className="w-3 h-3 text-muted-foreground/40" /> {player.school}</span>}
                                 {player.age_at_draft && <span className="flex items-center gap-1.5"><Calendar className="w-3 h-3 text-muted-foreground/40" /> Age {player.age_at_draft}</span>}
                                 {player.height_inches && <span className="flex items-center gap-1.5"><Ruler className="w-3 h-3 text-muted-foreground/40" /> {formatHeight(player.height_inches)}</span>}
@@ -628,18 +628,18 @@ export function PlayerProfileClient({
                                     style={{ boxShadow: `0 0 10px ${tier.accent}15` }}
                                 >
                                     <span className="font-black font-[var(--font-jetbrains),monospace] text-sm">#{classRank ?? '—'}</span>
-                                    <span className="text-[10px] uppercase tracking-widest opacity-60 font-bold">{tier.label}</span>
+                                    <span className="text-xs uppercase tracking-widest opacity-60 font-bold">{tier.label}</span>
                                 </div>
                                 {draftSlot && (
                                     <div className="rounded-lg px-3 py-1.5 border border-white/[0.08] flex items-center gap-2 text-xs" style={{ background: 'var(--bg-elevated)' }}>
                                         <span className="font-black font-[var(--font-jetbrains),monospace] text-foreground">{draftSlot}</span>
-                                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-bold">Proj Pick</span>
+                                        <span className="text-xs uppercase tracking-widest text-muted-foreground/50 font-bold">Proj Pick</span>
                                     </div>
                                 )}
                                 {player.ktc_rank && (
                                     <div className="rounded-lg px-3 py-1.5 bg-sky-400/5 border border-sky-400/25 flex items-center gap-2 text-xs">
                                         <span className="font-black font-[var(--font-jetbrains),monospace] text-sky-400">#{player.ktc_rank}</span>
-                                        <span className="text-[10px] uppercase tracking-widest text-sky-400/50 font-bold">KTC</span>
+                                        <span className="text-xs uppercase tracking-widest text-sky-400/50 font-bold">KTC</span>
                                     </div>
                                 )}
                                 <Link
@@ -654,13 +654,13 @@ export function PlayerProfileClient({
 
                         {/* KPI strip */}
                         {kpiStrip.length > 0 && (
-                            <div className="hidden lg:grid grid-cols-2 gap-2 shrink-0" style={{ minWidth: 200 }}>
+                            <div className="hidden lg:flex gap-2 shrink-0" style={{ minWidth: 280 }}>
                                 {kpiStrip.map(kpi => (
-                                    <div key={kpi.label} className="rounded-xl px-3.5 py-2.5 text-center border border-white/[0.06]"
-                                        style={{ background: 'var(--bg-elevated)' }}
+                                    <div key={kpi.label} className="flex-1 rounded-xl px-4 py-3 text-center border border-white/[0.06]"
+                                        style={{ background: 'var(--bg-elevated)', minWidth: 64 }}
                                     >
-                                        <div className="text-lg font-black font-[var(--font-jetbrains),monospace] text-foreground leading-none">{kpi.value}</div>
-                                        <div className="text-[9px] uppercase tracking-widest text-muted-foreground/40 font-bold mt-1">{kpi.label}</div>
+                                        <div className="text-xl font-black font-[var(--font-jetbrains),monospace] text-foreground leading-none">{kpi.value}</div>
+                                        <div className="text-[11px] uppercase tracking-wide text-muted-foreground/50 font-bold mt-1.5">{kpi.label}</div>
                                     </div>
                                 ))}
                             </div>
@@ -669,12 +669,12 @@ export function PlayerProfileClient({
                 </div>
 
                 {/* Section jump nav */}
-                <div className="px-6 sm:px-10 flex gap-0 overflow-x-auto border-t border-white/[0.04]">
+                <div className="max-w-screen-2xl mx-auto px-8 sm:px-14 flex gap-0 overflow-x-auto border-t border-white/[0.04]">
                     {SECTIONS.map(s => (
                         <button
                             key={s.id}
                             onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                            className="px-4 py-2.5 text-[12px] font-semibold tracking-wide text-muted-foreground/60 border-b-2 border-transparent hover:text-foreground hover:border-primary/40 transition-all flex-shrink-0"
+                            className="px-4 py-2.5 text-sm font-semibold tracking-wide text-muted-foreground/60 border-b-2 border-transparent hover:text-foreground hover:border-primary/40 transition-all flex-shrink-0"
                         >
                             {s.label}
                         </button>
@@ -683,7 +683,7 @@ export function PlayerProfileClient({
             </div>
 
             {/* ── Page Content ─────────────────────────────────────────────────────── */}
-            <div className="max-w-screen-xl mx-auto px-6 sm:px-10 py-10 space-y-14">
+            <div className="max-w-screen-2xl mx-auto px-8 sm:px-14 py-10 space-y-14">
 
                 {/* ── ZONE 1: Scout Report ─────────────────────────────────────────── */}
                 <section id="scout" className="scroll-mt-56">

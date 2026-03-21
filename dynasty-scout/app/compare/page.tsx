@@ -202,7 +202,7 @@ export default async function ComparePage({ searchParams }: Props) {
         <div className="min-h-screen bg-background text-foreground">
             <AppHeader />
 
-            <div className="w-full mx-auto px-6 sm:px-8 py-8">
+            <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-8">
 
                 <ComparePlayerPicker
                     currentSlugA={a}
@@ -323,12 +323,12 @@ export default async function ComparePage({ searchParams }: Props) {
                                 <div className="flex-1 bg-white/[0.06] rounded-full h-2.5 overflow-hidden">
                                     <div className="h-full rounded-full transition-all" style={{ width: total > 0 ? `${(aCount / total) * 100}%` : '50%', background: 'linear-gradient(90deg, #f97316, #f59e0b)' }} />
                                 </div>
-                                <div className="text-xs font-[var(--font-jetbrains),monospace] font-bold text-muted-foreground/60">{aCount}–{bCount}</div>
+                                <div className="text-sm font-[var(--font-jetbrains),monospace] font-bold text-muted-foreground/70">{aCount}–{bCount}</div>
                                 <div className="flex-1 bg-white/[0.06] rounded-full h-2.5 overflow-hidden">
                                     <div className="h-full bg-sky-400 rounded-full transition-all ml-auto" style={{ width: total > 0 ? `${(bCount / total) * 100}%` : '50%' }} />
                                 </div>
                             </div>
-                            <div className="flex justify-between mt-1.5 text-[10px] text-muted-foreground/40 font-medium">
+                            <div className="flex justify-between mt-1.5 text-xs text-muted-foreground/50 font-medium">
                                 <span>{playerA.full_name}</span>
                                 <span>{playerB.full_name}</span>
                             </div>
@@ -522,11 +522,11 @@ function CompareSection({ title, icon, rows }: { title: string; icon: React.Reac
                                 aWins ? 'text-primary' : tie ? 'text-foreground/70' : 'text-foreground/50'
                             )}>
                                 {String(row.a)}
-                                {aWins && <span className="ml-1.5 text-[10px] font-black text-emerald-400/70">▲</span>}
+                                {aWins && <span className="ml-1.5 text-xs font-black text-emerald-400/70">▲</span>}
                             </div>
 
                             {/* Label */}
-                            <div className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-widest text-center min-w-[110px] px-2">
+                            <div className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-widest text-center min-w-[130px] px-2">
                                 {row.label}
                             </div>
 
@@ -535,7 +535,7 @@ function CompareSection({ title, icon, rows }: { title: string; icon: React.Reac
                                 'text-left font-[var(--font-jetbrains),monospace] font-bold text-base transition-colors',
                                 bWins ? 'text-primary' : tie ? 'text-foreground/70' : 'text-foreground/50'
                             )}>
-                                {bWins && <span className="mr-1.5 text-[10px] font-black text-emerald-400/70">▲</span>}
+                                {bWins && <span className="mr-1.5 text-xs font-black text-emerald-400/70">▲</span>}
                                 {String(row.b)}
                             </div>
                         </div>

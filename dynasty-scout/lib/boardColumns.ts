@@ -61,13 +61,13 @@ export function getColDefs(pos: string): ColDef[] {
 /** CSS grid-template-columns string for the right dynamic section. */
 export function getGridTemplate(pos: string): string {
     if (pos === 'ALL') {
-        // 11 cols — measurables tight on left, ranking cols right
-        return '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.55fr 0.85fr 0.85fr 0.85fr 0.85fr 1fr';
+        // 11 cols — measurables tight on left, ranking cols narrower
+        return '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.55fr 0.6fr 0.6fr 0.6fr 0.6fr 1fr';
     }
     if (pos === 'QB') {
         // 10 cols
-        return '0.65fr 0.65fr 0.65fr 0.65fr 0.9fr 0.8fr 0.7fr 0.8fr 0.8fr 1fr';
+        return '0.65fr 0.65fr 0.65fr 0.65fr 0.9fr 0.8fr 0.7fr 0.65fr 0.65fr 1fr';
     }
     // RB / WR / TE — 10 cols
-    return '0.65fr 0.65fr 0.65fr 0.65fr 0.75fr 0.85fr 0.65fr 0.8fr 0.8fr 1fr';
+    return '0.65fr 0.65fr 0.65fr 0.65fr 0.75fr 0.85fr 0.65fr 0.65fr 0.65fr 1fr';
 }
