@@ -87,25 +87,7 @@
       "mcp__claude_ai_Vercel__deploy_to_vercel",
       "mcp__claude_ai_Vercel__list_projects",
       "mcp__claude_ai_Vercel__list_teams",
-      "mcp__claude_ai_Vercel__list_deployments",
-      "mcp__Claude_Preview__preview_start",
-      "mcp__8695e93b-1e38-47c2-9fd6-09c546c444dd__web_fetch_vercel_url",
-      "Bash(npx --package next@15 next build)",
-      "Bash(ls \"C:\\\\Users\\\\Griffon Rubin\\\\Desktop\\\\Draft Tool\\\\.claude\\\\worktrees\\\\goofy-satoshi\\\\dynasty-scout\\\\node_modules\\\\.bin\\\\next\"*)",
-      "mcp__8695e93b-1e38-47c2-9fd6-09c546c444dd__list_projects",
-      "mcp__8695e93b-1e38-47c2-9fd6-09c546c444dd__list_deployments",
-      "Bash(npm run:*)",
-      "Bash(gh pr:*)",
-      "mcp__8695e93b-1e38-47c2-9fd6-09c546c444dd__get_deployment",
-      "mcp__8695e93b-1e38-47c2-9fd6-09c546c444dd__list_teams",
-      "Bash(\"C:\\\\Program Files\\\\GitHub:*)",
-      "Bash(where gh:*)",
-      "Read(//c/Users/**)",
-      "Bash(sqlite3 dynasty_scout.db \"SELECT slug FROM players WHERE full_name LIKE ''%Lemon%''\")",
-      "Bash(node -e \"const db=require\\(''better-sqlite3''\\)\\(''dynasty_scout.db''\\); console.log\\(db.prepare\\(\"\"SELECT slug FROM players WHERE full_name LIKE ''%Lemon%''\"\"\\).all\\(\\)\\)\")",
-      "Bash(node -e \"const db=require\\(''better-sqlite3''\\)\\(''dynasty_scout.db''\\); console.log\\(db.prepare\\(\"\"SELECT slug FROM players WHERE full_name LIKE ''%Gendron%'' OR full_name LIKE ''%Mendoza%'' OR full_name LIKE ''%Price%''\"\"\\).all\\(\\)\\)\")",
-      "Bash(node -e \"const db=require\\(''better-sqlite3''\\)\\(''dynasty_scout.db''\\); console.log\\(db.prepare\\(\"\"SELECT slug, full_name FROM players WHERE position=''QB'' ORDER BY consensus_rank LIMIT 5\"\"\\).all\\(\\)\\)\")",
-      "Bash(node -e \"const db=require\\(''better-sqlite3''\\)\\(''dynasty_scout.db''\\); console.log\\(db.prepare\\(\"\"SELECT slug, full_name FROM players WHERE position=''QB'' LIMIT 5\"\"\\).all\\(\\)\\)\")"
+      "mcp__claude_ai_Vercel__list_deployments"
     ]
   }
 }
