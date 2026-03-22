@@ -30,7 +30,7 @@ export function AppHeader({ children }: AppHeaderProps) {
         opacity: 0.6,
       }} />
 
-      <div className="px-6 sm:px-10 h-[52px] flex items-center gap-5">
+      <div className="px-3 sm:px-6 lg:px-10 h-[52px] flex items-center gap-3 sm:gap-5">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center relative overflow-hidden"

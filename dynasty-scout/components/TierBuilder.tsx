@@ -236,9 +236,9 @@ export function TierBuilder() {
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
         >
-            <div className="flex gap-6 h-[calc(100vh-100px)]">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 h-auto md:h-[calc(100vh-100px)]">
                 {/* Available Pool */}
-                <div className="w-1/3 border-r border-white/[0.05] pr-4 flex flex-col overflow-hidden">
+                <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-white/[0.05] pb-4 md:pb-0 md:pr-4 flex flex-col overflow-hidden max-h-[50vh] md:max-h-none">
                     {/* Sticky controls */}
                     <div className="sticky top-0 z-10 bg-background pb-3">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/50 mb-3">Available Players</h3>
@@ -287,7 +287,7 @@ export function TierBuilder() {
                 </div>
 
                 {/* Tiers Area */}
-                <div className="w-2/3 space-y-6 overflow-y-auto pb-20">
+                <div className="w-full md:w-2/3 space-y-4 md:space-y-6 overflow-y-auto pb-20">
                     <div className="flex justify-between items-center">
                         <h2 className="text-2xl font-bold tracking-tight">My Rankings</h2>
                         <Button size="sm"><Plus className="w-4 h-4 mr-2" /> Add Tier</Button>

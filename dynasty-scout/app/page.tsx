@@ -136,7 +136,7 @@ export default async function Home() {
       </AppHeader>
 
       {/* ── Board ── */}
-      <main className="w-full px-8 sm:px-12 py-6 mx-auto">
+      <main className="w-full px-3 sm:px-8 lg:px-12 py-4 sm:py-6 mx-auto">
         {players.length === 0 ? (
           <div className="p-16 text-center text-muted-foreground border border-dashed border-border rounded-xl">
             No players found. Run the seed scripts to populate data.

@@ -202,7 +202,7 @@ export default async function ComparePage({ searchParams }: Props) {
         <div className="min-h-screen bg-background text-foreground">
             <AppHeader />
 
-            <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-8">
+            <div className="max-w-screen-2xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
 
                 <ComparePlayerPicker
                     currentSlugA={a}
@@ -212,7 +212,7 @@ export default async function ComparePage({ searchParams }: Props) {
                 />
 
                 {/* Player name headers */}
-                <div className="grid grid-cols-[1fr_auto_1fr] gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 sm:gap-4 mb-6 sm:mb-8">
                     <PlayerHeader player={playerA} side="left" />
                     <div className="flex items-center justify-center">
                         <span className="text-xs font-black text-muted-foreground/30 uppercase tracking-widest px-3 py-1.5 rounded-lg border border-white/[0.06]" style={{ background: 'var(--bg-elevated)' }}>vs</span>

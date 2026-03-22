@@ -46,6 +46,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     const [ageFilter, setAgeFilter]           = useState<'all' | 'u21' | 'u22'>('all');
     const [rasFilter, setRasFilter]           = useState<'all' | 'ras7' | 'ras8'>('all');
     const [showHelp, setShowHelp]             = useState(false);
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Load watchlist from localStorage on mount and keep in sync
@@ -64,6 +65,13 @@ function DraftBoardContent({ players }: DraftBoardProps) {
             window.removeEventListener('storage', load);
         };
     }, []);
+
+    // Auto-switch to BoxView on mobile (table is unusable at <768px)
+    useEffect(() => {
+        if (window.innerWidth < 768 && viewMode === 'table') {
+            setViewMode('box');
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -220,7 +228,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
             <div className="flex flex-col gap-3 mb-5 p-4 rounded-2xl border border-white/[0.05]" style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(12px)' }}>
                 {/* Row 1: Search + view mode + sort */}
                 <div className="flex items-center gap-3 flex-wrap">
-                    <div style={{ position: 'relative', width: '340px', minWidth: '240px', flexShrink: 0 }}>
+                    <div className="relative w-full sm:w-[340px] sm:min-w-[240px] sm:flex-shrink-0">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" style={{ zIndex: 1 }} />
                         <input
                             ref={searchInputRef}
@@ -243,7 +251,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                     <div className="flex items-center gap-1.5">
                         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sort:</span>
                         <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir(DEFAULT_DESC.includes(v as SortKey) ? 'desc' : 'asc'); }}>
-                            <SelectTrigger className="w-[180px] bg-card border-border/60 text-xs" style={{ height: '34px', paddingLeft: '14px', paddingRight: '14px', gap: '10px' }}>
+                            <SelectTrigger className="w-[140px] sm:w-[180px] bg-card border-border/60 text-xs" style={{ height: '34px', paddingLeft: '14px', paddingRight: '14px', gap: '10px' }}>
                                 <SelectValue>
                                     {{ rank: 'Consensus', ktc: 'KTC', sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FantasyCalc', dn: 'DynNerds', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit ★', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC' }[sortKey] ?? 'Consensus'}
                                 </SelectValue>
@@ -319,8 +327,18 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                     )}
                 </div>
 
-                {/* Row 3: Quick filters */}
-                <div className="flex items-center gap-3 flex-wrap">
+                {/* Row 3: Quick filters — collapsible on mobile */}
+                <button
+                    onClick={() => setShowMobileFilters(v => !v)}
+                    className="flex md:hidden items-center gap-1.5 text-[11px] font-semibold text-muted-foreground/60 border border-white/[0.06] px-3 py-1.5 rounded-lg hover:text-foreground transition-colors"
+                >
+                    <span>Filters</span>
+                    {(draftCapFilter !== 'all' || ageFilter !== 'all' || rasFilter !== 'all') && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    )}
+                    <ChevronDown className={`w-3 h-3 transition-transform ${showMobileFilters ? 'rotate-180' : ''}`} />
+                </button>
+                <div className={`${showMobileFilters ? 'flex' : 'hidden'} md:flex items-center gap-3 flex-wrap`}>
                     <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/40">Filter:</span>
 
                     {/* Draft Capital */}
@@ -379,7 +397,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                             className="text-[11px] text-muted-foreground/50 hover:text-foreground underline decoration-dotted transition-colors ml-1"
                         >reset</button>
                     )}
-                </div>
+                </div>{/* end collapsible filter wrapper */}
             </div>
 
             {/* ── Table View ── */}

@@ -571,15 +571,13 @@ export function PlayerProfileClient({
             </AppHeader>
 
             {/* ── Sticky Hero + Section Nav ────────────────────────────────────────── */}
-            <div className="sticky top-[54px] z-20 border-b border-white/[0.05]"
+            <div className="md:sticky md:top-[54px] z-20 border-b border-white/[0.05]"
                 style={{
                     background: 'linear-gradient(180deg, rgba(6,10,16,0.96) 0%, rgba(12,21,32,0.94) 100%)',
-                    backdropFilter: 'blur(20px) saturate(1.3)',
-                    WebkitBackdropFilter: 'blur(20px) saturate(1.3)',
                 }}
             >
                 {/* Hero card */}
-                <div className="max-w-screen-2xl mx-auto px-8 sm:px-14 pt-5 pb-4">
+                <div className="max-w-screen-2xl mx-auto px-3 sm:px-8 lg:px-14 pt-3 sm:pt-5 pb-2 sm:pb-4">
                     <div className="flex items-start gap-8">
                         {/* Photo with position-colored ring */}
                         <div className="flex-shrink-0 hidden sm:block">
@@ -644,7 +642,7 @@ export function PlayerProfileClient({
                                 )}
                                 <Link
                                     href={`/compare?a=${player.slug}`}
-                                    className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.08] text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
+                                    className="ml-auto hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.08] text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
                                     style={{ background: 'var(--bg-elevated)' }}
                                 >
                                     <Scale className="w-3.5 h-3.5" /> Compare
@@ -669,7 +667,7 @@ export function PlayerProfileClient({
                 </div>
 
                 {/* Section jump nav */}
-                <div className="max-w-screen-2xl mx-auto px-8 sm:px-14 flex gap-0 overflow-x-auto border-t border-white/[0.04]">
+                <div className="max-w-screen-2xl mx-auto px-3 sm:px-8 lg:px-14 flex gap-0 overflow-x-auto border-t border-white/[0.04]">
                     {SECTIONS.map(s => (
                         <button
                             key={s.id}
@@ -683,10 +681,10 @@ export function PlayerProfileClient({
             </div>
 
             {/* ── Page Content ─────────────────────────────────────────────────────── */}
-            <div className="max-w-screen-2xl mx-auto px-8 sm:px-14 py-10 space-y-14">
+            <div className="max-w-screen-2xl mx-auto px-3 sm:px-8 lg:px-14 py-6 sm:py-10 space-y-10 sm:space-y-14">
 
                 {/* ── ZONE 1: Scout Report ─────────────────────────────────────────── */}
-                <section id="scout" className="scroll-mt-56">
+                <section id="scout" className="scroll-mt-16 md:scroll-mt-56">
                     <SectionLabel label="Scout Report" />
 
                     {/* Dynasty Snapshot */}
@@ -841,7 +839,7 @@ export function PlayerProfileClient({
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
                     {/* LEFT — Athletic Profile */}
-                    <div id="athletics" className="scroll-mt-56 space-y-6">
+                    <div id="athletics" className="scroll-mt-16 md:scroll-mt-56 space-y-6">
                         <SectionLabel label="Athletic Profile" />
 
                         <AthleticsCard
@@ -990,7 +988,7 @@ export function PlayerProfileClient({
                     </div>
 
                     {/* RIGHT — Production */}
-                    <div id="production" className="scroll-mt-56 space-y-6">
+                    <div id="production" className="scroll-mt-16 md:scroll-mt-56 space-y-6">
                         <SectionLabel label="Production" />
 
                         {stats.length > 0 && <StatTrendChart stats={stats} position={player.position} />}
@@ -1019,7 +1017,7 @@ export function PlayerProfileClient({
 
                 {/* ── ZONE 4: Advanced Analytics ───────────────────────────────────── */}
                 {hasAdvancedAnalytics && (
-                    <section id="analytics" className="scroll-mt-56">
+                    <section id="analytics" className="scroll-mt-16 md:scroll-mt-56">
                         <div className="flex items-center gap-3 mb-5">
                             <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-muted-foreground/50 whitespace-nowrap">Advanced Analytics</span>
                             <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold border border-primary/20">{pos} · CLASS 2026</span>
@@ -1074,7 +1072,7 @@ export function PlayerProfileClient({
                 )}
 
                 {/* ── ZONE 5: College Stats ─────────────────────────────────────────── */}
-                <section id="stats" className="scroll-mt-56">
+                <section id="stats" className="scroll-mt-16 md:scroll-mt-56">
                     <SectionLabel label="College Stats" />
 
                     {stats.length > 0 ? (
@@ -1105,13 +1103,13 @@ export function PlayerProfileClient({
                 </section>
 
                 {/* ── ZONE 6: Expert Rankings ───────────────────────────────────────── */}
-                <section id="rankings" className="scroll-mt-56">
+                <section id="rankings" className="scroll-mt-16 md:scroll-mt-56">
                     <SectionLabel label="Expert Rankings" />
                     <SourceRankings rankings={rankings} consensusRank={player.consensus_rank ?? null} />
                 </section>
 
                 {/* ── ZONE 7: News ──────────────────────────────────────────────────── */}
-                <section id="news" className="scroll-mt-56">
+                <section id="news" className="scroll-mt-16 md:scroll-mt-56">
                     <SectionLabel label="Latest News" />
                     {news.length > 0 ? (
                         <div className="space-y-2">
