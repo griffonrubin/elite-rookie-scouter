@@ -61,8 +61,8 @@ export function RadarChart({ metrics, nameA, nameB, colorA = '#f97316', colorB =
                 </div>
             </div>
 
-            <div className="flex justify-center py-6 overflow-visible">
-                <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} overflow="visible">
+            <div className="flex justify-center py-4 sm:py-6 overflow-visible px-2">
+                <svg width="100%" height="auto" viewBox={`-40 -40 ${size + 80} ${size + 80}`} style={{ maxWidth: size + 80, maxHeight: size + 80 }}>
                     {/* Ring guides */}
                     {rings.map(pct => {
                         const r = (pct / 100) * maxR;
