@@ -249,10 +249,7 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
 
                 {/* Sticky identity group: rank + compare + player */}
                 <div
-                    className={cn(
-                        'sticky left-0 z-10 flex items-center self-stretch gap-2.5 pr-2 flex-shrink-0',
-                        'bg-[var(--bg-card)] group-hover:bg-[var(--bg-hover)]',
-                    )}
+                    className="sticky left-0 z-10 flex items-center self-stretch gap-2.5 pr-2 flex-shrink-0"
                     style={{ width: '304px' }}
                 >
                     {/* Rank number */}
