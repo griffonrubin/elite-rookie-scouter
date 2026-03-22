@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { POSITION_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { ConsensusRanking, Player } from '@/lib/types';
@@ -112,6 +115,7 @@ function RecruitStars({ stars }: { stars: number | null | undefined }) {
 }
 
 export function PlayerMiniCard({ player, ranking, period, index, positionFilter = 'ALL' }: PlayerMiniCardProps) {
+    const router = useRouter();
     const p = player as any;
     const positionColor = POSITION_COLORS[player.position] || 'bg-gray-500/20 text-gray-300 border-gray-500/40';
 
@@ -259,18 +263,13 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                         </div>
                     </div>
 
-                    {/* Compare quick-launch — uses <form> to avoid nested <a> inside row <Link> */}
-                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="flex-shrink-0">
-                        <form action={`/compare`} method="GET">
-                            <input type="hidden" name="a" value={player.slug} />
-                            <button
-                                type="submit"
-                                className="flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground/25 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-                                title="Compare player"
-                            >
-                                <Scale className="w-3.5 h-3.5" />
-                            </button>
-                        </form>
+                    {/* Compare quick-launch */}
+                    <div
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/compare?a=${player.slug}`); }}
+                        className="flex items-center justify-center w-6 h-6 flex-shrink-0 rounded-md text-muted-foreground/25 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                        title="Compare player"
+                    >
+                        <Scale className="w-3.5 h-3.5" />
                     </div>
 
                     {/* Player info — wrapped in hover card for quick stats preview */}

@@ -9,6 +9,7 @@ import {
     PointerSensor,
     useSensor,
     useSensors,
+    useDroppable,
     DragStartEvent,
     DragOverEvent,
     DragEndEvent,
@@ -316,27 +317,29 @@ export function TierBuilder() {
                                 </div>
 
                                 {/* Sortable Area */}
-                                <div className="p-3 min-h-[50px]">
-                                    <SortableContext
-                                        id={tier.id.toString()}
-                                        items={tier.players?.map(p => p.id) || []}
-                                        strategy={verticalListSortingStrategy}
-                                    >
-                                        <div className="space-y-2">
-                                            {tier.players?.map((player, index) => (
-                                                <DraggablePlayerCard
-                                                    key={player.id}
-                                                    player={player}
-                                                    rank={index + 1}
-                                                />
-                                            ))}
-                                            {tier.players?.length === 0 && (
-                                                <div className="text-center text-xs text-muted-foreground/30 py-5 border-dashed border border-white/[0.05] rounded-xl">
-                                                    Drop players here
-                                                </div>
-                                            )}
-                                        </div>
-                                    </SortableContext>
+                                <div className="p-3">
+                                    <DroppableTier tierId={tier.id}>
+                                        <SortableContext
+                                            id={tier.id.toString()}
+                                            items={tier.players?.map(p => p.id) || []}
+                                            strategy={verticalListSortingStrategy}
+                                        >
+                                            <div className="space-y-2">
+                                                {tier.players?.map((player, index) => (
+                                                    <DraggablePlayerCard
+                                                        key={player.id}
+                                                        player={player}
+                                                        rank={index + 1}
+                                                    />
+                                                ))}
+                                                {tier.players?.length === 0 && (
+                                                    <div className="text-center text-xs text-muted-foreground/30 py-5 border-dashed border border-white/[0.05] rounded-xl">
+                                                        Drop players here
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </SortableContext>
+                                    </DroppableTier>
                                 </div>
                             </div>
                         );})}
@@ -358,3 +361,12 @@ export function TierBuilder() {
 
 // Helper types for dnd-kit
 type UniqueIdentifier = string | number;
+
+function DroppableTier({ tierId, children }: { tierId: number; children: React.ReactNode }) {
+    const { setNodeRef } = useDroppable({ id: tierId });
+    return (
+        <div ref={setNodeRef} className="min-h-[60px]">
+            {children}
+        </div>
+    );
+}
