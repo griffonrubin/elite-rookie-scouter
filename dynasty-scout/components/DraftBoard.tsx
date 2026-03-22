@@ -387,10 +387,10 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 <div className="rounded-2xl border border-white/[0.05] overflow-x-clip" style={{ background: 'var(--bg-card)' }}>
 
                     {/* Column headers — sticky below the app header bar */}
-                    <div className="flex items-stretch px-4 py-0 border-b border-white/[0.06] gap-0 min-h-[46px] sticky top-[54px] z-20"
+                    <div className="flex items-stretch px-4 py-0 border-b border-white/[0.06] gap-0 min-h-[46px] sticky top-[54px] z-20 rounded-t-2xl"
                          style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(16px)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
                         {/* Sticky identity group: rank + player */}
-                        <div className="sticky left-0 z-10 flex items-center gap-2.5 pr-2 flex-shrink-0" style={{ width: '304px', background: 'var(--bg-elevated)' }}>
+                        <div className="sticky left-0 z-10 flex items-center gap-2.5 pr-2 flex-shrink-0 rounded-tl-2xl" style={{ width: '304px', background: 'var(--bg-elevated)' }}>
                         {/* Rank */}
                         <div className="w-12 flex-shrink-0 flex items-center justify-center">
                             <button
