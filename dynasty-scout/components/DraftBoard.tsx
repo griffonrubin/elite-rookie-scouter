@@ -407,15 +407,18 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                     {/* Column headers — sticky below the app header bar */}
                     <div className="flex items-stretch px-4 py-0 border-b border-white/[0.06] gap-0 min-h-[46px] sticky top-[54px] z-20"
                          style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(16px)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
-                        {/* Sticky identity group: rank + player */}
-                        <div className="sticky left-0 z-10 flex items-center gap-2.5 pr-2 flex-shrink-0" style={{ width: '304px', background: 'var(--bg-elevated)' }}>
+                        {/* Sticky identity group: star + rank + compare + player */}
+                        <div className="sticky left-0 z-10 flex items-center gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 lg:w-[304px]" style={{ background: 'var(--bg-elevated)' }}>
+                        {/* Spacer for watchlist star */}
+                        <div className="w-5 flex-shrink-0" />
+
                         {/* Rank */}
-                        <div className="w-12 flex-shrink-0 flex items-center justify-center">
+                        <div className="w-7 sm:w-10 flex-shrink-0 flex items-center justify-center">
                             <button
                                 onClick={() => handleSort('rank')}
                                 className="flex items-center gap-0.5 cursor-pointer group bg-transparent border-0"
                             >
-                                <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-0.5 ${sortKey === 'rank' ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                                <span className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider flex items-center gap-0.5 ${sortKey === 'rank' ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
                                     RANK
                                     {sortKey === 'rank'
                                         ? (sortDir === 'asc' ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />)
@@ -425,11 +428,10 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         </div>
 
                         {/* Spacer for compare button column */}
-                        <div className="w-6 flex-shrink-0" />
+                        <div className="w-5 sm:w-6 flex-shrink-0" />
 
                         {/* Player */}
-                        <div style={{ width: '224px', minWidth: '224px' }}
-                            className="flex-shrink-0 flex items-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                        <div className="flex-1 min-w-0 lg:w-[224px] lg:min-w-[224px] lg:flex-none flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                             Player
                         </div>
                         </div>{/* end sticky identity group */}

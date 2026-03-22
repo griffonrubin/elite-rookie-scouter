@@ -247,53 +247,54 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                 {/* Tier accent bar — absolutely positioned so it never shifts layout */}
                 <div className="absolute inset-y-0 left-0 w-[3px]" style={{ background: tier.border }} />
 
-                {/* Sticky identity group: rank + compare + player */}
+                {/* Sticky identity group: star + rank + compare + player */}
                 <div
-                    className="sticky left-0 z-10 flex items-center self-stretch gap-2.5 pr-2 flex-shrink-0"
-                    style={{ width: '304px' }}
+                    className="sticky left-0 z-10 flex items-center self-stretch gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 lg:w-[304px]"
                 >
+                    {/* Watchlist star */}
+                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="cursor-pointer flex items-center flex-shrink-0">
+                        <WatchlistButton playerSlug={player.slug} />
+                    </div>
+
                     {/* Rank number */}
-                    <div className="w-12 flex-shrink-0 flex flex-row items-center justify-center gap-1">
-                        <span className={`text-base font-[var(--font-jetbrains),monospace] leading-none ${rankColor}`}>{rookieRank}</span>
-                        <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="cursor-pointer flex items-center">
-                            <WatchlistButton playerSlug={player.slug} />
-                        </div>
+                    <div className="w-7 sm:w-10 flex-shrink-0 flex items-center justify-center">
+                        <span className={`text-sm sm:text-base font-[var(--font-jetbrains),monospace] leading-none ${rankColor}`}>{rookieRank}</span>
                     </div>
 
                     {/* Compare quick-launch */}
                     <div
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/compare?a=${player.slug}`); }}
-                        className="flex items-center justify-center w-6 h-6 flex-shrink-0 rounded-md text-muted-foreground/25 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                        className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 rounded-md text-muted-foreground/25 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
                         title="Compare player"
                     >
-                        <Scale className="w-3.5 h-3.5" />
+                        <Scale className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </div>
 
                     {/* Player info — wrapped in hover card for quick stats preview */}
                     <HoverCard openDelay={500} closeDelay={100}>
                         <HoverCardTrigger asChild>
-                            <div style={{ width: '224px', minWidth: '224px' }} className="flex-shrink-0 cursor-default">
-                                <div className="flex items-center gap-1.5 mb-0.5 overflow-hidden">
-                                    <span className="font-bold text-[15px] text-foreground group-hover:text-primary transition-colors leading-snug truncate">
+                            <div className="flex-1 min-w-0 lg:w-[224px] lg:min-w-[224px] lg:flex-none cursor-default">
+                                <div className="flex items-center gap-1 sm:gap-1.5 mb-0.5 overflow-hidden">
+                                    <span className="font-bold text-[13px] sm:text-[15px] text-foreground group-hover:text-primary transition-colors leading-snug truncate">
                                         {player.full_name}
                                     </span>
                                     <span
-                                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 7px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 10, fontWeight: 800, letterSpacing: '0.03em' }}
-                                        className={cn('border', positionColor)}
+                                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 5px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 9, fontWeight: 800, letterSpacing: '0.03em' }}
+                                        className={cn('border sm:px-[7px] sm:text-[10px]', positionColor)}
                                     >{player.position}</span>
                                     <span
-                                        style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 6px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 9, fontWeight: 700 }}
-                                        className={cn('border', projDC.color)}
+                                        style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 5px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 8, fontWeight: 700 }}
+                                        className={cn('border hidden sm:inline-flex sm:text-[9px] sm:px-[6px]', projDC.color)}
                                         title="Projected NFL draft capital based on consensus fantasy rank"
                                     >{projDC.label}</span>
                                 </div>
-                                <div className="flex items-center text-[11px] text-muted-foreground/60 gap-1.5 leading-none">
+                                <div className="flex items-center text-[10px] sm:text-[11px] text-muted-foreground/60 gap-1 sm:gap-1.5 leading-none">
                                     <span className="truncate">{schoolDisplay || 'School TBD'}</span>
                                     {player.age_at_draft && (
-                                        <><span className="opacity-30">·</span><span className="whitespace-nowrap">Age {player.age_at_draft}</span></>
+                                        <><span className="opacity-30 hidden sm:inline">·</span><span className="whitespace-nowrap hidden sm:inline">Age {player.age_at_draft}</span></>
                                     )}
                                     {(player.height_inches || player.weight_lbs) && (
-                                        <><span className="opacity-30">·</span><span className="whitespace-nowrap font-[var(--font-jetbrains),monospace] text-[10px]">{ht}{player.weight_lbs ? ` ${player.weight_lbs}` : ''}</span></>
+                                        <><span className="opacity-30 hidden sm:inline">·</span><span className="whitespace-nowrap font-[var(--font-jetbrains),monospace] text-[10px] hidden sm:inline">{ht}{player.weight_lbs ? ` ${player.weight_lbs}` : ''}</span></>
                                     )}
                                 </div>
                             </div>
