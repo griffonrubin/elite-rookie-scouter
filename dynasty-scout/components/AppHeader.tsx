@@ -32,18 +32,11 @@ export function AppHeader({ children }: AppHeaderProps) {
 
       <div className="px-3 sm:px-6 lg:px-10 h-[52px] flex items-center gap-3 sm:gap-5 overflow-hidden">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center relative overflow-hidden"
-            style={{
-              background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #f59e0b 100%)',
-              boxShadow: '0 0 14px rgba(249, 115, 22, 0.25)',
-            }}
-          >
-            <span className="text-white text-[11px] font-black tracking-tight relative z-10">ERS</span>
-          </div>
+        <Link href="/" className="flex items-center gap-1.5 shrink-0 group">
+          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="#f97316"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10" /></svg>
           <div className="hidden sm:flex flex-col">
             <span className="text-sm font-bold text-foreground tracking-tight leading-tight">
-              Elite Rookie Scouter
+              DyCharts
             </span>
             <span className="text-[10px] font-semibold text-primary/70 tracking-wide uppercase leading-none">
               2026 Draft Class
