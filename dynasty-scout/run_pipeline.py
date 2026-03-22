@@ -38,7 +38,7 @@ def run_step(step_name, module_path):
         return False
 
 def main():
-    parser = argparse.ArgumentParser(description="Elite Rookie Scouter Data Pipeline")
+    parser = argparse.ArgumentParser(description="DyCharts Data Pipeline")
     parser.add_argument("--step", choices=["school", "rankings", "stats", "age", "news", "consensus", "export", "all"], 
                        default="all", help="Which step to run (default: all)")
     parser.add_argument("--skip-slow", action="store_true", 

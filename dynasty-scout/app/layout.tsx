@@ -16,7 +16,7 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Elite Rookie Scouter | 2026 Dynasty Draft",
+  title: "DyCharts | 2026 Dynasty Draft",
   description: "AI-powered dynasty fantasy football rookie scouting agent with real-time news scanning and sentiment analysis",
 };
 
