@@ -134,14 +134,14 @@ export default async function ComparePage({ searchParams }: Props) {
             <div className="min-h-screen bg-background text-foreground">
                 <AppHeader />
                 <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 54px)' }}>
-                    <div className="text-center max-w-lg w-full p-8 space-y-8">
+                    <div className="text-center max-w-lg w-full px-3 sm:p-8 py-6 space-y-5 sm:space-y-8">
                         {/* Header */}
                         <div>
-                            <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #f97316, #f59e0b)', boxShadow: '0 0 30px rgba(249,115,22,0.25)' }}>
-                                <Scale className="w-7 h-7 text-white" />
+                            <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl mx-auto mb-3 sm:mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #f97316, #f59e0b)', boxShadow: '0 0 30px rgba(249,115,22,0.25)' }}>
+                                <Scale className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
                             </div>
-                            <h1 className="text-2xl font-black tracking-tight mb-2">Compare Players</h1>
-                            <p className="text-sm text-muted-foreground/70">Side-by-side breakdown with radar chart, measurables, and career stats.</p>
+                            <h1 className="text-xl sm:text-2xl font-black tracking-tight mb-1.5 sm:mb-2">Compare Players</h1>
+                            <p className="text-xs sm:text-sm text-muted-foreground/70">Side-by-side breakdown with radar, measurables, and stats.</p>
                         </div>
 
                         {/* Picker */}
@@ -149,17 +149,17 @@ export default async function ComparePage({ searchParams }: Props) {
 
                         {/* Suggested matchups */}
                         <div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 mb-3">Popular Matchups</p>
-                            <div className="grid grid-cols-2 gap-2">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 mb-2 sm:mb-3">Popular Matchups</p>
+                            <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                                 {SUGGESTED.map((s) => (
                                     <Link
                                         key={s.label}
                                         href={`/compare?a=${s.slugA}&b=${s.slugB}`}
-                                        className="text-left px-4 py-3.5 rounded-xl border border-white/[0.06] hover:border-primary/40 transition-all group"
+                                        className="text-left px-3 py-2.5 sm:px-4 sm:py-3.5 rounded-lg sm:rounded-xl border border-white/[0.06] hover:border-primary/40 transition-all group"
                                         style={{ background: 'var(--bg-card)' }}
                                     >
-                                        <div className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">{s.label}</div>
-                                        <div className="text-[10px] text-muted-foreground/50 mt-0.5">{s.sub}</div>
+                                        <div className="text-[11px] sm:text-xs font-bold text-foreground group-hover:text-primary transition-colors">{s.label}</div>
+                                        <div className="text-[9px] sm:text-[10px] text-muted-foreground/50 mt-0.5">{s.sub}</div>
                                     </Link>
                                 ))}
                             </div>
@@ -222,7 +222,7 @@ export default async function ComparePage({ searchParams }: Props) {
 
                 {/* Radar chart */}
                 {radarMetrics.length >= 3 && (
-                    <div className="mb-8 rounded-2xl border border-white/[0.06] p-6" style={{ background: 'var(--bg-card)' }}>
+                    <div className="mb-4 sm:mb-8 rounded-xl sm:rounded-2xl border border-white/[0.06] p-3 sm:p-6" style={{ background: 'var(--bg-card)' }}>
                         <RadarChart
                             metrics={radarMetrics}
                             nameA={playerA.full_name}
@@ -232,7 +232,7 @@ export default async function ComparePage({ searchParams }: Props) {
                 )}
 
                 {/* Comparison sections */}
-                <div className="space-y-6">
+                <div className="space-y-3 sm:space-y-6">
                     <CompareSection
                         title="Dynasty Rankings"
                         icon={<TrendingUp className="w-4 h-4" />}
@@ -307,7 +307,7 @@ export default async function ComparePage({ searchParams }: Props) {
                     const winnerCount = Math.max(aCount, bCount);
                     const topAdvantages = (aCount > bCount ? aWins : bWins).slice(0, 3).map(r => r.label);
                     return (
-                        <div className="mt-6 rounded-2xl border border-white/[0.06] p-5" style={{ background: 'var(--bg-elevated)' }}>
+                        <div className="mt-4 sm:mt-6 rounded-xl sm:rounded-2xl border border-white/[0.06] p-3 sm:p-5" style={{ background: 'var(--bg-elevated)' }}>
                             <div className="flex items-center gap-2.5 mb-3">
                                 <div className="w-1 h-4 rounded-full bg-primary/60" />
                                 <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60">Verdict</h3>
@@ -337,12 +337,12 @@ export default async function ComparePage({ searchParams }: Props) {
                 })()}
 
                 {/* Profile links */}
-                <div className="grid grid-cols-2 gap-4 mt-8">
-                    <Link href={`/players/${playerA.slug}`} className="flex items-center justify-center gap-2 py-3.5 rounded-xl border border-white/[0.06] text-sm text-muted-foreground/70 hover:text-primary hover:border-primary/30 transition-all font-medium" style={{ background: 'var(--bg-card)' }}>
-                        Full Profile: {playerA.full_name} →
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mt-4 sm:mt-8">
+                    <Link href={`/players/${playerA.slug}`} className="flex items-center justify-center gap-2 py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl border border-white/[0.06] text-xs sm:text-sm text-muted-foreground/70 hover:text-primary hover:border-primary/30 transition-all font-medium" style={{ background: 'var(--bg-card)' }}>
+                        {playerA.full_name} Profile →
                     </Link>
-                    <Link href={`/players/${playerB.slug}`} className="flex items-center justify-center gap-2 py-3.5 rounded-xl border border-white/[0.06] text-sm text-muted-foreground/70 hover:text-primary hover:border-primary/30 transition-all font-medium" style={{ background: 'var(--bg-card)' }}>
-                        Full Profile: {playerB.full_name} →
+                    <Link href={`/players/${playerB.slug}`} className="flex items-center justify-center gap-2 py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl border border-white/[0.06] text-xs sm:text-sm text-muted-foreground/70 hover:text-primary hover:border-primary/30 transition-all font-medium" style={{ background: 'var(--bg-card)' }}>
+                        {playerB.full_name} Profile →
                     </Link>
                 </div>
             </div>
@@ -450,10 +450,10 @@ function PlayerHeader({ player, side }: { player: any; side: 'left' | 'right' })
     const posColor = POS_RAW[player.position] || '#6b7280';
     const rank = player.consensus_rank;
     return (
-        <div className={cn('flex flex-col gap-2', side === 'right' && 'items-end text-right')}>
-            <div className={cn('flex items-center gap-3', side === 'right' && 'flex-row-reverse')}>
+        <div className={cn('flex flex-col gap-1.5 sm:gap-2', side === 'right' && 'sm:items-end sm:text-right')}>
+            <div className={cn('flex items-center gap-2 sm:gap-3', side === 'right' && 'sm:flex-row-reverse')}>
                 <div
-                    className="w-16 h-20 rounded-xl overflow-hidden flex items-center justify-center"
+                    className="w-10 h-12 sm:w-16 sm:h-20 rounded-lg sm:rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0"
                     style={{
                         background: `linear-gradient(135deg, ${posColor}25, ${posColor}08)`,
                         border: `2px solid ${posColor}40`,
@@ -462,23 +462,23 @@ function PlayerHeader({ player, side }: { player: any; side: 'left' | 'right' })
                     {player.headshot_url ? (
                         <img src={player.headshot_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                        <span className="text-2xl font-black" style={{ color: `${posColor}60` }}>{player.position?.[0]}</span>
+                        <span className="text-lg sm:text-2xl font-black" style={{ color: `${posColor}60` }}>{player.position?.[0]}</span>
                     )}
                 </div>
-                <div>
-                    <div className={cn("flex items-center gap-2", side === 'right' && "justify-end")}>
-                        <h2 className="text-2xl font-black text-foreground">{player.full_name}</h2>
-                        <WatchlistButton playerSlug={player.slug} variant="icon" className="w-5 h-5" />
+                <div className="min-w-0">
+                    <div className={cn("flex items-center gap-1.5 sm:gap-2", side === 'right' && "sm:justify-end")}>
+                        <h2 className="text-base sm:text-2xl font-black text-foreground truncate">{player.full_name}</h2>
+                        <WatchlistButton playerSlug={player.slug} variant="icon" className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                     </div>
-                    <div className={cn('flex items-center gap-2 mt-1', side === 'right' && 'justify-end')}>
+                    <div className={cn('flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1', side === 'right' && 'sm:justify-end')}>
                         <span
-                            style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 800, lineHeight: 1 }}
-                            className={`border ${posStyle}`}
+                            style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 6px', borderRadius: 9999, fontSize: 10, fontWeight: 800, lineHeight: 1 }}
+                            className={`border sm:text-[11px] sm:px-2 ${posStyle}`}
                         >
                             {player.position}
                         </span>
-                        <span className="text-sm text-muted-foreground/70">{player.school}</span>
-                        {rank && <span className="text-sm font-bold text-primary">#{rank}</span>}
+                        <span className="text-xs sm:text-sm text-muted-foreground/70 truncate">{player.school}</span>
+                        {rank && <span className="text-xs sm:text-sm font-bold text-primary flex-shrink-0">#{rank}</span>}
                     </div>
                 </div>
             </div>
@@ -497,11 +497,11 @@ interface CompareRow {
 
 function CompareSection({ title, icon, rows }: { title: string; icon: React.ReactNode; rows: CompareRow[] }) {
     return (
-        <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: 'var(--bg-card)' }}>
-            <div className="flex items-center gap-2.5 px-5 py-3 border-b border-white/[0.05]" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                <div className="w-1 h-4 rounded-full bg-primary/60" />
+        <div className="rounded-xl sm:rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: 'var(--bg-card)' }}>
+            <div className="flex items-center gap-2 sm:gap-2.5 px-3 sm:px-5 py-2 sm:py-3 border-b border-white/[0.05]" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                <div className="w-1 h-3 sm:h-4 rounded-full bg-primary/60" />
                 <span className="text-muted-foreground/60">{icon}</span>
-                <span className="text-sm font-black text-foreground uppercase tracking-wide">{title}</span>
+                <span className="text-xs sm:text-sm font-black text-foreground uppercase tracking-wide">{title}</span>
             </div>
             <div className="divide-y divide-white/[0.04]">
                 {rows.map((row, i) => {
@@ -513,29 +513,29 @@ function CompareSection({ title, icon, rows }: { title: string; icon: React.Reac
                     return (
                         <div
                             key={row.label}
-                            className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-5 py-3"
+                            className="grid grid-cols-[1fr_auto_1fr] items-center gap-1 sm:gap-2 px-2.5 sm:px-5 py-2 sm:py-3"
                             style={i % 2 === 1 ? { background: 'rgba(255,255,255,0.015)' } : undefined}
                         >
                             {/* Player A value */}
                             <div className={cn(
-                                'text-right font-[var(--font-jetbrains),monospace] font-bold text-base transition-colors',
+                                'text-right font-[var(--font-jetbrains),monospace] font-bold text-xs sm:text-base transition-colors',
                                 aWins ? 'text-primary' : tie ? 'text-foreground/70' : 'text-foreground/50'
                             )}>
                                 {String(row.a)}
-                                {aWins && <span className="ml-1.5 text-xs font-black text-emerald-400/70">▲</span>}
+                                {aWins && <span className="ml-1 sm:ml-1.5 text-[10px] sm:text-xs font-black text-emerald-400/70">▲</span>}
                             </div>
 
                             {/* Label */}
-                            <div className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-widest text-center min-w-[130px] px-2">
+                            <div className="text-[9px] sm:text-xs font-semibold text-muted-foreground/50 uppercase tracking-wider sm:tracking-widest text-center min-w-[70px] sm:min-w-[130px] px-1 sm:px-2">
                                 {row.label}
                             </div>
 
                             {/* Player B value */}
                             <div className={cn(
-                                'text-left font-[var(--font-jetbrains),monospace] font-bold text-base transition-colors',
+                                'text-left font-[var(--font-jetbrains),monospace] font-bold text-xs sm:text-base transition-colors',
                                 bWins ? 'text-primary' : tie ? 'text-foreground/70' : 'text-foreground/50'
                             )}>
-                                {bWins && <span className="mr-1.5 text-xs font-black text-emerald-400/70">▲</span>}
+                                {bWins && <span className="mr-1 sm:mr-1.5 text-[10px] sm:text-xs font-black text-emerald-400/70">▲</span>}
                                 {String(row.b)}
                             </div>
                         </div>

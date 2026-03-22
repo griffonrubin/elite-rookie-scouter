@@ -125,13 +125,13 @@ function PlayerSlot({
 
 export function ComparePlayerPicker({ currentSlugA, currentSlugB, currentNameA, currentNameB }: ComparePlayerPickerProps) {
     return (
-        <div className="bg-card border border-border/60 rounded-2xl p-4 mb-8">
-            <div className="flex items-center gap-2 mb-3">
-                <Scale className="w-4 h-4 text-primary" />
-                <span className="text-sm font-bold text-foreground">Compare Players</span>
-                <span className="text-[11px] text-muted-foreground">Search to change either player</span>
+        <div className="bg-card border border-border/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-8">
+            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                <Scale className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                <span className="text-xs sm:text-sm font-bold text-foreground">Compare Players</span>
+                <span className="text-[10px] sm:text-[11px] text-muted-foreground hidden sm:inline">Search to change either player</span>
             </div>
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2 sm:gap-4">
                 <PlayerSlot
                     label="Player A"
                     slugKey="a"
@@ -139,8 +139,8 @@ export function ComparePlayerPicker({ currentSlugA, currentSlugB, currentNameA, 
                     currentName={currentNameA}
                     otherSlug={currentSlugB}
                 />
-                <div className="flex items-center justify-center pt-7">
-                    <span className="text-lg font-black text-muted-foreground/40">vs</span>
+                <div className="flex items-center justify-center py-0.5 sm:pt-7 sm:py-0">
+                    <span className="text-sm sm:text-lg font-black text-muted-foreground/40">vs</span>
                 </div>
                 <PlayerSlot
                     label="Player B"

@@ -225,18 +225,18 @@ function DraftBoardContent({ players }: DraftBoardProps) {
             )}
 
             {/* ── Controls ── */}
-            <div className="flex flex-col gap-3 mb-5 p-4 rounded-2xl border border-white/[0.05]" style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(12px)' }}>
+            <div className="flex flex-col gap-2 sm:gap-3 mb-3 sm:mb-5 p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-white/[0.05]" style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(12px)' }}>
                 {/* Row 1: Search + view mode + sort */}
                 <div className="flex items-center gap-3 flex-wrap">
                     <div className="relative w-full sm:w-[340px] sm:min-w-[240px] sm:flex-shrink-0">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" style={{ zIndex: 1 }} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50 pointer-events-none" style={{ zIndex: 1 }} />
                         <input
                             ref={searchInputRef}
-                            placeholder="Search players, schools…"
+                            placeholder="Search players…"
                             style={{
-                                width: '100%', paddingLeft: '2.5rem', paddingRight: '3rem', height: '40px',
+                                width: '100%', paddingLeft: '2.25rem', paddingRight: '2.5rem', height: '36px',
                                 background: 'var(--bg-base)', border: '1px solid rgba(255,255,255,0.06)',
-                                borderRadius: '0.75rem', fontSize: '0.875rem', color: 'var(--foreground)',
+                                borderRadius: '0.625rem', fontSize: '0.8125rem', color: 'var(--foreground)',
                                 outline: 'none', boxSizing: 'border-box',
                                 boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
                             }}
@@ -249,7 +249,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                     </div>
                     <ViewModeSelector mode={viewMode} onChange={setViewMode} />
                     <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sort:</span>
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden sm:inline">Sort:</span>
                         <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir(DEFAULT_DESC.includes(v as SortKey) ? 'desc' : 'asc'); }}>
                             <SelectTrigger className="w-[140px] sm:w-[180px] bg-card border-border/60 text-xs" style={{ height: '34px', paddingLeft: '14px', paddingRight: '14px', gap: '10px' }}>
                                 <SelectValue>
@@ -279,11 +279,11 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                             </SelectContent>
                         </Select>
                     </div>
-                    {/* ? shortcut help */}
+                    {/* ? shortcut help — desktop only */}
                     <button
                         onClick={() => setShowHelp(true)}
                         title="Keyboard shortcuts (?)"
-                        className="ml-auto flex items-center justify-center w-8 h-8 rounded-lg border border-border/50 text-muted-foreground/50 hover:text-foreground hover:border-border transition-colors text-xs font-bold"
+                        className="ml-auto hidden sm:flex items-center justify-center w-8 h-8 rounded-lg border border-border/50 text-muted-foreground/50 hover:text-foreground hover:border-border transition-colors text-xs font-bold"
                     >?</button>
                 </div>
 
@@ -297,10 +297,10 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                             <button
                                 key={pos}
                                 onClick={() => setPositionFilter(pos)}
-                                style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 16px', borderRadius: 9999, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', lineHeight: 1, gap: 5 }}
-                                className={`border transition-all duration-200 ${active ? pill.active : pill.inactive}`}
+                                style={{ display: 'inline-flex', alignItems: 'center', borderRadius: 9999, fontWeight: 700, whiteSpace: 'nowrap', lineHeight: 1 }}
+                                className={`border transition-all duration-200 px-2.5 py-1 text-[11px] gap-1 sm:px-4 sm:py-1.5 sm:text-[13px] sm:gap-1.5 ${active ? pill.active : pill.inactive}`}
                             >
-                                {pos} <span style={{ opacity: active ? 1 : 0.5, fontSize: 12 }}>{displayCount}</span>
+                                {pos} <span className="text-[10px] sm:text-[12px]" style={{ opacity: active ? 1 : 0.5 }}>{displayCount}</span>
                             </button>
                         );
                     })}
@@ -308,8 +308,8 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                     {/* Favorites filter pill */}
                     <button
                         onClick={() => setFavoritesOnly(f => !f)}
-                        style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 14px', borderRadius: 9999, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', lineHeight: 1, gap: 5 }}
-                        className={`border transition-all duration-150 ${
+                        style={{ display: 'inline-flex', alignItems: 'center', borderRadius: 9999, fontWeight: 700, whiteSpace: 'nowrap', lineHeight: 1 }}
+                        className={`px-2.5 py-1 text-[10px] gap-1 sm:px-3.5 sm:py-1.5 sm:text-[12px] sm:gap-1.5 border transition-all duration-150 ${
                             favoritesOnly
                                 ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/60'
                                 : 'text-muted-foreground border-border/60 hover:border-yellow-500/40 hover:text-yellow-400'
@@ -405,10 +405,10 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 <div className="rounded-2xl border border-white/[0.05] overflow-x-clip" style={{ background: 'var(--bg-card)' }}>
 
                     {/* Column headers — sticky below the app header bar */}
-                    <div className="flex items-stretch px-4 py-0 border-b border-white/[0.06] gap-0 min-h-[46px] sticky top-[54px] z-20 rounded-t-2xl"
+                    <div className="flex items-stretch px-4 py-0 border-b border-white/[0.06] gap-0 min-h-[46px] sticky top-[54px] z-20"
                          style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(16px)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
                         {/* Sticky identity group: rank + player */}
-                        <div className="sticky left-0 z-10 flex items-center gap-2.5 pr-2 flex-shrink-0 rounded-tl-2xl" style={{ width: '304px', background: 'var(--bg-elevated)' }}>
+                        <div className="sticky left-0 z-10 flex items-center gap-2.5 pr-2 flex-shrink-0" style={{ width: '304px', background: 'var(--bg-elevated)' }}>
                         {/* Rank */}
                         <div className="w-12 flex-shrink-0 flex items-center justify-center">
                             <button

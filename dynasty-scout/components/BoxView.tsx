@@ -105,7 +105,7 @@ function GradeCell({ label, val, pos, benchKey, displayVal }: {
         B: '#06b6d4', C: '#eab308', D: '#f97316', F: '#f87171',
     };
     return (
-        <div className="flex flex-col gap-1 p-2 rounded-lg bg-muted/[0.07] border border-border/20">
+        <div className="flex flex-col gap-0.5 sm:gap-1 p-1.5 sm:p-2 rounded-lg bg-muted/[0.07] border border-border/20">
             <div className="flex items-center justify-between">
                 <span className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground/50">{label}</span>
                 <span className={`text-[10px] font-black px-2 py-0.5 min-w-[30px] inline-flex items-center justify-center rounded border font-mono ${g.badge}`}>{g.label}</span>
@@ -186,7 +186,7 @@ export function BoxView({ players, period }: BoxViewProps) {
     }
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-4">
             {players.map((player, index) => {
                 const p = player as any;
                 const pos = player.position.toUpperCase();
@@ -238,7 +238,7 @@ export function BoxView({ players, period }: BoxViewProps) {
                         style={{ borderLeft: `3px solid ${tier.border}70` }}
                     >
                         {/* ── Header ── */}
-                        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                        <div className="flex items-center justify-between px-3 sm:px-4 pt-2 sm:pt-3 pb-1.5 sm:pb-2">
                             <div className="flex items-center gap-2">
                                 <span className={cn('text-sm font-extrabold font-mono', tier.text)}>#{rank}</span>
                                 <span className="text-[10px] font-bold font-mono text-muted-foreground/40">{draftSlot}</span>
@@ -257,7 +257,7 @@ export function BoxView({ players, period }: BoxViewProps) {
                         </div>
 
                         {/* ── Name + school ── */}
-                        <div className="px-4 pb-3">
+                        <div className="px-3 sm:px-4 pb-2 sm:pb-3">
                             <div className="font-bold text-[14px] text-foreground group-hover:text-primary transition-colors leading-snug" title={player.full_name}>
                                 {player.full_name}
                             </div>
@@ -274,14 +274,14 @@ export function BoxView({ players, period }: BoxViewProps) {
                         <div className="border-t border-border/20" />
 
                         {/* ── Season bar chart ── */}
-                        <div className="px-4 py-3">
+                        <div className="px-3 sm:px-4 py-2 sm:py-3">
                             <MiniBarChart seasons={seasons} color={barColor} label={barLabel} />
                         </div>
 
                         <div className="border-t border-border/20" />
 
                         {/* ── Production stat bars ── */}
-                        <div className="px-4 py-3 space-y-2">
+                        <div className="px-3 sm:px-4 py-2 sm:py-3 space-y-1.5 sm:space-y-2">
                             <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-2">Production</div>
                             {pos === 'QB' && <>
                                 <StatBar label="Comp %" val={compPct}         pos={pos} benchKey="comp_pct"  display={compPct  ? `${compPct.toFixed(1)}%`                    : '—'} />
@@ -304,7 +304,7 @@ export function BoxView({ players, period }: BoxViewProps) {
                         <div className="border-t border-border/20" />
 
                         {/* ── Athletics grade grid — fills full row ── */}
-                        <div className="px-4 py-3">
+                        <div className="px-3 sm:px-4 py-2 sm:py-3">
                             <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-2">Athletics</div>
                             {athleteGrades.length > 0 ? (
                                 <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
@@ -326,15 +326,15 @@ export function BoxView({ players, period }: BoxViewProps) {
                                 { label: 'FP',  val: p.fantasypros_rank    },
                                 { label: 'DN',  val: p.dynasty_nerds_rank  },
                             ].map(({ label, val }) => (
-                                <div key={label} className="flex flex-col items-center justify-center py-2.5 border-r border-border/20 last:border-r-0">
-                                    <div className="text-[9px] text-muted-foreground/50 uppercase font-bold tracking-wider mb-0.5">{label}</div>
-                                    <div className="text-[11px] font-bold font-mono text-foreground/80">{val ?? '—'}</div>
+                                <div key={label} className="flex flex-col items-center justify-center py-1.5 sm:py-2.5 border-r border-border/20 last:border-r-0">
+                                    <div className="text-[8px] sm:text-[9px] text-muted-foreground/50 uppercase font-bold tracking-wider mb-0.5">{label}</div>
+                                    <div className="text-[10px] sm:text-[11px] font-bold font-mono text-foreground/80">{val ?? '—'}</div>
                                 </div>
                             ))}
                         </div>
 
                         {/* ── Tier footer ── */}
-                        <div className={cn('px-4 py-2 text-center text-[9px] font-bold tracking-widest uppercase border-t border-border/20', tier.text)}>
+                        <div className={cn('px-3 sm:px-4 py-1.5 sm:py-2 text-center text-[8px] sm:text-[9px] font-bold tracking-widest uppercase border-t border-border/20', tier.text)}>
                             {tier.label}
                         </div>
                     </Link>
