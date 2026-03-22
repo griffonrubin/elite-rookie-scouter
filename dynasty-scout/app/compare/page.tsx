@@ -126,8 +126,8 @@ export default async function ComparePage({ searchParams }: Props) {
     if (!a || !b) {
         const SUGGESTED = [
             { label: 'Love vs. Price',   sub: 'RB vs RB — Top 2 backs',      slugA: 'jeremiyah-love',   slugB: 'jadarian-price'   },
-            { label: 'Tate vs. Lemon',   sub: 'WR vs WR — Top receiver duel', slugA: 'carnell-tate',     slugB: 'jack-lemon'       },
-            { label: 'Mendoza vs. Gendron', sub: 'QB vs QB — Signal callers', slugA: 'fernando-mendoza', slugB: 'will-gendron'     },
+            { label: 'Tate vs. Lemon',   sub: 'WR vs WR — Top receiver duel', slugA: 'carnell-tate',     slugB: 'makai-lemon'       },
+            { label: 'Mendoza vs. Nussmeier', sub: 'QB vs QB — Signal callers', slugA: 'fernando-mendoza', slugB: 'garrett-nussmeier' },
             { label: 'Love vs. Tate',    sub: 'RB vs WR — Cross-position',    slugA: 'jeremiyah-love',   slugB: 'carnell-tate'     },
         ];
         return (
