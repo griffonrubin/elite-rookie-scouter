@@ -247,8 +247,7 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                 <div
                     className={cn(
                         'sticky left-0 z-10 flex items-center self-stretch gap-2.5 pr-2 flex-shrink-0',
-                        isEven ? 'bg-[var(--bg-base)]' : 'bg-[rgba(255,255,255,0.015)]',
-                        'group-hover:bg-[rgba(255,255,255,0.03)]',
+                        'bg-[var(--bg-card)] group-hover:bg-[var(--bg-hover)]',
                     )}
                     style={{ width: '304px' }}
                 >
