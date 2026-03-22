@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { StatsTable } from '@/components/StatsTable';
@@ -540,6 +542,35 @@ export function PlayerProfileClient({
         { id: 'rankings',   label: 'Rankings'   },
         { id: 'news',       label: 'News'       },
     ];
+
+    // ── Swipe between profiles on mobile ────────────────────────────────────
+    const router = useRouter();
+    const touchStartX = useRef<number | null>(null);
+    const touchStartY = useRef<number | null>(null);
+
+    useEffect(() => {
+        const handleTouchStart = (e: TouchEvent) => {
+            touchStartX.current = e.touches[0].clientX;
+            touchStartY.current = e.touches[0].clientY;
+        };
+        const handleTouchEnd = (e: TouchEvent) => {
+            if (touchStartX.current == null || touchStartY.current == null) return;
+            const dx = e.changedTouches[0].clientX - touchStartX.current;
+            const dy = e.changedTouches[0].clientY - touchStartY.current;
+            touchStartX.current = null;
+            touchStartY.current = null;
+            // Only trigger on horizontal swipes (dx > 80px, and more horizontal than vertical)
+            if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+            if (dx > 0 && prevPlayer) router.push(`/players/${prevPlayer.slug}`);
+            if (dx < 0 && nextPlayer) router.push(`/players/${nextPlayer.slug}`);
+        };
+        document.addEventListener('touchstart', handleTouchStart, { passive: true });
+        document.addEventListener('touchend', handleTouchEnd, { passive: true });
+        return () => {
+            document.removeEventListener('touchstart', handleTouchStart);
+            document.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [prevPlayer, nextPlayer, router]);
 
     // ── Render ─────────────────────────────────────────────────────────────────
 

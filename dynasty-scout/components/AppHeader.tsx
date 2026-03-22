@@ -30,7 +30,7 @@ export function AppHeader({ children }: AppHeaderProps) {
         opacity: 0.6,
       }} />
 
-      <div className="px-3 sm:px-6 lg:px-10 h-[52px] flex items-center gap-3 sm:gap-5">
+      <div className="px-3 sm:px-6 lg:px-10 h-[52px] flex items-center gap-3 sm:gap-5 overflow-hidden">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center relative overflow-hidden"
@@ -85,7 +85,7 @@ export function AppHeader({ children }: AppHeaderProps) {
 
         {/* Children slot (breadcrumbs, player nav, etc.) */}
         {children && (
-          <div className="flex items-center gap-3 ml-auto text-[12px]">
+          <div className="hidden sm:flex items-center gap-3 ml-auto text-[12px] min-w-0">
             {children}
           </div>
         )}
