@@ -1158,52 +1158,81 @@ export function PlayerProfileClient({
                                         Class of {highSchool.graduating_class}
                                     </div>
                                 )}
+                                {highSchool.games != null && highSchool.games > 0 && (
+                                    <div className="text-[11px] text-muted-foreground/50">
+                                        {highSchool.games} career games
+                                    </div>
+                                )}
                                 {/* Career stats grid — only shown if we have any stats */}
                                 {(highSchool.rush_yards || highSchool.rec_yards || highSchool.pass_yards) && (
-                                    <div className="grid grid-cols-3 gap-2 mt-2">
-                                        {pos === 'QB' && highSchool.pass_yards != null && (
-                                            <>
-                                                <div className="text-center p-2 rounded-lg bg-muted/20">
-                                                    <div className="text-xs font-black text-foreground">{highSchool.pass_yards?.toLocaleString()}</div>
-                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Pass Yds</div>
-                                                </div>
-                                                <div className="text-center p-2 rounded-lg bg-muted/20">
-                                                    <div className="text-xs font-black text-foreground">{highSchool.pass_tds ?? '—'}</div>
-                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Pass TD</div>
-                                                </div>
-                                            </>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">
+                                        {/* Passing — show for QBs or anyone with pass stats */}
+                                        {highSchool.pass_yards != null && highSchool.pass_yards !== 0 && (
+                                            <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                <div className="text-xs font-black text-foreground">{highSchool.pass_yards?.toLocaleString()}</div>
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase">Pass Yds</div>
+                                            </div>
                                         )}
-                                        {(pos === 'RB') && highSchool.rush_yards != null && (
-                                            <>
-                                                <div className="text-center p-2 rounded-lg bg-muted/20">
-                                                    <div className="text-xs font-black text-foreground">{highSchool.rush_yards?.toLocaleString()}</div>
-                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Rush Yds</div>
-                                                </div>
-                                                <div className="text-center p-2 rounded-lg bg-muted/20">
-                                                    <div className="text-xs font-black text-foreground">{highSchool.rush_tds ?? '—'}</div>
-                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Rush TD</div>
-                                                </div>
-                                            </>
+                                        {highSchool.pass_tds != null && highSchool.pass_tds > 0 && (
+                                            <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                <div className="text-xs font-black text-foreground">{highSchool.pass_tds}</div>
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase">Pass TD</div>
+                                            </div>
                                         )}
-                                        {(pos === 'WR' || pos === 'TE') && highSchool.rec_yards != null && (
-                                            <>
-                                                <div className="text-center p-2 rounded-lg bg-muted/20">
-                                                    <div className="text-xs font-black text-foreground">{highSchool.rec_yards?.toLocaleString()}</div>
-                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Rec Yds</div>
-                                                </div>
-                                                <div className="text-center p-2 rounded-lg bg-muted/20">
-                                                    <div className="text-xs font-black text-foreground">{highSchool.rec_tds ?? '—'}</div>
-                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Rec TD</div>
-                                                </div>
-                                            </>
+                                        {/* Rushing — show for RBs/QBs or anyone with rush stats */}
+                                        {highSchool.rush_yards != null && highSchool.rush_yards > 0 && (
+                                            <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                <div className="text-xs font-black text-foreground">{highSchool.rush_yards?.toLocaleString()}</div>
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase">Rush Yds</div>
+                                            </div>
                                         )}
-                                        {highSchool.total_yards != null && (
+                                        {highSchool.rush_tds != null && highSchool.rush_tds > 0 && (
+                                            <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                <div className="text-xs font-black text-foreground">{highSchool.rush_tds}</div>
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase">Rush TD</div>
+                                            </div>
+                                        )}
+                                        {/* Receiving — show for WR/TE/RB or anyone with rec stats */}
+                                        {highSchool.receptions != null && highSchool.receptions > 0 && (
+                                            <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                <div className="text-xs font-black text-foreground">{highSchool.receptions}</div>
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase">Rec</div>
+                                            </div>
+                                        )}
+                                        {highSchool.rec_yards != null && highSchool.rec_yards > 0 && (
+                                            <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                <div className="text-xs font-black text-foreground">{highSchool.rec_yards?.toLocaleString()}</div>
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase">Rec Yds</div>
+                                            </div>
+                                        )}
+                                        {highSchool.rec_tds != null && highSchool.rec_tds > 0 && (
+                                            <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                <div className="text-xs font-black text-foreground">{highSchool.rec_tds}</div>
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase">Rec TD</div>
+                                            </div>
+                                        )}
+                                        {/* Interceptions — show for anyone with INTs */}
+                                        {highSchool.interceptions != null && highSchool.interceptions > 0 && (
+                                            <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                <div className="text-xs font-black text-foreground">{highSchool.interceptions}</div>
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase">{pos === 'QB' ? 'INT' : 'INT'}</div>
+                                            </div>
+                                        )}
+                                        {/* Fumbles — only if non-zero */}
+                                        {highSchool.fumbles != null && highSchool.fumbles > 0 && (
+                                            <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                <div className="text-xs font-black text-foreground">{highSchool.fumbles}</div>
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase">Fumbles</div>
+                                            </div>
+                                        )}
+                                        {/* Totals */}
+                                        {highSchool.total_yards != null && highSchool.total_yards > 0 && (
                                             <div className="text-center p-2 rounded-lg bg-muted/20">
                                                 <div className="text-xs font-black text-foreground">{highSchool.total_yards?.toLocaleString()}</div>
                                                 <div className="text-[9px] text-muted-foreground/50 uppercase">Total Yds</div>
                                             </div>
                                         )}
-                                        {highSchool.total_tds != null && (
+                                        {highSchool.total_tds != null && highSchool.total_tds > 0 && (
                                             <div className="text-center p-2 rounded-lg bg-muted/20">
                                                 <div className="text-xs font-black text-foreground">{highSchool.total_tds}</div>
                                                 <div className="text-[9px] text-muted-foreground/50 uppercase">Total TD</div>

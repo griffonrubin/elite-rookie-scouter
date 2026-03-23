@@ -135,6 +135,9 @@ export interface HighSchoolStats {
     rush_tds?: number;
     rec_yards?: number;
     rec_tds?: number;
+    receptions?: number;
+    interceptions?: number;
+    fumbles?: number;
     total_yards?: number;
     total_tds?: number;
     data_source?: string;

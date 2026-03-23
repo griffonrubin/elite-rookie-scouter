@@ -8,10 +8,13 @@ Run from dynasty-scout/ directory:
 Handles:
   1. Schema migration (new columns)
   2. measurables (forty_yard, vertical, broad, hand_size, arm_length, etc.)
-  3. college_stats (epa_per_play, sp_rating)
+  3. college_stats (epa_per_play, sp_rating + phantom row cleanup + full upsert)
   4. players (recruiting_composite, recruiting_stars, recruiting_year, headshot_url)
   5. historical_comps table (create + populate)
   6. consensus_rankings
+  7. high_school_stats (create + populate)
+  8. college_career cleanup (orphaned rows)
+  9. players.hometown
 """
 
 import os
@@ -85,6 +88,34 @@ def ensure_pg_schema(pg):
             updated_at TIMESTAMP DEFAULT NOW()
         )
         """,
+        # players.hometown
+        "ALTER TABLE players ADD COLUMN IF NOT EXISTS hometown TEXT",
+        # high_school_stats table
+        """
+        CREATE TABLE IF NOT EXISTS high_school_stats (
+            id SERIAL PRIMARY KEY,
+            player_id INTEGER REFERENCES players(id) UNIQUE,
+            high_school TEXT,
+            city TEXT,
+            state TEXT,
+            graduating_class INTEGER,
+            games INTEGER,
+            pass_yards INTEGER,
+            pass_tds INTEGER,
+            rush_yards INTEGER,
+            rush_tds INTEGER,
+            rec_yards INTEGER,
+            rec_tds INTEGER,
+            total_yards INTEGER,
+            total_tds INTEGER,
+            data_source TEXT,
+            updated_at TIMESTAMP DEFAULT NOW()
+        )
+        """,
+        # high_school_stats new columns
+        "ALTER TABLE high_school_stats ADD COLUMN IF NOT EXISTS receptions INTEGER",
+        "ALTER TABLE high_school_stats ADD COLUMN IF NOT EXISTS interceptions INTEGER",
+        "ALTER TABLE high_school_stats ADD COLUMN IF NOT EXISTS fumbles INTEGER",
         # historical_comps table
         """
         CREATE TABLE IF NOT EXISTS historical_comps (
@@ -438,6 +469,219 @@ def sync_wr_advanced_career(pg, sq):
     print(f"WR advanced career: {upserted} rows upserted")
 
 
+# ── Sync high_school_stats ────────────────────────────────────────────────
+
+def sync_high_school_stats(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    rows = cur_sq.execute("""
+        SELECT hs.player_id, hs.high_school, hs.city, hs.state,
+               hs.graduating_class, hs.games,
+               hs.pass_yards, hs.pass_tds,
+               hs.rush_yards, hs.rush_tds,
+               hs.rec_yards, hs.rec_tds,
+               hs.receptions, hs.interceptions, hs.fumbles,
+               hs.total_yards, hs.total_tds,
+               hs.data_source
+        FROM high_school_stats hs
+        JOIN players p ON p.id = hs.player_id
+        WHERE p.draft_year = 2026
+    """).fetchall()
+
+    upserted = 0
+    for r in rows:
+        cur_pg.execute("""
+            INSERT INTO high_school_stats (player_id, high_school, city, state,
+                graduating_class, games, pass_yards, pass_tds,
+                rush_yards, rush_tds, rec_yards, rec_tds,
+                receptions, interceptions, fumbles,
+                total_yards, total_tds, data_source)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (player_id) DO UPDATE SET
+                high_school = EXCLUDED.high_school,
+                city = EXCLUDED.city,
+                state = EXCLUDED.state,
+                graduating_class = EXCLUDED.graduating_class,
+                games = EXCLUDED.games,
+                pass_yards = EXCLUDED.pass_yards,
+                pass_tds = EXCLUDED.pass_tds,
+                rush_yards = EXCLUDED.rush_yards,
+                rush_tds = EXCLUDED.rush_tds,
+                rec_yards = EXCLUDED.rec_yards,
+                rec_tds = EXCLUDED.rec_tds,
+                receptions = EXCLUDED.receptions,
+                interceptions = EXCLUDED.interceptions,
+                fumbles = EXCLUDED.fumbles,
+                total_yards = EXCLUDED.total_yards,
+                total_tds = EXCLUDED.total_tds,
+                data_source = EXCLUDED.data_source,
+                updated_at = NOW()
+        """, (r["player_id"], r["high_school"], r["city"], r["state"],
+              r["graduating_class"], r["games"],
+              r["pass_yards"], r["pass_tds"],
+              r["rush_yards"], r["rush_tds"],
+              r["rec_yards"], r["rec_tds"],
+              r["receptions"], r["interceptions"], r["fumbles"],
+              r["total_yards"], r["total_tds"],
+              r["data_source"]))
+        upserted += 1
+
+    pg.commit()
+    print(f"High school stats: {upserted} rows upserted")
+
+
+# ── Sync college_stats full (cleanup phantoms + upsert all) ──────────────
+
+def sync_college_stats_full(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    # Get all (player_id, season, school) from SQLite
+    lite_rows = cur_sq.execute("SELECT player_id, season, school FROM college_stats").fetchall()
+    lite_keys = set((r['player_id'], r['season'], r['school']) for r in lite_rows)
+
+    # Get all (player_id, season, school) from PG
+    cur_pg.execute("SELECT player_id, season, school FROM college_stats")
+    pg_keys = set((r[0], r[1], r[2]) for r in cur_pg.fetchall())
+
+    # Delete phantom rows in PG that don't exist in SQLite
+    to_delete = pg_keys - lite_keys
+    deleted = 0
+    for pid, season, school in to_delete:
+        cur_pg.execute(
+            "DELETE FROM college_stats WHERE player_id = %s AND season = %s AND school = %s",
+            (pid, season, school)
+        )
+        deleted += cur_pg.rowcount
+
+    if deleted:
+        print(f"  Deleted {deleted} phantom college_stats rows from Supabase")
+
+    # Upsert all SQLite rows
+    full_rows = cur_sq.execute("""
+        SELECT player_id, season, school, games_played,
+               pass_attempts, completions, pass_yards, pass_tds, interceptions,
+               rush_attempts, rush_yards, rush_tds, yards_per_carry,
+               receptions, rec_yards, rec_tds, targets,
+               epa_per_play, sp_rating, dominator_rating, market_share
+        FROM college_stats
+    """).fetchall()
+
+    upserted = 0
+    for r in full_rows:
+        cur_pg.execute("""
+            INSERT INTO college_stats (player_id, season, school, games_played,
+                pass_attempts, completions, pass_yards, pass_tds, interceptions,
+                rush_attempts, rush_yards, rush_tds, yards_per_carry,
+                receptions, rec_yards, rec_tds, targets,
+                epa_per_play, sp_rating, dominator_rating, market_share)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (player_id, season, school) DO UPDATE SET
+                games_played = EXCLUDED.games_played,
+                pass_attempts = EXCLUDED.pass_attempts,
+                completions = EXCLUDED.completions,
+                pass_yards = EXCLUDED.pass_yards,
+                pass_tds = EXCLUDED.pass_tds,
+                interceptions = EXCLUDED.interceptions,
+                rush_attempts = EXCLUDED.rush_attempts,
+                rush_yards = EXCLUDED.rush_yards,
+                rush_tds = EXCLUDED.rush_tds,
+                yards_per_carry = EXCLUDED.yards_per_carry,
+                receptions = EXCLUDED.receptions,
+                rec_yards = EXCLUDED.rec_yards,
+                rec_tds = EXCLUDED.rec_tds,
+                targets = EXCLUDED.targets,
+                epa_per_play = EXCLUDED.epa_per_play,
+                sp_rating = EXCLUDED.sp_rating,
+                dominator_rating = EXCLUDED.dominator_rating,
+                market_share = EXCLUDED.market_share
+        """, (r["player_id"], r["season"], r["school"], r["games_played"],
+              r["pass_attempts"], r["completions"], r["pass_yards"], r["pass_tds"], r["interceptions"],
+              r["rush_attempts"], r["rush_yards"], r["rush_tds"], r["yards_per_carry"],
+              r["receptions"], r["rec_yards"], r["rec_tds"], r["targets"],
+              r["epa_per_play"], r["sp_rating"], r["dominator_rating"], r["market_share"]))
+        upserted += 1
+
+    pg.commit()
+    print(f"College stats full sync: {upserted} rows upserted, {deleted} phantom rows deleted")
+
+
+# ── Sync college_career cleanup ──────────────────────────────────────────
+
+def sync_college_career(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    # Get all (player_id, school) from SQLite
+    lite_rows = cur_sq.execute("SELECT player_id, school FROM college_career").fetchall()
+    lite_keys = set((r['player_id'], r['school']) for r in lite_rows)
+
+    # Get all (player_id, school) from PG
+    cur_pg.execute("SELECT player_id, school FROM college_career")
+    pg_keys = set((r[0], r[1]) for r in cur_pg.fetchall())
+
+    # Delete orphaned PG rows
+    to_delete = pg_keys - lite_keys
+    deleted = 0
+    for pid, school in to_delete:
+        cur_pg.execute("DELETE FROM college_career WHERE player_id = %s AND school = %s", (pid, school))
+        deleted += cur_pg.rowcount
+
+    pg.commit()
+    if deleted:
+        print(f"College career: deleted {deleted} orphaned rows")
+    else:
+        print(f"College career: no orphaned rows")
+
+
+# ── Sync players.hometown ────────────────────────────────────────────────
+
+def sync_hometown(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    rows = cur_sq.execute("""
+        SELECT id, hometown FROM players
+        WHERE draft_year = 2026 AND hometown IS NOT NULL
+    """).fetchall()
+
+    updated = 0
+    for r in rows:
+        cur_pg.execute("""
+            UPDATE players SET hometown = %s
+            WHERE id = %s AND (hometown IS NULL OR hometown != %s)
+        """, (r["hometown"], r["id"], r["hometown"]))
+        updated += cur_pg.rowcount
+
+    pg.commit()
+    print(f"Player hometown: {updated} rows updated")
+
+
+# ── Sync headshots (force overwrite) ─────────────────────────────────────
+
+def sync_headshots_force(pg, sq):
+    """Sync ALL headshot_url values, overwriting PG even if already set."""
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    rows = cur_sq.execute("""
+        SELECT id, headshot_url FROM players
+        WHERE draft_year = 2026 AND headshot_url IS NOT NULL
+    """).fetchall()
+
+    updated = 0
+    for r in rows:
+        cur_pg.execute("""
+            UPDATE players SET headshot_url = %s
+            WHERE id = %s AND (headshot_url IS NULL OR headshot_url != %s)
+        """, (r["headshot_url"], r["id"], r["headshot_url"]))
+        updated += cur_pg.rowcount
+
+    pg.commit()
+    print(f"Headshots (force): {updated} rows updated")
+
+
 # ── Main ──────────────────────────────────────────────────────────────────
 
 def run():
@@ -474,6 +718,21 @@ def run():
 
     print("\n[6/6] Syncing consensus rankings...")
     sync_consensus_rankings(pg, sq)
+
+    print("\n[7] Syncing high school stats...")
+    sync_high_school_stats(pg, sq)
+
+    print("\n[8] Syncing college stats (full cleanup + upsert)...")
+    sync_college_stats_full(pg, sq)
+
+    print("\n[9] Syncing college career cleanup...")
+    sync_college_career(pg, sq)
+
+    print("\n[10] Syncing player hometown...")
+    sync_hometown(pg, sq)
+
+    print("\n[11] Syncing headshots (force)...")
+    sync_headshots_force(pg, sq)
 
     pg.close()
     sq.close()

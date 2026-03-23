@@ -218,6 +218,9 @@ CREATE TABLE IF NOT EXISTS high_school_stats (
   pass_yards INTEGER, pass_tds INTEGER,
   rush_yards INTEGER, rush_tds INTEGER,
   rec_yards INTEGER, rec_tds INTEGER,
+  receptions INTEGER,
+  interceptions INTEGER,
+  fumbles INTEGER,
   total_yards INTEGER, total_tds INTEGER,
   data_source TEXT,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
