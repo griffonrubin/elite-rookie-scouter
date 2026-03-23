@@ -16,7 +16,7 @@ async function getPlayer(slug: string) {
             SELECT
                 p.id, p.slug, p.full_name, p.first_name, p.last_name,
                 p.position, p.dob, p.age_at_draft, p.height_inches, p.weight_lbs,
-                p.star_rating, p.draft_year, p.headshot_url, p.nfl_team,
+                p.star_rating, p.draft_year, p.headshot_url, p.espn_college_id, p.nfl_team,
                 p.breakout_age, p.breakout_year,
                 p.recruiting_composite, p.recruiting_stars, p.recruiting_year,
                 COALESCE(
@@ -198,7 +198,13 @@ async function getPlayer(slug: string) {
               `, [player.position]).catch(() => [] as any[])
             : [];
 
-        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [] };
+        // High school data
+        const highSchool = await queryOne<any>(
+            "SELECT * FROM high_school_stats WHERE player_id = $1",
+            [player.id]
+        ).catch(() => null);
+
+        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [], highSchool: highSchool || null };
     } catch (e) {
         console.error("DB Error:", e);
         return null;

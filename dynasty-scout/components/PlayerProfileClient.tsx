@@ -118,6 +118,7 @@ interface Props {
     nextPlayer: { slug: string; full_name: string; position: string } | null;
     wrAdvanced: any | null;
     peerWrAdv: any[];
+    highSchool: any | null;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -125,7 +126,7 @@ interface Props {
 export function PlayerProfileClient({
     player, stats, rankings, measurables, speedScore, news, trustIndicator,
     peerCareer, peerAdvanced, historicalComps, epaStats, dominatorStats,
-    prevPlayer, nextPlayer, wrAdvanced, peerWrAdv,
+    prevPlayer, nextPlayer, wrAdvanced, peerWrAdv, highSchool,
 }: Props) {
     const pos = player.position as string;
     const posStyle = POS_STYLES[pos] || 'bg-gray-500/20 text-gray-400 border-gray-500/40';
@@ -1132,6 +1133,88 @@ export function PlayerProfileClient({
                         </div>
                     )}
                 </section>
+
+                {/* ── High School ─────────────────────────────────────────────────── */}
+                {highSchool && (highSchool.high_school || highSchool.city || highSchool.state) && (
+                    <section className="mt-6">
+                        <div className="rounded-xl border border-border/40 bg-card/40 overflow-hidden">
+                            <div className="px-5 py-3 border-b border-border/30 bg-muted/10">
+                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">High School</span>
+                            </div>
+                            <div className="px-5 py-4 space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <GraduationCap className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
+                                    <span className="text-sm font-semibold text-foreground">
+                                        {highSchool.high_school || 'Unknown'}
+                                    </span>
+                                    {(highSchool.city || highSchool.state) && (
+                                        <span className="text-xs text-muted-foreground/60">
+                                            {[highSchool.city, highSchool.state].filter(Boolean).join(', ')}
+                                        </span>
+                                    )}
+                                </div>
+                                {highSchool.graduating_class && (
+                                    <div className="text-[11px] text-muted-foreground/50">
+                                        Class of {highSchool.graduating_class}
+                                    </div>
+                                )}
+                                {/* Career stats grid — only shown if we have any stats */}
+                                {(highSchool.rush_yards || highSchool.rec_yards || highSchool.pass_yards) && (
+                                    <div className="grid grid-cols-3 gap-2 mt-2">
+                                        {pos === 'QB' && highSchool.pass_yards != null && (
+                                            <>
+                                                <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                    <div className="text-xs font-black text-foreground">{highSchool.pass_yards?.toLocaleString()}</div>
+                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Pass Yds</div>
+                                                </div>
+                                                <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                    <div className="text-xs font-black text-foreground">{highSchool.pass_tds ?? '—'}</div>
+                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Pass TD</div>
+                                                </div>
+                                            </>
+                                        )}
+                                        {(pos === 'RB') && highSchool.rush_yards != null && (
+                                            <>
+                                                <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                    <div className="text-xs font-black text-foreground">{highSchool.rush_yards?.toLocaleString()}</div>
+                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Rush Yds</div>
+                                                </div>
+                                                <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                    <div className="text-xs font-black text-foreground">{highSchool.rush_tds ?? '—'}</div>
+                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Rush TD</div>
+                                                </div>
+                                            </>
+                                        )}
+                                        {(pos === 'WR' || pos === 'TE') && highSchool.rec_yards != null && (
+                                            <>
+                                                <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                    <div className="text-xs font-black text-foreground">{highSchool.rec_yards?.toLocaleString()}</div>
+                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Rec Yds</div>
+                                                </div>
+                                                <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                    <div className="text-xs font-black text-foreground">{highSchool.rec_tds ?? '—'}</div>
+                                                    <div className="text-[9px] text-muted-foreground/50 uppercase">Rec TD</div>
+                                                </div>
+                                            </>
+                                        )}
+                                        {highSchool.total_yards != null && (
+                                            <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                <div className="text-xs font-black text-foreground">{highSchool.total_yards?.toLocaleString()}</div>
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase">Total Yds</div>
+                                            </div>
+                                        )}
+                                        {highSchool.total_tds != null && (
+                                            <div className="text-center p-2 rounded-lg bg-muted/20">
+                                                <div className="text-xs font-black text-foreground">{highSchool.total_tds}</div>
+                                                <div className="text-[9px] text-muted-foreground/50 uppercase">Total TD</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+                )}
 
                 {/* ── ZONE 6: Expert Rankings ───────────────────────────────────────── */}
                 <section id="rankings" className="scroll-mt-16 md:scroll-mt-56">

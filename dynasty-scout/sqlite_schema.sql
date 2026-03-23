@@ -206,6 +206,23 @@ CREATE TABLE IF NOT EXISTS wr_advanced_career (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- High school career stats
+CREATE TABLE IF NOT EXISTS high_school_stats (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  player_id INTEGER REFERENCES players(id) UNIQUE,
+  high_school TEXT,
+  city TEXT,
+  state TEXT,
+  graduating_class INTEGER,       -- e.g. 2023
+  games INTEGER,
+  pass_yards INTEGER, pass_tds INTEGER,
+  rush_yards INTEGER, rush_tds INTEGER,
+  rec_yards INTEGER, rec_tds INTEGER,
+  total_yards INTEGER, total_tds INTEGER,
+  data_source TEXT,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes (SQLite uses simpler syntax usually, but these work)
 CREATE INDEX IF NOT EXISTS idx_players_position ON players(position);
 CREATE INDEX IF NOT EXISTS idx_players_draft_year ON players(draft_year);

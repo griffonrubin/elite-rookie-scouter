@@ -43,7 +43,7 @@ async function getPlayerData(slug: string) {
         SELECT
             p.id, p.slug, p.full_name, p.first_name, p.last_name,
             p.position, p.dob, p.age_at_draft, p.height_inches, p.weight_lbs,
-            p.star_rating, p.draft_year, p.headshot_url, p.nfl_team,
+            p.star_rating, p.draft_year, p.headshot_url, p.espn_college_id, p.nfl_team,
             p.breakout_age, p.breakout_year, p.recruiting_stars,
             COALESCE(
                 (SELECT school FROM college_career WHERE player_id = p.id ORDER BY id DESC LIMIT 1),
@@ -459,8 +459,8 @@ function PlayerHeader({ player, side }: { player: any; side: 'left' | 'right' })
                         border: `2px solid ${posColor}40`,
                     }}
                 >
-                    {player.headshot_url ? (
-                        <img src={player.headshot_url} alt="" className="w-full h-full object-cover" />
+                    {(player.headshot_url || player.espn_college_id) ? (
+                        <img src={player.headshot_url || `https://a.espncdn.com/i/headshots/college-football/players/full/${player.espn_college_id}.png`} alt="" className="w-full h-full object-cover" />
                     ) : (
                         <span className="text-lg sm:text-2xl font-black" style={{ color: `${posColor}60` }}>{player.position?.[0]}</span>
                     )}

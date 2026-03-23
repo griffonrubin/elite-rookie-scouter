@@ -121,6 +121,25 @@ export interface Measurables {
     wingspan?: number;
 }
 
+export interface HighSchoolStats {
+    id: number;
+    player_id: number;
+    high_school?: string;
+    city?: string;
+    state?: string;
+    graduating_class?: number;
+    games?: number;
+    pass_yards?: number;
+    pass_tds?: number;
+    rush_yards?: number;
+    rush_tds?: number;
+    rec_yards?: number;
+    rec_tds?: number;
+    total_yards?: number;
+    total_tds?: number;
+    data_source?: string;
+}
+
 export interface Ranking {
     id: number;
     player_id: number;

@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "player": "Ty Simpson",
+    "reason": "No ESPN ID"
+  },
+  {
+    "player": "Chris Bell",
+    "reason": "No ESPN ID"
+  },
+  {
+    "player": "Antonio Williams",
+    "reason": "No ESPN ID"
+  },
+  {
+    "player": "Eric Rivers",
+    "reason": "No ESPN ID"
+  },
+  {
+    "player": "Jamarion Miller",
+    "reason": "No ESPN ID"
+  },
+  {
+    "player": "Emmanuel Henderson",
+    "reason": "No ESPN ID"
+  },
+  {
+    "player": "Curtis Allen",
+    "reason": "No categories in ESPN V3"
+  },
+  {
+    "player": "Noah Thomas",
+    "reason": "No ESPN ID"
+  },
+  {
+    "player": "L.J. Johnson Jr.",
+    "reason": "No ESPN ID"
+  },
+  {
+    "player": "Max Tomzcak",
+    "reason": "No ESPN ID"
+  }
+]

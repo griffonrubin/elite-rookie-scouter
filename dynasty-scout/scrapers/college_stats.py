@@ -150,6 +150,37 @@ def parse_v3_stats(data):
     return seasons
 
 
+def cleanup_phantom_rows(cur, player_id, player_name, espn_seasons, dry_run=False):
+    """Delete college_stats rows that conflict with ESPN V3 data.
+
+    For seasons ESPN V3 covers: delete rows with a DIFFERENT school.
+    Rows for seasons ESPN V3 doesn't cover are left untouched (may be from other sources).
+    """
+    cleaned = 0
+    for yr, sdata in espn_seasons.items():
+        espn_school = sdata['school']
+        if espn_school == 'Unknown':
+            continue
+        cur.execute(
+            "SELECT id, school FROM college_stats WHERE player_id = ? AND season = ? AND school != ?",
+            (player_id, yr, espn_school)
+        )
+        conflicts = cur.fetchall()
+        for row_id, bad_school in conflicts:
+            if dry_run:
+                print(f"    [DRY] Would delete college_stats id={row_id} ({yr}/{bad_school}) — ESPN says {espn_school}")
+            else:
+                print(f"    CLEANUP: Deleting college_stats id={row_id} ({yr}/{bad_school}) — ESPN says {espn_school}")
+                cur.execute("DELETE FROM college_stats WHERE id = ?", (row_id,))
+            cleaned += 1
+        if not dry_run:
+            cur.execute(
+                "DELETE FROM player_transfers WHERE player_id = ? AND season = ? AND school != ?",
+                (player_id, yr, espn_school)
+            )
+    return cleaned
+
+
 def run_scraper(dry_run=False, target_slug=None):
     if dry_run:
         print("DRY RUN MODE: No database changes will be made.")
@@ -208,6 +239,11 @@ def run_scraper(dry_run=False, target_slug=None):
             if not seasons:
                 print(f"  [{p_name}] Parsed 0 seasons from V3")
                 continue
+
+            # Clean phantom rows that conflict with ESPN V3 data
+            n_cleaned = cleanup_phantom_rows(cur, p_id, p_name, seasons, dry_run=dry_run)
+            if n_cleaned > 0:
+                print(f"    [{p_name}] Cleaned {n_cleaned} phantom row(s)")
 
             # Fetch GP from V2 for each season found
             for yr, s_obj in seasons.items():
@@ -270,6 +306,15 @@ def run_scraper(dry_run=False, target_slug=None):
                     sdata['receptions'], sdata['rec_yards'], sdata['rec_tds']
                 ))
                 upserted += 1
+
+            # Clean orphaned college_career rows (schools no longer in any stats row)
+            if not dry_run:
+                cur.execute('''
+                    DELETE FROM college_career
+                    WHERE player_id = ? AND school NOT IN (
+                        SELECT DISTINCT school FROM college_stats WHERE player_id = ?
+                    )
+                ''', (p_id, p_id))
 
             conn.commit()
 
