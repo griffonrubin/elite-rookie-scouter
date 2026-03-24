@@ -1,6 +1,6 @@
 import { query, queryOne } from '@/lib/db';
 import Link from 'next/link';
-import { ArrowLeft, Dumbbell, BookOpen, Activity, Scale, TrendingUp, Users } from 'lucide-react';
+import { ArrowLeft, Dumbbell, BookOpen, Activity, Scale, TrendingUp, Users, Clapperboard } from 'lucide-react';
 import { POSITION_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { notFound } from 'next/navigation';
@@ -109,10 +109,16 @@ async function getPlayerData(slug: string) {
     if (careerStat.receptions > 0) careerStat.yards_per_reception = careerStat.rec_yards / careerStat.receptions;
     if (careerStat.rush_attempts > 0) careerStat.yards_per_carry = careerStat.rush_yards / careerStat.rush_attempts;
 
+    const jfosterData = await queryOne<any>(
+        "SELECT * FROM jfoster_grades WHERE player_id = $1",
+        [player.id]
+    ).catch(() => null);
+
     return {
         ...player,
         careerStat: stats.length > 0 ? careerStat : null,
         speedScore: computeSpeedScore(player.weight_lbs, player.forty_yard),
+        jfosterData: jfosterData || null,
     };
 }
 
@@ -271,6 +277,14 @@ export default async function ComparePage({ searchParams }: Props) {
                         rows={buildAdvancedMetrics(playerA, playerB)}
                     />
 
+                    {buildJFosterRows(playerA, playerB).length > 0 && (
+                        <CompareSection
+                            title="J. Foster Film Scout"
+                            icon={<Clapperboard className="w-4 h-4" />}
+                            rows={buildJFosterRows(playerA, playerB)}
+                        />
+                    )}
+
                     <CompareSection
                         title="Background"
                         icon={<Users className="w-4 h-4" />}
@@ -294,6 +308,8 @@ export default async function ComparePage({ searchParams }: Props) {
                             { numA: playerA.forty_yard, numB: playerB.forty_yard, lowerWins: true, label: '40 Yard Dash' },
                             { numA: playerA.ras, numB: playerB.ras, lowerWins: false, label: 'RAS' },
                             { numA: playerA.age_at_draft, numB: playerB.age_at_draft, lowerWins: true, label: 'Age' },
+                            { numA: playerA.jfosterData?.overall_grade, numB: playerB.jfosterData?.overall_grade, lowerWins: false, label: 'Film Grade' },
+                            { numA: playerA.jfosterData?.athletic_score, numB: playerB.jfosterData?.athletic_score, lowerWins: false, label: 'Film Athletic Score' },
                         ].filter(r => r.numA != null && r.numB != null && r.numA !== r.numB)),
                     ];
                     const aWins = allRows.filter(r => r.lowerWins ? r.numA! < r.numB! : r.numA! > r.numB!);
@@ -440,6 +456,51 @@ function buildAdvancedMetrics(playerA: any, playerB: any) {
     const baB = playerB.breakout_age != null ? `${playerB.breakout_age} (${playerB.breakout_year})` : '—';
     if (posA !== 'QB' || posB !== 'QB') {
         rows.push({ label: 'Breakout Age', a: baA, b: baB, numA: playerA.breakout_age ?? null, numB: playerB.breakout_age ?? null, lowerWins: true });
+    }
+
+    return rows;
+}
+
+function buildJFosterRows(playerA: any, playerB: any) {
+    const jA = playerA.jfosterData;
+    const jB = playerB.jfosterData;
+    if (!jA && !jB) return [];
+
+    const rows: any[] = [];
+
+    if (jA?.overall_grade != null || jB?.overall_grade != null) {
+        rows.push({ label: 'Overall Grade', a: jA?.overall_grade != null ? `${jA.overall_grade.toFixed(2)}/10` : '—', b: jB?.overall_grade != null ? `${jB.overall_grade.toFixed(2)}/10` : '—', numA: jA?.overall_grade ?? null, numB: jB?.overall_grade ?? null, lowerWins: false });
+    }
+    if (jA?.round_grade || jB?.round_grade) {
+        rows.push({ label: 'Round Projection', a: jA?.round_grade || '—', b: jB?.round_grade || '—' });
+    }
+    if (jA?.nfl_comp || jB?.nfl_comp) {
+        rows.push({ label: 'NFL Film Comp', a: jA?.nfl_comp || '—', b: jB?.nfl_comp || '—' });
+    }
+    if (jA?.athletic_score != null || jB?.athletic_score != null) {
+        rows.push({ label: 'Athletic Score', a: jA?.athletic_score != null ? `${jA.athletic_score}` : '—', b: jB?.athletic_score != null ? `${jB.athletic_score}` : '—', numA: jA?.athletic_score ?? null, numB: jB?.athletic_score ?? null, lowerWins: false });
+    }
+    if (jA?.speed_score_jf != null || jB?.speed_score_jf != null) {
+        rows.push({ label: 'Film Speed', a: jA?.speed_score_jf != null ? `${jA.speed_score_jf}` : '—', b: jB?.speed_score_jf != null ? `${jB.speed_score_jf}` : '—', numA: jA?.speed_score_jf ?? null, numB: jB?.speed_score_jf ?? null, lowerWins: false });
+    }
+    if (jA?.acceleration_score != null || jB?.acceleration_score != null) {
+        rows.push({ label: 'Film Acceleration', a: jA?.acceleration_score != null ? `${jA.acceleration_score}` : '—', b: jB?.acceleration_score != null ? `${jB.acceleration_score}` : '—', numA: jA?.acceleration_score ?? null, numB: jB?.acceleration_score ?? null, lowerWins: false });
+    }
+    if (jA?.agility_score_jf != null || jB?.agility_score_jf != null) {
+        rows.push({ label: 'Film Agility', a: jA?.agility_score_jf != null ? `${jA.agility_score_jf}` : '—', b: jB?.agility_score_jf != null ? `${jB.agility_score_jf}` : '—', numA: jA?.agility_score_jf ?? null, numB: jB?.agility_score_jf ?? null, lowerWins: false });
+    }
+    if (jA?.size_score != null || jB?.size_score != null) {
+        rows.push({ label: 'Film Size Score', a: jA?.size_score != null ? `${jA.size_score}` : '—', b: jB?.size_score != null ? `${jB.size_score}` : '—', numA: jA?.size_score ?? null, numB: jB?.size_score ?? null, lowerWins: false });
+    }
+
+    // Key film grades — shared universal metrics
+    const gradesA: Record<string, number> = jA?.film_grades ? JSON.parse(jA.film_grades) : {};
+    const gradesB: Record<string, number> = jB?.film_grades ? JSON.parse(jB.film_grades) : {};
+    const UNIVERSAL = ['Speed', 'Acceleration', 'Agility (COD)', 'Route Running', 'Catching'];
+    for (const metric of UNIVERSAL) {
+        if (gradesA[metric] != null || gradesB[metric] != null) {
+            rows.push({ label: metric, a: gradesA[metric] != null ? `${Math.round(gradesA[metric])}` : '—', b: gradesB[metric] != null ? `${Math.round(gradesB[metric])}` : '—', numA: gradesA[metric] ?? null, numB: gradesB[metric] ?? null, lowerWins: false });
+        }
     }
 
     return rows;
