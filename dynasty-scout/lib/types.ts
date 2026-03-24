@@ -198,6 +198,22 @@ export interface WrAdvancedCareer {
     slot_rate?: number;
 }
 
+export interface NflScoutProfile {
+    id: number;
+    player_id: number;
+    overview?: string;
+    strengths?: string;
+    weaknesses?: string;
+    profile_author?: string;
+    athleticism_score?: number;
+    production_score?: number;
+    size_score?: number;
+    draft_grade?: number;
+    nfl_comparison?: string;
+    source?: string;
+    updated_at?: string;
+}
+
 export interface JFosterGrades {
     id: number;
     player_id: number;

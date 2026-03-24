@@ -139,6 +139,28 @@ def ensure_pg_schema(pg):
             updated_at TIMESTAMP DEFAULT NOW()
         )
         """,
+        # measurables new combine columns
+        "ALTER TABLE measurables ADD COLUMN IF NOT EXISTS athleticism_score REAL",
+        "ALTER TABLE measurables ADD COLUMN IF NOT EXISTS draft_grade_nfl REAL",
+        "ALTER TABLE measurables ADD COLUMN IF NOT EXISTS nfl_comparison TEXT",
+        # nfl_scout_profiles table
+        """
+        CREATE TABLE IF NOT EXISTS nfl_scout_profiles (
+            id SERIAL PRIMARY KEY,
+            player_id INTEGER REFERENCES players(id) UNIQUE,
+            overview TEXT,
+            strengths TEXT,
+            weaknesses TEXT,
+            profile_author TEXT,
+            athleticism_score REAL,
+            production_score REAL,
+            size_score REAL,
+            draft_grade REAL,
+            nfl_comparison TEXT,
+            source TEXT DEFAULT 'nfl_combine_2026',
+            updated_at TIMESTAMP DEFAULT NOW()
+        )
+        """,
         # historical_comps table
         """
         CREATE TABLE IF NOT EXISTS historical_comps (
@@ -184,6 +206,7 @@ def sync_measurables(pg, sq):
         SELECT m.player_id, m.forty_yard, m.ten_yard_split, m.bench_press,
                m.vertical_jump, m.broad_jump, m.three_cone, m.twenty_yard_shuttle,
                m.speed_score, m.ras, m.hand_size, m.arm_length, m.wingspan,
+               m.athleticism_score, m.draft_grade_nfl, m.nfl_comparison,
                p.headshot_url
         FROM measurables m
         JOIN players p ON p.id = m.player_id
@@ -195,8 +218,9 @@ def sync_measurables(pg, sq):
         cur_pg.execute("""
             INSERT INTO measurables (player_id, forty_yard, ten_yard_split, bench_press,
                 vertical_jump, broad_jump, three_cone, twenty_yard_shuttle,
-                speed_score, ras, hand_size, arm_length, wingspan)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                speed_score, ras, hand_size, arm_length, wingspan,
+                athleticism_score, draft_grade_nfl, nfl_comparison)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (player_id) DO UPDATE SET
                 forty_yard           = COALESCE(EXCLUDED.forty_yard, measurables.forty_yard),
                 ten_yard_split       = COALESCE(EXCLUDED.ten_yard_split, measurables.ten_yard_split),
@@ -209,10 +233,14 @@ def sync_measurables(pg, sq):
                 ras                  = COALESCE(EXCLUDED.ras, measurables.ras),
                 hand_size            = COALESCE(EXCLUDED.hand_size, measurables.hand_size),
                 arm_length           = COALESCE(EXCLUDED.arm_length, measurables.arm_length),
-                wingspan             = COALESCE(EXCLUDED.wingspan, measurables.wingspan)
+                wingspan             = COALESCE(EXCLUDED.wingspan, measurables.wingspan),
+                athleticism_score    = COALESCE(EXCLUDED.athleticism_score, measurables.athleticism_score),
+                draft_grade_nfl      = COALESCE(EXCLUDED.draft_grade_nfl, measurables.draft_grade_nfl),
+                nfl_comparison       = COALESCE(EXCLUDED.nfl_comparison, measurables.nfl_comparison)
         """, (r["player_id"], r["forty_yard"], r["ten_yard_split"], r["bench_press"],
               r["vertical_jump"], r["broad_jump"], r["three_cone"], r["twenty_yard_shuttle"],
-              r["speed_score"], r["ras"], r["hand_size"], r["arm_length"], r["wingspan"]))
+              r["speed_score"], r["ras"], r["hand_size"], r["arm_length"], r["wingspan"],
+              r["athleticism_score"], r["draft_grade_nfl"], r["nfl_comparison"]))
         upserted += 1
 
         # Also sync headshot_url to players table
@@ -682,6 +710,97 @@ def sync_jfoster_grades(pg, sq):
     print(f"J. Foster grades: {upserted} rows upserted")
 
 
+# ── Sync nfl_scout_profiles ──────────────────────────────────────────────
+
+def sync_nfl_scout_profiles(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    rows = cur_sq.execute("""
+        SELECT player_id, overview, strengths, weaknesses, profile_author,
+               athleticism_score, production_score, size_score, draft_grade,
+               nfl_comparison, source
+        FROM nfl_scout_profiles
+    """).fetchall()
+
+    upserted = 0
+    for r in rows:
+        cur_pg.execute("""
+            INSERT INTO nfl_scout_profiles (
+                player_id, overview, strengths, weaknesses, profile_author,
+                athleticism_score, production_score, size_score, draft_grade,
+                nfl_comparison, source
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (player_id) DO UPDATE SET
+                overview          = EXCLUDED.overview,
+                strengths         = EXCLUDED.strengths,
+                weaknesses        = EXCLUDED.weaknesses,
+                profile_author    = EXCLUDED.profile_author,
+                athleticism_score = EXCLUDED.athleticism_score,
+                production_score  = EXCLUDED.production_score,
+                size_score        = EXCLUDED.size_score,
+                draft_grade       = EXCLUDED.draft_grade,
+                nfl_comparison    = EXCLUDED.nfl_comparison,
+                source            = EXCLUDED.source,
+                updated_at        = NOW()
+        """, (r["player_id"], r["overview"], r["strengths"], r["weaknesses"],
+              r["profile_author"], r["athleticism_score"], r["production_score"],
+              r["size_score"], r["draft_grade"], r["nfl_comparison"], r["source"]))
+        upserted += 1
+
+    pg.commit()
+    print(f"NFL scout profiles: {upserted} rows upserted")
+
+
+# ── Sync news ─────────────────────────────────────────────────────────────
+
+def sync_news(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    cur_pg.execute("""
+        CREATE TABLE IF NOT EXISTS news (
+            id SERIAL PRIMARY KEY,
+            player_id INTEGER REFERENCES players(id),
+            team_id INTEGER,
+            title TEXT NOT NULL,
+            summary TEXT,
+            source TEXT,
+            source_url TEXT UNIQUE,
+            published_at TEXT,
+            scraped_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
+    pg.commit()
+
+    rows = cur_sq.execute("""
+        SELECT n.player_id, n.title, n.summary, n.source, n.source_url, n.published_at
+        FROM news n
+        WHERE n.player_id IS NOT NULL
+        ORDER BY n.published_at DESC
+    """).fetchall()
+
+    upserted = 0
+    for r in rows:
+        try:
+            cur_pg.execute("""
+                INSERT INTO news (player_id, title, summary, source, source_url, published_at)
+                VALUES (%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (source_url) DO UPDATE SET
+                    title        = EXCLUDED.title,
+                    summary      = EXCLUDED.summary,
+                    published_at = EXCLUDED.published_at
+            """, (r["player_id"], r["title"], r["summary"],
+                  r["source"], r["source_url"], r["published_at"]))
+            upserted += 1
+        except Exception:
+            pg.rollback()
+            cur_pg = pg.cursor()
+
+    pg.commit()
+    print(f"News: {upserted} articles upserted")
+
+
 # ── Sync college_career cleanup ──────────────────────────────────────────
 
 def sync_college_career(pg, sq):
@@ -811,6 +930,12 @@ def run():
 
     print("\n[12] Syncing J. Foster grades...")
     sync_jfoster_grades(pg, sq)
+
+    print("\n[13] Syncing NFL combine scout profiles...")
+    sync_nfl_scout_profiles(pg, sq)
+
+    print("\n[14] Syncing news...")
+    sync_news(pg, sq)
 
     pg.close()
     sq.close()

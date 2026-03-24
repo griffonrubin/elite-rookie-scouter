@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { WatchlistButton } from '@/components/WatchlistButton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AppHeader } from '@/components/AppHeader';
-import type { CollegeStats, JFosterGrades, Measurables, Ranking } from '@/lib/types';
+import type { CollegeStats, JFosterGrades, Measurables, NflScoutProfile, Ranking } from '@/lib/types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -122,6 +122,7 @@ interface Props {
     peerWrAdv: any[];
     highSchool: any | null;
     jfosterData: JFosterGrades | null;
+    nflScout: NflScoutProfile | null;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -129,7 +130,7 @@ interface Props {
 export function PlayerProfileClient({
     player, stats, rankings, measurables, speedScore, news, trustIndicator,
     peerCareer, peerAdvanced, historicalComps, epaStats, dominatorStats,
-    prevPlayer, nextPlayer, wrAdvanced, peerWrAdv, highSchool, jfosterData,
+    prevPlayer, nextPlayer, wrAdvanced, peerWrAdv, highSchool, jfosterData, nflScout,
 }: Props) {
     const pos = player.position as string;
     const posStyle = POS_STYLES[pos] || 'bg-gray-500/20 text-gray-400 border-gray-500/40';
@@ -866,6 +867,61 @@ export function PlayerProfileClient({
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* NFL.com Combine Scout Card */}
+                    {nflScout && (nflScout.draft_grade != null || nflScout.nfl_comparison || nflScout.overview) && (
+                        <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden">
+                            <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between">
+                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">NFL Scout</span>
+                                <span className="text-[10px] text-muted-foreground/40">
+                                    {nflScout.profile_author ?? 'NFL.com'} · 2026 Combine
+                                </span>
+                            </div>
+                            <div className="p-4 space-y-3">
+                                <div className="flex flex-wrap gap-3 items-center">
+                                    {nflScout.draft_grade != null && (
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className="text-2xl font-black font-mono text-foreground">
+                                                {nflScout.draft_grade.toFixed(1)}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground/50">/100</span>
+                                        </div>
+                                    )}
+                                    {nflScout.nfl_comparison && (
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Comp</span>
+                                            <span className="text-sm font-semibold text-foreground/90">{nflScout.nfl_comparison}</span>
+                                        </div>
+                                    )}
+                                    {nflScout.athleticism_score != null && (
+                                        <div className="flex items-center gap-1.5 ml-auto">
+                                            <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Ath</span>
+                                            <span className="text-sm font-bold font-mono text-primary">{nflScout.athleticism_score.toFixed(1)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                {nflScout.overview && (
+                                    <p className="text-xs text-muted-foreground/70 leading-relaxed line-clamp-4">{nflScout.overview}</p>
+                                )}
+                                {(nflScout.strengths || nflScout.weaknesses) && (
+                                    <div className="grid grid-cols-2 gap-3 pt-1">
+                                        {nflScout.strengths && (
+                                            <div>
+                                                <div className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/70 mb-1">Strengths</div>
+                                                <p className="text-[11px] text-muted-foreground/60 leading-relaxed">{nflScout.strengths}</p>
+                                            </div>
+                                        )}
+                                        {nflScout.weaknesses && (
+                                            <div>
+                                                <div className="text-[9px] font-bold uppercase tracking-widest text-red-500/60 mb-1">Weaknesses</div>
+                                                <p className="text-[11px] text-muted-foreground/60 leading-relaxed">{nflScout.weaknesses}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

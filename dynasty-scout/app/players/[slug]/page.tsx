@@ -1,5 +1,5 @@
 import { query, queryOne } from '@/lib/db';
-import { CollegeStats, JFosterGrades, Measurables, Ranking } from '@/lib/types';
+import { CollegeStats, JFosterGrades, Measurables, NflScoutProfile, Ranking } from '@/lib/types';
 import Link from 'next/link';
 import { PlayerProfileClient } from '@/components/PlayerProfileClient';
 
@@ -214,7 +214,13 @@ async function getPlayer(slug: string) {
             [player.id]
         ).catch(() => null);
 
-        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [], highSchool: highSchool || null, jfosterData: jfosterData || null };
+        // NFL.com combine scout profile
+        const nflScout = await queryOne<NflScoutProfile>(
+            "SELECT * FROM nfl_scout_profiles WHERE player_id = $1",
+            [player.id]
+        ).catch(() => null);
+
+        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [], highSchool: highSchool || null, jfosterData: jfosterData || null, nflScout: nflScout || null };
     } catch (e) {
         console.error("DB Error:", e);
         return null;

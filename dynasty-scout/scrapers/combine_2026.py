@@ -1,44 +1,82 @@
 """
 scrapers/combine_2026.py
-Fetches 2026 NFL Combine measurements from the official NFL API
-via Playwright request interception.
+Fetches 2026 NFL Combine data from NFL.com via Playwright.
 
-NFL.com's combine tracker loads:
-  https://api.nfl.com/football/v2/combine/rankings?limit=500&rankAttribute=FORTY_YARD_DASH&sortOrder=A
-Each combineProfile object contains ALL measurements for that player — not just the sorted drill.
+The combine tracker page auto-fires api.nfl.com/football/v2/combine/rankings
+~10s after load (after cookie consent dismiss). No click interaction needed.
 
-The page also exposes draft grades, NFL comparisons, and athletic scores.
-These are saved to measurables and players tables where columns exist.
+Data captured per player:
+  - Combine drills: 40yd, 10yd split, vertical, broad jump, 3-cone, shuttle, bench
+  - Physical: height, weight, hand size, arm length
+  - NFL grades: draft grade, athleticism score, production score
+  - NFL comparison player, scouting overview, strengths, weaknesses
+  - Profile author (e.g. Lance Zierlein)
 
 Run: py scrapers/combine_2026.py
+Run single: py scrapers/combine_2026.py carnell-tate
 """
 
 import sqlite3
 import re
 import os
-import json
 import time
+import sys
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dynasty_scout.db')
 
-# Position tabs on NFL.com combine tracker — each triggers a separate API call
-POSITION_TABS = ['QB', 'RB', 'WR', 'TE', 'OT', 'IOL', 'EDGE', 'DI', 'LB', 'CB', 'S']
 
+# ─── Schema helpers ──────────────────────────────────────────────────────────
+
+def ensure_schema(conn):
+    cur = conn.cursor()
+    # Add new columns to measurables if they don't exist
+    for col, typ in [
+        ('athleticism_score', 'REAL'),
+        ('draft_grade_nfl',   'REAL'),
+        ('nfl_comparison',    'TEXT'),
+    ]:
+        try:
+            cur.execute(f'ALTER TABLE measurables ADD COLUMN {col} {typ}')
+        except Exception:
+            pass  # Already exists
+
+    # New table for NFL.com scouting reports
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS nfl_scout_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER REFERENCES players(id) UNIQUE,
+            overview TEXT,
+            strengths TEXT,
+            weaknesses TEXT,
+            profile_author TEXT,
+            athleticism_score REAL,
+            production_score REAL,
+            size_score REAL,
+            draft_grade REAL,
+            nfl_comparison TEXT,
+            source TEXT DEFAULT 'nfl_combine_2026',
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+
+
+# ─── Player matching ──────────────────────────────────────────────────────────
 
 def normalize(name: str) -> str:
     name = name.lower()
-    name = re.sub(r"[''`\-\,]", "", name)
-    name = re.sub(r"\.", " ", name)
+    name = re.sub(r"[''`\-\.,]", "", name)
     name = re.sub(r"\b(jr|sr|ii|iii|iv|v)\b", "", name)
     name = re.sub(r"\s+", " ", name).strip()
     return name
 
 
 def build_player_map(cur):
-    cur.execute("SELECT id, full_name FROM players WHERE draft_year = 2026")
+    cur.execute("SELECT id, full_name, position FROM players WHERE draft_year = 2026")
     m = {}
-    for p_id, name in cur.fetchall():
-        m[normalize(name)] = p_id
+    for p_id, name, pos in cur.fetchall():
+        key = normalize(name)
+        m[key] = (p_id, pos)
     return m
 
 
@@ -47,282 +85,301 @@ def match_player(name: str, player_map: dict):
         return None
     key = normalize(name)
     if key in player_map:
-        return player_map[key]
+        return player_map[key][0]
+    # Try first + last only
     parts = key.split()
     if len(parts) >= 2:
         fl = f"{parts[0]} {parts[-1]}"
         if fl in player_map:
-            return player_map[fl]
+            return player_map[fl][0]
     return None
 
 
-def extract_val(obj, *keys):
-    """Extract a numeric value from a possibly-null NFL API measurement dict."""
+# ─── Data extraction ──────────────────────────────────────────────────────────
+
+def parse_drill(obj):
+    """Extract seconds/value from an NFL API drill object like {'seconds': 4.26, 'designation': 'OFFICIAL'}."""
     if obj is None:
         return None
     if isinstance(obj, (int, float)):
-        return obj
+        return float(obj) if obj > 0 else None
     if isinstance(obj, dict):
-        for k in keys:
-            v = obj.get(k)
-            if v is not None:
-                return v
+        v = obj.get('seconds') or obj.get('inches') or obj.get('value') or obj.get('repetitions')
+        return float(v) if v and float(v) > 0 else None
     return None
 
 
 def parse_float(val):
     try:
         v = float(val)
-        return round(v, 3) if v > 0 else None
+        return round(v, 3) if v and v > 0 else None
     except (TypeError, ValueError):
         return None
 
 
-def parse_int(val):
-    try:
-        v = int(float(val))
-        return v if v > 0 else None
-    except (TypeError, ValueError):
-        return None
+def strip_html(html: str) -> str:
+    if not html:
+        return ''
+    text = re.sub(r'<li[^>]*>', '• ', html)
+    text = re.sub(r'<[^>]+>', '', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
 
 
-def profile_to_row(profile: dict) -> dict:
-    """Convert an NFL API combineProfile object into DB column values."""
-    person = profile.get('person') or {}
+def extract_profile(prof: dict) -> dict:
+    person = prof.get('person') or {}
     name = (person.get('displayName') or
             f"{person.get('firstName', '')} {person.get('lastName', '')}").strip()
 
     return {
         'name': name,
-        'forty_yard':         parse_float(extract_val(profile.get('fortyYardDash'), 'seconds')),
-        'ten_yard_split':     parse_float(extract_val(profile.get('tenYardSplit'), 'seconds')),
-        'bench_press':        parse_int(extract_val(profile.get('benchPress'), 'repetitions', 'reps')),
-        'vertical_jump':      parse_float(extract_val(profile.get('verticalJump'), 'inches')),
-        'broad_jump':         parse_int(extract_val(profile.get('broadJump'), 'inches')),
-        'three_cone':         parse_float(extract_val(profile.get('threeConeDrill'), 'seconds')),
-        'twenty_yard_shuttle':parse_float(extract_val(profile.get('twentyYardShuttle'), 'seconds')),
-        # Extra fields we'll save to players if available
-        'headshot':    profile.get('headshot', ''),
-        'draft_grade': profile.get('draftGrade'),
-        'nfl_comp':    profile.get('nflComparison'),
+        # Drills
+        'forty_yard':          parse_drill(prof.get('fortyYardDash')),
+        'ten_yard_split':      parse_drill(prof.get('tenYardSplit')),
+        'vertical_jump':       parse_drill(prof.get('verticalJump')),
+        'broad_jump':          parse_drill(prof.get('broadJump')),
+        'three_cone':          parse_drill(prof.get('threeConeDrill')),
+        'twenty_yard_shuttle': parse_drill(prof.get('twentyYardShuttle')),
+        'bench_press':         parse_drill(prof.get('benchPress')),
+        # Physical
+        'height':              parse_float(prof.get('height')),
+        'weight':              parse_float(prof.get('weight')),
+        'hand_size':           parse_float(prof.get('handSize')),
+        'arm_length':          parse_float(prof.get('armLength')),
+        # NFL grades/scores
+        'athleticism_score':   parse_float(prof.get('athleticismScore')),
+        'production_score':    parse_float(prof.get('productionScore')),
+        'size_score':          parse_float(prof.get('sizeScore')),
+        'draft_grade':         parse_float(prof.get('draftGrade')),
+        'nfl_comparison':      prof.get('nflComparison'),
+        # Scouting
+        'overview':            strip_html(prof.get('overview') or ''),
+        'strengths':           strip_html(prof.get('strengths') or ''),
+        'weaknesses':          strip_html(prof.get('weaknesses') or ''),
+        'profile_author':      prof.get('profileAuthor'),
+        # Meta
+        'headshot':            prof.get('headshot', ''),
+        'position':            prof.get('position', ''),
     }
 
 
-def run():
+# ─── DB upserts ──────────────────────────────────────────────────────────────
+
+def upsert_measurables(cur, player_id: int, row: dict):
+    # Check if row exists
+    cur.execute("SELECT id FROM measurables WHERE player_id = ?", (player_id,))
+    existing = cur.fetchone()
+
+    drills = {
+        'forty_yard':          row['forty_yard'],
+        'ten_yard_split':      row['ten_yard_split'],
+        'vertical_jump':       row['vertical_jump'],
+        'broad_jump':          row['broad_jump'],
+        'three_cone':          row['three_cone'],
+        'twenty_yard_shuttle': row['twenty_yard_shuttle'],
+        'bench_press':         row['bench_press'],
+        'hand_size':           row['hand_size'],
+        'arm_length':          row['arm_length'],
+        'athleticism_score':   row['athleticism_score'],
+        'draft_grade_nfl':     row['draft_grade'],
+        'nfl_comparison':      row['nfl_comparison'],
+    }
+
+    if existing:
+        # Only update non-null values
+        updates = {k: v for k, v in drills.items() if v is not None}
+        if updates:
+            set_clause = ', '.join(f"{k} = ?" for k in updates)
+            cur.execute(
+                f"UPDATE measurables SET {set_clause}, data_source='nfl_combine_2026' WHERE player_id = ?",
+                list(updates.values()) + [player_id]
+            )
+    else:
+        non_null = {k: v for k, v in drills.items() if v is not None}
+        cols = ', '.join(['player_id', 'event_type', 'data_source'] + list(non_null.keys()))
+        placeholders = ', '.join(['?'] * (3 + len(non_null)))
+        cur.execute(
+            f"INSERT INTO measurables ({cols}) VALUES ({placeholders})",
+            [player_id, 'combine', 'nfl_combine_2026'] + list(non_null.values())
+        )
+
+
+def upsert_scout_profile(cur, player_id: int, row: dict):
+    cur.execute("""
+        INSERT INTO nfl_scout_profiles
+            (player_id, overview, strengths, weaknesses, profile_author,
+             athleticism_score, production_score, size_score, draft_grade,
+             nfl_comparison)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(player_id) DO UPDATE SET
+            overview = excluded.overview,
+            strengths = excluded.strengths,
+            weaknesses = excluded.weaknesses,
+            profile_author = excluded.profile_author,
+            athleticism_score = excluded.athleticism_score,
+            production_score = excluded.production_score,
+            size_score = excluded.size_score,
+            draft_grade = excluded.draft_grade,
+            nfl_comparison = excluded.nfl_comparison,
+            updated_at = CURRENT_TIMESTAMP
+    """, (
+        player_id,
+        row['overview'] or None,
+        row['strengths'] or None,
+        row['weaknesses'] or None,
+        row['profile_author'],
+        row['athleticism_score'],
+        row['production_score'],
+        row['size_score'],
+        row['draft_grade'],
+        row['nfl_comparison'],
+    ))
+
+
+def update_headshot(cur, player_id: int, headshot_url: str):
+    if headshot_url and '{formatInstructions}' in headshot_url:
+        # Replace NFL's placeholder with a real format
+        url = headshot_url.replace('{formatInstructions}', 'f_auto,q_auto')
+        cur.execute(
+            "UPDATE players SET headshot_url = ? WHERE id = ? AND (headshot_url IS NULL OR headshot_url = '')",
+            (url, player_id)
+        )
+
+
+# ─── Main scrape ─────────────────────────────────────────────────────────────
+
+def scrape_combine_profiles() -> list:
+    """Use Playwright to load NFL.com and capture combine API responses."""
     from playwright.sync_api import sync_playwright
 
-    conn = sqlite3.connect(DB_PATH, timeout=15)
-    cur = conn.cursor()
-    player_map = build_player_map(cur)
-    print(f'Loaded {len(player_map)} 2026 players')
+    all_profiles = {}
 
-    cur.execute("SELECT COUNT(*) FROM measurables WHERE forty_yard IS NOT NULL")
-    before = cur.fetchone()[0]
-    print(f'40-yard times before: {before}')
+    def on_response(resp):
+        if 'football/v2/combine' in resp.url and resp.status == 200:
+            try:
+                data = resp.json()
+                for prof in data.get('combineProfiles', []):
+                    pid = prof.get('id') or (prof.get('person') or {}).get('id')
+                    if pid and pid not in all_profiles:
+                        all_profiles[pid] = prof
+            except Exception as e:
+                print(f'  Parse error: {e}')
 
-    # Collect all unique profiles keyed by person.id
-    all_profiles: dict[str, dict] = {}
-
+    print('Launching browser...')
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
             args=['--no-sandbox', '--disable-dev-shm-usage']
         )
-        context = browser.new_context(
+        ctx = browser.new_context(
             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             viewport={'width': 1280, 'height': 900},
         )
+        page = ctx.new_page()
+        page.on('response', on_response)
 
-        def capture_combine_response(response):
-            try:
-                if 'football/v2/combine/rankings' in response.url and response.status == 200:
-                    data = response.json()
-                    profiles = data.get('combineProfiles', [])
-                    new = 0
-                    for prof in profiles:
-                        pid = prof.get('id') or prof.get('person', {}).get('id')
-                        if pid and pid not in all_profiles:
-                            all_profiles[pid] = prof
-                            new += 1
-                    attr = ''
-                    if 'rankAttribute=' in response.url:
-                        attr = response.url.split('rankAttribute=')[1].split('&')[0]
-                    print(f'  [{attr}] +{new} new profiles (total={len(all_profiles)})')
-            except Exception as e:
-                print(f'  Capture error: {e}')
-
-        # Load combine tracker main page
-        print('\nLoading NFL.com combine tracker...')
-        page = context.new_page()
-        page.on('response', capture_combine_response)
         try:
-            page.goto('https://www.nfl.com/combine/tracker/live-results/', timeout=45000)
-            # Wait a reasonable time for the API call to fire
-            for _ in range(20):
-                if len(all_profiles) > 0:
-                    break
-                time.sleep(0.5)
+            page.goto(
+                'https://www.nfl.com/combine/tracker/live-results/',
+                timeout=30000,
+                wait_until='domcontentloaded'
+            )
+        except Exception as e:
+            print(f'  Page load (non-fatal): {e}')
+
+        # Dismiss cookie consent if present
+        try:
+            page.click('#onetrust-accept-btn-handler', timeout=4000)
+            print('  Cookie banner dismissed')
+        except Exception:
+            pass
+
+        time.sleep(2)
+
+        # Trigger data load by interacting with the search input
+        # (filling the search box causes the page to load combine profiles via API)
+        try:
+            search = page.wait_for_selector('input[placeholder*="Search"]', timeout=8000)
+            search.fill('a')
+            print('  Triggered search to load combine data...')
             time.sleep(2)
+            search.fill('')
+            time.sleep(1)
         except Exception as e:
-            print(f'  Initial load error (continuing): {e}')
+            print(f'  Search trigger failed (non-fatal): {e}')
 
-        # Try clicking position tabs to load more player groups
-        print('\nTriggering position tabs...')
-        try:
-            # Dismiss cookie banner first
-            cookie_btns = page.query_selector_all('#onetrust-accept-btn-handler, button[id*="accept"], button[class*="cookie"]')
-            for btn in cookie_btns:
-                try:
-                    btn.click()
-                    time.sleep(0.5)
-                    break
-                except Exception:
-                    pass
+        # Wait for combine API to fire
+        print('  Waiting for combine API...')
+        for i in range(20):
+            time.sleep(1)
+            if len(all_profiles) > 0:
+                print(f'  API fired: {len(all_profiles)} profiles')
+                time.sleep(2)
+                break
 
-            # Look for position filter tabs
-            all_buttons = page.query_selector_all('button, [role="tab"], a[class*="tab"]')
-            clicked = set()
-            for btn in all_buttons:
-                txt = btn.inner_text().strip().upper()
-                if txt in POSITION_TABS and txt not in clicked:
-                    try:
-                        btn.click()
-                        clicked.add(txt)
-                        time.sleep(1.5)
-                        print(f'  Clicked {txt} tab')
-                    except Exception:
-                        pass
-        except Exception as e:
-            print(f'  Tab navigation error: {e}')
-
-        # Try injecting additional fetch calls for different sort attributes
-        print('\nFetching additional drill sorts...')
-        if len(all_profiles) > 0:
-            token = page.evaluate('''
-                () => {
-                    // Try to find the token in localStorage or cookies
-                    for (let k of Object.keys(localStorage)) {
-                        try {
-                            const v = JSON.parse(localStorage[k]);
-                            if (v && v.accessToken) return v.accessToken;
-                        } catch {}
-                    }
-                    return null;
-                }
-            ''')
-
-            if token:
-                attrs = ['VERTICAL_JUMP', 'BROAD_JUMP', 'BENCH_PRESS', 'THREE_CONE_DRILL', 'SHORT_SHUTTLE']
-                for attr in attrs:
-                    try:
-                        result = page.evaluate(f'''
-                            async () => {{
-                                const r = await fetch(
-                                    "https://api.nfl.com/football/v2/combine/rankings?limit=500&rankAttribute={attr}&sortOrder=A",
-                                    {{ headers: {{ "Authorization": "Bearer {token}", "Accept": "application/json" }} }}
-                                );
-                                if (!r.ok) return null;
-                                return await r.json();
-                            }}
-                        ''')
-                        if result and result.get('combineProfiles'):
-                            profiles = result['combineProfiles']
-                            new = 0
-                            for prof in profiles:
-                                pid = prof.get('id') or prof.get('person', {}).get('id')
-                                if pid and pid not in all_profiles:
-                                    all_profiles[pid] = prof
-                                    new += 1
-                            print(f'  [{attr}] +{new} new profiles (total={len(all_profiles)})')
-                    except Exception as e:
-                        print(f'  Fetch {attr} error: {e}')
-
-        page.close()
         browser.close()
 
-    print(f'\nTotal unique profiles captured: {len(all_profiles)}')
+    return list(all_profiles.values())
 
-    if not all_profiles:
-        print('No profiles captured. The page structure may have changed.')
+
+def run(target_slug: str = None):
+    conn = sqlite3.connect(DB_PATH, timeout=15)
+    cur = conn.cursor()
+    ensure_schema(conn)
+
+    player_map = build_player_map(cur)
+    print(f'Loaded {len(player_map)} 2026 players from DB')
+
+    raw_profiles = scrape_combine_profiles()
+    print(f'\nCaptured {len(raw_profiles)} combine profiles from NFL.com\n')
+
+    if not raw_profiles:
+        print('No profiles captured — check network access and try again')
         conn.close()
         return
 
-    # Match and save
     matched = 0
-    skipped = []
-    measurables_updated = 0
-    headshots_updated = 0
+    skipped = 0
+    not_found = []
 
-    for prof_id, profile in all_profiles.items():
-        row = profile_to_row(profile)
-        name = row.pop('name', '')
-        headshot = row.pop('headshot', '')
-        draft_grade = row.pop('draft_grade', None)
-        nfl_comp = row.pop('nfl_comp', None)
+    for prof in raw_profiles:
+        row = extract_profile(prof)
+        name = row['name']
 
-        p_id = match_player(name, player_map)
-        if not p_id:
-            skipped.append(name)
+        # Skip if targeting a specific slug
+        if target_slug:
+            from scrapers.jfoster_scraper import slug_from_name
+            if slug_from_name(name) != target_slug:
+                continue
+
+        player_id = match_player(name, player_map)
+        if player_id is None:
+            not_found.append(f"{name} ({row['position']})")
             continue
+
+        upsert_measurables(cur, player_id, row)
+        upsert_scout_profile(cur, player_id, row)
+        if row['headshot']:
+            update_headshot(cur, player_id, row['headshot'])
+
+        has_drill = any(row[k] for k in ['forty_yard', 'vertical_jump', 'bench_press', 'three_cone'])
+        mark = 'OK' if has_drill else '--'
+        print(f"  [{mark}] {name} ({row['position']}) | "
+              f"40yd={row['forty_yard'] or '-'} | "
+              f"vert={row['vertical_jump'] or '-'} | "
+              f"grade={row['draft_grade'] or '-'} | "
+              f"comp={row['nfl_comparison'] or '-'}")
         matched += 1
 
-        # Upsert measurables — only fill nulls
-        drill_cols = ['forty_yard', 'ten_yard_split', 'bench_press', 'vertical_jump',
-                      'broad_jump', 'three_cone', 'twenty_yard_shuttle']
-        set_clauses = []
-        vals = []
-        for col in drill_cols:
-            v = row.get(col)
-            if v is not None:
-                set_clauses.append(f"{col} = CASE WHEN {col} IS NULL THEN ? ELSE {col} END")
-                vals.append(v)
-
-        if set_clauses:
-            # Also mark source
-            set_clauses.append("data_source = CASE WHEN data_source IS NULL THEN 'NFL.com' ELSE data_source END")
-            vals.append(p_id)
-            cur.execute(f"UPDATE measurables SET {', '.join(set_clauses)} WHERE player_id = ?", vals)
-            if cur.rowcount:
-                measurables_updated += 1
-
-        # Update headshot if missing
-        if headshot and '{formatInstructions}' in headshot:
-            headshot_url = headshot.replace('{formatInstructions}', 'f_auto,q_auto,w_200,h_200')
-            cur.execute("UPDATE players SET headshot_url = ? WHERE id = ? AND headshot_url IS NULL", (headshot_url, p_id))
-            if cur.rowcount:
-                headshots_updated += 1
-
     conn.commit()
-
-    # Final stats
-    cur.execute("SELECT COUNT(*) FROM measurables WHERE forty_yard IS NOT NULL")
-    after = cur.fetchone()[0]
-
-    print(f'\n{"="*55}')
-    print(f'Profiles captured:    {len(all_profiles)}')
-    print(f'Matched to DB:        {matched}')
-    print(f'Measurables updated:  {measurables_updated}')
-    print(f'Headshots filled:     {headshots_updated}')
-    print(f'40-yard times:        {before} -> {after} (+{after - before})')
-
-    if skipped:
-        print(f'\nUnmatched ({len(skipped)}): {skipped[:20]}')
-
-    # Top 10 by 40 time
-    cur.execute("""
-        SELECT p.full_name, p.position, m.forty_yard, m.vertical_jump, m.broad_jump, m.three_cone
-        FROM measurables m JOIN players p ON p.id = m.player_id
-        WHERE m.forty_yard IS NOT NULL AND p.draft_year = 2026
-        ORDER BY m.forty_yard ASC LIMIT 10
-    """)
-    rows = cur.fetchall()
-    if rows:
-        print('\nFastest 40 times:')
-        for row in rows:
-            print(f'  {row[0]:<25} {row[1]} | 40={row[2]}s  vert={row[3]}"  broad={row[4]}"  3cone={row[5]}s')
-
     conn.close()
+
+    print(f'\n{"="*50}')
+    print(f'Matched: {matched} | Skipped (no DB match): {len(not_found)}')
+    if not_found:
+        print(f'Not found: {", ".join(not_found[:20])}')
 
 
 if __name__ == '__main__':
-    run()
+    target = sys.argv[1] if len(sys.argv) > 1 else None
+    run(target)
