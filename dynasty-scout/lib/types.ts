@@ -96,6 +96,7 @@ export interface CollegeStats {
     pff_rush_grade?: number;
     pff_recv_grade?: number;
     pff_block_grade?: number;
+    fumbles?: number;
 }
 
 export interface Measurables {
@@ -195,6 +196,25 @@ export interface WrAdvancedCareer {
     air_yards_rate?: number;
     wide_rate?: number;
     slot_rate?: number;
+}
+
+export interface JFosterGrades {
+    id: number;
+    player_id: number;
+    overall_grade?: number;
+    round_grade?: string;
+    nfl_comp?: string;
+    summary?: string;
+    strengths?: string;   // JSON array
+    weaknesses?: string;  // JSON array
+    film_grades?: string; // JSON object: { "Speed": 87, "Vision": 82, ... }
+    size_score?: number;
+    speed_score_jf?: number;
+    acceleration_score?: number;
+    agility_score_jf?: number;
+    athletic_score?: number;
+    source?: string;
+    updated_at?: string;
 }
 
 export interface NFLTeam {

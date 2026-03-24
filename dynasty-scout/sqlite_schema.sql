@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS college_stats (
   yards_per_carry REAL, rush_yards_per_game REAL,
   yards_after_contact REAL, breakaway_run_rate REAL,
   explosive_run_rate REAL, missed_tackles_forced INTEGER,
+  fumbles INTEGER,
   -- Receiving
   targets INTEGER, receptions INTEGER, rec_yards INTEGER,
   rec_tds INTEGER, yards_per_reception REAL,
@@ -223,6 +224,26 @@ CREATE TABLE IF NOT EXISTS high_school_stats (
   fumbles INTEGER,
   total_yards INTEGER, total_tds INTEGER,
   data_source TEXT,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- J. Foster (NoFlagsFilm) scouting grades — scraped from jfosterfilm.shinyapps.io/26draft/
+CREATE TABLE IF NOT EXISTS jfoster_grades (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  player_id INTEGER REFERENCES players(id) UNIQUE,
+  overall_grade REAL,           -- J. Foster overall grade (scale TBD from source)
+  round_grade TEXT,             -- NFL round projection: "Round 1", "Day 2", "Round 3-4", "UDFA"
+  nfl_comp TEXT,                -- Film-based NFL player comp e.g. "Alvin Kamara"
+  summary TEXT,                 -- Written scouting paragraph
+  strengths TEXT,               -- JSON array: ["Vision & creativity", ...]
+  weaknesses TEXT,              -- JSON array: ["Pass blocking", ...]
+  film_grades TEXT,             -- JSON: {"Rushing": {"Vision": 82, ...}, "Receiving": {...}, ...}
+  size_score REAL,              -- J. Foster composite size score
+  speed_score_jf REAL,          -- J. Foster composite speed score
+  acceleration_score REAL,      -- J. Foster acceleration composite
+  agility_score_jf REAL,        -- J. Foster agility composite
+  athletic_score REAL,          -- J. Foster overall athletic composite
+  source TEXT DEFAULT 'jfoster_2026',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

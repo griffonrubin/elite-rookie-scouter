@@ -13,14 +13,16 @@ import { DominatorChart } from '@/components/DominatorChart';
 import { DonutSplit } from '@/components/DonutSplit';
 import { SeasonRankingsChart, type RankingMetric } from '@/components/SeasonRankingsChart';
 import { AdvancedStatsTable } from '@/components/AdvancedStatsTable';
+import { RBProductionTable } from '@/components/RBProductionTable';
 import { ButterflyChart, type ButterflyRow } from '@/components/ButterflyChart';
+import { FilmGradesCard } from '@/components/FilmGradesCard';
 import { POSITION_HEADLINE_STATS } from '@/lib/constants';
 import { GraduationCap, Calendar, Ruler, Weight, Star, Newspaper, BarChart2, ExternalLink, Scale, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WatchlistButton } from '@/components/WatchlistButton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AppHeader } from '@/components/AppHeader';
-import type { CollegeStats, Measurables, Ranking } from '@/lib/types';
+import type { CollegeStats, JFosterGrades, Measurables, Ranking } from '@/lib/types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -119,6 +121,7 @@ interface Props {
     wrAdvanced: any | null;
     peerWrAdv: any[];
     highSchool: any | null;
+    jfosterData: JFosterGrades | null;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -126,7 +129,7 @@ interface Props {
 export function PlayerProfileClient({
     player, stats, rankings, measurables, speedScore, news, trustIndicator,
     peerCareer, peerAdvanced, historicalComps, epaStats, dominatorStats,
-    prevPlayer, nextPlayer, wrAdvanced, peerWrAdv, highSchool,
+    prevPlayer, nextPlayer, wrAdvanced, peerWrAdv, highSchool, jfosterData,
 }: Props) {
     const pos = player.position as string;
     const posStyle = POS_STYLES[pos] || 'bg-gray-500/20 text-gray-400 border-gray-500/40';
@@ -536,6 +539,7 @@ export function PlayerProfileClient({
     // Section jump nav
     const SECTIONS = [
         { id: 'scout',      label: 'Scout'      },
+        ...(jfosterData ? [{ id: 'grades', label: 'Grades' }] : []),
         { id: 'athletics',  label: 'Athletics'  },
         { id: 'production', label: 'Production' },
         { id: 'analytics',  label: 'Analytics'  },
@@ -865,7 +869,78 @@ export function PlayerProfileClient({
                             </div>
                         </div>
                     )}
+
+                    {/* J. Foster Scouting Card */}
+                    {jfosterData && (jfosterData.overall_grade != null || jfosterData.round_grade || jfosterData.nfl_comp) && (
+                        <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden">
+                            <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between">
+                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Film Scout</span>
+                                <a
+                                    href="https://jfosterdraft.com"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors flex items-center gap-1"
+                                >
+                                    J. Foster · NoFlagsFilm <ExternalLink className="w-2.5 h-2.5" />
+                                </a>
+                            </div>
+                            <div className="p-4 flex flex-wrap gap-3 items-center">
+                                {jfosterData.overall_grade != null && (
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-2xl font-black font-mono text-foreground">
+                                            {jfosterData.overall_grade.toFixed(2)}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground/50">/10</span>
+                                    </div>
+                                )}
+                                {jfosterData.round_grade && (
+                                    <span className={cn(
+                                        'px-2.5 py-1 rounded-md text-xs font-bold',
+                                        jfosterData.round_grade.toLowerCase().includes('top 10') || jfosterData.round_grade.includes('1 (')
+                                            ? 'bg-emerald-500/20 text-emerald-300'
+                                            : jfosterData.round_grade.includes('2 (')
+                                                ? 'bg-cyan-500/20 text-cyan-300'
+                                                : jfosterData.round_grade.includes('3 (')
+                                                    ? 'bg-blue-500/20 text-blue-300'
+                                                    : 'bg-muted/20 text-muted-foreground'
+                                    )}>
+                                        {jfosterData.round_grade}
+                                    </span>
+                                )}
+                                {jfosterData.nfl_comp && (
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Comp</span>
+                                        <span className="text-sm font-semibold text-foreground/90">{jfosterData.nfl_comp}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </section>
+
+                {/* ── Film Grades Section ─────────────────────────────────────────────── */}
+                {jfosterData && (
+                    <section id="grades" className="scroll-mt-16 md:scroll-mt-56">
+                        <div className="flex items-center gap-3 mb-5">
+                            <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-muted-foreground/50 whitespace-nowrap">
+                                Film Grades
+                            </span>
+                            <span className="text-[10px] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-md border border-border/20 text-muted-foreground/40">
+                                {pos} · CLASS 2026
+                            </span>
+                            <div className="flex-1 h-px bg-border/20" />
+                            <a
+                                href="https://jfosterdraft.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[9px] text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors flex items-center gap-1 shrink-0"
+                            >
+                                J. Foster · NoFlagsFilm <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                        </div>
+                        <FilmGradesCard jfoster={jfosterData} position={pos} />
+                    </section>
+                )}
 
                 {/* ── ZONE 2+3: Two-column Analysis ────────────────────────────────── */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1093,6 +1168,11 @@ export function PlayerProfileClient({
                             <div className="mb-6">
                                 <SeasonRankingsChart metrics={advRankingMetrics} title={`Career Class Rankings · ${pos}`} />
                             </div>
+                        )}
+
+                        {/* RB career production heatmap */}
+                        {pos === 'RB' && (
+                            <RBProductionTable stats={stats} peerAdvanced={peerAdvanced} playerId={player.id} />
                         )}
 
                         {/* Advanced season stats table */}

@@ -1,5 +1,5 @@
 import { query, queryOne } from '@/lib/db';
-import { CollegeStats, Measurables, Ranking } from '@/lib/types';
+import { CollegeStats, JFosterGrades, Measurables, Ranking } from '@/lib/types';
 import Link from 'next/link';
 import { PlayerProfileClient } from '@/components/PlayerProfileClient';
 
@@ -120,7 +120,11 @@ async function getPlayer(slug: string) {
                     ELSE NULL END                             as target_share_wavg,
                 CASE WHEN SUM(COALESCE(cs.rush_attempts, 0)) > 0
                     THEN SUM(COALESCE(cs.breakaway_run_rate, 0) * COALESCE(cs.rush_attempts, 0)) / SUM(COALESCE(cs.rush_attempts, 0))
-                    ELSE NULL END                             as breakaway_wavg
+                    ELSE NULL END                             as breakaway_wavg,
+                SUM(COALESCE(cs.rush_tds, 0))                as rush_tds,
+                SUM(COALESCE(cs.explosive_run_rate, 0) * COALESCE(cs.rush_attempts, 0)) as explosive_att,
+                SUM(COALESCE(cs.breakaway_run_rate, 0) * COALESCE(cs.rush_attempts, 0)) as breakaway_att,
+                SUM(cs.fumbles)                              as fumbles
             FROM college_stats cs
             JOIN players p ON p.id = cs.player_id
             WHERE p.position = $1 AND p.draft_year = 2026
@@ -204,7 +208,13 @@ async function getPlayer(slug: string) {
             [player.id]
         ).catch(() => null);
 
-        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [], highSchool: highSchool || null };
+        // J. Foster scouting grades
+        const jfosterData = await queryOne<JFosterGrades>(
+            "SELECT * FROM jfoster_grades WHERE player_id = $1",
+            [player.id]
+        ).catch(() => null);
+
+        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [], highSchool: highSchool || null, jfosterData: jfosterData || null };
     } catch (e) {
         console.error("DB Error:", e);
         return null;
