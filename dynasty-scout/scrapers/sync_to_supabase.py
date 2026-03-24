@@ -116,6 +116,29 @@ def ensure_pg_schema(pg):
         "ALTER TABLE high_school_stats ADD COLUMN IF NOT EXISTS receptions INTEGER",
         "ALTER TABLE high_school_stats ADD COLUMN IF NOT EXISTS interceptions INTEGER",
         "ALTER TABLE high_school_stats ADD COLUMN IF NOT EXISTS fumbles INTEGER",
+        # college_stats fumbles
+        "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS fumbles INTEGER",
+        # jfoster_grades table
+        """
+        CREATE TABLE IF NOT EXISTS jfoster_grades (
+            id SERIAL PRIMARY KEY,
+            player_id INTEGER REFERENCES players(id) UNIQUE,
+            overall_grade REAL,
+            round_grade TEXT,
+            nfl_comp TEXT,
+            summary TEXT,
+            strengths TEXT,
+            weaknesses TEXT,
+            film_grades TEXT,
+            size_score REAL,
+            speed_score_jf REAL,
+            acceleration_score REAL,
+            agility_score_jf REAL,
+            athletic_score REAL,
+            source TEXT DEFAULT 'jfoster_2026',
+            updated_at TIMESTAMP DEFAULT NOW()
+        )
+        """,
         # historical_comps table
         """
         CREATE TABLE IF NOT EXISTS historical_comps (
@@ -564,7 +587,8 @@ def sync_college_stats_full(pg, sq):
                pass_attempts, completions, pass_yards, pass_tds, interceptions,
                rush_attempts, rush_yards, rush_tds, yards_per_carry,
                receptions, rec_yards, rec_tds, targets,
-               epa_per_play, sp_rating, dominator_rating, market_share
+               epa_per_play, sp_rating, dominator_rating, market_share,
+               fumbles
         FROM college_stats
     """).fetchall()
 
@@ -575,8 +599,9 @@ def sync_college_stats_full(pg, sq):
                 pass_attempts, completions, pass_yards, pass_tds, interceptions,
                 rush_attempts, rush_yards, rush_tds, yards_per_carry,
                 receptions, rec_yards, rec_tds, targets,
-                epa_per_play, sp_rating, dominator_rating, market_share)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                epa_per_play, sp_rating, dominator_rating, market_share,
+                fumbles)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (player_id, season, school) DO UPDATE SET
                 games_played = EXCLUDED.games_played,
                 pass_attempts = EXCLUDED.pass_attempts,
@@ -595,16 +620,66 @@ def sync_college_stats_full(pg, sq):
                 epa_per_play = EXCLUDED.epa_per_play,
                 sp_rating = EXCLUDED.sp_rating,
                 dominator_rating = EXCLUDED.dominator_rating,
-                market_share = EXCLUDED.market_share
+                market_share = EXCLUDED.market_share,
+                fumbles = EXCLUDED.fumbles
         """, (r["player_id"], r["season"], r["school"], r["games_played"],
               r["pass_attempts"], r["completions"], r["pass_yards"], r["pass_tds"], r["interceptions"],
               r["rush_attempts"], r["rush_yards"], r["rush_tds"], r["yards_per_carry"],
               r["receptions"], r["rec_yards"], r["rec_tds"], r["targets"],
-              r["epa_per_play"], r["sp_rating"], r["dominator_rating"], r["market_share"]))
+              r["epa_per_play"], r["sp_rating"], r["dominator_rating"], r["market_share"],
+              r["fumbles"]))
         upserted += 1
 
     pg.commit()
     print(f"College stats full sync: {upserted} rows upserted, {deleted} phantom rows deleted")
+
+
+# ── Sync jfoster_grades ───────────────────────────────────────────────────
+
+def sync_jfoster_grades(pg, sq):
+    cur_sq = sq.cursor()
+    cur_pg = pg.cursor()
+
+    rows = cur_sq.execute("""
+        SELECT player_id, overall_grade, round_grade, nfl_comp,
+               summary, strengths, weaknesses, film_grades,
+               size_score, speed_score_jf, acceleration_score,
+               agility_score_jf, athletic_score, source
+        FROM jfoster_grades
+    """).fetchall()
+
+    upserted = 0
+    for r in rows:
+        cur_pg.execute("""
+            INSERT INTO jfoster_grades (
+                player_id, overall_grade, round_grade, nfl_comp,
+                summary, strengths, weaknesses, film_grades,
+                size_score, speed_score_jf, acceleration_score,
+                agility_score_jf, athletic_score, source
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (player_id) DO UPDATE SET
+                overall_grade      = EXCLUDED.overall_grade,
+                round_grade        = EXCLUDED.round_grade,
+                nfl_comp           = EXCLUDED.nfl_comp,
+                summary            = EXCLUDED.summary,
+                strengths          = EXCLUDED.strengths,
+                weaknesses         = EXCLUDED.weaknesses,
+                film_grades        = EXCLUDED.film_grades,
+                size_score         = EXCLUDED.size_score,
+                speed_score_jf     = EXCLUDED.speed_score_jf,
+                acceleration_score = EXCLUDED.acceleration_score,
+                agility_score_jf   = EXCLUDED.agility_score_jf,
+                athletic_score     = EXCLUDED.athletic_score,
+                source             = EXCLUDED.source,
+                updated_at         = NOW()
+        """, (r["player_id"], r["overall_grade"], r["round_grade"], r["nfl_comp"],
+              r["summary"], r["strengths"], r["weaknesses"], r["film_grades"],
+              r["size_score"], r["speed_score_jf"], r["acceleration_score"],
+              r["agility_score_jf"], r["athletic_score"], r["source"]))
+        upserted += 1
+
+    pg.commit()
+    print(f"J. Foster grades: {upserted} rows upserted")
 
 
 # ── Sync college_career cleanup ──────────────────────────────────────────
@@ -733,6 +808,9 @@ def run():
 
     print("\n[11] Syncing headshots (force)...")
     sync_headshots_force(pg, sq)
+
+    print("\n[12] Syncing J. Foster grades...")
+    sync_jfoster_grades(pg, sq)
 
     pg.close()
     sq.close()
