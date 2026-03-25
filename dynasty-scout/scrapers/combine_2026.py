@@ -249,13 +249,18 @@ def update_headshot(cur, player_id: int, headshot_url: str):
 # ─── Main scrape ─────────────────────────────────────────────────────────────
 
 def scrape_combine_profiles() -> list:
-    """Use Playwright to load NFL.com and capture combine API responses."""
+    """Use Playwright to load NFL.com draft tracker and capture combine/profiles API.
+
+    The draft tracker page fires api.nfl.com/football/v2/combine/profiles?limit=1000&year=2026
+    automatically on load (no interaction needed). It returns 323 profiles including
+    non-combine-attendees who still have NFL.com scouting reports.
+    """
     from playwright.sync_api import sync_playwright
 
     all_profiles = {}
 
     def on_response(resp):
-        if 'football/v2/combine' in resp.url and resp.status == 200:
+        if 'football/v2/combine' in resp.url and 'year=2026' in resp.url and resp.status == 200:
             try:
                 data = resp.json()
                 for prof in data.get('combineProfiles', []):
@@ -278,44 +283,28 @@ def scrape_combine_profiles() -> list:
         page = ctx.new_page()
         page.on('response', on_response)
 
+        # Draft tracker auto-fires the profiles API on page load (no interaction needed)
         try:
             page.goto(
-                'https://www.nfl.com/combine/tracker/live-results/',
-                timeout=30000,
-                wait_until='domcontentloaded'
+                'https://www.nfl.com/draft/tracker/prospects/',
+                timeout=35000,
+                wait_until='load'
             )
         except Exception as e:
             print(f'  Page load (non-fatal): {e}')
 
-        # Dismiss cookie consent if present
-        try:
-            page.click('#onetrust-accept-btn-handler', timeout=4000)
-            print('  Cookie banner dismissed')
-        except Exception:
-            pass
-
-        time.sleep(2)
-
-        # Trigger data load by interacting with the search input
-        # (filling the search box causes the page to load combine profiles via API)
-        try:
-            search = page.wait_for_selector('input[placeholder*="Search"]', timeout=8000)
-            search.fill('a')
-            print('  Triggered search to load combine data...')
-            time.sleep(2)
-            search.fill('')
+        # Wait for API to fire (usually fires during page load)
+        print('  Waiting for profiles API...')
+        for i in range(15):
             time.sleep(1)
-        except Exception as e:
-            print(f'  Search trigger failed (non-fatal): {e}')
-
-        # Wait for combine API to fire
-        print('  Waiting for combine API...')
-        for i in range(20):
-            time.sleep(1)
-            if len(all_profiles) > 0:
+            if len(all_profiles) >= 300:
                 print(f'  API fired: {len(all_profiles)} profiles')
-                time.sleep(2)
                 break
+
+        if all_profiles:
+            print(f'  Total unique profiles captured: {len(all_profiles)}')
+        else:
+            print('  No profiles captured')
 
         browser.close()
 
