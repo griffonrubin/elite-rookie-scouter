@@ -15,6 +15,7 @@ import { SeasonRankingsChart, type RankingMetric } from '@/components/SeasonRank
 import { AdvancedStatsTable } from '@/components/AdvancedStatsTable';
 import { RBProductionTable } from '@/components/RBProductionTable';
 import { RBAdvancedRatesTable } from '@/components/RBAdvancedRatesTable';
+import { WRTargetDepthBar } from '@/components/WRTargetDepthBar';
 import { ButterflyChart, type ButterflyRow } from '@/components/ButterflyChart';
 import { FilmGradesCard } from '@/components/FilmGradesCard';
 import { POSITION_HEADLINE_STATS } from '@/lib/constants';
@@ -213,7 +214,7 @@ export function PlayerProfileClient({
             { label: 'Scrim. Yards', val: totalScrimmageYards, hint: 'Career Total' },
             { label: 'Total TDs', val: totalTds, hint: 'Rush + Rec + Pass' },
             { label: 'Yards/Carry', val: ypc, hint: 'Efficiency metric' },
-            { label: 'Receptions', val: careerReceptions, hint: 'Volume metric' },
+            { label: 'Yards/Rec', val: ypr, hint: 'Efficiency metric' },
             { label: 'Games Played', val: careerGames, hint: 'Contests played' },
             { label: 'Breakout Age', val: '—', hint: 'Age at 20%+ market share' },
             { label: 'Scrim Yds/G', val: scrimYpgNum, hint: 'Career avg per game' },
@@ -224,7 +225,7 @@ export function PlayerProfileClient({
             { label: 'Scrim. Yards', val: totalScrimmageYards, hint: 'Career Total' },
             { label: 'Total TDs', val: totalTds, hint: 'Rush + Rec + Pass' },
             { label: 'Yards/Rec', val: ypr, hint: 'Efficiency metric' },
-            { label: 'Receptions', val: careerReceptions, hint: 'Volume metric' },
+            { label: 'Yards/Rec', val: ypr, hint: 'Efficiency metric' },
             { label: 'Games Played', val: careerGames, hint: 'Contests played' },
             { label: 'Breakout Age', val: '—', hint: 'Age at 20%+ market share' },
             { label: 'Dom. Rating', val: '—', hint: 'Team target/yardage share %' },
@@ -266,6 +267,11 @@ export function PlayerProfileClient({
                 { label: 'Yds/Carry',   value: myYpc > 0 ? myYpc.toFixed(1) : '—',            percentile: pctRank(myYpc, ypcArr) },
                 { label: 'Scrim Yds/G', value: myScrimYpg > 0 ? myScrimYpg.toFixed(1) : '—', percentile: pctRank(myScrimYpg, scrimYpgArr), unit: 'yds' },
                 { label: 'Rec/G',       value: myRecPg > 0 ? myRecPg.toFixed(2) : '—',        percentile: pctRank(myRecPg, recPgArr) },
+            );
+            const yprPeerArr = peerCareer.map((p: any) => s(p.receptions) > 0 ? s(p.rec_yards) / s(p.receptions) : 0);
+            const myYprPct   = s(myPeer.receptions) > 0 ? s(myPeer.rec_yards) / s(myPeer.receptions) : 0;
+            if (myYprPct > 0) percentileMetrics.push(
+                { label: 'Yds/Rec', value: myYprPct.toFixed(1), percentile: pctRank(myYprPct, yprPeerArr) }
             );
         } else {
             const recYpgArr = peerCareer.map((p: any) => s(p.games) > 0 ? s(p.rec_yards) / s(p.games) : 0);
@@ -516,7 +522,7 @@ export function PlayerProfileClient({
     if (pos === 'RB') {
         kpiStrip.push(
             { label: 'YPC', value: ypc !== '—' ? ypc : '—' },
-            { label: 'ATT/G', value: attPerGame },
+            { label: 'YPR', value: ypr !== '—' ? ypr : '—' },
             { label: 'Scrim/G', value: scrimYpgNum },
             { label: 'Breakout', value: player.breakout_age ? String(player.breakout_age) : '—' },
         );
@@ -1227,6 +1233,19 @@ export function PlayerProfileClient({
                         {advRankingMetrics.length > 0 && (
                             <div className="mb-6">
                                 <SeasonRankingsChart metrics={advRankingMetrics} title={`Career Class Rankings · ${pos}`} />
+                            </div>
+                        )}
+
+                        {/* WR/TE target depth distribution */}
+                        {(pos === 'WR' || pos === 'TE') && (wrAdvanced as any)?.depth_behind_line_pct != null && (
+                            <div className="mb-6">
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-3">Target Depth Distribution</h4>
+                                <WRTargetDepthBar
+                                    behindLine={(wrAdvanced as any).depth_behind_line_pct}
+                                    short={(wrAdvanced as any).depth_0_9_pct}
+                                    intermediate={(wrAdvanced as any).depth_10_19_pct}
+                                    deep={(wrAdvanced as any).depth_20plus_pct}
+                                />
                             </div>
                         )}
 

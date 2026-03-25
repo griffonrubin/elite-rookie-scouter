@@ -400,7 +400,7 @@ function buildStatRows(playerA: any, playerB: any) {
     rows.push(
         { label: 'Receptions', a: sa?.receptions ?? '—', b: sb?.receptions ?? '—', numA: sa?.receptions, numB: sb?.receptions, lowerWins: false },
         { label: 'Rec Yards', a: sa?.rec_yards ?? '—', b: sb?.rec_yards ?? '—', numA: sa?.rec_yards, numB: sb?.rec_yards, lowerWins: false },
-        { label: 'Rec Avg', a: sa?.receptions > 0 ? (sa?.rec_yards / sa?.receptions).toFixed(1) : '—', b: sb?.receptions > 0 ? (sb?.rec_yards / sb?.receptions).toFixed(1) : '—', numA: sa?.receptions > 0 ? (sa?.rec_yards / sa?.receptions) : null, numB: sb?.receptions > 0 ? (sb?.rec_yards / sb?.receptions) : null, lowerWins: false },
+        { label: 'Yards/Rec', a: sa?.receptions > 0 ? (sa?.rec_yards / sa?.receptions).toFixed(1) : '—', b: sb?.receptions > 0 ? (sb?.rec_yards / sb?.receptions).toFixed(1) : '—', numA: sa?.receptions > 0 ? (sa?.rec_yards / sa?.receptions) : null, numB: sb?.receptions > 0 ? (sb?.rec_yards / sb?.receptions) : null, lowerWins: false },
         { label: 'Rec TDs', a: sa?.rec_tds ?? '—', b: sb?.rec_tds ?? '—', numA: sa?.rec_tds, numB: sb?.rec_tds, lowerWins: false }
     );
     return rows;
@@ -441,6 +441,9 @@ function buildAdvancedMetrics(playerA: any, playerB: any) {
             const fmt1 = (v: number | null | undefined, d = 1) => v != null ? v.toFixed(d) + '%' : '—';
             rows.push({ label: 'Avoided Tackle %', a: fmt1(rbA?.avoided_tackle_pct), b: fmt1(rbB?.avoided_tackle_pct), numA: rbA?.avoided_tackle_pct ?? null, numB: rbB?.avoided_tackle_pct ?? null, lowerWins: false });
             rows.push({ label: 'YPRR', a: rbA?.yprr != null ? rbA.yprr.toFixed(2) : '—', b: rbB?.yprr != null ? rbB.yprr.toFixed(2) : '—', numA: rbA?.yprr ?? null, numB: rbB?.yprr ?? null, lowerWins: false });
+            const yprA = sa?.receptions > 0 ? (sa.rec_yards / sa.receptions).toFixed(1) : '—';
+            const yprB = sb?.receptions > 0 ? (sb.rec_yards / sb.receptions).toFixed(1) : '—';
+            rows.push({ label: 'Yards/Rec', a: yprA, b: yprB, numA: sa?.receptions > 0 ? sa.rec_yards / sa.receptions : null, numB: sb?.receptions > 0 ? sb.rec_yards / sb.receptions : null, lowerWins: false });
             rows.push({ label: 'Target Rate', a: fmt1(rbA?.target_rate), b: fmt1(rbB?.target_rate), numA: rbA?.target_rate ?? null, numB: rbB?.target_rate ?? null, lowerWins: false });
             rows.push({ label: 'Drop Rate', a: fmt1(rbA?.drop_rate), b: fmt1(rbB?.drop_rate), numA: rbA?.drop_rate ?? null, numB: rbB?.drop_rate ?? null, lowerWins: true });
             rows.push({ label: 'Fumble Rate', a: fmt1(rbA?.fumble_rate), b: fmt1(rbB?.fumble_rate), numA: rbA?.fumble_rate ?? null, numB: rbB?.fumble_rate ?? null, lowerWins: true });
@@ -468,6 +471,15 @@ function buildAdvancedMetrics(playerA: any, playerB: any) {
 
     if ((posA === 'WR' || posA === 'TE') && (posB === 'WR' || posB === 'TE')) {
         rows.push({ label: 'Career YAC', a: yacA, b: yacB, numA: sa?.yards_after_catch || null, numB: sb?.yards_after_catch || null, lowerWins: false });
+        const wrA = (playerA as any).wrAdvanced;
+        const wrB = (playerB as any).wrAdvanced;
+        if (wrA?.depth_behind_line_pct != null || wrB?.depth_behind_line_pct != null) {
+            const fmtD = (v: number | null | undefined) => v != null ? v.toFixed(0) + '%' : '—';
+            rows.push({ label: 'Tgt: Behind LOS',     a: fmtD(wrA?.depth_behind_line_pct), b: fmtD(wrB?.depth_behind_line_pct), numA: wrA?.depth_behind_line_pct ?? null, numB: wrB?.depth_behind_line_pct ?? null, lowerWins: false });
+            rows.push({ label: 'Tgt: Short (0-9)',    a: fmtD(wrA?.depth_0_9_pct),         b: fmtD(wrB?.depth_0_9_pct),         numA: wrA?.depth_0_9_pct ?? null,         numB: wrB?.depth_0_9_pct ?? null,         lowerWins: false });
+            rows.push({ label: 'Tgt: Interm (10-19)', a: fmtD(wrA?.depth_10_19_pct),       b: fmtD(wrB?.depth_10_19_pct),       numA: wrA?.depth_10_19_pct ?? null,       numB: wrB?.depth_10_19_pct ?? null,       lowerWins: false });
+            rows.push({ label: 'Tgt: Deep (20+)',     a: fmtD(wrA?.depth_20plus_pct),      b: fmtD(wrB?.depth_20plus_pct),      numA: wrA?.depth_20plus_pct ?? null,      numB: wrB?.depth_20plus_pct ?? null,      lowerWins: false });
+        }
     }
 
     // Breakout Age

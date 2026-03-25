@@ -203,6 +203,11 @@ CREATE TABLE IF NOT EXISTS wr_advanced_career (
   air_yards_rate REAL,        -- Air yards / total receiving yards
   wide_rate REAL,             -- % of routes from wide alignment
   slot_rate REAL,             -- % of routes from slot alignment
+  -- Target depth distribution (% of career targets by zone)
+  depth_behind_line_pct REAL, -- % targets thrown behind line of scrimmage
+  depth_0_9_pct REAL,         -- % targets 0-9 yards downfield
+  depth_10_19_pct REAL,       -- % targets 10-19 yards downfield
+  depth_20plus_pct REAL,      -- % targets 20+ yards downfield (deep shots)
   data_source TEXT DEFAULT 'manual_2026',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
