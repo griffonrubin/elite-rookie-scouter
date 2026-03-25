@@ -117,10 +117,10 @@ function DraftBoardContent({ players }: DraftBoardProps) {
         else { setSortKey(key); setSortDir(DEFAULT_DESC.includes(key) ? 'desc' : 'asc'); }
     }
 
-    const filteredPlayers = useMemo(() => {
+    // All filters except position for accurate per-position pill counts
+    const prePositionPlayers = useMemo(() => {
         let result = players || [];
         if (searchQuery.trim()) result = fuse.search(searchQuery).map(r => r.item);
-        if (positionFilter !== 'ALL') result = result.filter(p => p.position === positionFilter);
         if (favoritesOnly) result = result.filter(p => watchlist.includes(p.slug));
         if (draftCapFilter !== 'all') result = result.filter(p => {
             const rank = (p as any).consensus_rank ?? 9999;
@@ -143,48 +143,48 @@ function DraftBoardContent({ players }: DraftBoardProps) {
             if (rasFilter === 'ras8') return ras >= 8.5;
             return true;
         });
+        return result;
+    }, [searchQuery, favoritesOnly, watchlist, draftCapFilter, ageFilter, rasFilter, players, fuse]);
+
+    const filteredPlayers = useMemo(() => {
+        let result = prePositionPlayers;
+        if (positionFilter !== 'ALL') result = result.filter(p => p.position === positionFilter);
         return [...result].sort((a, b) => {
             const MISS = sortDir === 'asc' ? 999999 : -999999;
             let va: number, vb: number;
             switch (sortKey) {
-                case 'ktc':    va = (a as any).ktc_rank          ?? MISS; vb = (b as any).ktc_rank          ?? MISS; break;
-                case 'sleeper':va = (a as any).sleeper_adp        ?? MISS; vb = (b as any).sleeper_adp        ?? MISS; break;
-                case 'fp':     va = (a as any).fantasypros_rank   ?? MISS; vb = (b as any).fantasypros_rank   ?? MISS; break;
-                case 'fc':     va = (a as any).fantasycalc_rank   ?? MISS; vb = (b as any).fantasycalc_rank   ?? MISS; break;
+                case 'ktc':    va = (a as any).ktc_rank ?? MISS; vb = (b as any).ktc_rank ?? MISS; break;
+                case 'sleeper':va = (a as any).sleeper_adp ?? MISS; vb = (b as any).sleeper_adp ?? MISS; break;
+                case 'fp':     va = (a as any).fantasypros_rank ?? MISS; vb = (b as any).fantasypros_rank ?? MISS; break;
+                case 'fc':     va = (a as any).fantasycalc_rank ?? MISS; vb = (b as any).fantasycalc_rank ?? MISS; break;
                 case 'dn':     va = (a as any).dynasty_nerds_rank ?? MISS; vb = (b as any).dynasty_nerds_rank ?? MISS; break;
-                case 'forty':    va = (a as any).forty_yard         ?? MISS; vb = (b as any).forty_yard         ?? MISS; break;
-                case 'spd':      va = (a as any).speed_score        ?? MISS; vb = (b as any).speed_score        ?? MISS; break;
-                case 'ras':      va = (a as any).ras                ?? MISS; vb = (b as any).ras                ?? MISS; break;
-                case 'height':   va = (a as any).height_inches      ?? MISS; vb = (b as any).height_inches      ?? MISS; break;
-                case 'arm':      va = (a as any).arm_length         ?? MISS; vb = (b as any).arm_length         ?? MISS; break;
-                case 'hand':     va = (a as any).hand_size          ?? MISS; vb = (b as any).hand_size          ?? MISS; break;
-                case 'stars':    va = (a as any).recruiting_stars   ?? MISS; vb = (b as any).recruiting_stars   ?? MISS; break;
-                case 'dom':      va = (a as any).best_dominator     ?? MISS; vb = (b as any).best_dominator     ?? MISS; break;
-                case 'pass_ypg': va = (a as any).best_pass_ypg      ?? MISS; vb = (b as any).best_pass_ypg      ?? MISS; break;
-                case 'comp_pct': va = (a as any).career_pass_att > 0 ? (a as any).career_completions / (a as any).career_pass_att : MISS;
-                                 vb = (b as any).career_pass_att > 0 ? (b as any).career_completions / (b as any).career_pass_att : MISS; break;
-                case 'ypa':      va = (a as any).career_pass_att > 0 ? (a as any).career_pass_yards / (a as any).career_pass_att : MISS;
-                                 vb = (b as any).career_pass_att > 0 ? (b as any).career_pass_yards / (b as any).career_pass_att : MISS; break;
-                case 'scrim_ypg':va = (a as any).career_games_cs > 0 ? (a as any).career_scrim_yards / (a as any).career_games_cs : MISS;
-                                 vb = (b as any).career_games_cs > 0 ? (b as any).career_scrim_yards / (b as any).career_games_cs : MISS; break;
-                case 'ypr':      va = (a as any).best_ypr           ?? MISS; vb = (b as any).best_ypr           ?? MISS; break;
-                case 'ypc':      va = (a as any).best_ypc           ?? MISS; vb = (b as any).best_ypc           ?? MISS; break;
+                case 'forty':    va = (a as any).forty_yard ?? MISS; vb = (b as any).forty_yard ?? MISS; break;
+                case 'spd':      va = (a as any).speed_score ?? MISS; vb = (b as any).speed_score ?? MISS; break;
+                case 'ras':      va = (a as any).ras ?? MISS; vb = (b as any).ras ?? MISS; break;
+                case 'height':   va = (a as any).height_inches ?? MISS; vb = (b as any).height_inches ?? MISS; break;
+                case 'arm':      va = (a as any).arm_length ?? MISS; vb = (b as any).arm_length ?? MISS; break;
+                case 'hand':     va = (a as any).hand_size ?? MISS; vb = (b as any).hand_size ?? MISS; break;
+                case 'stars':    va = (a as any).recruiting_stars ?? MISS; vb = (b as any).recruiting_stars ?? MISS; break;
+                case 'dom':      va = (a as any).best_dominator ?? MISS; vb = (b as any).best_dominator ?? MISS; break;
+                case 'pass_ypg': va = (a as any).best_pass_ypg ?? MISS; vb = (b as any).best_pass_ypg ?? MISS; break;
+                case 'comp_pct': va = (a as any).career_pass_att > 0 ? (a as any).career_completions / (a as any).career_pass_att : MISS; vb = (b as any).career_pass_att > 0 ? (b as any).career_completions / (b as any).career_pass_att : MISS; break;
+                case 'ypa':      va = (a as any).career_pass_att > 0 ? (a as any).career_pass_yards / (a as any).career_pass_att : MISS; vb = (b as any).career_pass_att > 0 ? (b as any).career_pass_yards / (b as any).career_pass_att : MISS; break;
+                case 'scrim_ypg':va = (a as any).career_games_cs > 0 ? (a as any).career_scrim_yards / (a as any).career_games_cs : MISS; vb = (b as any).career_games_cs > 0 ? (b as any).career_scrim_yards / (b as any).career_games_cs : MISS; break;
+                case 'ypr':      va = (a as any).best_ypr ?? MISS; vb = (b as any).best_ypr ?? MISS; break;
+                case 'ypc':      va = (a as any).best_ypc ?? MISS; vb = (b as any).best_ypc ?? MISS; break;
                 case 'rank':
-                default:       va = (a as any).consensus_rank     ?? MISS; vb = (b as any).consensus_rank     ?? MISS;
+                default:       va = (a as any).consensus_rank ?? MISS; vb = (b as any).consensus_rank ?? MISS;
             }
             return sortDir === 'asc' ? va - vb : vb - va;
         });
-    }, [searchQuery, positionFilter, favoritesOnly, watchlist, draftCapFilter, ageFilter, rasFilter, players, fuse, sortKey, sortDir]);
+    }, [prePositionPlayers, positionFilter, sortKey, sortDir]);
 
-    const counts = useMemo(() => {
-        const all = players || [];
-        return {
-            QB: all.filter(p => p.position === 'QB').length,
-            RB: all.filter(p => p.position === 'RB').length,
-            WR: all.filter(p => p.position === 'WR').length,
-            TE: all.filter(p => p.position === 'TE').length,
-        };
-    }, [players]);
+    const counts = useMemo(() => ({
+        QB: prePositionPlayers.filter(p => p.position === 'QB').length,
+        RB: prePositionPlayers.filter(p => p.position === 'RB').length,
+        WR: prePositionPlayers.filter(p => p.position === 'WR').length,
+        TE: prePositionPlayers.filter(p => p.position === 'TE').length,
+    }), [prePositionPlayers]);
 
     const showTiers = sortKey === 'rank' && sortDir === 'asc' && !searchQuery.trim() && !favoritesOnly && draftCapFilter === 'all' && ageFilter === 'all' && rasFilter === 'all';
     const colDefs = getColDefs(positionFilter);
@@ -233,17 +233,9 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         <input
                             ref={searchInputRef}
                             placeholder="Search players…"
-                            style={{
-                                width: '100%', paddingLeft: '2.25rem', paddingRight: '2.5rem', height: '36px',
-                                background: 'var(--bg-base)', border: '1px solid rgba(255,255,255,0.06)',
-                                borderRadius: '0.625rem', fontSize: '0.8125rem', color: 'var(--foreground)',
-                                outline: 'none', boxSizing: 'border-box',
-                                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
-                            }}
+                            className="w-full pl-9 pr-10 h-9 bg-[var(--bg-base)] border border-white/[0.06] rounded-[0.625rem] text-[0.8125rem] text-foreground outline-none shadow-[inset_0_1px_3px_rgba(0,0,0,0.3)] focus:border-primary/70 focus:shadow-[inset_0_1px_3px_rgba(0,0,0,0.3),0_0_0_3px_rgba(249,115,22,0.12)] transition-all"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            onFocus={(e) => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = 'inset 0 1px 3px rgba(0,0,0,0.3), 0 0 0 3px rgba(249,115,22,0.15)'; }}
-                            onBlur={(e)  => { e.target.style.borderColor = 'rgba(255,255,255,0.06)'; e.target.style.boxShadow = 'inset 0 1px 3px rgba(0,0,0,0.3)'; }}
                         />
                         <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-[var(--font-jetbrains),monospace] font-bold text-muted-foreground/30 bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.5 rounded">/</kbd>
                     </div>
@@ -484,7 +476,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
 
                     {filteredPlayers.length === 0 ? (
                         <div className="py-16 text-center text-muted-foreground text-sm">
-                            {favoritesOnly && watchlist.length === 0 ? 'No favorites yet — click the ⭐ on any player to add them.' : 'No players found.'}
+                            {favoritesOnly && watchlist.length === 0 ? 'No favorites yet — click the ⭐ on any player to add them.' : searchQuery.trim() ? 'No players match your search — try a shorter name.' : 'No players match your current filters.'}
                         </div>
                     ) : (
                         (() => {
@@ -526,7 +518,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                                     }
                                                 </span>
                                                 <span className="flex-1" />
-                                                {tierCounts[tier.label] && <span className="font-semibold tracking-normal text-[10px] hidden sm:inline-block" style={{ opacity: 0.3 }}>
+                                                {tierCounts[tier.label] && <span className="font-semibold tracking-normal text-[10px] hidden sm:inline-block" style={{ opacity: 0.55 }}>
                                                     {Object.entries(tierCounts[tier.label]).filter(([_, c]) => c > 0).map(([pos, c]) => `${pos}×${c}`).join('  ')}
                                                 </span>}
                                             </div>

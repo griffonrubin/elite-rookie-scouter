@@ -43,16 +43,16 @@ export function StatsTable({ stats, position }: StatsTableProps) {
 
                         {/* Rushing (All) */}
                         <TableHead className="text-right">Rush</TableHead>
-                        <TableHead className="text-right">Yds</TableHead>
-                        <TableHead className="text-right">Avg</TableHead>
-                        <TableHead className="text-right">TD</TableHead>
+                        <TableHead className="text-right">Ru.Yds</TableHead>
+                        <TableHead className="text-right">YPC</TableHead>
+                        <TableHead className="text-right">Ru.TD</TableHead>
 
                         {/* Receiving (RB/WR/TE) */}
                         {(isRB || isWR || isTE) && (
                             <>
                                 <TableHead className="text-right">Rec</TableHead>
                                 <TableHead className="text-right">Yds</TableHead>
-                                <TableHead className="text-right">Avg</TableHead>
+                                <TableHead className="text-right">YPR</TableHead>
                                 <TableHead className="text-right">TD</TableHead>
                                 {(isWR || isTE) && <TableHead className="text-right">YAC</TableHead>}
                             </>
@@ -75,7 +75,7 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                         <TableRow key={`${season.season}-${season.school}`}>
                             <TableCell className="font-medium">{season.season}</TableCell>
                             <TableCell>{season.school}</TableCell>
-                            <TableCell className="text-right">{season.games_played || '-'}</TableCell>
+                            <TableCell className="text-right">{season.games_played ?? '—'}</TableCell>
 
                             {isQB && (
                                 <>
@@ -89,15 +89,27 @@ export function StatsTable({ stats, position }: StatsTableProps) {
 
                             <TableCell className="text-right">{(isWR || isTE) && !season.rush_attempts ? '—' : (season.rush_attempts || 0)}</TableCell>
                             <TableCell className="text-right">{(isWR || isTE) && !season.rush_attempts ? '—' : (season.rush_yards || 0)}</TableCell>
-                            <TableCell className="text-right">{season.rush_attempts ? ((season.rush_yards || 0) / season.rush_attempts).toFixed(1) : '—'}</TableCell>
+                            <TableCell className={cn("text-right", (() => {
+                                if (!season.rush_attempts) return "";
+                                const ypc = (season.rush_yards || 0) / season.rush_attempts;
+                                if (ypc >= 6.0) return "text-emerald-400 font-bold";
+                                if (ypc >= 5.0) return "text-sky-400";
+                                return "";
+                            })())}>{season.rush_attempts ? ((season.rush_yards || 0) / season.rush_attempts).toFixed(1) : '—'}</TableCell>
                             <TableCell className="text-right">{(isWR || isTE) && !season.rush_attempts ? '—' : (season.rush_tds || 0)}</TableCell>
 
                             {(isRB || isWR || isTE) && (
                                 <>
-                                    <TableCell className="text-right">{season.receptions || 0}</TableCell>
-                                    <TableCell className="text-right">{season.rec_yards || 0}</TableCell>
-                                    <TableCell className="text-right">{season.receptions ? ((season.rec_yards || 0) / season.receptions).toFixed(1) : '-'}</TableCell>
-                                    <TableCell className="text-right">{season.rec_tds || 0}</TableCell>
+                                    <TableCell className="text-right">{season.receptions ?? '—'}</TableCell>
+                                    <TableCell className="text-right">{season.rec_yards ?? '—'}</TableCell>
+                                    <TableCell className={cn("text-right", (() => {
+                                        if (!season.receptions) return "";
+                                        const ypr = (season.rec_yards || 0) / season.receptions;
+                                        if (ypr >= 16.0) return "text-emerald-400 font-bold";
+                                        if (ypr >= 12.0) return "text-sky-400";
+                                        return "";
+                                    })())}>{season.receptions ? ((season.rec_yards || 0) / season.receptions).toFixed(1) : '—'}</TableCell>
+                                    <TableCell className="text-right">{season.rec_tds ?? '—'}</TableCell>
                                     {(isWR || isTE) && (
                                         <TableCell className="text-right text-muted-foreground">
                                             {(season as any).yards_after_catch != null && (season as any).yards_after_catch > 0

@@ -33,7 +33,7 @@ export function AppHeader({ children }: AppHeaderProps) {
       <div className="px-3 sm:px-6 lg:px-10 h-[52px] flex items-center gap-3 sm:gap-5 overflow-hidden">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-1.5 shrink-0 group">
-          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="#f97316"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10" /></svg>
+          <svg className="w-6 h-6 transition-[filter] duration-200 group-hover:drop-shadow-[0_0_8px_rgba(249,115,22,0.65)]" viewBox="0 0 24 24" fill="#f97316"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10" /></svg>
           <div className="hidden sm:flex flex-col">
             <span className="text-sm font-bold text-foreground tracking-tight leading-tight">
               DyCharts
@@ -55,7 +55,7 @@ export function AppHeader({ children }: AppHeaderProps) {
               <Link
                 key={href}
                 href={href}
-                className={`relative flex items-center px-4 text-[13px] font-semibold transition-all duration-200 ${
+                className={`relative flex items-center px-4 text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:rounded-sm ${
                   isActive
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground/80'

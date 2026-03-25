@@ -252,9 +252,7 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                     className="sticky left-0 z-10 flex items-center self-stretch gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 lg:w-[304px]"
                 >
                     {/* Watchlist star */}
-                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="cursor-pointer flex items-center flex-shrink-0">
-                        <WatchlistButton playerSlug={player.slug} />
-                    </div>
+                    <WatchlistButton playerSlug={player.slug} className="flex-shrink-0" />
 
                     {/* Rank number */}
                     <div className="w-7 sm:w-10 flex-shrink-0 flex items-center justify-center">
@@ -262,13 +260,14 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
                     </div>
 
                     {/* Compare quick-launch */}
-                    <div
+                    <button
+                        type="button"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/compare?a=${player.slug}`); }}
-                        className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 rounded-md text-muted-foreground/25 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-                        title="Compare player"
+                        className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 rounded-md text-muted-foreground/25 hover:text-primary hover:bg-primary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                        aria-label={`Compare ${player.full_name}`}
                     >
                         <Scale className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    </div>
+                    </button>
 
                     {/* Player info — wrapped in hover card for quick stats preview */}
                     <HoverCard openDelay={500} closeDelay={100}>

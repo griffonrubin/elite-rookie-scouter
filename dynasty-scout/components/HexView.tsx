@@ -13,7 +13,7 @@ interface HexViewProps {
 const PICKS_PER_ROUND = 12;
 
 function getTierStyle(rank: number): { border: string; bg: string; pickColor: string } {
-    if (rank <= 5)  return { border: 'border-[#FF6B00]/70',    bg: 'bg-[#FF6B00]/[0.08]',   pickColor: 'text-[#FF9A50]'           };
+    if (rank <= 5)  return { border: 'border-orange-500/70',   bg: 'bg-orange-500/[0.08]',  pickColor: 'text-orange-400'          };
     if (rank <= 12) return { border: 'border-emerald-500/60',  bg: 'bg-emerald-500/[0.06]', pickColor: 'text-emerald-400'         };
     if (rank <= 24) return { border: 'border-cyan-500/50',     bg: 'bg-cyan-500/[0.05]',    pickColor: 'text-cyan-400'            };
     if (rank <= 48) return { border: 'border-violet-500/50',   bg: 'bg-violet-500/[0.05]',  pickColor: 'text-violet-400'          };
@@ -38,7 +38,7 @@ export function HexView({ players, period }: HexViewProps) {
             <div className="flex items-center gap-4 px-2 pb-3 flex-wrap">
                 <span className="text-muted-foreground/40 uppercase tracking-widest text-[9px] font-bold">Tier</span>
                 {[
-                    { label: 'S (1–5)',    color: 'bg-[#FF6B00]'  },
+                    { label: 'S (1–5)',    color: 'bg-orange-500' },
                     { label: 'A (6–12)',   color: 'bg-emerald-500' },
                     { label: 'B (13–24)',  color: 'bg-cyan-500'    },
                     { label: 'C (25–48)',  color: 'bg-violet-500'  },

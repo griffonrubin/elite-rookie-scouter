@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Player } from '@/lib/types';
 import { POSITION_COLORS } from '@/lib/constants';
+import { WatchlistButton } from './WatchlistButton';
 import { cn } from '@/lib/utils';
 
 interface BoxViewProps {
@@ -71,7 +72,7 @@ function gradeOf(pct: number) {
 
 // ── Tier ──────────────────────────────────────────────────────────────────────
 function getTierStyle(rank: number) {
-    if (rank <= 5)  return { label: 'S Tier', bg: 'bg-[#FF6B00]/10 border-[#FF6B00]/30',    text: 'text-[#FF9A50]',   border: '#FF6B00' };
+    if (rank <= 5)  return { label: 'S Tier', bg: 'bg-orange-500/10 border-orange-500/30',   text: 'text-orange-300',  border: '#f97316' };
     if (rank <= 12) return { label: 'A Tier', bg: 'bg-emerald-500/10 border-emerald-500/30', text: 'text-emerald-300', border: '#22c55e' };
     if (rank <= 24) return { label: 'B Tier', bg: 'bg-cyan-500/10 border-cyan-500/30',       text: 'text-cyan-300',    border: '#00b4d8' };
     if (rank <= 48) return { label: 'C Tier', bg: 'bg-violet-500/10 border-violet-500/30',   text: 'text-violet-300',  border: '#a78bfa' };
@@ -208,7 +209,7 @@ export function BoxView({ players, period }: BoxViewProps) {
                     { yr: p.s2_yr, yds: pos === 'QB' ? (p.s2_pass ?? 0) : (p.s2_scrim ?? 0) },
                     { yr: p.s1_yr, yds: pos === 'QB' ? (p.s1_pass ?? 0) : (p.s1_scrim ?? 0) },
                 ].filter(s => s.yr != null);
-                const barColor = pos === 'QB' ? '#22d3ee' : pos === 'RB' ? '#34d399' : pos === 'WR' ? '#e879f9' : '#a78bfa';
+                const barColor = pos === 'QB' ? '#22d3ee' : pos === 'RB' ? '#34d399' : pos === 'WR' ? '#34d399' : '#a78bfa';
                 const barLabel = pos === 'QB' ? 'Pass Yds' : pos === 'RB' ? 'Scrim Yds' : 'Rec Yds';
 
                 // Build athletics grade cells — show all available, fill full row
@@ -249,6 +250,7 @@ export function BoxView({ players, period }: BoxViewProps) {
                                         {'★'.repeat(p.recruiting_stars)}
                                     </span>
                                 )}
+                                <WatchlistButton playerSlug={player.slug} className="flex-shrink-0" />
                                 <span
                                     style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 10, fontWeight: 800, lineHeight: 1 }}
                                     className={cn('border inline-flex items-center', posColor)}
@@ -257,20 +259,30 @@ export function BoxView({ players, period }: BoxViewProps) {
                         </div>
 
                         {/* ── Name + school ── */}
-                        <div className="px-3 sm:px-4 pb-2 sm:pb-3">
-                            <div className="font-bold text-[14px] text-foreground group-hover:text-primary transition-colors leading-snug" title={player.full_name}>
-                                {player.full_name}
-                            </div>
-                            <div className="text-[11px] text-muted-foreground/60 truncate mt-0.5">{school}</div>
-                            {p.breakout_age && (
-                                <div className="text-[10px] text-muted-foreground/40 font-mono mt-1">
-                                    <span className={`font-bold ${p.breakout_age <= 19 ? 'text-emerald-400' : p.breakout_age <= 20 ? 'text-cyan-400' : ''}`}>
-                                        BO age {Number(p.breakout_age).toFixed(1)}
-                                    </span>
-                                </div>
+                        <div className="px-3 sm:px-4 pb-2 sm:pb-3 flex items-start gap-2.5">
+                            {(p.headshot_url || p.espn_college_id) ? (
+                                <img
+                                    src={p.headshot_url || 'https://a.espncdn.com/i/headshots/college-football/players/full/' + p.espn_college_id + '.png'}
+                                    alt={player.full_name}
+                                    className="w-8 h-10 rounded-md object-cover object-top flex-shrink-0 opacity-90 mt-0.5"
+                                />
+                            ) : (
+                                <div className="w-8 h-10 rounded-md bg-muted/20 flex items-center justify-center text-[9px] font-black text-muted-foreground/30 flex-shrink-0 mt-0.5">{pos[0]}</div>
                             )}
+                            <div className="min-w-0 flex-1">
+                                <div className="font-bold text-[14px] text-foreground group-hover:text-primary transition-colors leading-snug" title={player.full_name}>
+                                    {player.full_name}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground/60 truncate mt-0.5">{school}</div>
+                                {p.breakout_age && (
+                                    <div className="text-[10px] text-muted-foreground/40 font-mono mt-1">
+                                        <span className={`font-bold ${p.breakout_age <= 19 ? 'text-emerald-400' : p.breakout_age <= 20 ? 'text-cyan-400' : ''}`}>
+                                            BO age {Number(p.breakout_age).toFixed(1)}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-
                         <div className="border-t border-border/20" />
 
                         {/* ── Season bar chart ── */}
