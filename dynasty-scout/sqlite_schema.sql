@@ -247,6 +247,32 @@ CREATE TABLE IF NOT EXISTS jfoster_grades (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- RB career-level advanced metrics (from community data sources)
+CREATE TABLE IF NOT EXISTS rb_advanced_career (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  player_id INTEGER REFERENCES players(id) UNIQUE,
+  -- Career count totals
+  yds_after_contact INTEGER,
+  explosive_attempts INTEGER,
+  breakaway_attempts INTEGER,
+  avoided_tackles INTEGER,
+  routes_run INTEGER,
+  -- Advanced rates (%)
+  avoided_tackle_pct REAL,
+  yprr REAL,
+  target_rate REAL,
+  drop_rate REAL,
+  fumble_rate REAL,
+  explosive_rate REAL,
+  breakaway_rate REAL,
+  first_down_rate REAL,
+  td_per_route REAL,
+  gap_rate REAL,
+  zone_rate REAL,
+  data_source TEXT DEFAULT 'manual_2026',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes (SQLite uses simpler syntax usually, but these work)
 CREATE INDEX IF NOT EXISTS idx_players_position ON players(position);
 CREATE INDEX IF NOT EXISTS idx_players_draft_year ON players(draft_year);

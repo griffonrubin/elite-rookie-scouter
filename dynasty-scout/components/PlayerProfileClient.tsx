@@ -14,6 +14,7 @@ import { DonutSplit } from '@/components/DonutSplit';
 import { SeasonRankingsChart, type RankingMetric } from '@/components/SeasonRankingsChart';
 import { AdvancedStatsTable } from '@/components/AdvancedStatsTable';
 import { RBProductionTable } from '@/components/RBProductionTable';
+import { RBAdvancedRatesTable } from '@/components/RBAdvancedRatesTable';
 import { ButterflyChart, type ButterflyRow } from '@/components/ButterflyChart';
 import { FilmGradesCard } from '@/components/FilmGradesCard';
 import { POSITION_HEADLINE_STATS } from '@/lib/constants';
@@ -123,6 +124,8 @@ interface Props {
     highSchool: any | null;
     jfosterData: JFosterGrades | null;
     nflScout: NflScoutProfile | null;
+    rbAdvanced: any | null;
+    peerRBAdv: any[];
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -131,6 +134,7 @@ export function PlayerProfileClient({
     player, stats, rankings, measurables, speedScore, news, trustIndicator,
     peerCareer, peerAdvanced, historicalComps, epaStats, dominatorStats,
     prevPlayer, nextPlayer, wrAdvanced, peerWrAdv, highSchool, jfosterData, nflScout,
+    rbAdvanced, peerRBAdv,
 }: Props) {
     const pos = player.position as string;
     const posStyle = POS_STYLES[pos] || 'bg-gray-500/20 text-gray-400 border-gray-500/40';
@@ -1228,7 +1232,10 @@ export function PlayerProfileClient({
 
                         {/* RB career production heatmap */}
                         {pos === 'RB' && (
-                            <RBProductionTable stats={stats} peerAdvanced={peerAdvanced} playerId={player.id} />
+                            <>
+                            <RBProductionTable stats={stats} peerAdvanced={peerAdvanced} playerId={player.id} rbCareer={rbAdvanced} peerRBAdv={peerRBAdv} />
+                            <RBAdvancedRatesTable rbCareer={rbAdvanced} peerRBAdv={peerRBAdv} />
+                            </>
                         )}
 
                         {/* Advanced season stats table */}

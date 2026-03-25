@@ -202,6 +202,18 @@ async function getPlayer(slug: string) {
               `, [player.position]).catch(() => [] as any[])
             : [];
 
+        // RB advanced career stats
+        const rbAdvanced = player.position === 'RB'
+            ? await queryOne<any>("SELECT * FROM rb_advanced_career WHERE player_id = $1", [player.id]).catch(() => null)
+            : null;
+
+        const peerRBAdv = player.position === 'RB'
+            ? await query<any>(
+                "SELECT * FROM rb_advanced_career rb JOIN players p ON p.id = rb.player_id WHERE p.position = 'RB' AND p.draft_year = 2026",
+                []
+              ).catch(() => [] as any[])
+            : [];
+
         // High school data
         const highSchool = await queryOne<any>(
             "SELECT * FROM high_school_stats WHERE player_id = $1",
@@ -220,7 +232,7 @@ async function getPlayer(slug: string) {
             [player.id]
         ).catch(() => null);
 
-        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [], highSchool: highSchool || null, jfosterData: jfosterData || null, nflScout: nflScout || null };
+        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [], highSchool: highSchool || null, jfosterData: jfosterData || null, nflScout: nflScout || null, rbAdvanced: rbAdvanced || null, peerRBAdv: peerRBAdv || [] };
     } catch (e) {
         console.error("DB Error:", e);
         return null;

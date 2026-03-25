@@ -114,11 +114,16 @@ async function getPlayerData(slug: string) {
         [player.id]
     ).catch(() => null);
 
+    const rbAdvanced = player.position === 'RB'
+        ? await queryOne<any>("SELECT * FROM rb_advanced_career WHERE player_id = $1", [player.id]).catch(() => null)
+        : null;
+
     return {
         ...player,
         careerStat: stats.length > 0 ? careerStat : null,
         speedScore: computeSpeedScore(player.weight_lbs, player.forty_yard),
         jfosterData: jfosterData || null,
+        rbAdvanced: rbAdvanced || null,
     };
 }
 
@@ -430,6 +435,20 @@ function buildAdvancedMetrics(playerA: any, playerB: any) {
     if (posA === 'RB' || posB === 'RB') {
         rows.push({ label: 'Yards Per Carry', a: ypcA, b: ypcB, numA: parseFloat(ypcA) || null, numB: parseFloat(ypcB) || null, lowerWins: false });
         rows.push({ label: 'Scrim Yds/Game', a: scrimA, b: scrimB, numA: parseFloat(scrimA) || null, numB: parseFloat(scrimB) || null, lowerWins: false });
+        const rbA = (playerA as any).rbAdvanced;
+        const rbB = (playerB as any).rbAdvanced;
+        if (rbA || rbB) {
+            const fmt1 = (v: number | null | undefined, d = 1) => v != null ? v.toFixed(d) + '%' : '—';
+            rows.push({ label: 'Avoided Tackle %', a: fmt1(rbA?.avoided_tackle_pct), b: fmt1(rbB?.avoided_tackle_pct), numA: rbA?.avoided_tackle_pct ?? null, numB: rbB?.avoided_tackle_pct ?? null, lowerWins: false });
+            rows.push({ label: 'YPRR', a: rbA?.yprr != null ? rbA.yprr.toFixed(2) : '—', b: rbB?.yprr != null ? rbB.yprr.toFixed(2) : '—', numA: rbA?.yprr ?? null, numB: rbB?.yprr ?? null, lowerWins: false });
+            rows.push({ label: 'Target Rate', a: fmt1(rbA?.target_rate), b: fmt1(rbB?.target_rate), numA: rbA?.target_rate ?? null, numB: rbB?.target_rate ?? null, lowerWins: false });
+            rows.push({ label: 'Drop Rate', a: fmt1(rbA?.drop_rate), b: fmt1(rbB?.drop_rate), numA: rbA?.drop_rate ?? null, numB: rbB?.drop_rate ?? null, lowerWins: true });
+            rows.push({ label: 'Fumble Rate', a: fmt1(rbA?.fumble_rate), b: fmt1(rbB?.fumble_rate), numA: rbA?.fumble_rate ?? null, numB: rbB?.fumble_rate ?? null, lowerWins: true });
+            rows.push({ label: 'Explosive Rate', a: fmt1(rbA?.explosive_rate), b: fmt1(rbB?.explosive_rate), numA: rbA?.explosive_rate ?? null, numB: rbB?.explosive_rate ?? null, lowerWins: false });
+            rows.push({ label: 'First Down Rate', a: fmt1(rbA?.first_down_rate), b: fmt1(rbB?.first_down_rate), numA: rbA?.first_down_rate ?? null, numB: rbB?.first_down_rate ?? null, lowerWins: false });
+            rows.push({ label: 'Gap Rate', a: fmt1(rbA?.gap_rate), b: fmt1(rbB?.gap_rate), numA: rbA?.gap_rate ?? null, numB: rbB?.gap_rate ?? null, lowerWins: true });
+            rows.push({ label: 'Zone Rate', a: fmt1(rbA?.zone_rate), b: fmt1(rbB?.zone_rate), numA: rbA?.zone_rate ?? null, numB: rbB?.zone_rate ?? null, lowerWins: false });
+        }
     }
 
     // Career YAC (yards after catch) — shown when available
