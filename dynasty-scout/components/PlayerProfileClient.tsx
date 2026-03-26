@@ -690,28 +690,28 @@ export function PlayerProfileClient({
                                 )}
 
                             </div>
-                        </div>
 
-                        {/* Compare CTA */}
-                        <div className="hidden md:flex flex-col items-center justify-center self-stretch px-1">
-                            <Link
-                                href={`/compare?a=${player.slug}`}
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/[0.10] text-sm font-bold text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all whitespace-nowrap"
-                                style={{ background: 'var(--bg-elevated)' }}
-                            >
-                                <Scale className="w-4 h-4" /> Compare
-                            </Link>
+                            {/* Compare button — centered below rank badges */}
+                            <div className="hidden sm:flex mt-3">
+                                <Link
+                                    href={`/compare?a=${player.slug}`}
+                                    className="inline-flex items-center gap-2 px-6 py-2 rounded-xl border border-white/[0.10] text-sm font-bold text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
+                                    style={{ background: 'var(--bg-elevated)' }}
+                                >
+                                    <Scale className="w-4 h-4" /> Compare
+                                </Link>
+                            </div>
                         </div>
 
                         {/* KPI strip */}
                         {kpiStrip.length > 0 && (
                             <div className="hidden lg:flex gap-2 shrink-0" style={{ minWidth: 280 }}>
                                 {kpiStrip.map(kpi => (
-                                    <div key={kpi.label} className="flex-1 rounded-xl px-3 py-3 text-center border border-white/[0.06] overflow-hidden"
-                                        style={{ background: 'var(--bg-elevated)', minWidth: 64 }}
+                                    <div key={kpi.label} className="flex-1 rounded-xl px-2 py-3 text-center border border-white/[0.06]"
+                                        style={{ background: 'var(--bg-elevated)', minWidth: 70 }}
                                     >
                                         <div className="text-xl font-black font-[var(--font-jetbrains),monospace] text-foreground leading-none">{kpi.value}</div>
-                                        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-bold mt-1.5 truncate">{kpi.label}</div>
+                                        <div className="text-[9px] uppercase tracking-wide text-muted-foreground/50 font-bold mt-1.5">{kpi.label}</div>
                                     </div>
                                 ))}
                             </div>
