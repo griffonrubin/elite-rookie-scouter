@@ -16,6 +16,7 @@ import { AdvancedStatsTable } from '@/components/AdvancedStatsTable';
 import { RBProductionTable } from '@/components/RBProductionTable';
 import { RBAdvancedRatesTable } from '@/components/RBAdvancedRatesTable';
 import { WRTargetDepthBar } from '@/components/WRTargetDepthBar';
+import { WRAdvancedRatesTable } from '@/components/WRAdvancedRatesTable';
 import { ButterflyChart, type ButterflyRow } from '@/components/ButterflyChart';
 import { FilmGradesCard } from '@/components/FilmGradesCard';
 import { POSITION_HEADLINE_STATS } from '@/lib/constants';
@@ -1250,7 +1251,15 @@ export function PlayerProfileClient({
                                     short={(wrAdvanced as any).depth_0_9_pct}
                                     intermediate={(wrAdvanced as any).depth_10_19_pct}
                                     deep={(wrAdvanced as any).depth_20plus_pct}
+                                    peerWrAdv={peerWrAdv}
                                 />
+                            </div>
+                        )}
+
+                        {/* WR Career Production Heatmap */}
+                        {(pos === 'WR' || pos === 'TE') && wrAdvanced && peerWrAdv.length > 0 && (
+                            <div className="mb-6">
+                                <WRAdvancedRatesTable wrAdvanced={wrAdvanced} peerWrAdv={peerWrAdv} />
                             </div>
                         )}
 

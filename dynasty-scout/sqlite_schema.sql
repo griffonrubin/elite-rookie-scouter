@@ -208,6 +208,7 @@ CREATE TABLE IF NOT EXISTS wr_advanced_career (
   depth_0_9_pct REAL,         -- % targets 0-9 yards downfield
   depth_10_19_pct REAL,       -- % targets 10-19 yards downfield
   depth_20plus_pct REAL,      -- % targets 20+ yards downfield (deep shots)
+  screen_target_pct REAL,     -- screen target rate percentile vs drafted WRs since 2018 (PFF)
   data_source TEXT DEFAULT 'manual_2026',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -195,7 +195,9 @@ async function getPlayer(slug: string) {
                        wac.adot, wac.yac_per_rec, wac.qbr_when_targeted, wac.td_per_route,
                        wac.first_down_rate, wac.forced_mtf_pct, wac.open_target_rate,
                        wac.air_yards_per_rec, wac.td_per_target, wac.first_down_per_target,
-                       wac.target_rate, wac.contested_catch_rate, wac.yac_rate, wac.air_yards_rate
+                       wac.target_rate, wac.contested_catch_rate, wac.yac_rate, wac.air_yards_rate,
+                       wac.wide_rate, wac.slot_rate, wac.screen_target_pct,
+                       wac.depth_behind_line_pct, wac.depth_0_9_pct, wac.depth_10_19_pct, wac.depth_20plus_pct
                 FROM wr_advanced_career wac
                 JOIN players p ON p.id = wac.player_id
                 WHERE p.position = $1 AND p.draft_year = 2026
