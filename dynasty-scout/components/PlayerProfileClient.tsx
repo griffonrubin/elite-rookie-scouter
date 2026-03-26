@@ -687,25 +687,30 @@ export function PlayerProfileClient({
                                         <span className="text-xs uppercase tracking-widest text-sky-400/50 font-bold">KTC</span>
                                     </div>
                                 )}
-                                <Link
-                                    href={`/compare?a=${player.slug}`}
-                                    className="ml-auto hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.08] text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
-                                    style={{ background: 'var(--bg-elevated)' }}
-                                >
-                                    <Scale className="w-3.5 h-3.5" /> Compare
-                                </Link>
+
                             </div>
+                        </div>
+
+                        {/* Compare CTA */}
+                        <div className="hidden md:flex flex-col items-center justify-center self-stretch px-1">
+                            <Link
+                                href={`/compare?a=${player.slug}`}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/[0.10] text-sm font-bold text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all whitespace-nowrap"
+                                style={{ background: 'var(--bg-elevated)' }}
+                            >
+                                <Scale className="w-4 h-4" /> Compare
+                            </Link>
                         </div>
 
                         {/* KPI strip */}
                         {kpiStrip.length > 0 && (
                             <div className="hidden lg:flex gap-2 shrink-0" style={{ minWidth: 280 }}>
                                 {kpiStrip.map(kpi => (
-                                    <div key={kpi.label} className="flex-1 rounded-xl px-4 py-3 text-center border border-white/[0.06]"
+                                    <div key={kpi.label} className="flex-1 rounded-xl px-3 py-3 text-center border border-white/[0.06] overflow-hidden"
                                         style={{ background: 'var(--bg-elevated)', minWidth: 64 }}
                                     >
                                         <div className="text-xl font-black font-[var(--font-jetbrains),monospace] text-foreground leading-none">{kpi.value}</div>
-                                        <div className="text-[11px] uppercase tracking-wide text-muted-foreground/50 font-bold mt-1.5">{kpi.label}</div>
+                                        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-bold mt-1.5 truncate">{kpi.label}</div>
                                     </div>
                                 ))}
                             </div>
