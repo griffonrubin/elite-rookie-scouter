@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +21,7 @@ import { ButterflyChart, type ButterflyRow } from '@/components/ButterflyChart';
 import { FilmGradesCard } from '@/components/FilmGradesCard';
 import { POSITION_HEADLINE_STATS } from '@/lib/constants';
 import { getArchetypes } from '@/lib/archetypes';
-import { GraduationCap, Calendar, Ruler, Weight, Star, Newspaper, BarChart2, ExternalLink, Scale, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { GraduationCap, Calendar, Ruler, Weight, Star, Newspaper, BarChart2, ExternalLink, Scale, AlertTriangle, ChevronLeft, ChevronRight, Share2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WatchlistButton } from '@/components/WatchlistButton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -155,6 +155,26 @@ export function PlayerProfileClient({
     const tier = classRank ? getTierInfo(classRank) : { label: 'Unranked', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40', accent: '#6b7280' };
 
     const headlines = POSITION_HEADLINE_STATS[pos] || [];
+    // ── Share ──────────────────────────────────────────────────────────────
+    const [copied, setCopied] = useState(false);
+    const handleShare = useCallback(() => {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }).catch(() => {
+            // fallback for older browsers
+            const el = document.createElement('textarea');
+            el.value = url;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    }, []);
+
 
     // ── Derived career stats ───────────────────────────────────────────────
     const statsWithGames = stats.filter(row => row.games_played && row.games_played > 0);
@@ -741,15 +761,23 @@ export function PlayerProfileClient({
 
                             </div>
 
-                            {/* Compare button — centered below rank badges */}
-                            <div className="hidden sm:flex mt-3">
+                            {/* Action buttons */}
+                            <div className="hidden sm:flex items-center gap-2 mt-3">
                                 <Link
                                     href={`/compare?a=${player.slug}`}
-                                    className="inline-flex items-center gap-2 px-6 py-2 rounded-xl border border-white/[0.10] text-sm font-bold text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
+                                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-white/[0.10] text-sm font-bold text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
                                     style={{ background: 'var(--bg-elevated)' }}
                                 >
                                     <Scale className="w-4 h-4" /> Compare
                                 </Link>
+                                <button
+                                    onClick={handleShare}
+                                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl border text-sm font-bold transition-all"
+                                    style={{ background: 'var(--bg-elevated)', color: copied ? '#4ade80' : 'var(--muted-foreground)', borderColor: copied ? 'rgba(74,222,128,0.3)' : 'rgba(255,255,255,0.1)' }}
+                                >
+                                    {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                                    {copied ? 'Copied!' : 'Share'}
+                                </button>
                             </div>
                         </div>
 
@@ -978,7 +1006,7 @@ export function PlayerProfileClient({
                                     <p className="text-xs text-muted-foreground/70 leading-relaxed line-clamp-4">{nflScout.overview}</p>
                                 )}
                                 {(nflScout.strengths || nflScout.weaknesses) && (
-                                    <div className="grid grid-cols-2 gap-3 pt-1">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                                         {nflScout.strengths && (
                                             <div>
                                                 <div className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/70 mb-1">Strengths</div>
@@ -1520,3 +1548,6 @@ export function PlayerProfileClient({
         </div>
     );
 }
+
+
+

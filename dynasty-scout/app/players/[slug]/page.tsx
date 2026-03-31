@@ -1,4 +1,5 @@
 import { query, queryOne } from '@/lib/db';
+import type { Metadata } from 'next';
 import { CollegeStats, JFosterGrades, Measurables, NflScoutProfile, Ranking } from '@/lib/types';
 import Link from 'next/link';
 import { PlayerProfileClient } from '@/components/PlayerProfileClient';
@@ -241,6 +242,80 @@ async function getPlayer(slug: string) {
     }
 }
 
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const { slug } = await params;
+    try {
+        const p = await queryOne<any>(
+            `SELECT p.full_name, p.position, p.weight_lbs,
+                    COALESCE((SELECT school FROM college_career WHERE player_id = p.id ORDER BY id DESC LIMIT 1), p.nfl_team) as school,
+                    m.forty_yard, m.ras,
+                    cr.rank_overall as consensus_rank,
+                    (SELECT COALESCE(SUM(rush_yards),0)+COALESCE(SUM(rec_yards),0) FROM college_stats WHERE player_id = p.id) as career_scrim,
+                    (SELECT COALESCE(SUM(pass_yards),0) FROM college_stats WHERE player_id = p.id) as career_pass,
+                    (SELECT COALESCE(SUM(pass_tds),0) FROM college_stats WHERE player_id = p.id) as career_ptds,
+                    (SELECT COALESCE(SUM(rush_tds),0)+COALESCE(SUM(rec_tds),0) FROM college_stats WHERE player_id = p.id) as career_tds
+             FROM players p
+             LEFT JOIN measurables m ON m.player_id = p.id
+             LEFT JOIN consensus_rankings cr ON p.id = cr.player_id
+                 AND cr.calculated_at = (SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id)
+             WHERE p.slug = $1`,
+            [slug]
+        );
+        if (!p) return { title: 'Player Not Found | DyCharts' };
+
+        const pos = p.position || 'RB';
+        const tierLabel = !p.consensus_rank ? '' :
+            p.consensus_rank <= 5 ? 'S Tier' : p.consensus_rank <= 12 ? 'A Tier' :
+            p.consensus_rank <= 24 ? 'B Tier' : p.consensus_rank <= 48 ? 'C Tier' : 'D Tier';
+
+        // Position-appropriate stats
+        const statParams: Record<string, string> = {};
+        if (pos === 'QB') {
+            statParams['s0l'] = 'Career Pass Yds'; statParams['s0v'] = String(p.career_pass ?? 0);
+            statParams['s1l'] = 'Career Pass TDs'; statParams['s1v'] = String(p.career_ptds ?? 0);
+        } else {
+            statParams['s0l'] = 'Career Scrim Yds'; statParams['s0v'] = String(p.career_scrim ?? 0);
+            statParams['s1l'] = 'Career TDs';       statParams['s1v'] = String(p.career_tds ?? 0);
+        }
+        if (p.forty_yard) { statParams['s2l'] = '40-Yard Dash'; statParams['s2v'] = String(p.forty_yard) + 's'; }
+        else if (p.ras)   { statParams['s2l'] = 'RAS Score';    statParams['s2v'] = String(p.ras); }
+
+        const ogParams = new URLSearchParams({
+            name: p.full_name || '',
+            pos,
+            school: p.school || '',
+            rank: String(p.consensus_rank || ''),
+            tier: tierLabel,
+            forty: p.forty_yard ? String(p.forty_yard) : '',
+            ras: p.ras ? String(p.ras) : '',
+            ...statParams,
+        });
+
+        const title = `${p.full_name} | ${pos} | DyCharts 2026`;
+        const description = `#${p.consensus_rank ?? '?'} overall · ${p.position} · ${p.school || 'NFL Draft'} — Dynasty scouting profile on DyCharts`;
+        const ogImageUrl = `/api/og/player?${ogParams.toString()}`;
+
+        return {
+            title,
+            description,
+            openGraph: {
+                title,
+                description,
+                images: [{ url: ogImageUrl, width: 1200, height: 630, alt: p.full_name }],
+                type: 'profile',
+            },
+            twitter: {
+                card: 'summary_large_image',
+                title,
+                description,
+                images: [ogImageUrl],
+            },
+        };
+    } catch {
+        return { title: 'DyCharts | 2026 Dynasty Draft' };
+    }
+}
 
 export default async function PlayerPage({ params }: PageProps) {
     const { slug } = await params;
