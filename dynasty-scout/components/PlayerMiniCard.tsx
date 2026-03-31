@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { POSITION_COLORS } from '@/lib/constants';
@@ -114,7 +115,7 @@ function RecruitStars({ stars }: { stars: number | null | undefined }) {
     return <span className={`text-[13px] font-bold ${color}`}>{'★'.repeat(stars)}</span>;
 }
 
-export function PlayerMiniCard({ player, ranking, period, index, positionFilter = 'ALL' }: PlayerMiniCardProps) {
+function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 'ALL' }: PlayerMiniCardProps) {
     const router = useRouter();
     const p = player as any;
     const positionColor = POSITION_COLORS[player.position] || 'bg-gray-500/20 text-gray-300 border-gray-500/40';
@@ -391,3 +392,5 @@ export function PlayerMiniCard({ player, ranking, period, index, positionFilter 
         </Link>
     );
 }
+
+export const PlayerMiniCard = React.memo(PlayerMiniCardInner);

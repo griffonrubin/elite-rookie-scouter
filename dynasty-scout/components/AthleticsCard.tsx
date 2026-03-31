@@ -257,7 +257,7 @@ export function AthleticsCard({ position, heightInches, weightLbs, measurables, 
                     return (
                         <div key={desc} className="flex items-center gap-1.5">
                             <span className={`text-[9px] font-black font-mono ${g.text}`}>{g.label}</span>
-                            <span className="text-[9px] text-muted-foreground/35">{desc}</span>
+                            <span className="text-[9px] text-muted-foreground/45">{desc}</span>
                         </div>
                     );
                 })}

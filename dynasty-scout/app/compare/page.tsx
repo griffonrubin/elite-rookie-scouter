@@ -328,31 +328,47 @@ export default async function ComparePage({ searchParams }: Props) {
                     const winnerCount = Math.max(aCount, bCount);
                     const topAdvantages = (aCount > bCount ? aWins : bWins).slice(0, 3).map(r => r.label);
                     return (
-                        <div className="mt-4 sm:mt-6 rounded-xl sm:rounded-2xl border border-white/[0.06] p-3 sm:p-5" style={{ background: 'var(--bg-elevated)' }}>
-                            <div className="flex items-center gap-2.5 mb-3">
-                                <div className="w-1 h-4 rounded-full bg-primary/60" />
-                                <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60">Verdict</h3>
-                            </div>
-                            <div className="text-sm text-muted-foreground/80">
-                                {winner ? (
-                                    <><strong className="text-foreground">{winnerName}</strong> wins <strong className="text-foreground">{winnerCount}</strong> of {total} categories.{topAdvantages.length > 0 && <> Key advantages: <span className="text-primary font-semibold">{topAdvantages.join(', ')}</span>.</>}</>
-                                ) : (
-                                    <span>Even matchup across {total} categories.</span>
-                                )}
-                            </div>
-                            <div className="mt-4 flex gap-3 items-center">
-                                <div className="flex-1 bg-white/[0.06] rounded-full h-2.5 overflow-hidden">
-                                    <div className="h-full rounded-full transition-all" style={{ width: total > 0 ? `${(aCount / total) * 100}%` : '50%', background: 'linear-gradient(90deg, #f97316, #f59e0b)' }} />
+                        <div className="mt-4 sm:mt-6 rounded-xl sm:rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+                            <div className="px-3 sm:px-5 pt-3 sm:pt-5 pb-2 sm:pb-3">
+                                <div className="flex items-center gap-2.5 mb-3">
+                                    <div className="w-1 h-4 rounded-full bg-primary/60" />
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60">Verdict</h3>
                                 </div>
-                                <div className="text-sm font-[var(--font-jetbrains),monospace] font-bold text-muted-foreground/70">{aCount}–{bCount}</div>
-                                <div className="flex-1 bg-white/[0.06] rounded-full h-2.5 overflow-hidden">
-                                    <div className="h-full bg-sky-400 rounded-full transition-all ml-auto" style={{ width: total > 0 ? `${(bCount / total) * 100}%` : '50%' }} />
+                                <div className="text-sm text-muted-foreground/80">
+                                    {winner ? (
+                                        <><strong className="text-foreground text-base">{winnerName}</strong> wins <strong className="text-foreground">{winnerCount}</strong> of {total} categories.{topAdvantages.length > 0 && <> Key advantages: <span className="text-primary font-semibold">{topAdvantages.join(', ')}</span>.</>}</>
+                                    ) : (
+                                        <span>Even matchup across {total} categories.</span>
+                                    )}
+                                </div>
+                                <div className="mt-4 flex gap-3 items-center">
+                                    <div className="flex-1 bg-white/[0.06] rounded-full h-3 overflow-hidden">
+                                        <div className="h-full rounded-full transition-all" style={{ width: total > 0 ? `${(aCount / total) * 100}%` : '50%', background: 'linear-gradient(90deg, #f97316, #f59e0b)' }} />
+                                    </div>
+                                    <div className="text-lg font-[var(--font-jetbrains),monospace] font-black text-foreground">{aCount}–{bCount}</div>
+                                    <div className="flex-1 bg-white/[0.06] rounded-full h-3 overflow-hidden">
+                                        <div className="h-full bg-sky-400 rounded-full transition-all ml-auto" style={{ width: total > 0 ? `${(bCount / total) * 100}%` : '50%' }} />
+                                    </div>
+                                </div>
+                                <div className="flex justify-between mt-1.5 text-xs text-muted-foreground/50 font-medium">
+                                    <span className="text-orange-400/70">{playerA.full_name}</span>
+                                    <span className="text-sky-400/70">{playerB.full_name}</span>
                                 </div>
                             </div>
-                            <div className="flex justify-between mt-1.5 text-xs text-muted-foreground/50 font-medium">
-                                <span>{playerA.full_name}</span>
-                                <span>{playerB.full_name}</span>
-                            </div>
+                            {/* Winner banner */}
+                            {winner && (
+                                <div
+                                    className="px-3 sm:px-5 py-2 sm:py-3 text-center text-xs sm:text-sm font-black uppercase tracking-widest border-t border-white/[0.04]"
+                                    style={{
+                                        background: winner === playerA
+                                            ? 'linear-gradient(90deg, rgba(249,115,22,0.12), transparent 60%)'
+                                            : 'linear-gradient(270deg, rgba(56,189,248,0.12), transparent 60%)',
+                                        color: winner === playerA ? '#f97316' : '#38bdf8',
+                                    }}
+                                >
+                                    {winnerName} has the edge
+                                </div>
+                            )}
                         </div>
                     );
                 })()}
@@ -610,11 +626,11 @@ function CompareSection({ title, icon, rows }: { title: string; icon: React.Reac
                         >
                             {/* Player A value */}
                             <div className={cn(
-                                'text-right font-[var(--font-jetbrains),monospace] font-bold text-xs sm:text-base transition-colors',
-                                aWins ? 'text-primary' : tie ? 'text-foreground/70' : 'text-foreground/50'
+                                'text-right font-[var(--font-jetbrains),monospace] font-bold text-xs sm:text-base transition-colors rounded-md px-1.5 py-0.5',
+                                aWins ? 'text-primary bg-primary/[0.06]' : tie ? 'text-foreground/70' : 'text-foreground/50'
                             )}>
                                 {String(row.a)}
-                                {aWins && <span className="ml-1 sm:ml-1.5 text-[10px] sm:text-xs font-black text-emerald-400/70">▲</span>}
+                                {aWins && <span className="ml-1 sm:ml-1.5 text-[10px] sm:text-xs font-black text-emerald-400">W</span>}
                             </div>
 
                             {/* Label */}
@@ -624,10 +640,10 @@ function CompareSection({ title, icon, rows }: { title: string; icon: React.Reac
 
                             {/* Player B value */}
                             <div className={cn(
-                                'text-left font-[var(--font-jetbrains),monospace] font-bold text-xs sm:text-base transition-colors',
-                                bWins ? 'text-primary' : tie ? 'text-foreground/70' : 'text-foreground/50'
+                                'text-left font-[var(--font-jetbrains),monospace] font-bold text-xs sm:text-base transition-colors rounded-md px-1.5 py-0.5',
+                                bWins ? 'text-sky-400 bg-sky-400/[0.06]' : tie ? 'text-foreground/70' : 'text-foreground/50'
                             )}>
-                                {bWins && <span className="mr-1 sm:mr-1.5 text-[10px] sm:text-xs font-black text-emerald-400/70">▲</span>}
+                                {bWins && <span className="mr-1 sm:mr-1.5 text-[10px] sm:text-xs font-black text-emerald-400">W</span>}
                                 {String(row.b)}
                             </div>
                         </div>

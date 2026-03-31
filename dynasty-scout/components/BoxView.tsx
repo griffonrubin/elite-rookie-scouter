@@ -232,11 +232,15 @@ export function BoxView({ players, period }: BoxViewProps) {
                         key={player.id}
                         href={`/players/${player.slug}`}
                         className={cn(
-                            'group flex flex-col bg-card border rounded-xl overflow-hidden',
+                            'group flex flex-col bg-card border rounded-xl overflow-hidden animate-stagger-in',
                             'hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-200',
-                            tier.bg
+                            tier.bg,
+                            rank <= 5 && 'ring-1 ring-orange-500/20 shadow-lg shadow-orange-500/5',
                         )}
-                        style={{ borderLeft: `3px solid ${tier.border}70` }}
+                        style={{
+                            borderLeft: `3px solid ${tier.border}70`,
+                            animationDelay: `${Math.min(index * 40, 600)}ms`,
+                        }}
                     >
                         {/* ── Header ── */}
                         <div className="flex items-center justify-between px-3 sm:px-4 pt-2 sm:pt-3 pb-1.5 sm:pb-2">

@@ -501,15 +501,25 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                     <div key={player.id}>
                                         {showTierHeader && (
                                             <div
-                                                className="flex items-center gap-3 px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] mt-1 first:mt-0"
+                                                className="relative flex items-center gap-3 px-5 py-3 mt-2 first:mt-0 overflow-hidden"
                                                 style={{
-                                                    background: `linear-gradient(90deg, ${tier.accent}12, transparent 60%)`,
+                                                    background: `linear-gradient(90deg, ${tier.accent}15, ${tier.accent}06 40%, transparent 70%)`,
                                                     borderLeft: `3px solid ${tier.accent}`,
-                                                    color: tier.accent,
+                                                    borderTop: `1px solid ${tier.accent}20`,
+                                                    borderBottom: `1px solid ${tier.accent}10`,
                                                 }}
                                             >
-                                                <span style={{ opacity: 0.9 }}>{tier.label}</span>
-                                                <span style={{ opacity: 0.45, fontSize: 10 }} className="font-bold tracking-wider">
+                                                {/* Decorative large tier label in background */}
+                                                <span
+                                                    className="absolute right-4 top-1/2 -translate-y-1/2 font-black uppercase tracking-widest select-none pointer-events-none hidden sm:block"
+                                                    style={{ fontSize: 48, color: tier.accent, opacity: 0.04 }}
+                                                >{tier.label}</span>
+
+                                                <span className="text-sm font-black uppercase tracking-[0.16em]" style={{ color: tier.accent }}>
+                                                    {tier.label}
+                                                </span>
+                                                <div className="h-3 w-px" style={{ backgroundColor: tier.accent, opacity: 0.25 }} />
+                                                <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: tier.accent, opacity: 0.45 }}>
                                                     {positionFilter === 'ALL'
                                                         ? (tier.maxRank < 9999 ? `Ranks ${tier.minRank}–${tier.maxRank}` : `Ranks ${tier.minRank}+`)
                                                         : bounds && bounds.first === bounds.last
@@ -518,9 +528,13 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                                     }
                                                 </span>
                                                 <span className="flex-1" />
-                                                {tierCounts[tier.label] && <span className="font-semibold tracking-normal text-[10px] hidden sm:inline-block" style={{ opacity: 0.55 }}>
-                                                    {Object.entries(tierCounts[tier.label]).filter(([_, c]) => c > 0).map(([pos, c]) => `${pos}×${c}`).join('  ')}
-                                                </span>}
+                                                {tierCounts[tier.label] && (
+                                                    <span className="font-semibold tracking-normal text-[10px] hidden sm:inline-flex items-center gap-2" style={{ color: tier.accent, opacity: 0.5 }}>
+                                                        {Object.entries(tierCounts[tier.label]).filter(([_, c]) => c > 0).map(([pos, c]) => (
+                                                            <span key={pos}>{pos}<span className="opacity-60">×</span>{c}</span>
+                                                        ))}
+                                                    </span>
+                                                )}
                                             </div>
                                         )}
                                         <PlayerMiniCard

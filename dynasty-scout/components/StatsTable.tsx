@@ -14,12 +14,48 @@ interface StatsTableProps {
     position: string;
 }
 
+/** Compute best (max) value across seasons for a given extractor. Returns the season index (or -1). */
+function bestIdx(stats: CollegeStats[], extract: (s: CollegeStats) => number | null): number {
+    let bestI = -1;
+    let bestV = -Infinity;
+    stats.forEach((s, i) => {
+        const v = extract(s);
+        if (v != null && v > bestV) { bestV = v; bestI = i; }
+    });
+    // Only highlight if >1 season and value > 0
+    return stats.length > 1 && bestV > 0 ? bestI : -1;
+}
+
+/** Best season cell highlight — subtle gold underline */
+const BEST = "text-yellow-300 font-extrabold";
+
 export function StatsTable({ stats, position }: StatsTableProps) {
-    // Define columns based on position
     const isQB = position === 'QB';
     const isRB = position === 'RB';
     const isWR = position === 'WR';
     const isTE = position === 'TE';
+
+    // Pre-compute best season indices
+    const bests = {
+        gp:        bestIdx(stats, s => s.games_played ?? 0),
+        passYds:   bestIdx(stats, s => s.pass_yards ?? 0),
+        passTds:   bestIdx(stats, s => s.pass_tds ?? 0),
+        ypa:       bestIdx(stats, s => s.pass_attempts ? (s.pass_yards || 0) / s.pass_attempts : 0),
+        compPct:   bestIdx(stats, s => s.pass_attempts ? (s.completions || 0) / s.pass_attempts : 0),
+        rushYds:   bestIdx(stats, s => s.rush_yards ?? 0),
+        rushTds:   bestIdx(stats, s => s.rush_tds ?? 0),
+        ypc:       bestIdx(stats, s => s.rush_attempts ? (s.rush_yards || 0) / s.rush_attempts : 0),
+        rec:       bestIdx(stats, s => s.receptions ?? 0),
+        recYds:    bestIdx(stats, s => s.rec_yards ?? 0),
+        recTds:    bestIdx(stats, s => s.rec_tds ?? 0),
+        ypr:       bestIdx(stats, s => s.receptions ? (s.rec_yards || 0) / s.receptions : 0),
+        scrimYpg:  bestIdx(stats, s => s.games_played ? ((s.rush_yards || 0) + (s.rec_yards || 0)) / s.games_played : 0),
+        tgtG:      bestIdx(stats, s => s.games_played && (s.targets || s.receptions) ? (s.targets || s.receptions || 0) / s.games_played : 0),
+    };
+
+    function isBest(key: keyof typeof bests, idx: number): string {
+        return bests[key] === idx ? BEST : '';
+    }
 
     return (
         <div className="rounded-xl border border-border/40 overflow-x-auto">
@@ -30,7 +66,6 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                         <TableHead>School</TableHead>
                         <TableHead className="text-right">GP</TableHead>
 
-                        {/* Passing (QB) */}
                         {isQB && (
                             <>
                                 <TableHead className="text-right">Cmp/Att</TableHead>
@@ -41,13 +76,11 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                             </>
                         )}
 
-                        {/* Rushing (All) */}
                         <TableHead className="text-right">Rush</TableHead>
                         <TableHead className="text-right">Ru.Yds</TableHead>
                         <TableHead className="text-right">YPC</TableHead>
                         <TableHead className="text-right">Ru.TD</TableHead>
 
-                        {/* Receiving (RB/WR/TE) */}
                         {(isRB || isWR || isTE) && (
                             <>
                                 <TableHead className="text-right">Rec</TableHead>
@@ -58,7 +91,6 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                             </>
                         )}
 
-                        {/* Advanced (Generic for now) */}
                         {isQB ? (
                             <TableHead className="text-right">Cmp%</TableHead>
                         ) : (isWR || isTE) ? (
@@ -71,45 +103,51 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {stats.map((season) => (
+                    {stats.map((season, si) => (
                         <TableRow key={`${season.season}-${season.school}`}>
                             <TableCell className="font-medium">{season.season}</TableCell>
                             <TableCell>{season.school}</TableCell>
-                            <TableCell className="text-right">{season.games_played ?? '—'}</TableCell>
+                            <TableCell className={cn("text-right", isBest('gp', si))}>{season.games_played ?? '—'}</TableCell>
 
                             {isQB && (
                                 <>
                                     <TableCell className="text-right">{season.pass_attempts ? `${season.completions}/${season.pass_attempts}` : '—'}</TableCell>
-                                    <TableCell className="text-right">{season.pass_yards || '—'}</TableCell>
-                                    <TableCell className="text-right">{season.pass_tds ?? '—'}</TableCell>
+                                    <TableCell className={cn("text-right", isBest('passYds', si))}>{season.pass_yards || '—'}</TableCell>
+                                    <TableCell className={cn("text-right", isBest('passTds', si))}>{season.pass_tds ?? '—'}</TableCell>
                                     <TableCell className="text-right">{season.interceptions ?? '—'}</TableCell>
-                                    <TableCell className="text-right">{season.pass_attempts ? ((season.pass_yards || 0) / season.pass_attempts).toFixed(1) : '—'}</TableCell>
+                                    <TableCell className={cn("text-right", isBest('ypa', si) || (() => {
+                                        if (!season.pass_attempts) return "";
+                                        const ypa = (season.pass_yards || 0) / season.pass_attempts;
+                                        if (ypa >= 9.0) return "text-emerald-400 font-bold";
+                                        if (ypa >= 7.5) return "text-sky-400";
+                                        return "";
+                                    })())}>{season.pass_attempts ? ((season.pass_yards || 0) / season.pass_attempts).toFixed(1) : '—'}</TableCell>
                                 </>
                             )}
 
                             <TableCell className="text-right">{(isWR || isTE) && !season.rush_attempts ? '—' : (season.rush_attempts || 0)}</TableCell>
-                            <TableCell className="text-right">{(isWR || isTE) && !season.rush_attempts ? '—' : (season.rush_yards || 0)}</TableCell>
-                            <TableCell className={cn("text-right", (() => {
+                            <TableCell className={cn("text-right", isBest('rushYds', si))}>{(isWR || isTE) && !season.rush_attempts ? '—' : (season.rush_yards || 0)}</TableCell>
+                            <TableCell className={cn("text-right", isBest('ypc', si) || (() => {
                                 if (!season.rush_attempts) return "";
                                 const ypc = (season.rush_yards || 0) / season.rush_attempts;
                                 if (ypc >= 6.0) return "text-emerald-400 font-bold";
                                 if (ypc >= 5.0) return "text-sky-400";
                                 return "";
                             })())}>{season.rush_attempts ? ((season.rush_yards || 0) / season.rush_attempts).toFixed(1) : '—'}</TableCell>
-                            <TableCell className="text-right">{(isWR || isTE) && !season.rush_attempts ? '—' : (season.rush_tds || 0)}</TableCell>
+                            <TableCell className={cn("text-right", isBest('rushTds', si))}>{(isWR || isTE) && !season.rush_attempts ? '—' : (season.rush_tds || 0)}</TableCell>
 
                             {(isRB || isWR || isTE) && (
                                 <>
-                                    <TableCell className="text-right">{season.receptions ?? '—'}</TableCell>
-                                    <TableCell className="text-right">{season.rec_yards ?? '—'}</TableCell>
-                                    <TableCell className={cn("text-right", (() => {
+                                    <TableCell className={cn("text-right", isBest('rec', si))}>{season.receptions ?? '—'}</TableCell>
+                                    <TableCell className={cn("text-right", isBest('recYds', si))}>{season.rec_yards ?? '—'}</TableCell>
+                                    <TableCell className={cn("text-right", isBest('ypr', si) || (() => {
                                         if (!season.receptions) return "";
                                         const ypr = (season.rec_yards || 0) / season.receptions;
                                         if (ypr >= 16.0) return "text-emerald-400 font-bold";
                                         if (ypr >= 12.0) return "text-sky-400";
                                         return "";
                                     })())}>{season.receptions ? ((season.rec_yards || 0) / season.receptions).toFixed(1) : '—'}</TableCell>
-                                    <TableCell className="text-right">{season.rec_tds ?? '—'}</TableCell>
+                                    <TableCell className={cn("text-right", isBest('recTds', si))}>{season.rec_tds ?? '—'}</TableCell>
                                     {(isWR || isTE) && (
                                         <TableCell className="text-right text-muted-foreground">
                                             {(season as any).yards_after_catch != null && (season as any).yards_after_catch > 0
@@ -121,15 +159,15 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                             )}
 
                             {isQB ? (
-                                <TableCell className="text-right text-muted-foreground">
+                                <TableCell className={cn("text-right text-muted-foreground", isBest('compPct', si))}>
                                     {season.pass_attempts ? ((season.completions || 0) / season.pass_attempts * 100).toFixed(1) + '%' : '—'}
                                 </TableCell>
                             ) : isRB ? (
-                                <TableCell className="text-right text-muted-foreground">
+                                <TableCell className={cn("text-right text-muted-foreground", isBest('scrimYpg', si))}>
                                     {season.games_played ? (((season.rush_yards || 0) + (season.rec_yards || 0)) / season.games_played).toFixed(1) : '—'}
                                 </TableCell>
                             ) : (isWR || isTE) ? (
-                                <TableCell className="text-right text-muted-foreground">
+                                <TableCell className={cn("text-right text-muted-foreground", isBest('tgtG', si))}>
                                     {season.games_played && (season.targets || season.receptions) ? ((season.targets || season.receptions || 0) / season.games_played).toFixed(1) : '—'}
                                 </TableCell>
                             ) : (
@@ -214,6 +252,14 @@ export function StatsTable({ stats, position }: StatsTableProps) {
                     })()}
                 </TableBody>
             </Table>
+
+            {/* Best season legend */}
+            {stats.length > 1 && (
+                <div className="px-4 py-2 border-t border-border/20 flex items-center gap-2">
+                    <span className="text-yellow-300 text-[10px] font-extrabold">&#9733;</span>
+                    <span className="text-[10px] text-muted-foreground/40">= career-best season</span>
+                </div>
+            )}
         </div>
     );
 }

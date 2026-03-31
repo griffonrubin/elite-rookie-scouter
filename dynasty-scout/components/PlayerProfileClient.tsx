@@ -20,6 +20,7 @@ import { WRAdvancedRatesTable } from '@/components/WRAdvancedRatesTable';
 import { ButterflyChart, type ButterflyRow } from '@/components/ButterflyChart';
 import { FilmGradesCard } from '@/components/FilmGradesCard';
 import { POSITION_HEADLINE_STATS } from '@/lib/constants';
+import { getArchetypes } from '@/lib/archetypes';
 import { GraduationCap, Calendar, Ruler, Weight, Star, Newspaper, BarChart2, ExternalLink, Scale, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WatchlistButton } from '@/components/WatchlistButton';
@@ -198,6 +199,55 @@ export function PlayerProfileClient({
 
     const hasAdvancedMetrics = totalScrimmageYards > 0 || totalTds > 0 || careerPassYards > 0;
 
+    // ── Archetype tags ─────────────────────────────────────────────────────
+    const bestYpc = stats.reduce((best, row) => {
+        if (row.rush_attempts && row.rush_attempts > 0 && row.rush_yards) {
+            const v = row.rush_yards / row.rush_attempts;
+            return v > best ? v : best;
+        }
+        return best;
+    }, 0) || undefined;
+
+    const bestYpr = stats.reduce((best, row) => {
+        if (row.receptions && row.receptions > 0 && row.rec_yards) {
+            const v = row.rec_yards / row.receptions;
+            return v > best ? v : best;
+        }
+        return best;
+    }, 0) || undefined;
+
+    const bestPassYpg = stats.reduce((best, row) => {
+        if (row.games_played && row.games_played > 0 && row.pass_yards) {
+            const v = row.pass_yards / row.games_played;
+            return v > best ? v : best;
+        }
+        return best;
+    }, 0) || undefined;
+
+    const archetypePlayer = {
+        position: pos,
+        forty_yard: measurables?.forty_yard ?? null,
+        speed_score: speedScore,
+        weight_lbs: player.weight_lbs,
+        height_inches: player.height_inches,
+        ras: measurables?.ras ?? null,
+        best_ypc: bestYpc,
+        best_ypr: bestYpr,
+        career_receptions: careerReceptions || undefined,
+        career_rush_attempts: careerRushAttempts || undefined,
+        career_games: careerGames || undefined,
+        career_rec_yards: careerRecYards || undefined,
+        career_rush_yards: careerRushYards || undefined,
+        career_pass_yards: careerPassYards || undefined,
+        best_pass_ypg: bestPassYpg,
+        career_ypa: careerPassAttempts > 0 ? careerPassYards / careerPassAttempts : undefined,
+        career_comp_pct: careerPassAttempts > 0 ? (careerCompletions / careerPassAttempts) * 100 : undefined,
+        best_dominator: dominatorStats.length > 0
+            ? Math.max(...dominatorStats.map((d: any) => d.dominator_rating ?? 0))
+            : undefined,
+    };
+    const archetypes = getArchetypes(archetypePlayer);
+
     let statsGrid: any[] = [];
     if (pos === 'QB') {
         statsGrid = [
@@ -226,7 +276,7 @@ export function PlayerProfileClient({
             { label: 'Scrim. Yards', val: totalScrimmageYards, hint: 'Career Total' },
             { label: 'Total TDs', val: totalTds, hint: 'Rush + Rec + Pass' },
             { label: 'Yards/Rec', val: ypr, hint: 'Efficiency metric' },
-            { label: 'Yards/Rec', val: ypr, hint: 'Efficiency metric' },
+            { label: 'Rec/G', val: recPerGame, hint: 'Receptions per game' },
             { label: 'Games Played', val: careerGames, hint: 'Contests played' },
             { label: 'Breakout Age', val: '—', hint: 'Age at 20%+ market share' },
             { label: 'Dom. Rating', val: '—', hint: 'Team target/yardage share %' },
@@ -711,7 +761,7 @@ export function PlayerProfileClient({
                                         style={{ background: 'var(--bg-elevated)', minWidth: 70 }}
                                     >
                                         <div className="text-xl font-black font-[var(--font-jetbrains),monospace] text-foreground leading-none">{kpi.value}</div>
-                                        <div className="text-[9px] uppercase tracking-wide text-muted-foreground/50 font-bold mt-1.5">{kpi.label}</div>
+                                        <div className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-bold mt-1.5">{kpi.label}</div>
                                     </div>
                                 ))}
                             </div>
@@ -750,6 +800,11 @@ export function PlayerProfileClient({
                                     {projRank <= 12 ? '1st-Round Dynasty Pick' : projRank <= 24 ? '2nd-Round Dynasty Pick' : projRank <= 36 ? '3rd-Round Dynasty Pick' : 'Late-Round Dynasty Pick'}
                                 </span>
                             )}
+                            {archetypes.map(arch => (
+                                <span key={arch.label} className={cn('border text-[10px] font-bold px-2 py-0.5 rounded-full', arch.color)}>
+                                    {arch.label}
+                                </span>
+                            ))}
                         </div>
                     </div>
 
@@ -1141,7 +1196,7 @@ export function PlayerProfileClient({
                                     const val = m.src ? (m.src as any)[m.key] : null;
                                     const display = val != null ? (m.fmt ? m.fmt(val) : `${val}${m.unit}`) : null;
                                     return (
-                                        <div key={m.key} className={`bg-card border rounded-xl p-4 text-center ${display ? 'border-border/40' : 'border-dashed border-border/20 opacity-50'} flex flex-col justify-center items-center relative gap-1`}>
+                                        <div key={m.key} className={`bg-card border rounded-xl p-4 text-center ${display ? 'border-border/40' : 'border-dashed border-border/20 opacity-30 hidden sm:flex'} flex flex-col justify-center items-center relative gap-1`}>
                                             <div className="text-[10px] text-muted-foreground uppercase tracking-wide flex items-center gap-1">{m.label}</div>
                                             <div className={`text-xl font-black mt-1 flex items-center justify-center gap-1 ${display ? 'text-foreground' : 'text-muted-foreground/20'}`}>
                                                 {display ?? '—'}
@@ -1272,10 +1327,12 @@ export function PlayerProfileClient({
                         )}
 
                         {/* Advanced season stats table */}
-                        <div>
-                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">Advanced Season Stats</h4>
-                            <AdvancedStatsTable stats={stats} position={player.position} />
-                        </div>
+                        {stats.length > 0 && (
+                            <div>
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">Advanced Season Stats</h4>
+                                <AdvancedStatsTable stats={stats} position={player.position} />
+                            </div>
+                        )}
                     </section>
                 )}
 
