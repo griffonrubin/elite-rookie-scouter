@@ -60,7 +60,7 @@ function formatPick(pick: Pick): string {
   return `${pick.season} ${roundNames[pick.round] || `R${pick.round}`}`;
 }
 
-export default function RecentTrades({ playerSlug }: { playerSlug: string }) {
+export function RecentTrades({ playerSlug }: { playerSlug: string }) {
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

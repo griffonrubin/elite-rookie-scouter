@@ -1,0 +1,58 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img [ref=e7]
+        - navigation [ref=e9]:
+          - link "Board" [ref=e10] [cursor=pointer]:
+            - /url: /
+          - link "Compare" [ref=e11] [cursor=pointer]:
+            - /url: /compare
+            - text: Compare
+          - link "Tiers" [ref=e13] [cursor=pointer]:
+            - /url: /tier-builder
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - img [ref=e18]
+        - heading "Compare Players" [level=1] [ref=e22]
+        - paragraph [ref=e23]: Side-by-side breakdown with radar, measurables, and stats.
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - img [ref=e26]
+          - generic [ref=e30]: Compare Players
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]: Player A
+            - generic [ref=e34]:
+              - img
+              - textbox "Search player name..." [ref=e35]
+          - generic [ref=e37]: vs
+          - generic [ref=e38]:
+            - generic [ref=e39]: Player B
+            - generic [ref=e40]:
+              - img
+              - textbox "Search player name..." [ref=e41]
+      - generic [ref=e42]:
+        - paragraph [ref=e43]: Popular Matchups
+        - generic [ref=e44]:
+          - link "Love vs. Price RB vs RB — Top 2 backs" [ref=e45] [cursor=pointer]:
+            - /url: /compare?a=jeremiyah-love&b=jadarian-price
+            - generic [ref=e46]: Love vs. Price
+            - generic [ref=e47]: RB vs RB — Top 2 backs
+          - link "Tate vs. Lemon WR vs WR — Top receiver duel" [ref=e48] [cursor=pointer]:
+            - /url: /compare?a=carnell-tate&b=makai-lemon
+            - generic [ref=e49]: Tate vs. Lemon
+            - generic [ref=e50]: WR vs WR — Top receiver duel
+          - link "Mendoza vs. Nussmeier QB vs QB — Signal callers" [ref=e51] [cursor=pointer]:
+            - /url: /compare?a=fernando-mendoza&b=garrett-nussmeier
+            - generic [ref=e52]: Mendoza vs. Nussmeier
+            - generic [ref=e53]: QB vs QB — Signal callers
+          - link "Love vs. Tate RB vs WR — Cross-position" [ref=e54] [cursor=pointer]:
+            - /url: /compare?a=jeremiyah-love&b=carnell-tate
+            - generic [ref=e55]: Love vs. Tate
+            - generic [ref=e56]: RB vs WR — Cross-position
+  - button "Open Next.js Dev Tools" [ref=e62] [cursor=pointer]:
+    - img [ref=e63]
+  - alert [ref=e66]

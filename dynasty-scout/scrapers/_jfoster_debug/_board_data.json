@@ -1,0 +1,2639 @@
+{
+  "sonny styles": {
+    "name": "Sonny Styles",
+    "pos": "LB",
+    "grade": 7.32,
+    "round_grade": "Top 10",
+    "nfl_comp": "Jordyn Brooks / Jihaad Campbell",
+    "ath_score": 89.8,
+    "prod_score": 81.6
+  },
+  "fernando mendoza": {
+    "name": "Fernando Mendoza",
+    "pos": "QB",
+    "grade": 7.28,
+    "round_grade": "Top 10",
+    "nfl_comp": "Matt Ryan",
+    "ath_score": 78.3,
+    "prod_score": 93.9
+  },
+  "arvell reese": {
+    "name": "Arvell Reese",
+    "pos": "LB",
+    "grade": 7.12,
+    "round_grade": "1 (Mid)",
+    "nfl_comp": "Leo Chenal / Dont'a Hightower",
+    "ath_score": 86.8,
+    "prod_score": 63.3
+  },
+  "carnell tate": {
+    "name": "Carnell Tate",
+    "pos": "WR",
+    "grade": 7.09,
+    "round_grade": "1 (Mid)",
+    "nfl_comp": "Nico Collins",
+    "ath_score": 65.2,
+    "prod_score": 75.3
+  },
+  "rueben bain": {
+    "name": "Rueben Bain Jr.",
+    "pos": "ED",
+    "grade": 7.05,
+    "round_grade": "1 (Mid)",
+    "nfl_comp": "Tamba Hali / Vinny Curry",
+    "ath_score": 47.1,
+    "prod_score": 87.7
+  },
+  "caleb downs": {
+    "name": "Caleb Downs",
+    "pos": "S",
+    "grade": 7.01,
+    "round_grade": "1 (Mid)",
+    "nfl_comp": "Budda Baker / Eric Weddle",
+    "ath_score": 24.6,
+    "prod_score": 78.7
+  },
+  "jordyn tyson": {
+    "name": "Jordyn Tyson",
+    "pos": "WR",
+    "grade": 6.99,
+    "round_grade": "1 (Mid)",
+    "nfl_comp": "Justin Jefferson / Rashod Bateman",
+    "ath_score": 57.6,
+    "prod_score": 64.6
+  },
+  "francis mauigoa": {
+    "name": "Francis Mauigoa",
+    "pos": "OT",
+    "grade": 6.95,
+    "round_grade": "1 (Mid)",
+    "nfl_comp": "Darnell Wright / Brandon Shell",
+    "ath_score": 55.1,
+    "prod_score": 74.0
+  },
+  "makai lemon": {
+    "name": "Makai Lemon",
+    "pos": "WR",
+    "grade": 6.94,
+    "round_grade": "1 (Mid)",
+    "nfl_comp": "Doug Baldwin / Amon-Ra St. Brown",
+    "ath_score": 17.1,
+    "prod_score": 88.7
+  },
+  "jermod mccoy": {
+    "name": "Jermod McCoy",
+    "pos": "CB",
+    "grade": 6.92,
+    "round_grade": "1 (Mid)",
+    "nfl_comp": "Desmond Trufant",
+    "ath_score": 85.7,
+    "prod_score": 73.7
+  },
+  "david bailey": {
+    "name": "David Bailey",
+    "pos": "ED",
+    "grade": 6.88,
+    "round_grade": "1 (Mid)",
+    "nfl_comp": "Chop Robinson",
+    "ath_score": 73.8,
+    "prod_score": 96.1
+  },
+  "jeremiyah love": {
+    "name": "Jeremiyah Love",
+    "pos": "HB",
+    "grade": 6.83,
+    "round_grade": "1 (Late)",
+    "nfl_comp": "Demarco Murray",
+    "ath_score": 81.4,
+    "prod_score": 95.3
+  },
+  "olaivavega ioane": {
+    "name": "Olaivavega Ioane",
+    "pos": "G",
+    "grade": 6.8,
+    "round_grade": "1 (Late)",
+    "nfl_comp": "Steve Avila",
+    "ath_score": 67.0,
+    "prod_score": 70.1
+  },
+  "mansoor delane": {
+    "name": "Mansoor Delane",
+    "pos": "CB",
+    "grade": 6.75,
+    "round_grade": "1 (Late)",
+    "nfl_comp": "Shaquill Griffin",
+    "ath_score": 31.1,
+    "prod_score": 86.2
+  },
+  "monroe freeling": {
+    "name": "Monroe Freeling",
+    "pos": "OT",
+    "grade": 6.69,
+    "round_grade": "1 (Late)",
+    "nfl_comp": "Olu Fashanu",
+    "ath_score": 90.2,
+    "prod_score": 55.3
+  },
+  "caleb banks": {
+    "name": "Caleb Banks",
+    "pos": "DL",
+    "grade": 6.62,
+    "round_grade": "1 (Late)",
+    "nfl_comp": "Akiem Hicks",
+    "ath_score": 87.5,
+    "prod_score": 35.3
+  },
+  "kenyon sadiq": {
+    "name": "Kenyon Sadiq",
+    "pos": "TE",
+    "grade": 6.56,
+    "round_grade": "1 (Late)",
+    "nfl_comp": "Dustin Keller",
+    "ath_score": 76.4,
+    "prod_score": 71.9
+  },
+  "spencer fano": {
+    "name": "Spencer Fano",
+    "pos": "OT",
+    "grade": 6.52,
+    "round_grade": "1 (Late)",
+    "nfl_comp": "Zach Tom",
+    "ath_score": 59.4,
+    "prod_score": 90.0
+  },
+  "cj allen": {
+    "name": "CJ Allen",
+    "pos": "LB",
+    "grade": 6.47,
+    "round_grade": "2 (Early)",
+    "nfl_comp": "Cedric Gray",
+    "ath_score": 65.8,
+    "prod_score": 51.5
+  },
+  "avieon terrell": {
+    "name": "Avieon Terrell",
+    "pos": "CB",
+    "grade": 6.45,
+    "round_grade": "2 (Early)",
+    "nfl_comp": "Asante Samuel Jr.",
+    "ath_score": 65.3,
+    "prod_score": 64.5
+  },
+  "kc concepcion": {
+    "name": "KC Concepcion",
+    "pos": "WR",
+    "grade": 6.41,
+    "round_grade": "2 (Early)",
+    "nfl_comp": "Percy Harvin",
+    "ath_score": 76.4,
+    "prod_score": 65.2
+  },
+  "dillon thieneman": {
+    "name": "Dillon Thieneman",
+    "pos": "S",
+    "grade": 6.38,
+    "round_grade": "2 (Early)",
+    "nfl_comp": "Jevon Holland",
+    "ath_score": 80.6,
+    "prod_score": 80.1
+  },
+  "kadyn proctor": {
+    "name": "Kadyn Proctor",
+    "pos": "OT",
+    "grade": 6.36,
+    "round_grade": "2 (Early)",
+    "nfl_comp": "Cam Robinson",
+    "ath_score": 55.3,
+    "prod_score": 77.7
+  },
+  "caleb lomu": {
+    "name": "Caleb Lomu",
+    "pos": "OT",
+    "grade": 6.33,
+    "round_grade": "2 (Early)",
+    "nfl_comp": "Dan Moore Jr.",
+    "ath_score": 61.3,
+    "prod_score": 64.4
+  },
+  "emmanuel pregnon": {
+    "name": "Emmanuel Pregnon",
+    "pos": "G",
+    "grade": 6.29,
+    "round_grade": "2 (Early)",
+    "nfl_comp": "Kevin Dotson",
+    "ath_score": 76.1,
+    "prod_score": 85.1
+  },
+  "peter woods": {
+    "name": "Peter Woods",
+    "pos": "DL",
+    "grade": 6.24,
+    "round_grade": "2 (Early)",
+    "nfl_comp": "Quinnen Williams",
+    "ath_score": 59.2,
+    "prod_score": 58.2
+  },
+  "keldric faulk": {
+    "name": "Keldric Faulk",
+    "pos": "ED",
+    "grade": 6.2,
+    "round_grade": "2 (Early)",
+    "nfl_comp": "Andre Branch / Mykel Williams",
+    "ath_score": 67.8,
+    "prod_score": 54.1
+  },
+  "omar cooper": {
+    "name": "Omar Cooper Jr.",
+    "pos": "WR",
+    "grade": 6.16,
+    "round_grade": "2 (Early)",
+    "nfl_comp": "CeeDee Lamb / K.J. Osborn",
+    "ath_score": 55.8,
+    "prod_score": 77.7
+  },
+  "kayden mcdonald": {
+    "name": "Kayden McDonald",
+    "pos": "DL",
+    "grade": 6.15,
+    "round_grade": "2 (Mid)",
+    "nfl_comp": "Dalvin Tomlinson",
+    "ath_score": 5.9,
+    "prod_score": 61.3
+  },
+  "denzel boston": {
+    "name": "Denzel Boston",
+    "pos": "WR",
+    "grade": 6.11,
+    "round_grade": "2 (Mid)",
+    "nfl_comp": "Michael Pittman Jr. / Braylon Edwards",
+    "ath_score": 68.8,
+    "prod_score": 68.0
+  },
+  "blake miller": {
+    "name": "Blake Miller",
+    "pos": "OT",
+    "grade": 6.09,
+    "round_grade": "2 (Mid)",
+    "nfl_comp": "Spencer Brown",
+    "ath_score": 85.7,
+    "prod_score": 58.6
+  },
+  "lee hunter": {
+    "name": "Lee Hunter",
+    "pos": "DL",
+    "grade": 6.06,
+    "round_grade": "2 (Mid)",
+    "nfl_comp": "Linval Joseph",
+    "ath_score": 25.5,
+    "prod_score": 78.4
+  },
+  "emmanuel mcneilwarren": {
+    "name": "Emmanuel McNeil-Warren",
+    "pos": "S",
+    "grade": 6.05,
+    "round_grade": "2 (Mid)",
+    "nfl_comp": "Tyler Nubin",
+    "ath_score": 46.6,
+    "prod_score": 75.4
+  },
+  "colton hood": {
+    "name": "Colton Hood",
+    "pos": "CB",
+    "grade": 5.97,
+    "round_grade": "2 (Mid)",
+    "nfl_comp": "Tyson Campbell / Kool-Aid McKinstry",
+    "ath_score": 63.9,
+    "prod_score": 69.5
+  },
+  "chase bisontis": {
+    "name": "Chase Bisontis",
+    "pos": "G",
+    "grade": 5.93,
+    "round_grade": "2 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 40.9,
+    "prod_score": 51.1
+  },
+  "ty simpson": {
+    "name": "Ty Simpson",
+    "pos": "QB",
+    "grade": 5.91,
+    "round_grade": "2 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 31.6,
+    "prod_score": 68.0
+  },
+  "max iheanachor": {
+    "name": "Max Iheanachor",
+    "pos": "OT",
+    "grade": 5.9,
+    "round_grade": "2 (Mid)",
+    "nfl_comp": "Tytus Howard",
+    "ath_score": 80.0,
+    "prod_score": 49.3
+  },
+  "treydan stukes": {
+    "name": "Treydan Stukes",
+    "pos": "S",
+    "grade": 5.89,
+    "round_grade": "2 (Mid)",
+    "nfl_comp": "Minkah Fitzpatrick",
+    "ath_score": 84.9,
+    "prod_score": 75.1
+  },
+  "chris johnson": {
+    "name": "Chris Johnson",
+    "pos": "CB",
+    "grade": 5.86,
+    "round_grade": "2 (Mid)",
+    "nfl_comp": "Antonio Hamilton Sr.",
+    "ath_score": 82.0,
+    "prod_score": 72.6
+  },
+  "christen miller": {
+    "name": "Christen Miller",
+    "pos": "DL",
+    "grade": 5.8,
+    "round_grade": "2 (Late)",
+    "nfl_comp": "Sebastian Joseph-Day",
+    "ath_score": 68.6,
+    "prod_score": 60.9
+  },
+  "ted hurst": {
+    "name": "Ted Hurst",
+    "pos": "WR",
+    "grade": 5.79,
+    "round_grade": "2 (Late)",
+    "nfl_comp": "Michael Gallup / George Pickens",
+    "ath_score": 88.6,
+    "prod_score": 49.9
+  },
+  "genesis smith": {
+    "name": "Genesis Smith",
+    "pos": "S",
+    "grade": 5.77,
+    "round_grade": "2 (Late)",
+    "nfl_comp": "Juan Thornhill",
+    "ath_score": 87.5,
+    "prod_score": 57.6
+  },
+  "r mason thomas": {
+    "name": "R Mason Thomas",
+    "pos": "ED",
+    "grade": 5.73,
+    "round_grade": "2 (Late)",
+    "nfl_comp": "Dee Ford",
+    "ath_score": 51.6,
+    "prod_score": 53.8
+  },
+  "tj parker": {
+    "name": "T.J. Parker",
+    "pos": "ED",
+    "grade": 5.7,
+    "round_grade": "2 (Late)",
+    "nfl_comp": "Kwity Paye / Bradley Chubb",
+    "ath_score": 64.5,
+    "prod_score": 57.8
+  },
+  "brandon cisse": {
+    "name": "Brandon Cisse",
+    "pos": "CB",
+    "grade": 5.69,
+    "round_grade": "2 (Late)",
+    "nfl_comp": "Darius Slay",
+    "ath_score": 68.8,
+    "prod_score": 56.0
+  },
+  "chris bell": {
+    "name": "Chris Bell",
+    "pos": "WR",
+    "grade": 5.66,
+    "round_grade": "2 (Late)",
+    "nfl_comp": "Pierre Garcon / Xavier Legette",
+    "ath_score": 91.0,
+    "prod_score": 64.1
+  },
+  "gabe jacas": {
+    "name": "Gabe Jacas",
+    "pos": "ED",
+    "grade": 5.6,
+    "round_grade": "2 (Late)",
+    "nfl_comp": null,
+    "ath_score": 60.2,
+    "prod_score": 53.0
+  },
+  "josiah trotter": {
+    "name": "Josiah Trotter",
+    "pos": "LB",
+    "grade": 5.58,
+    "round_grade": "2 (Late)",
+    "nfl_comp": "Willie Gay",
+    "ath_score": 79.5,
+    "prod_score": 30.1
+  },
+  "malachi lawrence": {
+    "name": "Malachi Lawrence",
+    "pos": "ED",
+    "grade": 5.55,
+    "round_grade": "2 (Late)",
+    "nfl_comp": "Josh Sweat",
+    "ath_score": 86.5,
+    "prod_score": 44.7
+  },
+  "brenen thompson": {
+    "name": "Brenen Thompson",
+    "pos": "WR",
+    "grade": 5.53,
+    "round_grade": "2 (Late)",
+    "nfl_comp": "Kalif Raymond",
+    "ath_score": 68.9,
+    "prod_score": 63.6
+  },
+  "devin moore": {
+    "name": "Devin Moore",
+    "pos": "CB",
+    "grade": 5.48,
+    "round_grade": "3 (Early)",
+    "nfl_comp": "Zyon McCollum",
+    "ath_score": 62.6,
+    "prod_score": 68.7
+  },
+  "cashius howell": {
+    "name": "Cashius Howell",
+    "pos": "ED",
+    "grade": 5.45,
+    "round_grade": "3 (Early)",
+    "nfl_comp": "Bryce Huff",
+    "ath_score": 42.0,
+    "prod_score": 64.1
+  },
+  "zachariah branch": {
+    "name": "Zachariah Branch",
+    "pos": "WR",
+    "grade": 5.42,
+    "round_grade": "3 (Early)",
+    "nfl_comp": "Kadarius Toney",
+    "ath_score": 53.8,
+    "prod_score": 69.8
+  },
+  "akheem mesidor": {
+    "name": "Akheem Mesidor",
+    "pos": "ED",
+    "grade": 5.37,
+    "round_grade": "3 (Early)",
+    "nfl_comp": "Carl Lawson",
+    "ath_score": 54.3,
+    "prod_score": 82.4
+  },
+  "jake golday": {
+    "name": "Jake Golday",
+    "pos": "LB",
+    "grade": 5.32,
+    "round_grade": "3 (Early)",
+    "nfl_comp": "Quay Walker",
+    "ath_score": 71.5,
+    "prod_score": 72.0
+  },
+  "zion young": {
+    "name": "Zion Young",
+    "pos": "ED",
+    "grade": 5.31,
+    "round_grade": "3 (Early)",
+    "nfl_comp": null,
+    "ath_score": 43.3,
+    "prod_score": 74.1
+  },
+  "dangelo ponds": {
+    "name": "D'Angelo Ponds",
+    "pos": "CB",
+    "grade": 5.28,
+    "round_grade": "3 (Early)",
+    "nfl_comp": "Upton Stout / Amik Robertson",
+    "ath_score": 61.7,
+    "prod_score": 86.2
+  },
+  "justin joly": {
+    "name": "Justin Joly",
+    "pos": "TE",
+    "grade": 5.21,
+    "round_grade": "3 (Early)",
+    "nfl_comp": "Gerald Everett",
+    "ath_score": 56.5,
+    "prod_score": 68.4
+  },
+  "antonio williams": {
+    "name": "Antonio Williams",
+    "pos": "WR",
+    "grade": 5.19,
+    "round_grade": "3 (Early)",
+    "nfl_comp": "Andre Roberts",
+    "ath_score": 47.7,
+    "prod_score": 47.8
+  },
+  "matt gulbin": {
+    "name": "Matt Gulbin",
+    "pos": "OC",
+    "grade": 5.15,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 23.3,
+    "prod_score": 80.9
+  },
+  "keith abney": {
+    "name": "Keith Abney II",
+    "pos": "CB",
+    "grade": 5.13,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": "Trent McDuffie",
+    "ath_score": 40.8,
+    "prod_score": 77.3
+  },
+  "anthony lucas": {
+    "name": "Anthony Lucas",
+    "pos": "ED",
+    "grade": 5.09,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": "Dayo Odeyingbo / Alex Wright",
+    "ath_score": 73.0,
+    "prod_score": 25.1
+  },
+  "dezhaun stribling": {
+    "name": "De'Zhaun Stribling",
+    "pos": "WR",
+    "grade": 5.05,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 62.6,
+    "prod_score": 60.5
+  },
+  "garrett nussmeier": {
+    "name": "Garrett Nussmeier",
+    "pos": "QB",
+    "grade": 5.02,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": "Kirk Cousins",
+    "ath_score": 0.6,
+    "prod_score": 30.7
+  },
+  "max klare": {
+    "name": "Max Klare",
+    "pos": "TE",
+    "grade": 5.0,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": "Grant Calcaterra",
+    "ath_score": 75.9,
+    "prod_score": 51.1
+  },
+  "domonique orange": {
+    "name": "Domonique Orange",
+    "pos": "DL",
+    "grade": 4.97,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": "Steve McLendon",
+    "ath_score": 30.2,
+    "prod_score": 23.5
+  },
+  "romello height": {
+    "name": "Romello Height",
+    "pos": "ED",
+    "grade": 4.96,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": "Haason Reddick",
+    "ath_score": 62.3,
+    "prod_score": 72.1
+  },
+  "kyle louis": {
+    "name": "Kyle Louis",
+    "pos": "LB",
+    "grade": 4.95,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 63.4,
+    "prod_score": 55.4
+  },
+  "keionte scott": {
+    "name": "Keionte Scott",
+    "pos": "CB",
+    "grade": 4.92,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": "Ja'Quan McMillian / Mike Sainristil",
+    "ath_score": 88.9,
+    "prod_score": 85.1
+  },
+  "sam hecht": {
+    "name": "Sam Hecht",
+    "pos": "OC",
+    "grade": 4.9,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 21.2,
+    "prod_score": 77.8
+  },
+  "chris brazzell": {
+    "name": "Chris Brazzell II",
+    "pos": "WR",
+    "grade": 4.89,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": "Devin Aromashodu",
+    "ath_score": 73.4,
+    "prod_score": 58.5
+  },
+  "jadarian price": {
+    "name": "Jadarian Price",
+    "pos": "HB",
+    "grade": 4.88,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": "Zamir White",
+    "ath_score": 27.4,
+    "prod_score": 52.3
+  },
+  "kamari ramsey": {
+    "name": "Kamari Ramsey",
+    "pos": "S",
+    "grade": 4.86,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": "Glover Quin",
+    "ath_score": 26.9,
+    "prod_score": 55.1
+  },
+  "dametrious crownover": {
+    "name": "Dametrious Crownover",
+    "pos": "OT",
+    "grade": 4.83,
+    "round_grade": "3 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 85.8,
+    "prod_score": 40.2
+  },
+  "cade klubnik": {
+    "name": "Cade Klubnik",
+    "pos": "QB",
+    "grade": 4.81,
+    "round_grade": "3 (Late)",
+    "nfl_comp": "Baker Mayfield",
+    "ath_score": 30.8,
+    "prod_score": 54.4
+  },
+  "vj payne": {
+    "name": "VJ Payne",
+    "pos": "S",
+    "grade": 4.8,
+    "round_grade": "3 (Late)",
+    "nfl_comp": "Jayron Kearse / Marte Mapu",
+    "ath_score": 87.0,
+    "prod_score": 46.6
+  },
+  "malachi fields": {
+    "name": "Malachi Fields",
+    "pos": "WR",
+    "grade": 4.78,
+    "round_grade": "3 (Late)",
+    "nfl_comp": "Mike Strachan",
+    "ath_score": 33.2,
+    "prod_score": 51.9
+  },
+  "gracen halton": {
+    "name": "Gracen Halton",
+    "pos": "DL",
+    "grade": 4.76,
+    "round_grade": "3 (Late)",
+    "nfl_comp": "Braden Fiske",
+    "ath_score": 28.9,
+    "prod_score": 66.7
+  },
+  "keagen trost": {
+    "name": "Keagen Trost",
+    "pos": "G",
+    "grade": 4.73,
+    "round_grade": "3 (Late)",
+    "nfl_comp": "Alijah Vera-Tucker / Larry Borom",
+    "ath_score": 44.4,
+    "prod_score": 84.7
+  },
+  "jadon canady": {
+    "name": "Jadon Canady",
+    "pos": "CB",
+    "grade": 4.7,
+    "round_grade": "3 (Late)",
+    "nfl_comp": null,
+    "ath_score": 58.6,
+    "prod_score": 63.5
+  },
+  "connor lew": {
+    "name": "Connor Lew",
+    "pos": "OC",
+    "grade": 4.68,
+    "round_grade": "3 (Late)",
+    "nfl_comp": null,
+    "ath_score": 78.1,
+    "prod_score": 38.5
+  },
+  "billy schrauth": {
+    "name": "Billy Schrauth",
+    "pos": "G",
+    "grade": 4.64,
+    "round_grade": "3 (Late)",
+    "nfl_comp": "Dalton Risner",
+    "ath_score": 13.1,
+    "prod_score": 74.8
+  },
+  "derrick moore": {
+    "name": "Derrick Moore",
+    "pos": "ED",
+    "grade": 4.62,
+    "round_grade": "3 (Late)",
+    "nfl_comp": null,
+    "ath_score": 78.1,
+    "prod_score": 69.4
+  },
+  "germie bernard": {
+    "name": "Germie Bernard",
+    "pos": "WR",
+    "grade": 4.61,
+    "round_grade": "3 (Late)",
+    "nfl_comp": "Chris Godwin",
+    "ath_score": 54.8,
+    "prod_score": 46.7
+  },
+  "tj hall": {
+    "name": "TJ Hall",
+    "pos": "CB",
+    "grade": 4.59,
+    "round_grade": "3 (Late)",
+    "nfl_comp": "Jaylon Johnson",
+    "ath_score": 11.6,
+    "prod_score": 53.1
+  },
+  "mike washington": {
+    "name": "Mike Washington Jr.",
+    "pos": "HB",
+    "grade": 4.56,
+    "round_grade": "3 (Late)",
+    "nfl_comp": null,
+    "ath_score": 92.7,
+    "prod_score": 42.5
+  },
+  "keyshaun elliott": {
+    "name": "Keyshaun Elliott",
+    "pos": "LB",
+    "grade": 4.53,
+    "round_grade": "3 (Late)",
+    "nfl_comp": "Jordan Hicks",
+    "ath_score": 81.1,
+    "prod_score": 36.2
+  },
+  "gennings dunker": {
+    "name": "Gennings Dunker",
+    "pos": "G",
+    "grade": 4.52,
+    "round_grade": "3 (Late)",
+    "nfl_comp": null,
+    "ath_score": 73.4,
+    "prod_score": 54.3
+  },
+  "emmett johnson": {
+    "name": "Emmett Johnson",
+    "pos": "HB",
+    "grade": 4.51,
+    "round_grade": "3 (Late)",
+    "nfl_comp": "Bilal Powell",
+    "ath_score": 20.2,
+    "prod_score": 81.2
+  },
+  "beau stephens": {
+    "name": "Beau Stephens",
+    "pos": "G",
+    "grade": 4.45,
+    "round_grade": "4 (Early)",
+    "nfl_comp": null,
+    "ath_score": 3.8,
+    "prod_score": 68.7
+  },
+  "michael trigg": {
+    "name": "Michael Trigg",
+    "pos": "TE",
+    "grade": 4.44,
+    "round_grade": "4 (Early)",
+    "nfl_comp": "Juwan Johnson",
+    "ath_score": 72.3,
+    "prod_score": 59.8
+  },
+  "cole payton": {
+    "name": "Cole Payton",
+    "pos": "QB",
+    "grade": 4.42,
+    "round_grade": "4 (Early)",
+    "nfl_comp": null,
+    "ath_score": 88.9,
+    "prod_score": 55.5
+  },
+  "jonah coleman": {
+    "name": "Jonah Coleman",
+    "pos": "HB",
+    "grade": 4.41,
+    "round_grade": "4 (Early)",
+    "nfl_comp": "David Montgomery",
+    "ath_score": 26.9,
+    "prod_score": 72.5
+  },
+  "trinidad chambliss": {
+    "name": "Trinidad Chambliss",
+    "pos": "QB",
+    "grade": 4.39,
+    "round_grade": "4 (Early)",
+    "nfl_comp": null,
+    "ath_score": 29.8,
+    "prod_score": 87.6
+  },
+  "logan jones": {
+    "name": "Logan Jones",
+    "pos": "OC",
+    "grade": 4.38,
+    "round_grade": "4 (Early)",
+    "nfl_comp": "Drew Dalman",
+    "ath_score": 43.9,
+    "prod_score": 61.1
+  },
+  "bud clark": {
+    "name": "Bud Clark",
+    "pos": "S",
+    "grade": 4.35,
+    "round_grade": "4 (Early)",
+    "nfl_comp": null,
+    "ath_score": 67.8,
+    "prod_score": 63.6
+  },
+  "jacob rodriguez": {
+    "name": "Jacob Rodriguez",
+    "pos": "LB",
+    "grade": 4.33,
+    "round_grade": "4 (Early)",
+    "nfl_comp": "Josey Jewell",
+    "ath_score": 66.4,
+    "prod_score": 74.4
+  },
+  "aj haulcy": {
+    "name": "A.J. Haulcy",
+    "pos": "S",
+    "grade": 4.32,
+    "round_grade": "4 (Early)",
+    "nfl_comp": "Tashaun Gipson Sr.",
+    "ath_score": 55.5,
+    "prod_score": 76.0
+  },
+  "will lee": {
+    "name": "Will Lee III",
+    "pos": "CB",
+    "grade": 4.3,
+    "round_grade": "4 (Early)",
+    "nfl_comp": "William Jackson III",
+    "ath_score": 57.7,
+    "prod_score": 39.8
+  },
+  "kendrick law": {
+    "name": "Kendrick Law",
+    "pos": "WR",
+    "grade": 4.29,
+    "round_grade": "4 (Early)",
+    "nfl_comp": "Parris Campbell",
+    "ath_score": 74.5,
+    "prod_score": 29.8
+  },
+  "diego pounds": {
+    "name": "Diego Pounds",
+    "pos": "OT",
+    "grade": 4.27,
+    "round_grade": "4 (Early)",
+    "nfl_comp": null,
+    "ath_score": 49.5,
+    "prod_score": 14.8
+  },
+  "seth mcgowan": {
+    "name": "Seth McGowan",
+    "pos": "HB",
+    "grade": 4.22,
+    "round_grade": "4 (Early)",
+    "nfl_comp": null,
+    "ath_score": 83.2,
+    "prod_score": 29.2
+  },
+  "joshua josephs": {
+    "name": "Joshua Josephs",
+    "pos": "ED",
+    "grade": 4.19,
+    "round_grade": "4 (Early)",
+    "nfl_comp": null,
+    "ath_score": 88.7,
+    "prod_score": 45.3
+  },
+  "darrell jackson": {
+    "name": "Darrell Jackson Jr.",
+    "pos": "DL",
+    "grade": 4.17,
+    "round_grade": "4 (Early)",
+    "nfl_comp": "Bobby Brown",
+    "ath_score": 50.7,
+    "prod_score": 45.0
+  },
+  "kage casey": {
+    "name": "Kage Casey",
+    "pos": "G",
+    "grade": 4.16,
+    "round_grade": "4 (Early)",
+    "nfl_comp": null,
+    "ath_score": 25.1,
+    "prod_score": 63.3
+  },
+  "keylan rutledge": {
+    "name": "Keylan Rutledge",
+    "pos": "G",
+    "grade": 4.15,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 77.1,
+    "prod_score": 62.1
+  },
+  "aiden fisher": {
+    "name": "Aiden Fisher",
+    "pos": "LB",
+    "grade": 4.13,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 63.4,
+    "prod_score": 58.7
+  },
+  "brent austin": {
+    "name": "Brent Austin",
+    "pos": "CB",
+    "grade": 4.11,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 50.6,
+    "prod_score": 88.4
+  },
+  "caleb tiernan": {
+    "name": "Caleb Tiernan",
+    "pos": "OT",
+    "grade": 4.1,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": "Taylor Decker",
+    "ath_score": 36.5,
+    "prod_score": 51.0
+  },
+  "colbie young": {
+    "name": "Colbie Young",
+    "pos": "WR",
+    "grade": 4.09,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 70.1,
+    "prod_score": 29.1
+  },
+  "dalton johnson": {
+    "name": "Dalton Johnson",
+    "pos": "S",
+    "grade": 4.07,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 28.4,
+    "prod_score": 61.1
+  },
+  "davison igbinosun": {
+    "name": "Davison Igbinosun",
+    "pos": "CB",
+    "grade": 4.04,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": "Martin Emerson",
+    "ath_score": 46.6,
+    "prod_score": 73.0
+  },
+  "brian parker": {
+    "name": "Brian Parker II",
+    "pos": "OC",
+    "grade": 4.02,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 39.5,
+    "prod_score": 74.9
+  },
+  "zakee wheatley": {
+    "name": "Zakee Wheatley",
+    "pos": "S",
+    "grade": 4.01,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 27.3,
+    "prod_score": 49.2
+  },
+  "oscar delp": {
+    "name": "Oscar Delp",
+    "pos": "TE",
+    "grade": 3.97,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": "Erick All",
+    "ath_score": 31.0,
+    "prod_score": 43.6
+  },
+  "skyler bell": {
+    "name": "Skyler Bell",
+    "pos": "WR",
+    "grade": 3.95,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 62.9,
+    "prod_score": 69.1
+  },
+  "deion burks": {
+    "name": "Deion Burks",
+    "pos": "WR",
+    "grade": 3.94,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": "Phillip Dorsett",
+    "ath_score": 64.7,
+    "prod_score": 18.5
+  },
+  "jc davis": {
+    "name": "J.C. Davis",
+    "pos": "OT",
+    "grade": 3.92,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 47.5,
+    "prod_score": 64.6
+  },
+  "albert regis": {
+    "name": "Albert Regis",
+    "pos": "DL",
+    "grade": 3.9,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 38.2,
+    "prod_score": 47.9
+  },
+  "jalen farmer": {
+    "name": "Jalen Farmer",
+    "pos": "G",
+    "grade": 3.89,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": "Cade Mays",
+    "ath_score": 71.8,
+    "prod_score": 67.4
+  },
+  "anthony hill": {
+    "name": "Anthony Hill Jr.",
+    "pos": "LB",
+    "grade": 3.85,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 84.1,
+    "prod_score": 54.7
+  },
+  "josh cameron": {
+    "name": "Josh Cameron",
+    "pos": "WR",
+    "grade": 3.84,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 13.1,
+    "prod_score": 30.9
+  },
+  "dallen bentley": {
+    "name": "Dallen Bentley",
+    "pos": "TE",
+    "grade": 3.83,
+    "round_grade": "4 (Mid)",
+    "nfl_comp": "Brent Celek",
+    "ath_score": 52.3,
+    "prod_score": 68.2
+  },
+  "jalon kilgore": {
+    "name": "Jalon Kilgore",
+    "pos": "S",
+    "grade": 3.82,
+    "round_grade": "4 (Late)",
+    "nfl_comp": null,
+    "ath_score": 65.8,
+    "prod_score": 52.7
+  },
+  "kaleb elarmsorr": {
+    "name": "Kaleb Elarms-Orr",
+    "pos": "LB",
+    "grade": 3.8,
+    "round_grade": "4 (Late)",
+    "nfl_comp": "Drue Tranquill",
+    "ath_score": 65.8,
+    "prod_score": 52.6
+  },
+  "carver willis": {
+    "name": "Carver Willis",
+    "pos": "G",
+    "grade": 3.79,
+    "round_grade": "4 (Late)",
+    "nfl_comp": null,
+    "ath_score": 18.4,
+    "prod_score": 46.4
+  },
+  "jack pyburn": {
+    "name": "Jack Pyburn",
+    "pos": "ED",
+    "grade": 3.77,
+    "round_grade": "4 (Late)",
+    "nfl_comp": null,
+    "ath_score": 45.7,
+    "prod_score": 34.1
+  },
+  "bryce lance": {
+    "name": "Bryce Lance",
+    "pos": "WR",
+    "grade": 3.76,
+    "round_grade": "4 (Late)",
+    "nfl_comp": "Alec Pierce",
+    "ath_score": 88.6,
+    "prod_score": 81.2
+  },
+  "tyler onyedim": {
+    "name": "Tyler Onyedim",
+    "pos": "DL",
+    "grade": 3.76,
+    "round_grade": "4 (Late)",
+    "nfl_comp": null,
+    "ath_score": 60.8,
+    "prod_score": 41.3
+  },
+  "julian neal": {
+    "name": "Julian Neal",
+    "pos": "CB",
+    "grade": 3.72,
+    "round_grade": "4 (Late)",
+    "nfl_comp": null,
+    "ath_score": 40.1,
+    "prod_score": 62.2
+  },
+  "demond claiborne": {
+    "name": "Demond Claiborne",
+    "pos": "HB",
+    "grade": 3.71,
+    "round_grade": "4 (Late)",
+    "nfl_comp": null,
+    "ath_score": 26.2,
+    "prod_score": 12.9
+  },
+  "lt overton": {
+    "name": "LT Overton",
+    "pos": "ED",
+    "grade": 3.7,
+    "round_grade": "4 (Late)",
+    "nfl_comp": "Keion White / Dre'Mont Jones",
+    "ath_score": 29.1,
+    "prod_score": 22.7
+  },
+  "kevin coleman": {
+    "name": "Kevin Coleman Jr.",
+    "pos": "WR",
+    "grade": 3.68,
+    "round_grade": "4 (Late)",
+    "nfl_comp": "Damiere Byrd",
+    "ath_score": 21.1,
+    "prod_score": 48.8
+  },
+  "elijah sarratt": {
+    "name": "Elijah Sarratt",
+    "pos": "WR",
+    "grade": 3.65,
+    "round_grade": "4 (Late)",
+    "nfl_comp": "Jalen Tolbert",
+    "ath_score": 11.9,
+    "prod_score": 77.7
+  },
+  "nick barrett": {
+    "name": "Nick Barrett",
+    "pos": "DL",
+    "grade": 3.62,
+    "round_grade": "4 (Late)",
+    "nfl_comp": null,
+    "ath_score": 26.7,
+    "prod_score": 24.6
+  },
+  "anez cooper": {
+    "name": "Anez Cooper",
+    "pos": "G",
+    "grade": 3.56,
+    "round_grade": "4 (Late)",
+    "nfl_comp": null,
+    "ath_score": 83.1,
+    "prod_score": 40.2
+  },
+  "louis moore": {
+    "name": "Louis Moore",
+    "pos": "S",
+    "grade": 3.55,
+    "round_grade": "4 (Late)",
+    "nfl_comp": null,
+    "ath_score": 4.7,
+    "prod_score": 70.9
+  },
+  "justin jefferson": {
+    "name": "Justin Jefferson",
+    "pos": "LB",
+    "grade": 3.52,
+    "round_grade": "4 (Late)",
+    "nfl_comp": null,
+    "ath_score": 74.1,
+    "prod_score": 33.4
+  },
+  "trey zuhn": {
+    "name": "Trey Zuhn III",
+    "pos": "OC",
+    "grade": 3.51,
+    "round_grade": "4 (Late)",
+    "nfl_comp": null,
+    "ath_score": 94.7,
+    "prod_score": 48.4
+  },
+  "tyre west": {
+    "name": "Tyre West",
+    "pos": "ED",
+    "grade": 3.49,
+    "round_grade": "5 (Early)",
+    "nfl_comp": null,
+    "ath_score": 56.5,
+    "prod_score": 8.2
+  },
+  "cj daniels": {
+    "name": "CJ Daniels",
+    "pos": "WR",
+    "grade": 3.48,
+    "round_grade": "5 (Early)",
+    "nfl_comp": null,
+    "ath_score": 25.0,
+    "prod_score": 48.6
+  },
+  "keyshawn jamesnewby": {
+    "name": "Keyshawn James-Newby",
+    "pos": "ED",
+    "grade": 3.47,
+    "round_grade": "5 (Early)",
+    "nfl_comp": null,
+    "ath_score": 65.6,
+    "prod_score": 77.2
+  },
+  "eli stowers": {
+    "name": "Eli Stowers",
+    "pos": "TE",
+    "grade": 3.45,
+    "round_grade": "5 (Early)",
+    "nfl_comp": null,
+    "ath_score": 74.4,
+    "prod_score": 77.4
+  },
+  "kaytron allen": {
+    "name": "Kaytron Allen",
+    "pos": "HB",
+    "grade": 3.44,
+    "round_grade": "5 (Early)",
+    "nfl_comp": null,
+    "ath_score": 40.8,
+    "prod_score": 70.1
+  },
+  "keyron crawford": {
+    "name": "Keyron Crawford",
+    "pos": "ED",
+    "grade": 3.42,
+    "round_grade": "5 (Early)",
+    "nfl_comp": "Josh Uche",
+    "ath_score": 74.2,
+    "prod_score": 57.0
+  },
+  "chandler rivers": {
+    "name": "Chandler Rivers",
+    "pos": "CB",
+    "grade": 3.38,
+    "round_grade": "5 (Early)",
+    "nfl_comp": null,
+    "ath_score": 59.1,
+    "prod_score": 65.1
+  },
+  "max llewellyn": {
+    "name": "Max Llewellyn",
+    "pos": "ED",
+    "grade": 3.37,
+    "round_grade": "5 (Early)",
+    "nfl_comp": "Aidan Hutchinson",
+    "ath_score": 28.5,
+    "prod_score": 33.9
+  },
+  "red murdock": {
+    "name": "Red Murdock",
+    "pos": "LB",
+    "grade": 3.35,
+    "round_grade": "5 (Early)",
+    "nfl_comp": null,
+    "ath_score": 45.8,
+    "prod_score": 45.9
+  },
+  "jakobi lane": {
+    "name": "Ja'Kobi Lane",
+    "pos": "WR",
+    "grade": 3.34,
+    "round_grade": "5 (Early)",
+    "nfl_comp": "Brandon LaFell",
+    "ath_score": 62.7,
+    "prod_score": 54.7
+  },
+  "josh cuevas": {
+    "name": "Josh Cuevas",
+    "pos": "TE",
+    "grade": 3.33,
+    "round_grade": "5 (Early)",
+    "nfl_comp": "Peyton Hendershot",
+    "ath_score": 17.7,
+    "prod_score": 60.7
+  },
+  "hezekiah masses": {
+    "name": "Hezekiah Masses",
+    "pos": "CB",
+    "grade": 3.3,
+    "round_grade": "5 (Early)",
+    "nfl_comp": null,
+    "ath_score": 43.2,
+    "prod_score": 58.8
+  },
+  "harrison wallace": {
+    "name": "Harrison Wallace III",
+    "pos": "WR",
+    "grade": 3.29,
+    "round_grade": "5 (Early)",
+    "nfl_comp": null,
+    "ath_score": 18.8,
+    "prod_score": 46.2
+  },
+  "markel bell": {
+    "name": "Markel Bell",
+    "pos": "OT",
+    "grade": 3.25,
+    "round_grade": "5 (Early)",
+    "nfl_comp": null,
+    "ath_score": 68.2,
+    "prod_score": 59.1
+  },
+  "skyler gillhoward": {
+    "name": "Skyler Gill-Howard",
+    "pos": "DL",
+    "grade": 3.21,
+    "round_grade": "5 (Early)",
+    "nfl_comp": "Khalil Davis",
+    "ath_score": 60.0,
+    "prod_score": 43.1
+  },
+  "armaj reedadams": {
+    "name": "Ar'maj Reed-Adams",
+    "pos": "G",
+    "grade": 3.18,
+    "round_grade": "5 (Early)",
+    "nfl_comp": null,
+    "ath_score": 48.3,
+    "prod_score": 55.3
+  },
+  "cole wisniewski": {
+    "name": "Cole Wisniewski",
+    "pos": "S",
+    "grade": 3.13,
+    "round_grade": "5 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 67.5,
+    "prod_score": 71.8
+  },
+  "eric rivers": {
+    "name": "Eric Rivers",
+    "pos": "WR",
+    "grade": 3.11,
+    "round_grade": "5 (Mid)",
+    "nfl_comp": "Marquise Brown / Calvin Austin III",
+    "ath_score": 66.8,
+    "prod_score": 52.7
+  },
+  "aamil wagner": {
+    "name": "Aamil Wagner",
+    "pos": "OT",
+    "grade": 3.06,
+    "round_grade": "5 (Mid)",
+    "nfl_comp": "Wanya Morris",
+    "ath_score": 59.1,
+    "prod_score": 55.8
+  },
+  "pat coogan": {
+    "name": "Pat Coogan",
+    "pos": "OC",
+    "grade": 3.03,
+    "round_grade": "5 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 18.2,
+    "prod_score": 59.8
+  },
+  "carson beck": {
+    "name": "Carson Beck",
+    "pos": "QB",
+    "grade": 2.97,
+    "round_grade": "5 (Mid)",
+    "nfl_comp": "Davis Mills / Jimmy Garoppolo",
+    "ath_score": 31.9,
+    "prod_score": 74.0
+  },
+  "zavion thomas": {
+    "name": "Zavion Thomas",
+    "pos": "WR",
+    "grade": 2.94,
+    "round_grade": "5 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 60.9,
+    "prod_score": 16.5
+  },
+  "tanner koziol": {
+    "name": "Tanner Koziol",
+    "pos": "TE",
+    "grade": 2.93,
+    "round_grade": "5 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 64.7,
+    "prod_score": 64.5
+  },
+  "ephesians prysock": {
+    "name": "Ephesians Prysock",
+    "pos": "CB",
+    "grade": 2.9,
+    "round_grade": "5 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 63.2,
+    "prod_score": 50.6
+  },
+  "jaishawn barham": {
+    "name": "Jaishawn Barham",
+    "pos": "ED",
+    "grade": 2.89,
+    "round_grade": "5 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 40.5,
+    "prod_score": 43.6
+  },
+  "jalen huskey": {
+    "name": "Jalen Huskey",
+    "pos": "S",
+    "grade": 2.87,
+    "round_grade": "5 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 37.0,
+    "prod_score": 65.9
+  },
+  "logan taylor": {
+    "name": "Logan Taylor",
+    "pos": "G",
+    "grade": 2.85,
+    "round_grade": "5 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 47.7,
+    "prod_score": 32.3
+  },
+  "tim keenan": {
+    "name": "Tim Keenan III",
+    "pos": "DL",
+    "grade": 2.83,
+    "round_grade": "5 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 7.3,
+    "prod_score": 23.8
+  },
+  "charles demmings": {
+    "name": "Charles Demmings",
+    "pos": "CB",
+    "grade": 2.8,
+    "round_grade": "5 (Late)",
+    "nfl_comp": null,
+    "ath_score": 83.4,
+    "prod_score": 58.6
+  },
+  "gary smith": {
+    "name": "Gary Smith III",
+    "pos": "DL",
+    "grade": 2.79,
+    "round_grade": "5 (Late)",
+    "nfl_comp": null,
+    "ath_score": 44.0,
+    "prod_score": 32.9
+  },
+  "joe royer": {
+    "name": "Joe Royer",
+    "pos": "TE",
+    "grade": 2.76,
+    "round_grade": "5 (Late)",
+    "nfl_comp": "Cade Stover",
+    "ath_score": 40.3,
+    "prod_score": 38.5
+  },
+  "romello brinson": {
+    "name": "Romello Brinson",
+    "pos": "WR",
+    "grade": 2.75,
+    "round_grade": "5 (Late)",
+    "nfl_comp": null,
+    "ath_score": 24.5,
+    "prod_score": 29.5
+  },
+  "jeremiah wright": {
+    "name": "Jeremiah Wright",
+    "pos": "G",
+    "grade": 2.73,
+    "round_grade": "5 (Late)",
+    "nfl_comp": null,
+    "ath_score": 32.2,
+    "prod_score": 29.6
+  },
+  "alzillion hamilton": {
+    "name": "Al'zillion Hamilton",
+    "pos": "CB",
+    "grade": 2.69,
+    "round_grade": "5 (Late)",
+    "nfl_comp": null,
+    "ath_score": 42.2,
+    "prod_score": 60.6
+  },
+  "dani dennissutton": {
+    "name": "Dani Dennis-Sutton",
+    "pos": "ED",
+    "grade": 2.66,
+    "round_grade": "5 (Late)",
+    "nfl_comp": "Romeo Okwara",
+    "ath_score": 82.9,
+    "prod_score": 67.2
+  },
+  "collin wright": {
+    "name": "Collin Wright",
+    "pos": "CB",
+    "grade": 2.65,
+    "round_grade": "5 (Late)",
+    "nfl_comp": null,
+    "ath_score": 30.1,
+    "prod_score": 34.3
+  },
+  "lander barton": {
+    "name": "Lander Barton",
+    "pos": "LB",
+    "grade": 2.59,
+    "round_grade": "5 (Late)",
+    "nfl_comp": "Tremaine Edmunds",
+    "ath_score": 89.8,
+    "prod_score": 15.0
+  },
+  "taylen green": {
+    "name": "Taylen Green",
+    "pos": "QB",
+    "grade": 2.56,
+    "round_grade": "5 (Late)",
+    "nfl_comp": "Colin Kaepernick",
+    "ath_score": 99.9,
+    "prod_score": 51.3
+  },
+  "kaelon black": {
+    "name": "Kaelon Black",
+    "pos": "HB",
+    "grade": 2.54,
+    "round_grade": "5 (Late)",
+    "nfl_comp": null,
+    "ath_score": 28.9,
+    "prod_score": 59.0
+  },
+  "harold perkins": {
+    "name": "Harold Perkins Jr.",
+    "pos": "LB",
+    "grade": 2.5,
+    "round_grade": "5 (Late)",
+    "nfl_comp": null,
+    "ath_score": 50.5,
+    "prod_score": 25.9
+  },
+  "riley nowakowski": {
+    "name": "Riley Nowakowski",
+    "pos": "TE",
+    "grade": 2.47,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 8.7,
+    "prod_score": 55.7
+  },
+  "eli raridon": {
+    "name": "Eli Raridon",
+    "pos": "TE",
+    "grade": 2.44,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 65.2,
+    "prod_score": 48.8
+  },
+  "drew allar": {
+    "name": "Drew Allar",
+    "pos": "QB",
+    "grade": 2.43,
+    "round_grade": "6 (Early)",
+    "nfl_comp": "Kyle Boller / Jason Campbell",
+    "ath_score": 42.2,
+    "prod_score": 39.7
+  },
+  "jakobe thomas": {
+    "name": "Jakobe Thomas",
+    "pos": "S",
+    "grade": 2.42,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 54.6,
+    "prod_score": 46.6
+  },
+  "dillon bell": {
+    "name": "Dillon Bell",
+    "pos": "WR",
+    "grade": 2.41,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 53.5,
+    "prod_score": 11.1
+  },
+  "taurean york": {
+    "name": "Taurean York",
+    "pos": "LB",
+    "grade": 2.39,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 4.0,
+    "prod_score": 56.1
+  },
+  "josh thompson": {
+    "name": "Josh Thompson",
+    "pos": "G",
+    "grade": 2.37,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 33.2,
+    "prod_score": 25.3
+  },
+  "john michael gyllenborg": {
+    "name": "John Michael Gyllenborg",
+    "pos": "TE",
+    "grade": 2.35,
+    "round_grade": "6 (Early)",
+    "nfl_comp": "Dawson Knox",
+    "ath_score": 76.1,
+    "prod_score": 20.2
+  },
+  "kaden wetjen": {
+    "name": "Kaden Wetjen",
+    "pos": "WR",
+    "grade": 2.34,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 32.0,
+    "prod_score": 12.5
+  },
+  "jack endries": {
+    "name": "Jack Endries",
+    "pos": "TE",
+    "grade": 2.33,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 55.9,
+    "prod_score": 48.8
+  },
+  "zane durant": {
+    "name": "Zane Durant",
+    "pos": "DL",
+    "grade": 2.32,
+    "round_grade": "6 (Early)",
+    "nfl_comp": "Shelby Harris",
+    "ath_score": 45.2,
+    "prod_score": 22.5
+  },
+  "bryce boettcher": {
+    "name": "Bryce Boettcher",
+    "pos": "LB",
+    "grade": 2.3,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 56.8,
+    "prod_score": 65.1
+  },
+  "kaleb proctor": {
+    "name": "Kaleb Proctor",
+    "pos": "DL",
+    "grade": 2.29,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 44.0,
+    "prod_score": 65.1
+  },
+  "jake slaughter": {
+    "name": "Jake Slaughter",
+    "pos": "OC",
+    "grade": 2.28,
+    "round_grade": "6 (Early)",
+    "nfl_comp": "Erik McCoy",
+    "ath_score": 76.0,
+    "prod_score": 86.5
+  },
+  "jack kelly": {
+    "name": "Jack Kelly",
+    "pos": "LB",
+    "grade": 2.27,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 71.7,
+    "prod_score": 31.3
+  },
+  "nadame tucker": {
+    "name": "Nadame Tucker",
+    "pos": "ED",
+    "grade": 2.25,
+    "round_grade": "6 (Early)",
+    "nfl_comp": "Al-Quadin Muhammad / Jonathon Cooper",
+    "ath_score": 27.3,
+    "prod_score": 77.4
+  },
+  "eric gentry": {
+    "name": "Eric Gentry",
+    "pos": "LB",
+    "grade": 2.24,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 30.7,
+    "prod_score": 32.1
+  },
+  "parker brailsford": {
+    "name": "Parker Brailsford",
+    "pos": "OC",
+    "grade": 2.22,
+    "round_grade": "6 (Early)",
+    "nfl_comp": "Nick Harris",
+    "ath_score": 48.0,
+    "prod_score": 30.8
+  },
+  "malik muhammad": {
+    "name": "Malik Muhammad",
+    "pos": "CB",
+    "grade": 2.21,
+    "round_grade": "6 (Early)",
+    "nfl_comp": "Tre Herndon",
+    "ath_score": 49.6,
+    "prod_score": 49.5
+  },
+  "aaron graves": {
+    "name": "Aaron Graves",
+    "pos": "DL",
+    "grade": 2.19,
+    "round_grade": "6 (Early)",
+    "nfl_comp": "Taven Bryan",
+    "ath_score": 25.5,
+    "prod_score": 44.6
+  },
+  "bishop fitzgerald": {
+    "name": "Bishop Fitzgerald",
+    "pos": "S",
+    "grade": 2.16,
+    "round_grade": "6 (Early)",
+    "nfl_comp": null,
+    "ath_score": 13.3,
+    "prod_score": 73.4
+  },
+  "caden curry": {
+    "name": "Caden Curry",
+    "pos": "ED",
+    "grade": 2.15,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 27.1,
+    "prod_score": 58.9
+  },
+  "rene konga": {
+    "name": "Rene Konga",
+    "pos": "DL",
+    "grade": 2.12,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 73.8,
+    "prod_score": 62.1
+  },
+  "keelan marion": {
+    "name": "Keelan Marion",
+    "pos": "WR",
+    "grade": 2.1,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 45.1,
+    "prod_score": 45.4
+  },
+  "bernard gooden": {
+    "name": "Bernard Gooden",
+    "pos": "DL",
+    "grade": 2.09,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 20.0,
+    "prod_score": 55.3
+  },
+  "daequan wright": {
+    "name": "Dae'Quan Wright",
+    "pos": "TE",
+    "grade": 2.02,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 26.2,
+    "prod_score": 64.0
+  },
+  "nicholas singleton": {
+    "name": "Nicholas Singleton",
+    "pos": "HB",
+    "grade": 2.01,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": "Ryan Mathews",
+    "ath_score": 75.7,
+    "prod_score": 44.5
+  },
+  "aaron anderson": {
+    "name": "Aaron Anderson",
+    "pos": "WR",
+    "grade": 2.0,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 0.6,
+    "prod_score": 40.4
+  },
+  "devan boykin": {
+    "name": "Devan Boykin",
+    "pos": "CB",
+    "grade": 1.97,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 60.9,
+    "prod_score": 62.6
+  },
+  "james brockermeyer": {
+    "name": "James Brockermeyer",
+    "pos": "OC",
+    "grade": 1.94,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 9.4,
+    "prod_score": 72.1
+  },
+  "josh moten": {
+    "name": "Josh Moten",
+    "pos": "CB",
+    "grade": 1.91,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 24.3,
+    "prod_score": 63.6
+  },
+  "jmari taylor": {
+    "name": "J'Mari Taylor",
+    "pos": "HB",
+    "grade": 1.9,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 19.0,
+    "prod_score": 34.9
+  },
+  "vincent anthony": {
+    "name": "Vincent Anthony Jr.",
+    "pos": "ED",
+    "grade": 1.88,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 67.5,
+    "prod_score": 20.7
+  },
+  "drew shelton": {
+    "name": "Drew Shelton",
+    "pos": "OT",
+    "grade": 1.86,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 54.2,
+    "prod_score": 32.3
+  },
+  "luke altmyer": {
+    "name": "Luke Altmyer",
+    "pos": "QB",
+    "grade": 1.84,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 20.9,
+    "prod_score": 49.2
+  },
+  "dj campbell": {
+    "name": "DJ Campbell",
+    "pos": "G",
+    "grade": 1.83,
+    "round_grade": "6 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 71.9,
+    "prod_score": 52.2
+  },
+  "jude bowry": {
+    "name": "Jude Bowry",
+    "pos": "OT",
+    "grade": 1.81,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 47.7,
+    "prod_score": 35.6
+  },
+  "noah thomas": {
+    "name": "Noah Thomas",
+    "pos": "WR",
+    "grade": 1.79,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 79.1,
+    "prod_score": 9.1
+  },
+  "stephane voltaire": {
+    "name": "Stephane Voltaire",
+    "pos": "OT",
+    "grade": 1.77,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 47.5,
+    "prod_score": 29.5
+  },
+  "tyreak sapp": {
+    "name": "Tyreak Sapp",
+    "pos": "ED",
+    "grade": 1.75,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 4.9,
+    "prod_score": 24.8
+  },
+  "leveon moss": {
+    "name": "Le'Veon Moss",
+    "pos": "HB",
+    "grade": 1.74,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 22.2,
+    "prod_score": 23.0
+  },
+  "jager burton": {
+    "name": "Jager Burton",
+    "pos": "OC",
+    "grade": 1.72,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 81.1,
+    "prod_score": 37.3
+  },
+  "zxavian harris": {
+    "name": "Zxavian Harris",
+    "pos": "DL",
+    "grade": 1.71,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 86.7,
+    "prod_score": 47.7
+  },
+  "alex harkey": {
+    "name": "Alex Harkey",
+    "pos": "G",
+    "grade": 1.7,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 55.3,
+    "prod_score": 34.7
+  },
+  "sawyer robertson": {
+    "name": "Sawyer Robertson",
+    "pos": "QB",
+    "grade": 1.69,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 72.5,
+    "prod_score": 43.8
+  },
+  "chase roberts": {
+    "name": "Chase Roberts",
+    "pos": "WR",
+    "grade": 1.67,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 42.9,
+    "prod_score": 50.4
+  },
+  "wydett williams": {
+    "name": "Wydett Williams Jr.",
+    "pos": "S",
+    "grade": 1.66,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 76.9,
+    "prod_score": 66.5
+  },
+  "austin barber": {
+    "name": "Austin Barber",
+    "pos": "OT",
+    "grade": 1.65,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 39.8,
+    "prod_score": 66.2
+  },
+  "dontay corleone": {
+    "name": "Dontay Corleone",
+    "pos": "DL",
+    "grade": 1.63,
+    "round_grade": "6 (Late)",
+    "nfl_comp": "Michael Pierce",
+    "ath_score": 20.0,
+    "prod_score": 36.8
+  },
+  "tristan leigh": {
+    "name": "Tristan Leigh",
+    "pos": "OT",
+    "grade": 1.62,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 59.2,
+    "prod_score": 4.1
+  },
+  "daylen everette": {
+    "name": "Daylen Everette",
+    "pos": "CB",
+    "grade": 1.59,
+    "round_grade": "6 (Late)",
+    "nfl_comp": "Terrion Arnold",
+    "ath_score": 85.3,
+    "prod_score": 40.7
+  },
+  "tacario davis": {
+    "name": "Tacario Davis",
+    "pos": "CB",
+    "grade": 1.58,
+    "round_grade": "6 (Late)",
+    "nfl_comp": "Cam Hart / Jaylen Watson",
+    "ath_score": 82.0,
+    "prod_score": 44.0
+  },
+  "cole brevard": {
+    "name": "Cole Brevard",
+    "pos": "DL",
+    "grade": 1.56,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 24.0,
+    "prod_score": 29.4
+  },
+  "kendal daniels": {
+    "name": "Kendal Daniels",
+    "pos": "LB",
+    "grade": 1.53,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 58.6,
+    "prod_score": 44.1
+  },
+  "barion brown": {
+    "name": "Barion Brown",
+    "pos": "WR",
+    "grade": 1.51,
+    "round_grade": "6 (Late)",
+    "nfl_comp": null,
+    "ath_score": 47.9,
+    "prod_score": 32.4
+  },
+  "khordae sydnor": {
+    "name": "Khordae Sydnor",
+    "pos": "ED",
+    "grade": 1.46,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 75.2,
+    "prod_score": 34.5
+  },
+  "ayden garnes": {
+    "name": "Ayden Garnes",
+    "pos": "CB",
+    "grade": 1.44,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 86.5,
+    "prod_score": 63.0
+  },
+  "james neal": {
+    "name": "James Neal III",
+    "pos": "OT",
+    "grade": 1.43,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 62.3,
+    "prod_score": 33.7
+  },
+  "demonte capehart": {
+    "name": "DeMonte Capehart",
+    "pos": "DL",
+    "grade": 1.42,
+    "round_grade": "7 (Early)",
+    "nfl_comp": "Angelo Blackson",
+    "ath_score": 86.1,
+    "prod_score": 35.3
+  },
+  "chris adams": {
+    "name": "Chris Adams",
+    "pos": "OT",
+    "grade": 1.4,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 57.2,
+    "prod_score": 23.5
+  },
+  "ethan burke": {
+    "name": "Ethan Burke",
+    "pos": "ED",
+    "grade": 1.39,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 82.0,
+    "prod_score": 37.7
+  },
+  "xavier nwankpa": {
+    "name": "Xavier Nwankpa",
+    "pos": "S",
+    "grade": 1.37,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 53.9,
+    "prod_score": 32.9
+  },
+  "deontae lawson": {
+    "name": "Deontae Lawson",
+    "pos": "LB",
+    "grade": 1.35,
+    "round_grade": "7 (Early)",
+    "nfl_comp": "Damone Clark",
+    "ath_score": 10.6,
+    "prod_score": 49.0
+  },
+  "kevin cline": {
+    "name": "Kevin Cline",
+    "pos": "OT",
+    "grade": 1.33,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 39.7,
+    "prod_score": 79.3
+  },
+  "rohan jones": {
+    "name": "Rohan Jones",
+    "pos": "TE",
+    "grade": 1.32,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 56.1,
+    "prod_score": 74.8
+  },
+  "isaiah world": {
+    "name": "Isaiah World",
+    "pos": "OT",
+    "grade": 1.29,
+    "round_grade": "7 (Early)",
+    "nfl_comp": "Ikem Ekwonu",
+    "ath_score": 65.9,
+    "prod_score": 35.7
+  },
+  "behren morton": {
+    "name": "Behren Morton",
+    "pos": "QB",
+    "grade": 1.28,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 4.6,
+    "prod_score": 27.9
+  },
+  "ej williams": {
+    "name": "E.J. Williams",
+    "pos": "WR",
+    "grade": 1.26,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 45.9,
+    "prod_score": 1.3
+  },
+  "domani jackson": {
+    "name": "Domani Jackson",
+    "pos": "CB",
+    "grade": 1.24,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 75.7,
+    "prod_score": 36.5
+  },
+  "faalili faamoe": {
+    "name": "Fa'alili Fa'amoe",
+    "pos": "OT",
+    "grade": 1.21,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 50.7,
+    "prod_score": 13.5
+  },
+  "owen heinecke": {
+    "name": "Owen Heinecke",
+    "pos": "LB",
+    "grade": 1.17,
+    "round_grade": "7 (Early)",
+    "nfl_comp": null,
+    "ath_score": 24.1,
+    "prod_score": 43.2
+  },
+  "diego pavia": {
+    "name": "Diego Pavia",
+    "pos": "QB",
+    "grade": 1.05,
+    "round_grade": "7 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 27.3,
+    "prod_score": 80.4
+  },
+  "jalen mcmurray": {
+    "name": "Jalen McMurray",
+    "pos": "CB",
+    "grade": 0.93,
+    "round_grade": "7 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 74.0,
+    "prod_score": 32.1
+  },
+  "damonte smith": {
+    "name": "Damonte Smith",
+    "pos": "DL",
+    "grade": 0.92,
+    "round_grade": "7 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 6.1,
+    "prod_score": 58.9
+  },
+  "adam randall": {
+    "name": "Adam Randall",
+    "pos": "HB",
+    "grade": 0.91,
+    "round_grade": "7 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 67.5,
+    "prod_score": 35.3
+  },
+  "thaddeus dixon": {
+    "name": "Thaddeus Dixon",
+    "pos": "CB",
+    "grade": 0.89,
+    "round_grade": "7 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 43.9,
+    "prod_score": 31.9
+  },
+  "dane key": {
+    "name": "Dane Key",
+    "pos": "WR",
+    "grade": 0.89,
+    "round_grade": "7 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 17.6,
+    "prod_score": 21.2
+  },
+  "jayden williams": {
+    "name": "Jayden Williams",
+    "pos": "OT",
+    "grade": 0.86,
+    "round_grade": "7 (Mid)",
+    "nfl_comp": null,
+    "ath_score": 20.2,
+    "prod_score": 33.4
+  },
+  "mikail kamara": {
+    "name": "Mikail Kamara",
+    "pos": "ED",
+    "grade": 0.84,
+    "round_grade": "7 (Mid)",
+    "nfl_comp": "LaMarr Woodley",
+    "ath_score": 7.7,
+    "prod_score": 52.1
+  },
+  "jaeden roberts": {
+    "name": "Jaeden Roberts",
+    "pos": "G",
+    "grade": 0.82,
+    "round_grade": "7 (Late)",
+    "nfl_comp": "John Simpson",
+    "ath_score": 96.0,
+    "prod_score": 42.8
+  },
+  "roman hemby": {
+    "name": "Roman Hemby",
+    "pos": "HB",
+    "grade": 0.77,
+    "round_grade": "7 (Late)",
+    "nfl_comp": null,
+    "ath_score": 43.0,
+    "prod_score": 46.4
+  },
+  "jalen walthall": {
+    "name": "Jalen Walthall",
+    "pos": "WR",
+    "grade": 0.75,
+    "round_grade": "7 (Late)",
+    "nfl_comp": null,
+    "ath_score": 11.2,
+    "prod_score": 60.7
+  },
+  "karson sharar": {
+    "name": "Karson Sharar",
+    "pos": "LB",
+    "grade": 0.69,
+    "round_grade": "7 (Late)",
+    "nfl_comp": null,
+    "ath_score": 44.5,
+    "prod_score": 39.4
+  },
+  "wesley williams": {
+    "name": "Wesley Williams",
+    "pos": "ED",
+    "grade": 0.67,
+    "round_grade": "7 (Late)",
+    "nfl_comp": "Tyquan Lewis",
+    "ath_score": 25.7,
+    "prod_score": 50.2
+  },
+  "joey aguilar": {
+    "name": "Joey Aguilar",
+    "pos": "QB",
+    "grade": 0.64,
+    "round_grade": "7 (Late)",
+    "nfl_comp": null,
+    "ath_score": 49.6,
+    "prod_score": 60.6
+  },
+  "michael heldman": {
+    "name": "Michael Heldman",
+    "pos": "ED",
+    "grade": 0.63,
+    "round_grade": "7 (Late)",
+    "nfl_comp": null,
+    "ath_score": 58.7,
+    "prod_score": 61.4
+  },
+  "jack velling": {
+    "name": "Jack Velling",
+    "pos": "TE",
+    "grade": 0.59,
+    "round_grade": "7 (Late)",
+    "nfl_comp": null,
+    "ath_score": 16.8,
+    "prod_score": 34.1
+  },
+  "patrick payton": {
+    "name": "Patrick Payton",
+    "pos": "ED",
+    "grade": 0.56,
+    "round_grade": "7 (Late)",
+    "nfl_comp": null,
+    "ath_score": 75.5,
+    "prod_score": 24.5
+  },
+  "rj maryland": {
+    "name": "RJ Maryland",
+    "pos": "TE",
+    "grade": 0.52,
+    "round_grade": "7 (Late)",
+    "nfl_comp": null,
+    "ath_score": 51.4,
+    "prod_score": 34.6
+  },
+  "delby lemieux": {
+    "name": "Delby Lemieux",
+    "pos": "G",
+    "grade": 0.49,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 31.5,
+    "prod_score": 83.7
+  },
+  "david blay": {
+    "name": "David Blay Jr.",
+    "pos": "DL",
+    "grade": 0.49,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 30.0,
+    "prod_score": 24.8
+  },
+  "micah morris": {
+    "name": "Micah Morris",
+    "pos": "G",
+    "grade": 0.48,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 84.1,
+    "prod_score": 57.1
+  },
+  "josh braun": {
+    "name": "Josh Braun",
+    "pos": "G",
+    "grade": 0.48,
+    "round_grade": "PFA",
+    "nfl_comp": "Darian Kinnard",
+    "ath_score": 85.8,
+    "prod_score": 35.9
+  },
+  "robert spearsjennings": {
+    "name": "Robert Spears-Jennings",
+    "pos": "S",
+    "grade": 0.47,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 60.1,
+    "prod_score": 16.5
+  },
+  "dillon wade": {
+    "name": "Dillon Wade",
+    "pos": "G",
+    "grade": 0.47,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 29.0,
+    "prod_score": 26.0
+  },
+  "miller moss": {
+    "name": "Miller Moss",
+    "pos": "QB",
+    "grade": 0.47,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 8.9,
+    "prod_score": 19.5
+  },
+  "bryan thomas": {
+    "name": "Bryan Thomas Jr.",
+    "pos": "ED",
+    "grade": 0.46,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 54.5,
+    "prod_score": 55.4
+  },
+  "bryson eason": {
+    "name": "Bryson Eason",
+    "pos": "DL",
+    "grade": 0.46,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 17.4,
+    "prod_score": 24.7
+  },
+  "kapena gushiken": {
+    "name": "Kapena Gushiken",
+    "pos": "S",
+    "grade": 0.46,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 51.8,
+    "prod_score": 62.2
+  },
+  "chip trayanum": {
+    "name": "Chip Trayanum",
+    "pos": "HB",
+    "grade": 0.44,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 80.7,
+    "prod_score": 34.2
+  },
+  "kahlil benson": {
+    "name": "Kahlil Benson",
+    "pos": "G",
+    "grade": 0.44,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 74.2,
+    "prod_score": 51.3
+  },
+  "michael mokofisi": {
+    "name": "Michael Mokofisi",
+    "pos": "G",
+    "grade": 0.44,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 36.1,
+    "prod_score": 29.2
+  },
+  "jalen jones": {
+    "name": "Jalen Jones",
+    "pos": "CB",
+    "grade": 0.43,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 24.5,
+    "prod_score": 17.4
+  },
+  "damonic williams": {
+    "name": "Damonic Williams",
+    "pos": "DL",
+    "grade": 0.42,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 39.9,
+    "prod_score": 20.2
+  },
+  "monkell goodwine": {
+    "name": "Monkell Goodwine",
+    "pos": "DL",
+    "grade": 0.42,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 57.7,
+    "prod_score": 44.2
+  },
+  "connor tollison": {
+    "name": "Connor Tollison",
+    "pos": "OC",
+    "grade": 0.4,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 22.3,
+    "prod_score": 20.2
+  },
+  "jeremiah wilson": {
+    "name": "Jeremiah Wilson",
+    "pos": "CB",
+    "grade": 0.39,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 48.2,
+    "prod_score": 13.3
+  },
+  "shiyazh pete": {
+    "name": "Shiyazh Pete",
+    "pos": "OT",
+    "grade": 0.39,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 85.0,
+    "prod_score": 11.4
+  },
+  "melvin priestly": {
+    "name": "Melvin Priestly",
+    "pos": "G",
+    "grade": 0.38,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 1.7,
+    "prod_score": 49.1
+  },
+  "jaren kump": {
+    "name": "Jaren Kump",
+    "pos": "OC",
+    "grade": 0.37,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 83.1,
+    "prod_score": 46.4
+  },
+  "marvin jones": {
+    "name": "Marvin Jones Jr.",
+    "pos": "ED",
+    "grade": 0.37,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 20.8,
+    "prod_score": 8.7
+  },
+  "ethan onianwa": {
+    "name": "Ethan Onianwa",
+    "pos": "OT",
+    "grade": 0.36,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 77.1,
+    "prod_score": 13.5
+  },
+  "malachi bailey": {
+    "name": "Malachi Bailey",
+    "pos": "ED",
+    "grade": 0.35,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 55.2,
+    "prod_score": 7.8
+  },
+  "dq smith": {
+    "name": "DQ Smith",
+    "pos": "S",
+    "grade": 0.34,
+    "round_grade": "PFA",
+    "nfl_comp": null,
+    "ath_score": 23.8,
+    "prod_score": 36.3
+  }
+}
