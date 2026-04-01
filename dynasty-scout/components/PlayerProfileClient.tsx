@@ -19,6 +19,7 @@ import { WRTargetDepthBar } from '@/components/WRTargetDepthBar';
 import { WRAdvancedRatesTable } from '@/components/WRAdvancedRatesTable';
 import { ButterflyChart, type ButterflyRow } from '@/components/ButterflyChart';
 import { FilmGradesCard } from '@/components/FilmGradesCard';
+import { RecentTrades } from '@/components/RecentTrades';
 import { POSITION_HEADLINE_STATS } from '@/lib/constants';
 import { getArchetypes } from '@/lib/archetypes';
 import { GraduationCap, Calendar, Ruler, Weight, Star, Newspaper, BarChart2, ExternalLink, Scale, AlertTriangle, ChevronLeft, ChevronRight, Share2, Check } from 'lucide-react';
@@ -884,6 +885,16 @@ export function PlayerProfileClient({
                             </div>
                         );
                     })()}
+
+                    {/* Recent Trades */}
+                    <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden mb-6">
+                        <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02]">
+                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Dynasty Trades</span>
+                        </div>
+                        <div className="p-4">
+                            <RecentTrades playerSlug={player.slug} />
+                        </div>
+                    </div>
 
                     {/* Dynasty Context */}
                     <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden mb-6">
