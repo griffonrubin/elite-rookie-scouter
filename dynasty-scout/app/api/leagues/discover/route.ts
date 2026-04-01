@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import sqlite3 from 'better-sqlite3';
-import path from 'path';
-
-const dbPath = path.join(process.cwd(), 'dynasty_scout.db');
+import { getDb } from '@/lib/db';
 
 async function fetchSleeperApi(url: string): Promise<any> {
   try {
@@ -59,7 +56,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const db = sqlite3(dbPath);
+    const db = getDb();
     const stmt = db.prepare(`
       INSERT OR REPLACE INTO sleeper_leagues (league_id, league_name, season, roster_count, source, last_scraped_at)
       VALUES (?, ?, ?, ?, 'user_discovery', CURRENT_TIMESTAMP)
@@ -79,8 +76,6 @@ export async function POST(req: NextRequest) {
         console.error(`Failed to add league ${league.league_id}:`, err);
       }
     }
-
-    db.close();
 
     return NextResponse.json({
       success: true,

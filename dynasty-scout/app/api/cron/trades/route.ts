@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { execSync } from 'child_process';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes timeout for Vercel
@@ -12,29 +11,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Run the Python scraper
-    try {
-      const output = execSync('python scrapers/trades_sleeper.py', {
-        cwd: process.cwd(),
-        encoding: 'utf-8',
-        timeout: 280000, // 4m 40s
-      });
-
-      return NextResponse.json({
-        status: 'success',
-        message: 'Trades scraper completed',
-        output: output.slice(-500), // Last 500 chars
-        timestamp: new Date().toISOString(),
-      });
-    } catch (execErr: any) {
-      // Scraper may have exit code 0 but still output errors
-      return NextResponse.json({
-        status: 'completed',
-        message: 'Scraper ran (check logs)',
-        output: execErr.stdout?.slice(-500) || execErr.message,
-        timestamp: new Date().toISOString(),
-      });
-    }
+    // Note: Python scraper execution is not supported on Vercel's serverless environment
+    // Python scripts should be run locally or via a separate service
+    // This endpoint serves as a webhook trigger point for trade data refresh
+    
+    return NextResponse.json({
+      status: 'success',
+      message: 'Cron job triggered. Trade scraper should be run locally via: python scrapers/trades_sleeper.py',
+      timestamp: new Date().toISOString(),
+      note: 'Python execution not supported in Vercel serverless. Run scraper locally on your machine.',
+    });
   } catch (err) {
     console.error('Cron error:', err);
     return NextResponse.json(
@@ -51,4 +37,3 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   return GET(req);
 }
-// Redeploy trigger

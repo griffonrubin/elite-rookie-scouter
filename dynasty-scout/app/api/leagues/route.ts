@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import sqlite3 from 'better-sqlite3';
-import path from 'path';
-
-const dbPath = path.join(process.cwd(), 'dynasty_scout.db');
+import { getDb } from '@/lib/db';
 
 interface LeagueResponse {
   league_id: string;
@@ -25,10 +22,9 @@ async function fetchSleeperLeague(leagueId: string): Promise<LeagueResponse> {
 
 export async function GET(req: NextRequest) {
   try {
-    const db = sqlite3(dbPath);
+    const db = getDb();
     const stmt = db.prepare('SELECT league_id, league_name FROM sleeper_leagues ORDER BY league_name');
     const leagues = stmt.all();
-    db.close();
 
     return NextResponse.json({ leagues });
   } catch (err) {
@@ -53,13 +49,12 @@ export async function POST(req: NextRequest) {
     const leagueData = await fetchSleeperLeague(league_id);
 
     // Save to database
-    const db = sqlite3(dbPath);
+    const db = getDb();
     const stmt = db.prepare(`
       INSERT OR REPLACE INTO sleeper_leagues (league_id, league_name, season, roster_count, source, last_scraped_at)
       VALUES (?, ?, ?, ?, 'user_add', CURRENT_TIMESTAMP)
     `);
     stmt.run(leagueData.league_id, leagueData.name, leagueData.season, leagueData.total_rosters);
-    db.close();
 
     return NextResponse.json({
       league_id: leagueData.league_id,
@@ -85,10 +80,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'league_id required' }, { status: 400 });
     }
 
-    const db = sqlite3(dbPath);
+    const db = getDb();
     const stmt = db.prepare('DELETE FROM sleeper_leagues WHERE league_id = ?');
     stmt.run(league_id);
-    db.close();
 
     return NextResponse.json({ success: true });
   } catch (err) {
