@@ -1,0 +1,4 @@
+[     152ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://elite-rookie-scouter.vercel.app/settings/leagues:0
+[     198ms] [LOG] Refreshing data... @ https://elite-rookie-scouter.vercel.app/_next/static/chunks/996ca7d1d3c41437.js:0
+[     283ms] [ERROR] Failed to load resource: the server responded with a status of 501 () @ https://elite-rookie-scouter.vercel.app/api/refresh:0
+[     284ms] [LOG] Data refresh triggered. @ https://elite-rookie-scouter.vercel.app/_next/static/chunks/996ca7d1d3c41437.js:0

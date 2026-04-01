@@ -155,7 +155,12 @@
       "Bash(exec python3:*)",
       "Bash(timeout 30 npm run build)",
       "Bash(timeout 60 npm run build)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "mcp__claude_ai_Vercel__get_deployment",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__claude_ai_Vercel__get_deployment_build_logs",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "Bash(sqlite3 dynasty_scout.db \".tables\")"
     ]
   }
 }
