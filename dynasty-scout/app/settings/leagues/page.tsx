@@ -1,22 +1,46 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Trash2, ExternalLink, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 
+interface League {
+  league_id: string;
+  league_name: string;
+}
+
 export default function LeaguesPage() {
-  const [leagues, setLeagues] = useState<Array<{ id: string; name: string }>>([]);
+  const [leagues, setLeagues] = useState<League[]>([]);
   const [leagueId, setLeagueId] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Fetch existing leagues on mount
+  useEffect(() => {
+    const fetchLeagues = async () => {
+      try {
+        const res = await fetch('/api/leagues');
+        if (!res.ok) throw new Error('Failed to fetch leagues');
+        const data = await res.json();
+        setLeagues(data.leagues || []);
+      } catch (err) {
+        console.error('Failed to fetch leagues:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeagues();
+  }, []);
 
   const handleAddLeague = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leagueId.trim()) return;
 
-    setLoading(true);
+    setSubmitting(true);
     setError(null);
     setSuccess(null);
 
@@ -33,18 +57,18 @@ export default function LeaguesPage() {
       }
 
       const data = await res.json();
-      setLeagues([...leagues, { id: leagueId, name: data.league_name }]);
+      setLeagues([...leagues, { league_id: data.league_id, league_name: data.league_name }]);
       setLeagueId('');
       setSuccess('League added! Trade data will be populated soon.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   const handleRemoveLeague = async (id: string) => {
-    setLoading(true);
+    setSubmitting(true);
     setError(null);
 
     try {
@@ -55,11 +79,11 @@ export default function LeaguesPage() {
       });
 
       if (!res.ok) throw new Error('Failed to remove league');
-      setLeagues(leagues.filter(l => l.id !== id));
+      setLeagues(leagues.filter(l => l.league_id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -84,15 +108,15 @@ export default function LeaguesPage() {
                   placeholder="e.g., 123456789"
                   value={leagueId}
                   onChange={e => setLeagueId(e.target.value)}
-                  disabled={loading}
+                  disabled={submitting}
                   className="flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white placeholder-slate-500 disabled:opacity-50"
                 />
                 <Button
                   type="submit"
-                  disabled={loading || !leagueId.trim()}
+                  disabled={submitting || !leagueId.trim()}
                   className="gap-2"
                 >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   Add
                 </Button>
               </div>
@@ -116,21 +140,26 @@ export default function LeaguesPage() {
         )}
 
         {/* Leagues List */}
-        {leagues.length > 0 && (
+        {loading ? (
+          <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] p-8 text-center">
+            <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-slate-400" />
+            <p className="text-sm text-slate-400">Loading leagues...</p>
+          </div>
+        ) : leagues.length > 0 ? (
           <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden">
             <div className="px-6 py-4 border-b border-white/[0.06]">
               <h2 className="font-bold">Your Leagues ({leagues.length})</h2>
             </div>
             <div className="divide-y divide-white/[0.06]">
               {leagues.map(league => (
-                <div key={league.id} className="px-6 py-4 flex items-center justify-between hover:bg-white/[0.02]">
+                <div key={league.league_id} className="px-6 py-4 flex items-center justify-between hover:bg-white/[0.02]">
                   <div>
-                    <p className="font-medium">{league.name}</p>
-                    <p className="text-xs text-slate-500">ID: {league.id}</p>
+                    <p className="font-medium">{league.league_name}</p>
+                    <p className="text-xs text-slate-500">ID: {league.league_id}</p>
                   </div>
                   <button
-                    onClick={() => handleRemoveLeague(league.id)}
-                    disabled={loading}
+                    onClick={() => handleRemoveLeague(league.league_id)}
+                    disabled={submitting}
                     className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-400 disabled:opacity-50"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -139,9 +168,7 @@ export default function LeaguesPage() {
               ))}
             </div>
           </div>
-        )}
-
-        {leagues.length === 0 && (
+        ) : (
           <div className="rounded-2xl border border-slate-700/50 bg-slate-800/20 p-8 text-center">
             <p className="text-slate-400">No leagues added yet. Add one above to get started!</p>
           </div>
