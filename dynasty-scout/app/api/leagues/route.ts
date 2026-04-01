@@ -23,7 +23,7 @@ async function fetchSleeperLeague(leagueId: string): Promise<LeagueResponse> {
 export async function GET(req: NextRequest) {
   try {
     const db = getDb();
-    const stmt = db.prepare('SELECT league_id, league_name FROM sleeper_leagues ORDER BY league_name');
+    const stmt = db.prepare('SELECT league_id, name, season, total_rosters FROM sleeper_leagues ORDER BY name');
     const leagues = stmt.all();
 
     return NextResponse.json({ leagues });
@@ -51,16 +51,16 @@ export async function POST(req: NextRequest) {
     // Save to database
     const db = getDb();
     const stmt = db.prepare(`
-      INSERT OR REPLACE INTO sleeper_leagues (league_id, league_name, season, roster_count, source, last_scraped_at)
-      VALUES (?, ?, ?, ?, 'user_add', CURRENT_TIMESTAMP)
+      INSERT OR REPLACE INTO sleeper_leagues (league_id, name, season, total_rosters, source, added_at)
+      VALUES (?, ?, ?, ?, 'user_add', datetime('now'))
     `);
     stmt.run(leagueData.league_id, leagueData.name, leagueData.season, leagueData.total_rosters);
 
     return NextResponse.json({
       league_id: leagueData.league_id,
-      league_name: leagueData.name,
+      name: leagueData.name,
       season: leagueData.season,
-      roster_count: leagueData.total_rosters,
+      total_rosters: leagueData.total_rosters,
     });
   } catch (err) {
     console.error('POST /api/leagues error:', err);

@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
 
     const db = getDb();
     const stmt = db.prepare(`
-      INSERT OR REPLACE INTO sleeper_leagues (league_id, league_name, season, roster_count, source, last_scraped_at)
-      VALUES (?, ?, ?, ?, 'user_discovery', CURRENT_TIMESTAMP)
+      INSERT OR REPLACE INTO sleeper_leagues (league_id, name, season, total_rosters, source, added_at)
+      VALUES (?, ?, ?, ?, 'user_discovery', datetime('now'))
     `);
 
     const addedLeagues = [];
@@ -69,8 +69,9 @@ export async function POST(req: NextRequest) {
         stmt.run(league.league_id, league.name, league.season, league.total_rosters);
         addedLeagues.push({
           league_id: league.league_id,
-          league_name: league.name,
-          roster_count: league.total_rosters,
+          name: league.name,
+          season: league.season,
+          total_rosters: league.total_rosters,
         });
       } catch (err) {
         console.error(`Failed to add league ${league.league_id}:`, err);

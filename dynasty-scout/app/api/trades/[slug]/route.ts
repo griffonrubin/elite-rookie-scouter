@@ -3,6 +3,19 @@ import { queryOne, query } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+interface Pick {
+  season: number;
+  round: number;
+}
+
+function parsePick(pickStr: string): Pick | null {
+  const match = pickStr.match(/(\d{4})\s+(\d+)(?:st|nd|rd|th)?/);
+  if (match) {
+    return { season: parseInt(match[1]), round: parseInt(match[2]) };
+  }
+  return null;
+}
+
 export async function GET(
     _req: NextRequest,
     { params }: { params: Promise<{ slug: string }> }
@@ -19,13 +32,13 @@ export async function GET(
         }
 
         const trades = await query<any>(
-            `SELECT t.id, t.transaction_date, t.side,
+            `SELECT t.id, t.status_updated_at, t.side,
                     t.picks_sent, t.picks_received, t.counterpart_player_ids,
-                    sl.league_name, sl.roster_count
+                    sl.name as league_name, sl.total_rosters as roster_count
              FROM trades t
              JOIN sleeper_leagues sl ON sl.league_id = t.league_id
              WHERE t.player_a_id = $1
-             ORDER BY t.transaction_date DESC
+             ORDER BY t.status_updated_at DESC
              LIMIT 50`,
             [player.id]
         );
@@ -51,18 +64,26 @@ export async function GET(
 
         const transformed = trades.map(t => {
             let cpIds: number[] = [];
-            let picksSent: string[] = [];
-            let picksRcv: string[] = [];
+            let picksSent: Pick[] = [];
+            let picksRcv: Pick[] = [];
+            
             try { cpIds = JSON.parse(t.counterpart_player_ids || '[]'); } catch { /**/ }
-            try { picksSent = JSON.parse(t.picks_sent || '[]'); } catch { /**/ }
-            try { picksRcv = JSON.parse(t.picks_received || '[]'); } catch { /**/ }
+            try { 
+                const picks: string[] = JSON.parse(t.picks_sent || '[]');
+                picksSent = picks.map(p => parsePick(p)).filter(p => p !== null) as Pick[];
+            } catch { /**/ }
+            try { 
+                const picks: string[] = JSON.parse(t.picks_received || '[]');
+                picksRcv = picks.map(p => parsePick(p)).filter(p => p !== null) as Pick[];
+            } catch { /**/ }
+            
             return {
                 id: t.id,
-                date: t.transaction_date,
+                date: new Date(t.status_updated_at * 1000).toISOString().split('T')[0],
                 side: t.side,
                 picks_sent: picksSent,
                 picks_received: picksRcv,
-                counterparts: cpIds.map(id => cpMap[id]).filter(Boolean),
+                counterpart_players: cpIds.map(id => cpMap[id]).filter(Boolean),
                 league_name: t.league_name,
                 roster_count: t.roster_count,
             };
