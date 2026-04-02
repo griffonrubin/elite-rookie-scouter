@@ -892,7 +892,7 @@ export function PlayerProfileClient({
                             <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Dynasty Trades</span>
                         </div>
                         <div className="p-4">
-                            <RecentTrades playerSlug={player.slug} />
+                            <RecentTrades playerSlug={player.slug} projRank={projRank} playerName={player.last_name} />
                         </div>
                     </div>
 
