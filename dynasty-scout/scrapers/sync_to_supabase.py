@@ -63,6 +63,8 @@ def ensure_pg_schema(pg):
         "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS ppa_avg REAL",
         "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS ppa_total REAL",
         "ALTER TABLE college_stats ADD COLUMN IF NOT EXISTS usage_pct REAL",
+        # consensus_rankings
+        "ALTER TABLE consensus_rankings ADD COLUMN IF NOT EXISTS format TEXT NOT NULL DEFAULT 'SF'",
         # players
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS recruiting_composite REAL",
         "ALTER TABLE players ADD COLUMN IF NOT EXISTS recruiting_stars INTEGER",
@@ -466,13 +468,14 @@ def sync_consensus_rankings(pg, sq):
 
     upserted = 0
     for r in rows:
+        fmt = r["format"] if "format" in r.keys() else "SF"
         cur_pg.execute("""
             INSERT INTO consensus_rankings
               (player_id, rank_overall, rank_positional, avg_rank, best_rank,
                worst_rank, std_deviation, num_sources, calculated_at,
-               rank_change_1d, rank_change_7d, rank_change_30d)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-            ON CONFLICT (player_id, calculated_at) DO UPDATE SET
+               rank_change_1d, rank_change_7d, rank_change_30d, format)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (player_id, format, calculated_at) DO UPDATE SET
                 rank_overall    = EXCLUDED.rank_overall,
                 rank_positional = EXCLUDED.rank_positional,
                 avg_rank        = EXCLUDED.avg_rank,
@@ -483,7 +486,7 @@ def sync_consensus_rankings(pg, sq):
         """, (r["player_id"], r["rank_overall"], r["rank_positional"],
               r["avg_rank"], r["best_rank"], r["worst_rank"],
               r["std_deviation"], r["num_sources"], r["calculated_at"],
-              r["rank_change_1d"], r["rank_change_7d"], r["rank_change_30d"]))
+              r["rank_change_1d"], r["rank_change_7d"], r["rank_change_30d"], fmt))
         upserted += 1
 
     pg.commit()

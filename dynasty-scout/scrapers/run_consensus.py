@@ -2,7 +2,7 @@
 run_consensus.py — Weighted consensus rankings calculator.
 Produces separate SF and 1QB consensus rankings.
 
-SF sources:  KeepTradeCut (0.35), FantasyCalc SF (0.30), FantasyPros (0.20), DynastyNerds (0.15)
+SF sources:  KeepTradeCut (0.35), FantasyCalc SF (0.30), FantasyPros SF (0.20), DynastyNerds SF (0.15)
 1QB sources: KeepTradeCut 1QB (0.35), FantasyCalc (0.30), FantasyPros (0.20), DynastyNerds (0.15)
 
 Run: py scrapers/run_consensus.py
@@ -21,8 +21,8 @@ FORMAT_WEIGHTS = {
     "SF": {
         "KeepTradeCut":    0.35,
         "FantasyCalc SF":  0.30,
-        "FantasyPros":     0.20,
-        "DynastyNerds":    0.15,
+        "DynastyNerds SF": 0.20,
+        "FantasyPros":     0.15,  # FP has no SF-specific rookie page; use 1QB as proxy
     },
     "1QB": {
         "KeepTradeCut 1QB": 0.35,

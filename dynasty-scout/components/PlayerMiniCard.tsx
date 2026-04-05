@@ -196,10 +196,10 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                 );
 
             // ── Ranking sources ────────────────────────────────────────────────
-            case 'fp':  return <StatVal val={p.fantasypros_rank}   highlight={sourceRankColor(p.fantasypros_rank)}   />;
+            case 'fp':  { const v = format === 'SF' ? (p as any).fantasypros_sf_rank : p.fantasypros_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'ktc': { const v = format === '1QB' ? (p as any).ktc_1qb_rank : (p as any).ktc_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'fc':  { const v = format === 'SF'  ? (p as any).fantasycalc_sf_rank : (p as any).fantasycalc_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
-            case 'dn':  return <StatVal val={p.dynasty_nerds_rank} highlight={sourceRankColor(p.dynasty_nerds_rank)} />;
+            case 'dn':  { const v = format === 'SF' ? (p as any).dynasty_nerds_sf_rank : p.dynasty_nerds_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'adp': return <span className="font-[var(--font-jetbrains),monospace] font-bold text-sm text-foreground/80">{draftSlot}</span>;
 
             // ── Tier badge ────────────────────────────────────────────────────

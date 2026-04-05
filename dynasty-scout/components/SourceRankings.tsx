@@ -19,6 +19,7 @@ const SOURCE_FORMAT: Record<string, 'SF' | '1QB' | 'both'> = {
     'FantasyCalc':          '1QB',
     'FantasyCalc SF':       'SF',
     'DynastyNerds':         '1QB',
+    'DynastyNerds SF':      'SF',
     'FantasyPros':          '1QB',
     'TankAthlete':          'both',
     'Pro Football Network': 'both',
@@ -31,6 +32,7 @@ const SOURCE_FORMAT: Record<string, 'SF' | '1QB' | 'both'> = {
 const SOURCE_LABEL: Record<string, string> = {
     'KeepTradeCut 1QB': 'KeepTradeCut',
     'FantasyCalc SF':   'FantasyCalc',
+    'DynastyNerds SF':  'DynastyNerds',
 };
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -38,6 +40,7 @@ const SOURCE_COLORS: Record<string, string> = {
     'KeepTradeCut':         '#38bdf8',
     'KeepTradeCut 1QB':     '#38bdf8',
     'DynastyNerds':         '#34d399',
+    'DynastyNerds SF':      '#34d399',
     'DynastyProcess':       '#a78bfa',
     'FantasyCalc':          '#f472b6',
     'FantasyCalc SF':       '#f472b6',

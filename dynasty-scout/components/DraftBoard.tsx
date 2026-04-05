@@ -157,9 +157,9 @@ function DraftBoardContent({ players }: DraftBoardProps) {
             switch (sortKey) {
                 case 'ktc':    va = (a as any)[format === '1QB' ? 'ktc_1qb_rank' : 'ktc_rank'] ?? MISS; vb = (b as any)[format === '1QB' ? 'ktc_1qb_rank' : 'ktc_rank'] ?? MISS; break;
                 case 'sleeper':va = (a as any).sleeper_adp ?? MISS; vb = (b as any).sleeper_adp ?? MISS; break;
-                case 'fp':     va = (a as any).fantasypros_rank ?? MISS; vb = (b as any).fantasypros_rank ?? MISS; break;
-                case 'fc':     va = (a as any)[format === 'SF' ? 'fantasycalc_sf_rank' : 'fantasycalc_rank'] ?? MISS; vb = (b as any)[format === 'SF' ? 'fantasycalc_sf_rank' : 'fantasycalc_rank'] ?? MISS; break;
-                case 'dn':     va = (a as any).dynasty_nerds_rank ?? MISS; vb = (b as any).dynasty_nerds_rank ?? MISS; break;
+                case 'fp':     { const f = format === 'SF' ? 'fantasypros_sf_rank' : 'fantasypros_rank'; va = (a as any)[f] ?? MISS; vb = (b as any)[f] ?? MISS; break; }
+                case 'fc':     { const f = format === 'SF' ? 'fantasycalc_sf_rank' : 'fantasycalc_rank'; va = (a as any)[f] ?? MISS; vb = (b as any)[f] ?? MISS; break; }
+                case 'dn':     { const f = format === 'SF' ? 'dynasty_nerds_sf_rank' : 'dynasty_nerds_rank'; va = (a as any)[f] ?? MISS; vb = (b as any)[f] ?? MISS; break; }
                 case 'forty':    va = (a as any).forty_yard ?? MISS; vb = (b as any).forty_yard ?? MISS; break;
                 case 'spd':      va = (a as any).speed_score ?? MISS; vb = (b as any).speed_score ?? MISS; break;
                 case 'ras':      va = (a as any).ras ?? MISS; vb = (b as any).ras ?? MISS; break;
