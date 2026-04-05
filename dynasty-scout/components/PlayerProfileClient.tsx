@@ -1028,7 +1028,7 @@ export function PlayerProfileClient({
 
                     {/* J. Foster Scouting Card */}
                     {jfosterData && (jfosterData.overall_grade != null || jfosterData.round_grade || jfosterData.nfl_comp) && (
-                        <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden">
+                        <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden mt-6">
                             <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between">
                                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Film Scout</span>
                                 <a
