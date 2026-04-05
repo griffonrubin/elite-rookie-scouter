@@ -67,7 +67,6 @@ export function SourceRankings({ rankings, consensus, consensusRank }: SourceRan
     const effectiveRank = consensusRank ?? consensus?.rank_overall ?? null;
     const [format, setFormat] = useState<'SF' | '1QB'>('SF');
 
-    const effectiveRank = consensusRank ?? consensus?.rank_overall ?? null;
 
     if (rankings.length === 0 && effectiveRank == null) {
         return (
@@ -105,7 +104,6 @@ export function SourceRankings({ rankings, consensus, consensusRank }: SourceRan
     return (
         <div className="rounded-xl border border-border/40 bg-card/40 overflow-hidden">
             {/* Header */}
-            <div className="px-5 py-4 border-b border-border/30 bg-muted/10 flex items-center justify-between">
             <div className="px-5 py-4 border-b border-border/30 bg-muted/10 flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">
                     Expert Rankings
