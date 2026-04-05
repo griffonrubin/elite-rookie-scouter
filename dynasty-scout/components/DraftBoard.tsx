@@ -124,7 +124,8 @@ function DraftBoardContent({ players }: DraftBoardProps) {
         if (searchQuery.trim()) result = fuse.search(searchQuery).map(r => r.item);
         if (favoritesOnly) result = result.filter(p => watchlist.includes(p.slug));
         if (draftCapFilter !== 'all') result = result.filter(p => {
-            const rank = (p as any).consensus_rank ?? 9999;
+            const rankField = format === '1QB' ? 'rank_1qb' : 'rank_sf';
+            const rank = (p as any)[rankField] ?? 9999;
             if (draftCapFilter === 'r1')     return rank <= 32;
             if (draftCapFilter === 'r2plus') return rank > 32 && rank <= 96;
             if (draftCapFilter === 'day3')   return rank > 96;
@@ -145,7 +146,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
             return true;
         });
         return result;
-    }, [searchQuery, favoritesOnly, watchlist, draftCapFilter, ageFilter, rasFilter, players, fuse]);
+    }, [searchQuery, favoritesOnly, watchlist, draftCapFilter, ageFilter, rasFilter, players, fuse, format]);
 
     const filteredPlayers = useMemo(() => {
         let result = prePositionPlayers;
@@ -174,11 +175,14 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 case 'ypr':      va = (a as any).best_ypr ?? MISS; vb = (b as any).best_ypr ?? MISS; break;
                 case 'ypc':      va = (a as any).best_ypc ?? MISS; vb = (b as any).best_ypc ?? MISS; break;
                 case 'rank':
-                default:       va = (a as any).consensus_rank ?? MISS; vb = (b as any).consensus_rank ?? MISS;
+                default: {
+                    const rankField = format === '1QB' ? 'rank_1qb' : 'rank_sf';
+                    va = (a as any)[rankField] ?? MISS; vb = (b as any)[rankField] ?? MISS; break;
+                }
             }
             return sortDir === 'asc' ? va - vb : vb - va;
         });
-    }, [prePositionPlayers, positionFilter, sortKey, sortDir]);
+    }, [prePositionPlayers, positionFilter, sortKey, sortDir, format]);
 
     const counts = useMemo(() => ({
         QB: prePositionPlayers.filter(p => p.position === 'QB').length,
@@ -496,8 +500,9 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                             let lastTierLabel = '';
                             const tierBounds: Record<string, { first: number; last: number }> = {};
                             const tierCounts: Record<string, Record<string, number>> = {};
+                            const rankField = format === '1QB' ? 'rank_1qb' : 'rank_sf';
                             filteredPlayers.forEach((p, i) => {
-                                const r = (p as any).consensus_rank ?? (i + 1);
+                                const r = (p as any)[rankField] ?? (i + 1);
                                 const t = getTierForRank(r);
                                 if (!tierBounds[t.label]) tierBounds[t.label] = { first: r, last: r };
                                 else tierBounds[t.label].last = r;
@@ -505,7 +510,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 tierCounts[t.label][p.position] = (tierCounts[t.label][p.position] || 0) + 1;
                             });
                             return filteredPlayers.map((player, index) => {
-                                const rank = (player as any).consensus_rank ?? (index + 1);
+                                const rank = (player as any)[rankField] ?? (index + 1);
                                 const tier = getTierForRank(rank);
                                 const showTierHeader = showTiers && tier.label !== lastTierLabel;
                                 if (showTierHeader) lastTierLabel = tier.label;
@@ -554,7 +559,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                             player={player}
                                             ranking={{
                                                 id: 0, player_id: player.id, calculated_at: '',
-                                                rank_overall: (player as any).consensus_rank ?? (index + 1),
+                                                rank_overall: (player as any)[rankField] ?? (index + 1),
                                                 avg_rank:     (player as any).avg_rank       ?? undefined,
                                                 best_rank:    (player as any).best_rank      ?? undefined,
                                                 worst_rank:   (player as any).worst_rank     ?? undefined,

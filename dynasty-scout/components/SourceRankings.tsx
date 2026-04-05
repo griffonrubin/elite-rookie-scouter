@@ -8,6 +8,8 @@ interface SourceRankingsProps {
     rankings: Ranking[];
     consensus?: ConsensusRanking | null;
     consensusRank?: number | null;
+    consensusRankSf?: number | null;
+    consensusRank1qb?: number | null;
 }
 
 // 'SF' = Superflex/2QB; '1QB' = 1QB only; 'both' = draft boards (show in both)
@@ -63,9 +65,11 @@ function getBullishLevel(rank: number, consensus: number): { icon: typeof Trendi
     return null;
 }
 
-export function SourceRankings({ rankings, consensus, consensusRank }: SourceRankingsProps) {
-    const effectiveRank = consensusRank ?? consensus?.rank_overall ?? null;
+export function SourceRankings({ rankings, consensus, consensusRank, consensusRankSf, consensusRank1qb }: SourceRankingsProps) {
     const [format, setFormat] = useState<'SF' | '1QB'>('SF');
+    const effectiveRank = format === '1QB'
+        ? (consensusRank1qb ?? consensusRankSf ?? consensusRank ?? consensus?.rank_overall ?? null)
+        : (consensusRankSf ?? consensusRank ?? consensus?.rank_overall ?? null);
 
 
     if (rankings.length === 0 && effectiveRank == null) {

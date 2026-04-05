@@ -15,14 +15,16 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
           (SELECT school FROM college_career WHERE player_id = p.id ORDER BY id DESC LIMIT 1),
           p.nfl_team
         ) as school,
-        c.rank_overall,
-        c.avg_rank,
-        c.best_rank,
-        c.worst_rank,
-        c.rank_change_1d,
-        c.rank_change_7d,
-        c.rank_change_30d,
-        c.num_sources,
+        c_sf.rank_overall,
+        c_sf.rank_overall as rank_sf,
+        c_1qb.rank_overall as rank_1qb,
+        c_sf.avg_rank,
+        c_sf.best_rank,
+        c_sf.worst_rank,
+        c_sf.rank_change_1d,
+        c_sf.rank_change_7d,
+        c_sf.rank_change_30d,
+        c_sf.num_sources,
         m.forty_yard as forty_yard,
         m.vertical_jump as vertical_jump,
         m.broad_jump as broad_jump,
@@ -76,12 +78,16 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
         (SELECT COALESCE(pass_yards,0) FROM college_stats WHERE player_id = p.id AND games_played > 0 ORDER BY season DESC LIMIT 1 OFFSET 3) as s4_pass
       FROM players p
       LEFT JOIN measurables m ON p.id = m.player_id
-      LEFT JOIN consensus_rankings c ON p.id = c.player_id
-        AND c.calculated_at = (
-          SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id
+      LEFT JOIN consensus_rankings c_sf ON p.id = c_sf.player_id AND c_sf.format = 'SF'
+        AND c_sf.calculated_at = (
+          SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id AND format = 'SF'
+        )
+      LEFT JOIN consensus_rankings c_1qb ON p.id = c_1qb.player_id AND c_1qb.format = '1QB'
+        AND c_1qb.calculated_at = (
+          SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id AND format = '1QB'
         )
       WHERE p.draft_year = 2026
-      ORDER BY c.rank_overall ASC NULLS LAST
+      ORDER BY c_sf.rank_overall ASC NULLS LAST
     `;
     const players = await query<Player>(sql, []);
 

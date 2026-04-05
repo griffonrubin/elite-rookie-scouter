@@ -24,17 +24,23 @@ async function getPlayer(slug: string) {
                     (SELECT school FROM college_career WHERE player_id = p.id ORDER BY id DESC LIMIT 1),
                     p.nfl_team
                 ) as school,
-                cr.rank_overall as consensus_rank,
-                cr.avg_rank, cr.best_rank, cr.num_sources,
+                cr_sf.rank_overall as consensus_rank,
+                cr_sf.rank_overall as rank_sf,
+                cr_1qb.rank_overall as rank_1qb,
+                cr_sf.avg_rank, cr_sf.best_rank, cr_sf.num_sources,
                 (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'KeepTradeCut' ORDER BY scraped_at DESC LIMIT 1) as ktc_rank,
                 (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'Sleeper ADP' ORDER BY scraped_at DESC LIMIT 1) as sleeper_adp,
                 (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyPros' ORDER BY scraped_at DESC LIMIT 1) as fp_rank,
                 (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyCalc' ORDER BY scraped_at DESC LIMIT 1) as fc_rank,
                 (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'DynastyNerds' ORDER BY scraped_at DESC LIMIT 1) as dn_rank
             FROM players p
-            LEFT JOIN consensus_rankings cr ON p.id = cr.player_id
-                AND cr.calculated_at = (
-                    SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id
+            LEFT JOIN consensus_rankings cr_sf ON p.id = cr_sf.player_id AND cr_sf.format = 'SF'
+                AND cr_sf.calculated_at = (
+                    SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id AND format = 'SF'
+                )
+            LEFT JOIN consensus_rankings cr_1qb ON p.id = cr_1qb.player_id AND cr_1qb.format = '1QB'
+                AND cr_1qb.calculated_at = (
+                    SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id AND format = '1QB'
                 )
             WHERE p.slug = $1
         `, [slug]);
@@ -45,7 +51,7 @@ async function getPlayer(slug: string) {
         const orderedSlugs = await query<{ slug: string; full_name: string; position: string }>(`
             SELECT p.slug, p.full_name, p.position
             FROM players p
-            LEFT JOIN consensus_rankings c ON p.id = c.player_id AND c.calculated_at = (SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id)
+            LEFT JOIN consensus_rankings c ON p.id = c.player_id AND c.format = 'SF' AND c.calculated_at = (SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id AND format = 'SF')
             WHERE p.draft_year = 2026
             ORDER BY c.rank_overall ASC NULLS LAST, p.id ASC
         `, []);
@@ -257,8 +263,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
                     (SELECT COALESCE(SUM(rush_tds),0)+COALESCE(SUM(rec_tds),0) FROM college_stats WHERE player_id = p.id) as career_tds
              FROM players p
              LEFT JOIN measurables m ON m.player_id = p.id
-             LEFT JOIN consensus_rankings cr ON p.id = cr.player_id
-                 AND cr.calculated_at = (SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id)
+             LEFT JOIN consensus_rankings cr ON p.id = cr.player_id AND cr.format = 'SF'
+                 AND cr.calculated_at = (SELECT MAX(calculated_at) FROM consensus_rankings WHERE player_id = p.id AND format = 'SF')
              WHERE p.slug = $1`,
             [slug]
         );

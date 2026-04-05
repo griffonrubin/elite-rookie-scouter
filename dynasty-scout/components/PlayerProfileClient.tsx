@@ -1026,52 +1026,6 @@ export function PlayerProfileClient({
                         </div>
                     )}
 
-                    {/* J. Foster Scouting Card */}
-                    {jfosterData && (jfosterData.overall_grade != null || jfosterData.round_grade || jfosterData.nfl_comp) && (
-                        <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden mt-6">
-                            <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between">
-                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Film Scout</span>
-                                <a
-                                    href="https://jfosterdraft.com"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors flex items-center gap-1"
-                                >
-                                    J. Foster · NoFlagsFilm <ExternalLink className="w-2.5 h-2.5" />
-                                </a>
-                            </div>
-                            <div className="p-4 flex flex-wrap gap-3 items-center">
-                                {jfosterData.overall_grade != null && (
-                                    <div className="flex items-baseline gap-1.5">
-                                        <span className="text-2xl font-black font-mono text-foreground">
-                                            {jfosterData.overall_grade.toFixed(2)}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground/50">/10</span>
-                                    </div>
-                                )}
-                                {jfosterData.round_grade && (
-                                    <span className={cn(
-                                        'px-2.5 py-1 rounded-md text-xs font-bold',
-                                        jfosterData.round_grade.toLowerCase().includes('top 10') || jfosterData.round_grade.includes('1 (')
-                                            ? 'bg-emerald-500/20 text-emerald-300'
-                                            : jfosterData.round_grade.includes('2 (')
-                                                ? 'bg-cyan-500/20 text-cyan-300'
-                                                : jfosterData.round_grade.includes('3 (')
-                                                    ? 'bg-blue-500/20 text-blue-300'
-                                                    : 'bg-muted/20 text-muted-foreground'
-                                    )}>
-                                        {jfosterData.round_grade}
-                                    </span>
-                                )}
-                                {jfosterData.nfl_comp && (
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Comp</span>
-                                        <span className="text-sm font-semibold text-foreground/90">{jfosterData.nfl_comp}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
                 </section>
 
                 {/* ── Film Grades Section ─────────────────────────────────────────────── */}
@@ -1510,7 +1464,7 @@ export function PlayerProfileClient({
                 {/* ── ZONE 6: Expert Rankings ───────────────────────────────────────── */}
                 <section id="rankings" className="scroll-mt-16 md:scroll-mt-56">
                     <SectionLabel label="Expert Rankings" />
-                    <SourceRankings rankings={rankings} consensusRank={player.consensus_rank ?? null} />
+                    <SourceRankings rankings={rankings} consensusRankSf={(player as any).rank_sf ?? player.consensus_rank ?? null} consensusRank1qb={(player as any).rank_1qb ?? null} />
                 </section>
 
                 {/* ── ZONE 7b: Dynasty Trades ──────────────────────────────────────── */}

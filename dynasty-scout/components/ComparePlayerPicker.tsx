@@ -103,7 +103,7 @@ function PlayerSlot({
                         }}
                     />
                     {open && results.length > 0 && (
-                        <div className="absolute z-50 top-full mt-1 w-full bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+                        <div className="absolute z-50 top-full mt-1 left-0 min-w-[280px] w-full bg-card border border-border rounded-xl shadow-xl overflow-hidden">
                             {results.map(p => (
                                 <button
                                     key={p.slug}
@@ -111,8 +111,8 @@ function PlayerSlot({
                                     className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-primary/10 transition-colors text-left"
                                 >
                                     <span className="text-[10px] font-bold text-muted-foreground w-6 shrink-0">{p.position}</span>
-                                    <span className="text-sm font-semibold text-foreground flex-1 truncate">{p.full_name}</span>
-                                    <span className="text-[10px] text-muted-foreground/60 truncate max-w-[80px]">{p.school}</span>
+                                    <span className="text-sm font-semibold text-foreground flex-1">{p.full_name}</span>
+                                    <span className="text-[10px] text-muted-foreground/60 shrink-0">{p.school}</span>
                                 </button>
                             ))}
                         </div>
