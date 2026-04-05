@@ -886,16 +886,6 @@ export function PlayerProfileClient({
                         );
                     })()}
 
-                    {/* Recent Trades */}
-                    <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden mb-6">
-                        <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02]">
-                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Dynasty Trades</span>
-                        </div>
-                        <div className="p-4">
-                            <RecentTrades playerSlug={player.slug} projRank={projRank} playerName={player.last_name} />
-                        </div>
-                    </div>
-
                     {/* Dynasty Context */}
                     <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] overflow-hidden mb-6">
                         <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02]">
@@ -1521,6 +1511,12 @@ export function PlayerProfileClient({
                 <section id="rankings" className="scroll-mt-16 md:scroll-mt-56">
                     <SectionLabel label="Expert Rankings" />
                     <SourceRankings rankings={rankings} consensusRank={player.consensus_rank ?? null} />
+                </section>
+
+                {/* ── ZONE 7b: Dynasty Trades ──────────────────────────────────────── */}
+                <section id="dynasty-trades" className="scroll-mt-16 md:scroll-mt-56">
+                    <SectionLabel label="Dynasty Trades" />
+                    <RecentTrades playerSlug={player.slug} projRank={projRank} playerName={player.last_name} />
                 </section>
 
                 {/* ── ZONE 7: News ──────────────────────────────────────────────────── */}
