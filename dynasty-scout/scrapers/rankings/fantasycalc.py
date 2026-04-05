@@ -1,6 +1,6 @@
 """
 scrapers/rankings/fantasycalc.py
-Fetches 2026 dynasty rookie rankings + bio from FantasyCalc's public API.
+Fetches 2026 dynasty rookie rankings (both 1QB and SF) + bio from FantasyCalc's public API.
 
 Run: py scrapers/rankings/fantasycalc.py
 """
@@ -14,8 +14,8 @@ from datetime import date
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'dynasty_scout.db')
 
-FC_URL = "https://api.fantasycalc.com/values/current?isDynasty=true&numQbs=1&ppr=1&superflex=false&rookiesOnly=true"
-SOURCE_NAME = "FantasyCalc"
+FC_URL_1QB = "https://api.fantasycalc.com/values/current?isDynasty=true&numQbs=1&ppr=1&superflex=false&rookiesOnly=true"
+FC_URL_SF  = "https://api.fantasycalc.com/values/current?isDynasty=true&numQbs=2&ppr=1&superflex=true&rookiesOnly=true"
 SOURCE_URL = "https://fantasycalc.com/rankings"
 
 
@@ -23,7 +23,7 @@ def normalize_name(name: str) -> str:
     """Lowercase, strip punctuation/suffixes for fuzzy matching."""
     name = name.lower()
     name = re.sub(r"[''`\-\.]", "", name)
-    name = re.sub(r"\b(jr|sr|ii|iii|iv|v)\b", "", name)
+    name = re.sub(r"(jr|sr|ii|iii|iv|v)", "", name)
     name = re.sub(r"\s+", " ", name).strip()
     return name
 
@@ -38,29 +38,22 @@ def build_player_map(cur):
     return mapping
 
 
-def run():
-    conn = sqlite3.connect(DB_PATH, timeout=15)
-    cur = conn.cursor()
-
-    player_map = build_player_map(cur)
-
-    print("Fetching FantasyCalc dynasty values...")
-    r = requests.get(FC_URL, timeout=15)
+def fetch_and_save(cur, url: str, source_name: str, player_map: dict, today: str, update_bio: bool = False):
+    """Fetch FantasyCalc data from url and save rankings as source_name."""
+    print(f"  Fetching {source_name} from FantasyCalc...")
+    r = requests.get(url, timeout=15)
     r.raise_for_status()
     data = r.json()
 
-    # Filter to 2026 prospects (not yet drafted — no maybeTeam OR maybeYoe=0)
     prospects = [
         p for p in data
         if p["player"]["position"] not in ("PICK",)
         and (p["player"].get("maybeYoe") == 0 or p["player"].get("maybeTeam") is None)
     ]
-    print(f"Found {len(prospects)} named 2026 prospects")
+    print(f"  Found {len(prospects)} 2026 prospects")
 
-    # Sort by overall dynasty rank to get relative rookie rank 1..N
     prospects.sort(key=lambda x: x.get("overallRank") or 9999)
 
-    today = date.today().isoformat()
     matched = 0
     bio_updated = 0
     unmatched = []
@@ -76,35 +69,55 @@ def run():
 
         matched += 1
 
-        # Upsert ranking (delete+insert since no unique constraint)
-        cur.execute("DELETE FROM rankings WHERE player_id=? AND source=?", (p_id, SOURCE_NAME))
+        cur.execute("DELETE FROM rankings WHERE player_id=? AND source=?", (p_id, source_name))
         cur.execute("""
             INSERT INTO rankings (player_id, source, rank_overall, rank_positional, value, tier, source_url, scraped_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            p_id, SOURCE_NAME,
-            rookie_rank,  # relative rookie rank (1..N), not overall dynasty rank
+            p_id, source_name,
+            rookie_rank,
             item.get("positionRank"),
             item.get("value"),
             item.get("maybeTier"),
             SOURCE_URL, today
         ))
 
-        # Fill bio gaps from "maybe" fields
-        h = pl.get("maybeHeight")
-        w = pl.get("maybeWeight")
-        dob = pl.get("maybeBirthday")  # None for undraunted rookies usually
+        if update_bio:
+            h = pl.get("maybeHeight")
+            w = pl.get("maybeWeight")
+            dob = pl.get("maybeBirthday")
+            if h or w or dob:
+                cur.execute("""
+                    UPDATE players SET
+                      height_inches = CASE WHEN height_inches IS NULL AND ? IS NOT NULL THEN ? ELSE height_inches END,
+                      weight_lbs    = CASE WHEN weight_lbs IS NULL AND ? IS NOT NULL THEN ? ELSE weight_lbs END,
+                      dob           = CASE WHEN dob IS NULL AND ? IS NOT NULL THEN ? ELSE dob END
+                    WHERE id = ?
+                """, (h, h, w, w, dob, dob, p_id))
+                if cur.rowcount:
+                    bio_updated += 1
 
-        if h or w or dob:
-            cur.execute("""
-                UPDATE players SET
-                  height_inches = CASE WHEN height_inches IS NULL AND ? IS NOT NULL THEN ? ELSE height_inches END,
-                  weight_lbs    = CASE WHEN weight_lbs IS NULL AND ? IS NOT NULL THEN ? ELSE weight_lbs END,
-                  dob           = CASE WHEN dob IS NULL AND ? IS NOT NULL THEN ? ELSE dob END
-                WHERE id = ?
-            """, (h, h, w, w, dob, dob, p_id))
-            if cur.rowcount:
-                bio_updated += 1
+    print(f"  {source_name}: matched={matched}, bio_updated={bio_updated}")
+    if unmatched:
+        print(f"  Unmatched ({len(unmatched)}): {unmatched}")
+    return matched
+
+
+def run():
+    conn = sqlite3.connect(DB_PATH, timeout=15)
+    cur = conn.cursor()
+
+    player_map = build_player_map(cur)
+    today = date.today().isoformat()
+
+    print("Fetching FantasyCalc dynasty rookie rankings...")
+
+    # 1QB rankings (source: FantasyCalc)
+    fetch_and_save(cur, FC_URL_1QB, "FantasyCalc", player_map, today, update_bio=True)
+    time.sleep(1)
+
+    # Superflex rankings (source: FantasyCalc SF)
+    fetch_and_save(cur, FC_URL_SF, "FantasyCalc SF", player_map, today, update_bio=False)
 
     conn.commit()
 
@@ -121,11 +134,7 @@ def run():
     conn.commit()
     conn.close()
 
-    print(f"\nFantasyCalc scrape complete.")
-    print(f"  Prospects matched: {matched}")
-    print(f"  Bio rows updated:  {bio_updated}")
-    if unmatched:
-        print(f"  Unmatched ({len(unmatched)}): {unmatched}")
+    print("FantasyCalc scrape complete.")
 
 
 if __name__ == "__main__":

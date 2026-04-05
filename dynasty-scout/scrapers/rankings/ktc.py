@@ -101,44 +101,51 @@ class KTCRankingScraper(BaseRankingScraper):
 
                 logger.info(f"Found {len(players_data)} players in JSON payload.")
                 
-                matched_buffer = []
+                matched_buffer_sf = []
+                matched_buffer_1qb = []
                 found_count = 0
                 for item in players_data:
                     try:
-                        # CRITICAL: Only process 2026 rookies
-                        # KTC marks rookies with rookie:true, but we need to verify draft_year
-                        is_rookie = item.get('rookie', False)
-                        
                         full_name = item.get('playerName')
                         if not full_name:
                             continue
 
-                        # Use Superflex values by default for Dynasty
-                        sf_values = item.get('superflexValues', {})
-                        rank = sf_values.get('rank')
-                        value = sf_values.get('value')
-                        
-                        if rank is None:
+                        sf_values  = item.get('superflexValues', {}) or {}
+                        qb1_values = item.get('oneQBValues', {}) or {}
+
+                        sf_rank  = sf_values.get('rank')
+                        sf_value = sf_values.get('value')
+                        qb1_rank  = qb1_values.get('rank')
+                        qb1_value = qb1_values.get('value')
+
+                        if sf_rank is None and qb1_rank is None:
                             continue
 
-                        # Match to DB - only 2026 prospects
                         player_id = self.match_player(full_name)
-                        
-                        if player_id:
-                            # Buffer to compute relative ranks
-                            if not any(x['pid'] == player_id for x in matched_buffer):
-                                matched_buffer.append({'pid': player_id, 'raw': int(rank), 'name': full_name, 'val': int(value) if value else None})
-                        
-                    except Exception as e:
-                         # logger.error(f"Error parsing item: {e}")
-                         continue
 
-                # Sort by raw KTC rank and save as relative 1..N
-                matched_buffer.sort(key=lambda x: x['raw'])
-                for idx, item in enumerate(matched_buffer, 1):
+                        if player_id:
+                            if sf_rank is not None and not any(x['pid'] == player_id for x in matched_buffer_sf):
+                                matched_buffer_sf.append({'pid': player_id, 'raw': int(sf_rank), 'name': full_name, 'val': int(sf_value) if sf_value else None})
+                            if qb1_rank is not None and not any(x['pid'] == player_id for x in matched_buffer_1qb):
+                                matched_buffer_1qb.append({'pid': player_id, 'raw': int(qb1_rank), 'name': full_name, 'val': int(qb1_value) if qb1_value else None})
+
+                    except Exception as e:
+                        continue
+
+                # Sort by raw KTC rank and save as relative 1..N for each format
+                matched_buffer_sf.sort(key=lambda x: x['raw'])
+                for idx, item in enumerate(matched_buffer_sf, 1):
                     self.save_ranking(item['pid'], idx, self.source_name, url, value=item['val'])
                     found_count += 1
-                    logger.info(f"[{self.source_name}] 2026 Relative #{idx} -> {item['name']} (Raw KTC #{item['raw']}, Value: {item['val']})")
+                    logger.info(f"[{self.source_name} SF] 2026 Relative #{idx} -> {item['name']} (Raw #{item['raw']})")
+
+                matched_buffer_1qb.sort(key=lambda x: x['raw'])
+                for idx, item in enumerate(matched_buffer_1qb, 1):
+                    self.save_ranking(item['pid'], idx, 'KeepTradeCut 1QB', url, value=item['val'])
+                    logger.info(f"[KeepTradeCut 1QB] 2026 Relative #{idx} -> {item['name']} (Raw #{item['raw']})")
+
+                if found_count == 0:
+                    logger.warning("No players matched from JSON data.")
 
                 if found_count == 0:
                     logger.warning("No players matched from JSON data.")

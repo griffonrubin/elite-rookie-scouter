@@ -74,7 +74,12 @@ RANK_SOURCES = {
 }
 
 def sync_rankings(db: sqlite3.Connection, rows: list[dict]):
-    hit = miss = skip = 0
+    # Buffer per source: list of (raw_rank, player_id, name).
+    # Re-number 1..N among skill-position players only, so non-skill positions
+    # (OL, DL, DB etc.) ranked higher on draft boards don't inflate our ranks.
+    source_buffers: dict[str, list[tuple[int, int, str]]] = {src: [] for src in RANK_SOURCES.values()}
+
+    miss = 0
     for row in rows:
         pid = find_player(db, row.get('Name', ''))
         if pid is None:
@@ -89,23 +94,37 @@ def sync_rankings(db: sqlite3.Connection, rows: list[dict]):
                 rank = int(float(val))
             except ValueError:
                 continue
+            source_buffers[source].append((rank, pid, row.get('Name', '')))
+
+    hit = 0
+    for source, items in source_buffers.items():
+        if not items:
+            continue
+        # Sort by raw rank and re-number as relative 1..N (skill positions only)
+        items.sort(key=lambda x: x[0])
+        seen_pids: set[int] = set()
+        relative_rank = 0
+        for raw_rank, pid, name in items:
+            if pid in seen_pids:
+                continue
+            seen_pids.add(pid)
+            relative_rank += 1
 
             if DRY_RUN:
-                print(f'  DRY  {row["Name"]} | {source} → #{rank}')
+                print(f'  DRY  {source} #{relative_rank} (raw #{raw_rank}) -> {name}')
                 hit += 1
                 continue
 
-            # Upsert: use SCRAPED_AT as a date key so we can re-run safely
             db.execute("""
                 INSERT INTO rankings (player_id, source, rank_overall, scraped_at)
                 VALUES (?, ?, ?, ?)
                 ON CONFLICT(player_id, source, scraped_at) DO UPDATE SET
                     rank_overall = EXCLUDED.rank_overall
-            """, (pid, source, rank, SCRAPED_AT[:10]))
+            """, (pid, source, relative_rank, SCRAPED_AT[:10]))
             hit += 1
 
     if not DRY_RUN: db.commit()
-    print(f'Rankings: {hit} inserted, {miss} players not found, {skip} skipped')
+    print(f'Rankings: {hit} inserted/updated, {miss} players not found')
 
 
 # ── Combine / Measurables ───────────────────────────────────────────────────
