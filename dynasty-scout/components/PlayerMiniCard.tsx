@@ -17,6 +17,7 @@ interface PlayerMiniCardProps {
     period: '1d' | '7d' | '30d';
     index: number;
     positionFilter?: string;
+    format?: 'SF' | '1QB';
 }
 
 function getDraftSlot(rank: number): string {
@@ -115,7 +116,7 @@ function RecruitStars({ stars }: { stars: number | null | undefined }) {
     return <span className={`text-[13px] font-bold ${color}`}>{'★'.repeat(stars)}</span>;
 }
 
-function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 'ALL' }: PlayerMiniCardProps) {
+function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 'ALL', format = 'SF' }: PlayerMiniCardProps) {
     const router = useRouter();
     const p = player as any;
     const positionColor = POSITION_COLORS[player.position] || 'bg-gray-500/20 text-gray-300 border-gray-500/40';
@@ -196,8 +197,8 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
 
             // ── Ranking sources ────────────────────────────────────────────────
             case 'fp':  return <StatVal val={p.fantasypros_rank}   highlight={sourceRankColor(p.fantasypros_rank)}   />;
-            case 'ktc': return <StatVal val={p.ktc_rank}           highlight={sourceRankColor(p.ktc_rank)}           />;
-            case 'fc':  return <StatVal val={p.fantasycalc_rank}   highlight={sourceRankColor(p.fantasycalc_rank)}   />;
+            case 'ktc': { const v = format === '1QB' ? (p as any).ktc_1qb_rank : (p as any).ktc_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
+            case 'fc':  { const v = format === 'SF'  ? (p as any).fantasycalc_sf_rank : (p as any).fantasycalc_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'dn':  return <StatVal val={p.dynasty_nerds_rank} highlight={sourceRankColor(p.dynasty_nerds_rank)} />;
             case 'adp': return <span className="font-[var(--font-jetbrains),monospace] font-bold text-sm text-foreground/80">{draftSlot}</span>;
 

@@ -68,7 +68,7 @@ async function getPlayer(slug: string) {
         );
 
         const rankings = await query<Ranking>(
-            "SELECT * FROM rankings WHERE player_id = $1 ORDER BY scraped_at DESC",
+            "SELECT r.* FROM rankings r WHERE r.player_id = $1 AND r.scraped_at = (SELECT MAX(r2.scraped_at) FROM rankings r2 WHERE r2.player_id = r.player_id AND r2.source = r.source) ORDER BY r.rank_overall",
             [player.id]
         );
 

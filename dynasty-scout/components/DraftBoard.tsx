@@ -47,6 +47,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     const [rasFilter, setRasFilter]           = useState<'all' | 'ras7' | 'ras8'>('all');
     const [showHelp, setShowHelp]             = useState(false);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
+    const [format, setFormat] = useState<'SF' | '1QB'>('SF');
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Load watchlist from localStorage on mount and keep in sync
@@ -153,10 +154,10 @@ function DraftBoardContent({ players }: DraftBoardProps) {
             const MISS = sortDir === 'asc' ? 999999 : -999999;
             let va: number, vb: number;
             switch (sortKey) {
-                case 'ktc':    va = (a as any).ktc_rank ?? MISS; vb = (b as any).ktc_rank ?? MISS; break;
+                case 'ktc':    va = (a as any)[format === '1QB' ? 'ktc_1qb_rank' : 'ktc_rank'] ?? MISS; vb = (b as any)[format === '1QB' ? 'ktc_1qb_rank' : 'ktc_rank'] ?? MISS; break;
                 case 'sleeper':va = (a as any).sleeper_adp ?? MISS; vb = (b as any).sleeper_adp ?? MISS; break;
                 case 'fp':     va = (a as any).fantasypros_rank ?? MISS; vb = (b as any).fantasypros_rank ?? MISS; break;
-                case 'fc':     va = (a as any).fantasycalc_rank ?? MISS; vb = (b as any).fantasycalc_rank ?? MISS; break;
+                case 'fc':     va = (a as any)[format === 'SF' ? 'fantasycalc_sf_rank' : 'fantasycalc_rank'] ?? MISS; vb = (b as any)[format === 'SF' ? 'fantasycalc_sf_rank' : 'fantasycalc_rank'] ?? MISS; break;
                 case 'dn':     va = (a as any).dynasty_nerds_rank ?? MISS; vb = (b as any).dynasty_nerds_rank ?? MISS; break;
                 case 'forty':    va = (a as any).forty_yard ?? MISS; vb = (b as any).forty_yard ?? MISS; break;
                 case 'spd':      va = (a as any).speed_score ?? MISS; vb = (b as any).speed_score ?? MISS; break;
@@ -245,7 +246,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir(DEFAULT_DESC.includes(v as SortKey) ? 'desc' : 'asc'); }}>
                             <SelectTrigger className="w-[140px] sm:w-[180px] bg-card border-border/60 text-xs" style={{ height: '34px', paddingLeft: '14px', paddingRight: '14px', gap: '10px' }}>
                                 <SelectValue>
-                                    {{ rank: 'Consensus', ktc: 'KTC', sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FantasyCalc', dn: 'DynNerds', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit ★', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC' }[sortKey] ?? 'Consensus'}
+                                    {({ rank: 'Consensus', ktc: 'KTC ' + format, sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FC ' + format, dn: 'DynNerds', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC' } as {[k:string]:string})[sortKey] ?? 'Consensus'}
                                 </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
@@ -270,6 +271,18 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 <SelectItem value="ypc">Yds/Carry</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
+                                        {/* SF / 1QB format toggle */}
+                    <div className="flex items-center rounded-md border border-border/40 overflow-hidden text-[10px] font-bold uppercase tracking-widest">
+                        <button
+                            onClick={() => setFormat('SF')}
+                            className={format === 'SF' ? 'px-2.5 py-1.5 bg-sky-500/20 text-sky-400' : 'px-2.5 py-1.5 text-muted-foreground/40 hover:text-muted-foreground/60'}
+                        >SF</button>
+                        <div className="w-px h-4 bg-border/40" />
+                        <button
+                            onClick={() => setFormat('1QB')}
+                            className={format === '1QB' ? 'px-2.5 py-1.5 bg-amber-500/20 text-amber-400' : 'px-2.5 py-1.5 text-muted-foreground/40 hover:text-muted-foreground/60'}
+                        >1QB</button>
                     </div>
                     {/* ? shortcut help — desktop only */}
                     <button
@@ -451,8 +464,8 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                                     : <ChevronsUpDown className="w-2.5 h-2.5 text-muted-foreground/50 group-hover:text-muted-foreground" />}
                                             </div>
                                             {col.subLabel && (
-                                                <div className={`text-[9px] leading-none mt-0.5 ${sortKey === col.sortKey ? 'text-primary/70' : 'text-muted-foreground/50'}`}>
-                                                    {col.subLabel}
+                                                <div className={sortKey === col.sortKey ? 'text-[9px] leading-none mt-0.5 text-primary/70' : 'text-[9px] leading-none mt-0.5 text-muted-foreground/50'}>
+                                                    {col.key === 'ktc' ? format : col.key === 'fc' ? (format === 'SF' ? 'SF' : 'Rookie') : col.subLabel}
                                                 </div>
                                             )}
                                         </button>
@@ -553,6 +566,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                             period="1d"
                                             index={index}
                                             positionFilter={positionFilter}
+                                            format={format}
                                         />
                                     </div>
                                 );

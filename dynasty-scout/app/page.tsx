@@ -41,6 +41,8 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
           END
         ) as speed_score,
         (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'KeepTradeCut' ORDER BY scraped_at DESC LIMIT 1) as ktc_rank,
+        (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'KeepTradeCut 1QB' ORDER BY scraped_at DESC LIMIT 1) as ktc_1qb_rank,
+        (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyCalc SF' ORDER BY scraped_at DESC LIMIT 1) as fantasycalc_sf_rank,
         (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'Sleeper ADP' ORDER BY scraped_at DESC LIMIT 1) as sleeper_adp,
         (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyPros' ORDER BY scraped_at DESC LIMIT 1) as fantasypros_rank,
         (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyCalc' ORDER BY scraped_at DESC LIMIT 1) as fantasycalc_rank,
