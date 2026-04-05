@@ -5,6 +5,15 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 
 const ROUND_SUFFIXES: Record<number, string> = { 1: '1st', 2: '2nd', 3: '3rd', 4: '4th', 5: '5th' };
+// Well-known dynasty FF community Sleeper accounts used to seed league discovery
+const SEED_USERNAMES = [
+  'dynastynerds', 'keepertradecalculator', 'dynastyleaguefootball',
+  'superflex', 'dynastyff', 'sfbx', 'underdog', 'dynastyprocess',
+  'razzball', 'rotoballer', 'dynastyrobot', 'fantasypros',
+  'sleeper', 'sleeperbot', 'dynastytradevalue',
+];
+
+
 
 async function ensureSchema() {
   await query(
@@ -84,6 +93,73 @@ async function syncSleeperIds(): Promise<Map<string, number>> {
   return bySleeperIdMap;
 }
 
+
+async function discoverLeagues(): Promise<number> {
+  const discovered = new Map<string, { name: string; season: string; total_rosters: number }>();
+
+  async function processUser(userId: string) {
+    const leagues: any[] | null = await fetchSleeper(
+      `https://api.sleeper.app/v1/user/${userId}/leagues/nfl/2026`
+    );
+    await sleep(200);
+    if (!Array.isArray(leagues)) return;
+    for (const l of leagues) {
+      if (l.league_id && !discovered.has(l.league_id)) {
+        discovered.set(l.league_id, {
+          name: l.name || l.league_id,
+          season: l.season || "2026",
+          total_rosters: l.total_rosters || 12,
+        });
+      }
+    }
+  }
+
+  const level1UserIds = new Set<string>();
+  for (const username of SEED_USERNAMES) {
+    const user = await fetchSleeper(`https://api.sleeper.app/v1/user/${username}`);
+    await sleep(300);
+    if (!user?.user_id) continue;
+    level1UserIds.add(user.user_id);
+    await processUser(user.user_id);
+    console.log(`[discover] Seeded user ${username}: ${discovered.size} leagues so far`);
+  }
+
+  const level1Leagues = Array.from(discovered.keys());
+  const level2UserIds = new Set<string>();
+  for (const leagueId of level1Leagues.slice(0, 50)) {
+    const users: any[] | null = await fetchSleeper(
+      `https://api.sleeper.app/v1/league/${leagueId}/users`
+    );
+    await sleep(200);
+    if (!Array.isArray(users)) continue;
+    for (const u of users) {
+      if (u.user_id && !level1UserIds.has(u.user_id) && !level2UserIds.has(u.user_id)) {
+        level2UserIds.add(u.user_id);
+      }
+    }
+  }
+
+  for (const userId of Array.from(level2UserIds).slice(0, 200)) {
+    await processUser(userId);
+    await sleep(150);
+  }
+
+  console.log(`[discover] Total leagues discovered: ${discovered.size}`);
+
+  let upserted = 0;
+  for (const [leagueId, info] of discovered.entries()) {
+    try {
+      await query(
+        `INSERT INTO sleeper_leagues (league_id, name, season, total_rosters, source) VALUES ($1, $2, $3, $4, 'auto') ON CONFLICT (league_id) DO NOTHING`,
+        [leagueId, info.name, info.season, info.total_rosters]
+      );
+      upserted++;
+    } catch { /**/ }
+  }
+  console.log(`[discover] Upserted ${upserted} new leagues`);
+  return upserted;
+}
+
 async function scrapeLeague(leagueId: string, sleeperIdMap: Map<string, number>): Promise<number> {
   let newRecords = 0;
   for (let week = 1; week <= 18; week++) {
@@ -147,11 +223,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ status: 'warning', message: 'No players matched to Sleeper IDs', timestamp: new Date().toISOString() });
     }
 
-    const leagues = await query<{ league_id: string; name: string; last_scraped_at: string | null }>(
+    let leagues = await query<{ league_id: string; name: string; last_scraped_at: string | null }>(
       `SELECT league_id, name, last_scraped_at FROM sleeper_leagues`
     );
+    // Auto-discover leagues if none exist yet
     if (leagues.length === 0) {
-      return NextResponse.json({ status: 'ok', message: 'No leagues configured. Add leagues via /settings/leagues.', timestamp: new Date().toISOString() });
+      console.log('[cron/trades] No leagues found — running auto-discovery...');
+      await discoverLeagues();
+      leagues = await query<{ league_id: string; name: string; last_scraped_at: string | null }>(
+        `SELECT league_id, name, last_scraped_at FROM sleeper_leagues`
+      );
+    }
+
+    if (leagues.length === 0) {
+      return NextResponse.json({ status: 'warning', message: 'League discovery found no leagues', timestamp: new Date().toISOString() });
     }
 
     const cutoff = Date.now() - 45 * 60 * 1000;
