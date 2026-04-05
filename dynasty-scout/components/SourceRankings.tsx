@@ -224,7 +224,7 @@ export function SourceRankings({ rankings, consensus, consensusRank }: SourceRan
 
                 {filtered.length === 0 && (
                     <p className="text-xs text-muted-foreground/40 text-center py-2">
-                        No {format} rankings yet — try the other format.
+                        No {format} rankings yet â€” try the other format.
                     </p>
                 )}
             </div>
