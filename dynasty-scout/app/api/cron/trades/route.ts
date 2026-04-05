@@ -11,6 +11,14 @@ const SEED_USERNAMES = [
   'superflex', 'dynastyff', 'sfbx', 'underdog', 'dynastyprocess',
   'razzball', 'rotoballer', 'dynastyrobot', 'fantasypros',
   'sleeper', 'sleeperbot', 'dynastytradevalue',
+  'solarpool', 'sssskoch', 'JMLarkin',
+];
+
+// Known public dynasty league IDs — seeded directly without username lookup
+const SEED_LEAGUE_IDS = [
+  '522458773317046272', // The JanMichaelLarkin Dynasty League
+  '386236959468675072', // JanMichaelLarkin Dynasty League (previous season)
+  '289646328504385536', // Dynasty example league (public Sleeper API examples)
 ];
 
 
@@ -109,6 +117,21 @@ async function discoverLeagues(): Promise<number> {
           name: l.name || l.league_id,
           season: l.season || "2026",
           total_rosters: l.total_rosters || 12,
+        });
+      }
+    }
+  }
+
+  // Seed known league IDs directly
+  for (const leagueId of SEED_LEAGUE_IDS) {
+    if (!discovered.has(leagueId)) {
+      const info = await fetchSleeper(`https://api.sleeper.app/v1/league/${leagueId}`);
+      await sleep(200);
+      if (info?.league_id) {
+        discovered.set(leagueId, {
+          name: info.name || leagueId,
+          season: info.season || '2026',
+          total_rosters: info.total_rosters || 12,
         });
       }
     }
