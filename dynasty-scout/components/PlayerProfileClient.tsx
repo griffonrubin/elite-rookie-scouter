@@ -130,6 +130,7 @@ interface Props {
     nflScout: NflScoutProfile | null;
     rbAdvanced: any | null;
     peerRBAdv: any[];
+    peerMeasurables?: any[];
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -138,7 +139,7 @@ export function PlayerProfileClient({
     player, stats, rankings, measurables, speedScore, news, trustIndicator,
     peerCareer, peerAdvanced, historicalComps, epaStats, dominatorStats,
     prevPlayer, nextPlayer, wrAdvanced, peerWrAdv, highSchool, jfosterData, nflScout,
-    rbAdvanced, peerRBAdv,
+    rbAdvanced, peerRBAdv, peerMeasurables,
 }: Props) {
     const pos = player.position as string;
     const posStyle = POS_STYLES[pos] || 'bg-gray-500/20 text-gray-400 border-gray-500/40';
@@ -759,6 +760,24 @@ export function PlayerProfileClient({
                                         <span className="text-xs uppercase tracking-widest text-sky-400/50 font-bold">KTC</span>
                                     </div>
                                 )}
+                                {jfosterData?.round_grade && (() => {
+                                    const r = jfosterData.round_grade!.toLowerCase();
+                                    const cls = r.includes('top 10') || r.includes('1 (')
+                                        ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                                        : r.includes('2 (')
+                                        ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300'
+                                        : r.includes('3 (')
+                                        ? 'bg-blue-500/15 border-blue-500/30 text-blue-300'
+                                        : r.includes('4 (')
+                                        ? 'bg-yellow-500/15 border-yellow-500/30 text-yellow-300'
+                                        : 'bg-muted/20 border-border/20 text-muted-foreground';
+                                    return (
+                                        <div className={cn('rounded-lg px-3 py-1.5 border flex items-center gap-2 text-xs', cls)}>
+                                            <span className="font-bold">{jfosterData.round_grade}</span>
+                                            <span className="text-[10px] uppercase tracking-widest opacity-60 font-bold">JFoster</span>
+                                        </div>
+                                    );
+                                })()}
 
                             </div>
 
@@ -1065,6 +1084,7 @@ export function PlayerProfileClient({
                             weightLbs={player.weight_lbs}
                             measurables={measurables}
                             speedScore={speedScore}
+                            peerMeasurables={peerMeasurables}
                         />
 
                         {/* Recruiting Pedigree — compressed summary */}

@@ -8,8 +8,9 @@ interface AppHeaderProps {
 }
 
 const NAV_LINKS = [
-  { href: '/',             label: 'Board'   },
-  { href: '/compare',     label: 'Compare' },
+  { href: '/',             label: 'Board'    },
+  { href: '/horizontal',  label: 'By Round' },
+  { href: '/compare',     label: 'Compare'  },
   { href: '/tier-builder', label: 'Tiers'   },
 ] as const;
 

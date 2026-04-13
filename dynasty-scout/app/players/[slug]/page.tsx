@@ -241,7 +241,18 @@ async function getPlayer(slug: string) {
             [player.id]
         ).catch(() => null);
 
-        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [], highSchool: highSchool || null, jfosterData: jfosterData || null, nflScout: nflScout || null, rbAdvanced: rbAdvanced || null, peerRBAdv: peerRBAdv || [] };
+        // Peer measurables for positional percentile bars in AthleticsCard
+        const peerMeasurables = await query<any>(
+            `SELECT m.forty_yard, m.ten_yard_split, m.vertical_jump, m.broad_jump,
+                    m.three_cone, m.twenty_yard_shuttle, m.hand_size, m.arm_length, m.wingspan,
+                    p.height_inches, p.weight_lbs
+             FROM measurables m
+             JOIN players p ON p.id = m.player_id
+             WHERE p.position = $1 AND p.draft_year = 2026`,
+            [player.position]
+        ).catch(() => [] as any[]);
+
+        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [], highSchool: highSchool || null, jfosterData: jfosterData || null, nflScout: nflScout || null, rbAdvanced: rbAdvanced || null, peerRBAdv: peerRBAdv || [], peerMeasurables: peerMeasurables || [] };
     } catch (e) {
         console.error("DB Error:", e);
         return null;
