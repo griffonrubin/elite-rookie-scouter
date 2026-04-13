@@ -2,10 +2,15 @@
 
 /**
  * AthleticsCard
- * Position-adjusted athletic grades with visual bars.
+ * Position-adjusted athletic grades with visual bars or radar chart.
  * When peerMeasurables is provided, computes actual class percentiles.
  * Falls back to fixed benchmarks otherwise.
  */
+
+import { useState } from 'react';
+import {
+    RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
+} from 'recharts';
 
 interface MeasurablesInput {
     forty_yard?: number | null;
@@ -141,16 +146,18 @@ function gradeOf(pct: number) {
 
 interface MetricRow {
     label: string;
+    shortLabel: string;
     display: string;
     key: string;
     pct: number;
-    pctLabel: string; // "73rd pctile" or letter grade
+    pctLabel: string;
     g: ReturnType<typeof gradeOf>;
     fromPeers: boolean;
 }
 
 function mkRow(
     label: string,
+    shortLabel: string,
     val: number | null | undefined,
     pos: string,
     key: string,
@@ -167,7 +174,7 @@ function mkRow(
     } else {
         pct = scoreMetric(val, pos, key);
     }
-    return { label, display: fmt(val), key, pct, pctLabel: fromPeers ? `${pct}th` : gradeOf(pct).label, g: gradeOf(pct), fromPeers };
+    return { label, shortLabel, display: fmt(val), key, pct, pctLabel: fromPeers ? `${pct}th` : gradeOf(pct).label, g: gradeOf(pct), fromPeers };
 }
 
 function MetricBar({ row }: { row: MetricRow }) {
@@ -199,11 +206,34 @@ function peerVals(peers: MeasurablesInput[] | null | undefined, field: keyof Mea
     return peers.map(p => p[field] as number | null | undefined).filter((v): v is number => v != null && v > 0);
 }
 
+// Custom radar tick to handle angle-based text alignment
+function RadarTick({ payload, x, y, cx, cy }: any) {
+    let anchor: 'middle' | 'end' | 'start' = 'middle';
+    if (x < cx - 10) anchor = 'end';
+    else if (x > cx + 10) anchor = 'start';
+    return (
+        <text
+            x={x}
+            y={y}
+            textAnchor={anchor}
+            dominantBaseline="middle"
+            fill="rgba(255,255,255,0.45)"
+            fontSize={9}
+            fontWeight={700}
+            fontFamily="inherit"
+        >
+            {payload.value}
+        </text>
+    );
+}
+
 export function AthleticsCard({ position, heightInches, weightLbs, measurables, speedScore, peerMeasurables }: Props) {
     const pos = (position || 'WR').toUpperCase();
     const m = (measurables || {}) as any;
     const ss = m.speed_score || speedScore;
     const peers = peerMeasurables ?? null;
+
+    const [view, setView] = useState<'bar' | 'radar'>('bar');
 
     // Height percentile
     const htRow: MetricRow | null = (() => {
@@ -218,7 +248,7 @@ export function AthleticsCard({ position, heightInches, weightLbs, measurables, 
             const b = SIZE_HT_BENCH[pos] || SIZE_HT_BENCH.WR;
             pct = Math.min(100, Math.max(0, Math.round(((heightInches - b.poor) / (b.elite - b.poor)) * 100)));
         }
-        return { label: 'Height', display: `${Math.floor(heightInches / 12)}'${heightInches % 12}"`, key: 'height', pct, pctLabel: fromPeers ? `${pct}th` : gradeOf(pct).label, g: gradeOf(pct), fromPeers };
+        return { label: 'Height', shortLabel: 'HT', display: `${Math.floor(heightInches / 12)}'${heightInches % 12}"`, key: 'height', pct, pctLabel: fromPeers ? `${pct}th` : gradeOf(pct).label, g: gradeOf(pct), fromPeers };
     })();
 
     // Weight percentile
@@ -234,7 +264,7 @@ export function AthleticsCard({ position, heightInches, weightLbs, measurables, 
             const b = SIZE_WT_BENCH[pos] || SIZE_WT_BENCH.WR;
             pct = Math.min(100, Math.max(0, Math.round(((weightLbs - b.poor) / (b.elite - b.poor)) * 100)));
         }
-        return { label: 'Weight', display: `${weightLbs}lb`, key: 'weight', pct, pctLabel: fromPeers ? `${pct}th` : gradeOf(pct).label, g: gradeOf(pct), fromPeers };
+        return { label: 'Weight', shortLabel: 'WT', display: `${weightLbs}lb`, key: 'weight', pct, pctLabel: fromPeers ? `${pct}th` : gradeOf(pct).label, g: gradeOf(pct), fromPeers };
     })();
 
     const wingspanPeers = peerVals(peers, 'wingspan');
@@ -253,38 +283,38 @@ export function AthleticsCard({ position, heightInches, weightLbs, measurables, 
             rows: [
                 htRow,
                 wtRow,
-                mkRow('Hand Size',   m.hand_size,   pos, 'hand_size',  v => `${Number(v).toFixed(2)}"`, handPeers),
-                mkRow('Arm Length',  m.arm_length,  pos, 'arm_length', v => `${Number(v).toFixed(2)}"`, armPeers),
-                mkRow('Wingspan',    m.wingspan,    pos, 'wingspan',   v => `${Number(v).toFixed(2)}"`, wingspanPeers),
+                mkRow('Hand Size',   'HND', m.hand_size,   pos, 'hand_size',  v => `${Number(v).toFixed(2)}"`, handPeers),
+                mkRow('Arm Length',  'ARM', m.arm_length,  pos, 'arm_length', v => `${Number(v).toFixed(2)}"`, armPeers),
+                mkRow('Wingspan',    'WNG', m.wingspan,    pos, 'wingspan',   v => `${Number(v).toFixed(2)}"`, wingspanPeers),
             ].filter(Boolean) as MetricRow[],
         },
         {
             label: 'Speed',
             rows: [
-                mkRow('40-Yard Dash',  m.forty_yard,     pos, 'forty',      v => `${Number(v).toFixed(2)}s`, fortyPeers, true),
-                mkRow('10-Yard Split', m.ten_yard_split,  pos, 'ten_yard',   v => `${Number(v).toFixed(2)}s`, tenPeers,   true),
-                mkRow('Speed Score',   ss,                pos, 'speed_score', v => String(Math.round(v))),
+                mkRow('40-Yard Dash',  '40Y', m.forty_yard,     pos, 'forty',      v => `${Number(v).toFixed(2)}s`, fortyPeers, true),
+                mkRow('10-Yard Split', '10Y', m.ten_yard_split,  pos, 'ten_yard',   v => `${Number(v).toFixed(2)}s`, tenPeers,   true),
+                mkRow('Speed Score',   'SPD', ss,                pos, 'speed_score', v => String(Math.round(v))),
             ].filter(Boolean) as MetricRow[],
         },
         {
             label: 'Explosion',
             rows: [
-                mkRow('Vertical Jump', m.vertical_jump, pos, 'vertical', v => `${Number(v).toFixed(1)}"`, vertPeers),
-                mkRow('Broad Jump',    m.broad_jump,    pos, 'broad',    v => `${Math.round(v)}"`,        broadPeers),
+                mkRow('Vertical Jump', 'VRT', m.vertical_jump, pos, 'vertical', v => `${Number(v).toFixed(1)}"`, vertPeers),
+                mkRow('Broad Jump',    'BRD', m.broad_jump,    pos, 'broad',    v => `${Math.round(v)}"`,        broadPeers),
             ].filter(Boolean) as MetricRow[],
         },
         {
             label: 'Agility',
             rows: [
-                mkRow('3-Cone Drill', m.three_cone,                           pos, 'three_cone', v => `${Number(v).toFixed(2)}s`, conePeers,   true),
-                mkRow('20yd Shuttle', m.twenty_yard_shuttle ?? m.shuttle,     pos, 'shuttle',    v => `${Number(v).toFixed(2)}s`, shuttlePeers, true),
+                mkRow('3-Cone Drill', '3CN', m.three_cone,                           pos, 'three_cone', v => `${Number(v).toFixed(2)}s`, conePeers,   true),
+                mkRow('20yd Shuttle', 'SHT', m.twenty_yard_shuttle ?? m.shuttle,     pos, 'shuttle',    v => `${Number(v).toFixed(2)}s`, shuttlePeers, true),
             ].filter(Boolean) as MetricRow[],
         },
         {
             label: 'Athleticism / Strength',
             rows: [
-                mkRow('RAS Score',   m.ras,         pos, 'ras',   v => Number(v).toFixed(1)),
-                mkRow('Bench Press', m.bench_press, pos, 'bench', v => `${Math.round(v)} reps`),
+                mkRow('RAS Score',   'RAS', m.ras,         pos, 'ras',   v => Number(v).toFixed(1)),
+                mkRow('Bench Press', 'BNK', m.bench_press, pos, 'bench', v => `${Math.round(v)} reps`),
             ].filter(Boolean) as MetricRow[],
         },
     ].filter(g => g.rows.length > 0);
@@ -294,52 +324,123 @@ export function AthleticsCard({ position, heightInches, weightLbs, measurables, 
 
     const usingClassPercentiles = groups.some(g => g.rows.some(r => r.fromPeers));
 
+    // Radar data: all rows flattened, using shortLabel for the axis
+    const radarData = groups
+        .flatMap(g => g.rows)
+        .filter(r => r.pct > 0)
+        .map(r => ({ subject: r.shortLabel, pct: r.pct, fullLabel: r.label, display: r.display }));
+
     return (
         <div className="rounded-xl border border-border/40 bg-card/40 overflow-hidden">
             <div className="px-5 py-4 border-b border-border/30 bg-muted/10 flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Athletic Profile</span>
-                <span className="text-[10px] text-muted-foreground/40 font-mono">
-                    {usingClassPercentiles ? `class percentile · 2026 ${pos}s` : `graded vs. 2026 ${pos}s`}
-                </span>
-            </div>
-
-            <div className="p-5 space-y-6">
-                {groups.map((group, gi) => (
-                    <div key={group.label} className={gi > 0 ? 'pt-3 border-t border-border/10' : ''}>
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-2 border-l-2 border-primary/40 pl-2">
-                            {group.label}
-                        </div>
-                        <div className="space-y-1">
-                            {group.rows.map(row => <MetricBar key={row.key} row={row} />)}
-                        </div>
+                <div className="flex items-center gap-3">
+                    <span className="text-[10px] text-muted-foreground/40 font-mono">
+                        {usingClassPercentiles ? `class percentile · 2026 ${pos}s` : `graded vs. 2026 ${pos}s`}
+                    </span>
+                    {/* View toggle */}
+                    <div className="flex items-center bg-white/[0.04] rounded-md border border-border/20 overflow-hidden">
+                        {(['bar', 'radar'] as const).map(v => (
+                            <button
+                                key={v}
+                                onClick={() => setView(v)}
+                                className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 transition-colors ${
+                                    view === v
+                                        ? 'bg-primary/20 text-primary'
+                                        : 'text-muted-foreground/40 hover:text-muted-foreground/70'
+                                }`}
+                            >
+                                {v}
+                            </button>
+                        ))}
                     </div>
-                ))}
+                </div>
             </div>
 
-            <div className="px-5 py-3 border-t border-border/20 flex items-center gap-4 flex-wrap">
-                {usingClassPercentiles ? (
-                    <span className="text-[9px] text-muted-foreground/40">percentile rank vs. 2026 {pos} class</span>
-                ) : (
-                    <>
-                        {[
-                            { pct: 90, desc: 'Elite' },
-                            { pct: 70, desc: 'Good' },
-                            { pct: 55, desc: 'Avg' },
-                            { pct: 32, desc: 'Below' },
-                            { pct: 10, desc: 'Poor' },
-                        ].map(({ pct, desc }) => {
-                            const g = gradeOf(pct);
+            {view === 'radar' ? (
+                <div className="p-4">
+                    {radarData.length >= 3 ? (
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <RadarChart data={radarData} margin={{ top: 16, right: 40, bottom: 16, left: 40 }}>
+                                    <PolarGrid
+                                        stroke="rgba(255,255,255,0.08)"
+                                        gridType="polygon"
+                                    />
+                                    <PolarAngleAxis
+                                        dataKey="subject"
+                                        tick={<RadarTick />}
+                                    />
+                                    <Radar
+                                        dataKey="pct"
+                                        stroke="rgb(249,115,22)"
+                                        fill="rgba(249,115,22,0.18)"
+                                        strokeWidth={2}
+                                        dot={{ fill: 'rgb(249,115,22)', r: 3, strokeWidth: 0 }}
+                                    />
+                                </RadarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className="h-[120px] flex items-center justify-center text-muted-foreground/30 text-xs">
+                            Not enough data for radar
+                        </div>
+                    )}
+                    {/* Legend row */}
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 justify-center">
+                        {radarData.map(d => {
+                            const g = gradeOf(d.pct);
                             return (
-                                <div key={desc} className="flex items-center gap-1.5">
-                                    <span className={`text-[9px] font-black font-mono ${g.text}`}>{g.label}</span>
-                                    <span className="text-[9px] text-muted-foreground/45">{desc}</span>
+                                <div key={d.subject} className="flex items-center gap-1">
+                                    <span className="text-[9px] font-black text-muted-foreground/40">{d.subject}</span>
+                                    <span className={`text-[9px] font-black font-mono ${g.text}`}>{d.display}</span>
+                                    <span className="text-[9px] text-muted-foreground/25">{d.pct}th</span>
                                 </div>
                             );
                         })}
-                        <span className="text-[9px] text-muted-foreground/25 ml-auto">| avg</span>
-                    </>
-                )}
-            </div>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    <div className="p-5 space-y-6">
+                        {groups.map((group, gi) => (
+                            <div key={group.label} className={gi > 0 ? 'pt-3 border-t border-border/10' : ''}>
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-2 border-l-2 border-primary/40 pl-2">
+                                    {group.label}
+                                </div>
+                                <div className="space-y-1">
+                                    {group.rows.map(row => <MetricBar key={row.key} row={row} />)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="px-5 py-3 border-t border-border/20 flex items-center gap-4 flex-wrap">
+                        {usingClassPercentiles ? (
+                            <span className="text-[9px] text-muted-foreground/40">percentile rank vs. 2026 {pos} class</span>
+                        ) : (
+                            <>
+                                {[
+                                    { pct: 90, desc: 'Elite' },
+                                    { pct: 70, desc: 'Good' },
+                                    { pct: 55, desc: 'Avg' },
+                                    { pct: 32, desc: 'Below' },
+                                    { pct: 10, desc: 'Poor' },
+                                ].map(({ pct, desc }) => {
+                                    const g = gradeOf(pct);
+                                    return (
+                                        <div key={desc} className="flex items-center gap-1.5">
+                                            <span className={`text-[9px] font-black font-mono ${g.text}`}>{g.label}</span>
+                                            <span className="text-[9px] text-muted-foreground/45">{desc}</span>
+                                        </div>
+                                    );
+                                })}
+                                <span className="text-[9px] text-muted-foreground/25 ml-auto">| avg</span>
+                            </>
+                        )}
+                    </div>
+                </>
+            )}
         </div>
     );
 }

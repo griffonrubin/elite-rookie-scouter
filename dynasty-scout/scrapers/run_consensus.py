@@ -21,8 +21,8 @@ FORMAT_WEIGHTS = {
     "SF": {
         "KeepTradeCut":    0.35,
         "FantasyCalc SF":  0.30,
-        "DynastyNerds SF": 0.20,
-        "FantasyPros":     0.15,  # FP has no SF-specific rookie page; use 1QB as proxy
+        "FantasyPros SF":  0.20,
+        "DynastyNerds SF": 0.15,
     },
     "1QB": {
         "KeepTradeCut 1QB": 0.35,

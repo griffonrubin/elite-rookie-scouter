@@ -35,7 +35,7 @@ PBP_URL_TEMPLATES = [
 DEFAULT_YEARS = [2020, 2021, 2022, 2023, 2024, 2025]
 
 
-# ── Name normalization ────────────────────────────────────────────────────────
+# -- Name normalization --------------------------------------------------------
 
 def normalize(name: str) -> str:
     if not name:
@@ -47,7 +47,7 @@ def normalize(name: str) -> str:
     return name
 
 
-# ── Download helpers ──────────────────────────────────────────────────────────
+# -- Download helpers ----------------------------------------------------------
 
 def download_pbp_csv(year: int) -> list[dict] | None:
     """Try each URL template for a given year. Returns list of row dicts or None."""
@@ -80,7 +80,7 @@ def download_pbp_csv(year: int) -> list[dict] | None:
     return None
 
 
-# ── Main aggregation ──────────────────────────────────────────────────────────
+# -- Main aggregation ----------------------------------------------------------
 
 def aggregate_receiver_stats(rows: list[dict], year: int) -> dict:
     """
@@ -169,7 +169,7 @@ def aggregate_receiver_stats(rows: list[dict], year: int) -> dict:
     return dict(stats)
 
 
-# ── DB upsert ─────────────────────────────────────────────────────────────────
+# -- DB upsert -----------------------------------------------------------------
 
 def upsert_stats(cur, player_id: int, season: int, school: str, agg: dict, dry_run: bool):
     targets = agg["targets"]
@@ -196,7 +196,7 @@ def upsert_stats(cur, player_id: int, season: int, school: str, agg: dict, dry_r
     """, (player_id, season, school, targets, air_yards, yac, adot))
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# -- Main ----------------------------------------------------------------------
 
 def run(years: list[int] = None, dry_run: bool = False):
     if years is None:
@@ -219,9 +219,9 @@ def run(years: list[int] = None, dry_run: bool = False):
     total_upserted = 0
 
     for year in years:
-        print(f"\n{'─'*60}")
+        print(f"\n{'-'*60}")
         print(f"Season {year}")
-        print(f"{'─'*60}")
+        print(f"{'-'*60}")
 
         rows = download_pbp_csv(year)
         if rows is None:
@@ -262,7 +262,7 @@ def run(years: list[int] = None, dry_run: bool = False):
 
     conn.close()
 
-    print(f"\n{'═'*60}")
+    print(f"\n{'='*60}")
     print(f"cfbfastR scrape complete")
     print(f"  Players matched / upserted: {total_matched} / {total_upserted}")
     if dry_run:

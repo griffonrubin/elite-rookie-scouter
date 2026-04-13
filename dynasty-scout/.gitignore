@@ -57,3 +57,5 @@ postgres_seed.sql
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel

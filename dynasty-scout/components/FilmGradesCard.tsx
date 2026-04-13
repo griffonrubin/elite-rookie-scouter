@@ -1,7 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { JFosterGrades } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import {
+    RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
+} from 'recharts';
 
 interface Props {
     jfoster: JFosterGrades;
@@ -10,14 +14,14 @@ interface Props {
 
 // Grade color scale
 function gradeOf(pct: number) {
-    if (pct >= 90) return { label: 'S+', bar: 'bg-yellow-400',   text: 'text-yellow-400',  badge: 'bg-yellow-400/15  text-yellow-400  border-yellow-400/50'  };
-    if (pct >= 80) return { label: 'S',  bar: 'bg-yellow-300',   text: 'text-yellow-300',  badge: 'bg-yellow-300/15  text-yellow-300  border-yellow-300/50'  };
-    if (pct >= 70) return { label: 'A',  bar: 'bg-emerald-400',  text: 'text-emerald-400', badge: 'bg-emerald-400/15 text-emerald-400 border-emerald-400/50' };
-    if (pct >= 58) return { label: 'B+', bar: 'bg-cyan-400',     text: 'text-cyan-400',    badge: 'bg-cyan-400/15    text-cyan-400    border-cyan-400/50'    };
-    if (pct >= 45) return { label: 'B',  bar: 'bg-cyan-500',     text: 'text-cyan-500',    badge: 'bg-cyan-500/15    text-cyan-500    border-cyan-500/50'    };
-    if (pct >= 32) return { label: 'C',  bar: 'bg-yellow-500',   text: 'text-yellow-500',  badge: 'bg-yellow-500/15  text-yellow-500  border-yellow-500/50'  };
-    if (pct >= 18) return { label: 'D',  bar: 'bg-orange-400',   text: 'text-orange-400',  badge: 'bg-orange-400/15  text-orange-400  border-orange-400/50'  };
-    return           { label: 'F',  bar: 'bg-red-400',     text: 'text-red-400',    badge: 'bg-red-400/15    text-red-400    border-red-400/50'    };
+    if (pct >= 90) return { label: 'S+', bar: 'bg-yellow-400',   text: 'text-yellow-400',  badge: 'bg-yellow-400/15  text-yellow-400  border-yellow-400/50', stroke: '#facc15', fill: 'rgba(250,204,21,0.18)'  };
+    if (pct >= 80) return { label: 'S',  bar: 'bg-yellow-300',   text: 'text-yellow-300',  badge: 'bg-yellow-300/15  text-yellow-300  border-yellow-300/50', stroke: '#fde047', fill: 'rgba(253,224,71,0.18)'  };
+    if (pct >= 70) return { label: 'A',  bar: 'bg-emerald-400',  text: 'text-emerald-400', badge: 'bg-emerald-400/15 text-emerald-400 border-emerald-400/50', stroke: '#34d399', fill: 'rgba(52,211,153,0.18)' };
+    if (pct >= 58) return { label: 'B+', bar: 'bg-cyan-400',     text: 'text-cyan-400',    badge: 'bg-cyan-400/15    text-cyan-400    border-cyan-400/50',    stroke: '#22d3ee', fill: 'rgba(34,211,238,0.18)'  };
+    if (pct >= 45) return { label: 'B',  bar: 'bg-cyan-500',     text: 'text-cyan-500',    badge: 'bg-cyan-500/15    text-cyan-500    border-cyan-500/50',    stroke: '#06b6d4', fill: 'rgba(6,182,212,0.18)'   };
+    if (pct >= 32) return { label: 'C',  bar: 'bg-yellow-500',   text: 'text-yellow-500',  badge: 'bg-yellow-500/15  text-yellow-500  border-yellow-500/50',  stroke: '#eab308', fill: 'rgba(234,179,8,0.18)'   };
+    if (pct >= 18) return { label: 'D',  bar: 'bg-orange-400',   text: 'text-orange-400',  badge: 'bg-orange-400/15  text-orange-400  border-orange-400/50',  stroke: '#fb923c', fill: 'rgba(251,146,60,0.18)'  };
+    return           { label: 'F',  bar: 'bg-red-400',     text: 'text-red-400',    badge: 'bg-red-400/15    text-red-400    border-red-400/50',    stroke: '#f87171', fill: 'rgba(248,113,113,0.18)' };
 }
 
 // Round grade → color
@@ -33,7 +37,7 @@ function roundGradeStyle(round: string | undefined): { bg: string; text: string 
     return { bg: 'bg-muted/20', text: 'text-muted-foreground' };
 }
 
-// Position-specific category groupings for display
+// Position-specific category groupings
 const HB_GROUPS = [
     { label: 'Athleticism', tag: 'ATH', keys: ['Speed', 'Acceleration', 'Agility (COD)', 'Size', 'Deceleration'] },
     { label: 'Rushing',     tag: 'RSH', keys: ['Backfield Runs', 'Open Field', 'Contact Balance', 'Power', 'Cut', 'Vision', 'Patience', 'Creativity', 'Gap Scheme', 'Zone Scheme'] },
@@ -78,7 +82,7 @@ function getGroups(position: string) {
 function buildSkillMap(groups: typeof WR_GROUPS): Map<string, { label: string; tag: string }> {
     const map = new Map<string, { label: string; tag: string }>();
     for (const g of groups) {
-        if (g.tag === '') continue; // skip composites
+        if (g.tag === '') continue;
         for (const k of g.keys) {
             map.set(k, { label: g.label, tag: g.tag });
         }
@@ -128,6 +132,23 @@ const TAG_COLORS: Record<string, string> = {
     MOB: 'bg-teal-500/20 text-teal-300 border-teal-500/30',
 };
 
+// Radar accent colors per category tag
+const TAG_RADAR: Record<string, { stroke: string; fill: string }> = {
+    ATH: { stroke: 'rgb(192,132,252)', fill: 'rgba(192,132,252,0.15)' },
+    RSH: { stroke: 'rgb(251,146,60)',  fill: 'rgba(251,146,60,0.15)'  },
+    RTE: { stroke: 'rgb(96,165,250)',  fill: 'rgba(96,165,250,0.15)'  },
+    CTH: { stroke: 'rgb(52,211,153)', fill: 'rgba(52,211,153,0.15)'  },
+    YAC: { stroke: 'rgb(250,204,21)', fill: 'rgba(250,204,21,0.15)'  },
+    SEC: { stroke: 'rgb(148,163,184)', fill: 'rgba(148,163,184,0.15)' },
+    REC: { stroke: 'rgb(34,211,238)', fill: 'rgba(34,211,238,0.15)'  },
+    BLK: { stroke: 'rgb(168,162,158)', fill: 'rgba(168,162,158,0.15)' },
+    ACC: { stroke: 'rgb(56,189,248)', fill: 'rgba(56,189,248,0.15)'  },
+    ARM: { stroke: 'rgb(248,113,113)', fill: 'rgba(248,113,113,0.15)' },
+    MNT: { stroke: 'rgb(129,140,248)', fill: 'rgba(129,140,248,0.15)' },
+    MOB: { stroke: 'rgb(45,212,191)', fill: 'rgba(45,212,191,0.15)'  },
+    '':  { stroke: 'rgb(249,115,22)', fill: 'rgba(249,115,22,0.15)'  },
+};
+
 function SkillRow({ name, tag, value, isTop }: { name: string; tag: string; value: number; isTop: boolean }) {
     const g = gradeOf(value);
     const tagColor = TAG_COLORS[tag] ?? 'bg-muted/20 text-muted-foreground border-border/20';
@@ -154,6 +175,101 @@ function SkillRow({ name, tag, value, isTop }: { name: string; tag: string; valu
     );
 }
 
+// Short label for radar axes (max ~10 chars)
+function shortKey(key: string): string {
+    const MAP: Record<string, string> = {
+        'Speed': 'Speed', 'Acceleration': 'Accel', 'Agility (COD)': 'Agility', 'Quickness': 'Quick',
+        'Burst': 'Burst', 'Size/Strength': 'Size/Str', 'Footwork': 'Footwork',
+        'Route Savvy': 'Savvy', 'Route Efficiency': 'Effic.', 'Stop Route': 'Stop Rte',
+        'Double Move': 'Dbl Move', 'Zone Recognition': 'Zone Rec', 'Route Strength': 'Rte Str',
+        'Catch Hands': 'Hands', 'Catch Radius': 'Radius', 'Ball Tracking': 'Tracking',
+        'Body Control': 'Body Ctrl', 'Jump Ball': 'Jump Ball',
+        'Contact/RAC': 'RAC', 'Elusiveness': 'Elusiv.', 'Power After Catch': 'PAC',
+        'Press Coverage': 'Press', 'Fumble Security': 'Fmbl Sec',
+        'Athleticism': 'ATH', 'Route Running': 'Routes', 'Catching': 'Catch',
+        'YAC': 'YAC', 'Miscellaneous': 'Misc',
+        'Backfield Runs': 'BF Runs', 'Open Field': 'Open Fld', 'Contact Balance': 'Bal.',
+        'Power': 'Power', 'Cut': 'Cut', 'Vision': 'Vision', 'Patience': 'Patience',
+        'Creativity': 'Creat.', 'Gap Scheme': 'Gap', 'Zone Scheme': 'Zone',
+        'Tackle Avoidance': 'Tackle Av.', 'Receiving': 'Recv', 'Pass Blocking': 'Pass Blk',
+        'Press Handling': 'Press Hdl', 'LOS Blocking': 'LOS Blk', 'Move Blocking': 'Move Blk',
+        'Blocking Composite': 'Blk Comp', 'Effort': 'Effort', 'Technique': 'Tech.',
+        'Short Accuracy': 'Short', 'Medium Accuracy': 'Medium', 'Deep Accuracy': 'Deep',
+        'Middle Accuracy': 'Middle', 'Sideline Accuracy': 'Sideline', 'Off-Platform': 'Off-Plat',
+        'Arm Strength': 'Strength', 'Velocity': 'Veloc.', 'Release': 'Release',
+        'Flexibility': 'Flex.', 'Touch': 'Touch',
+        'Decision Making': 'Decision', 'Processing': 'Process', 'Anticipation': 'Anticip.',
+        'Pressure Performance': 'Press Perf', 'Pre-Snap': 'Pre-Snap', 'Post-Snap': 'Post-Snap',
+        'Eyes': 'Eyes', 'Middle of Field': 'MOF',
+        'Pocket Mobility': 'Pkt Mob', 'Pressure Mitigation': 'Prs Mit', 'Extend Plays': 'Ext Plays',
+        'Accuracy Composite': 'ACC', 'Arm Composite': 'ARM', 'Mental Composite': 'MNT',
+        'Rushing Composite': 'RSH', 'Pocket Composite': 'PKT',
+        'Size': 'Size', 'Deceleration': 'Decel.',
+    };
+    return MAP[key] ?? key.slice(0, 10);
+}
+
+// Custom angle-aware tick for radar charts
+function RadarTick({ payload, x, y, cx, cy }: any) {
+    let anchor: 'middle' | 'end' | 'start' = 'middle';
+    if (x < cx - 10) anchor = 'end';
+    else if (x > cx + 10) anchor = 'start';
+    return (
+        <text
+            x={x}
+            y={y}
+            textAnchor={anchor}
+            dominantBaseline="middle"
+            fill="rgba(255,255,255,0.40)"
+            fontSize={8.5}
+            fontWeight={700}
+            fontFamily="inherit"
+        >
+            {payload.value}
+        </text>
+    );
+}
+
+function GroupRadar({ group, filmGrades }: { group: typeof WR_GROUPS[0]; filmGrades: Record<string, number> }) {
+    const rows = group.keys
+        .map(k => ({ subject: shortKey(k), pct: filmGrades[k] ?? 0 }))
+        .filter(r => r.pct > 0);
+
+    if (rows.length < 3) return null;
+
+    const accent = TAG_RADAR[group.tag] ?? TAG_RADAR[''];
+
+    return (
+        <div className="rounded-xl bg-muted/5 border border-border/15 px-3 py-3">
+            <div className="flex items-center gap-2 mb-1">
+                {group.tag && (
+                    <span className={cn('text-[9px] font-black px-1.5 py-0.5 rounded border', TAG_COLORS[group.tag])}>
+                        {group.tag}
+                    </span>
+                )}
+                <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40">
+                    {group.label}
+                </span>
+            </div>
+            <div className="h-[200px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={rows} margin={{ top: 12, right: 28, bottom: 12, left: 28 }}>
+                        <PolarGrid stroke="rgba(255,255,255,0.07)" gridType="polygon" />
+                        <PolarAngleAxis dataKey="subject" tick={<RadarTick />} />
+                        <Radar
+                            dataKey="pct"
+                            stroke={accent.stroke}
+                            fill={accent.fill}
+                            strokeWidth={1.5}
+                            dot={{ fill: accent.stroke, r: 2.5, strokeWidth: 0 }}
+                        />
+                    </RadarChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+}
+
 export function FilmGradesCard({ jfoster, position }: Props) {
     const filmGrades: Record<string, number> = jfoster.film_grades
         ? JSON.parse(jfoster.film_grades)
@@ -163,6 +279,8 @@ export function FilmGradesCard({ jfoster, position }: Props) {
     const roundStyle = roundGradeStyle(jfoster.round_grade);
     const groups = getGroups(position);
     const skillMap = buildSkillMap(groups);
+
+    const [view, setView] = useState<'bar' | 'radar'>('bar');
 
     // Composite keys to exclude from Skills at a Glance
     const compositeKeys = new Set(
@@ -213,8 +331,8 @@ export function FilmGradesCard({ jfoster, position }: Props) {
                 )}
             </div>
 
-            {/* Skills at a Glance */}
-            {individualSkills.length >= 5 && (
+            {/* Skills at a Glance (bar view only) */}
+            {view === 'bar' && individualSkills.length >= 5 && (
                 <div className="rounded-xl bg-muted/5 border border-border/15 overflow-hidden">
                     <div className="px-4 py-2 border-b border-border/10 bg-white/[0.02]">
                         <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40">
@@ -246,29 +364,62 @@ export function FilmGradesCard({ jfoster, position }: Props) {
                 </div>
             )}
 
-            {/* Film grade groups */}
+            {/* Film grade groups — BAR/RADAR toggle header */}
             {hasFilmGrades && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {groups.map(group => {
-                        const rows = group.keys
-                            .map(k => ({ label: k, value: filmGrades[k] }))
-                            .filter(r => r.value != null && r.value > 0);
-                        if (rows.length === 0) return null;
-                        return (
-                            <div key={group.label} className="rounded-xl bg-muted/5 border border-border/15 px-4 py-3">
-                                <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40 mb-2">
-                                    {group.label}
-                                </div>
-                                {rows.map(r => (
-                                    <MetricBar key={r.label} label={r.label} value={r.value} />
-                                ))}
-                            </div>
-                        );
-                    })}
+                <div>
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+                            Film Grades by Category
+                        </span>
+                        <div className="flex items-center bg-white/[0.04] rounded-md border border-border/20 overflow-hidden">
+                            {(['bar', 'radar'] as const).map(v => (
+                                <button
+                                    key={v}
+                                    onClick={() => setView(v)}
+                                    className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 transition-colors ${
+                                        view === v
+                                            ? 'bg-primary/20 text-primary'
+                                            : 'text-muted-foreground/40 hover:text-muted-foreground/70'
+                                    }`}
+                                >
+                                    {v}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {view === 'radar' ? (
+                        /* Radar view: one chart per group */
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {groups.map(group => (
+                                <GroupRadar key={group.label} group={group} filmGrades={filmGrades} />
+                            ))}
+                        </div>
+                    ) : (
+                        /* Bar view */
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {groups.map(group => {
+                                const rows = group.keys
+                                    .map(k => ({ label: k, value: filmGrades[k] }))
+                                    .filter(r => r.value != null && r.value > 0);
+                                if (rows.length === 0) return null;
+                                return (
+                                    <div key={group.label} className="rounded-xl bg-muted/5 border border-border/15 px-4 py-3">
+                                        <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40 mb-2">
+                                            {group.label}
+                                        </div>
+                                        {rows.map(r => (
+                                            <MetricBar key={r.label} label={r.label} value={r.value} />
+                                        ))}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* Athletic composites from J. Foster (if available) */}
+            {/* Athletic composites from J. Foster */}
             {(jfoster.speed_score_jf || jfoster.acceleration_score || jfoster.size_score || jfoster.agility_score_jf || jfoster.athletic_score) && (
                 <div className="rounded-xl bg-muted/5 border border-border/15 px-4 py-3">
                     <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40 mb-2">

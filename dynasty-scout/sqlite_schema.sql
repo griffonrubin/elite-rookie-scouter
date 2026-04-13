@@ -275,6 +275,16 @@ CREATE TABLE IF NOT EXISTS rb_advanced_career (
   td_per_route REAL,
   gap_rate REAL,
   zone_rate REAL,
+  -- PFF receiving metrics (via @ZWKfootball)
+  pff_recv_rating REAL,          -- composite RB receiving rating (AYPRR-based)
+  ayprr REAL,                    -- air yards per route run
+  aypt REAL,                     -- air yards per target
+  career_adj_ydg REAL,           -- career adjusted receiving yards per game (all)
+  career_adj_ydg_nonscreen REAL, -- career adjusted receiving yards per game (non-screen)
+  career_adj_ydg_10dot REAL,     -- career adjusted receiving yards per game (10+ DOT)
+  best_season_adj_ydg REAL,      -- best season adjusted receiving yards per team game (all)
+  best_season_adj_ydg_ns REAL,   -- best season adjusted receiving yards per team game (non-screen)
+  best_season_adj_ydg_10 REAL,   -- best season adjusted receiving yards per team game (10+ DOT)
   data_source TEXT DEFAULT 'manual_2026',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

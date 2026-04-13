@@ -18,7 +18,7 @@ class FantasyProsRankingScraper(BaseRankingScraper):
         super().__init__()
         self.source_name = "FantasyPros"
         self.url = "https://www.fantasypros.com/nfl/rankings/devy.php"  # redirects to rookies.php
-        self.url_sf = "https://www.fantasypros.com/nfl/rankings/devy-superflex.php"
+        self.url_sf = "https://www.fantasypros.com/nfl/rankings/dynasty-rookies-superflex.php"
 
     def match_player(self, name):
         """

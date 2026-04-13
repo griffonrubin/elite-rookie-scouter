@@ -121,13 +121,19 @@ class KTCRankingScraper(BaseRankingScraper):
                         if sf_rank is None and qb1_rank is None:
                             continue
 
-                        player_id = self.match_player(full_name)
+                        # Only include players KTC itself flags as rookies (2026 class)
+                        is_ktc_rookie = item.get('rookie') is True or item.get('draftYear') == 2026
+                        if not is_ktc_rookie:
+                            continue
 
-                        if player_id:
-                            if sf_rank is not None and not any(x['pid'] == player_id for x in matched_buffer_sf):
-                                matched_buffer_sf.append({'pid': player_id, 'raw': int(sf_rank), 'name': full_name, 'val': int(sf_value) if sf_value else None})
-                            if qb1_rank is not None and not any(x['pid'] == player_id for x in matched_buffer_1qb):
-                                matched_buffer_1qb.append({'pid': player_id, 'raw': int(qb1_rank), 'name': full_name, 'val': int(qb1_value) if qb1_value else None})
+                        player_id = self.match_player(full_name)
+                        if not player_id:
+                            continue
+
+                        if sf_rank is not None and not any(x['pid'] == player_id for x in matched_buffer_sf):
+                            matched_buffer_sf.append({'pid': player_id, 'raw': int(sf_rank), 'name': full_name, 'val': int(sf_value) if sf_value else None})
+                        if qb1_rank is not None and not any(x['pid'] == player_id for x in matched_buffer_1qb):
+                            matched_buffer_1qb.append({'pid': player_id, 'raw': int(qb1_rank), 'name': full_name, 'val': int(qb1_value) if qb1_value else None})
 
                     except Exception as e:
                         continue
