@@ -234,11 +234,19 @@ def close_modal(page):
 def paginate_to_next(page) -> bool:
     """Click Next page button. Returns False if no next page."""
     try:
-        next_btn = page.locator("button:has-text('Next')").last
-        if next_btn.is_disabled():
+        # Use JS to find and click — avoids Playwright locator timeout issues
+        result = page.evaluate("""
+            () => {
+                const btns = Array.from(document.querySelectorAll('button'));
+                const next = btns.find(b => b.textContent.trim() === 'Next');
+                if (!next || next.disabled) return false;
+                next.click();
+                return true;
+            }
+        """)
+        if not result:
             return False
-        next_btn.click()
-        page.wait_for_timeout(1500)
+        page.wait_for_timeout(2000)
         return True
     except Exception:
         return False
@@ -248,10 +256,17 @@ def reset_to_page_one(page):
     """Click Back until disabled to return to first page."""
     for _ in range(25):
         try:
-            back = page.locator("button:has-text('Back')").last
-            if back.is_disabled():
+            done = page.evaluate("""
+                () => {
+                    const btns = Array.from(document.querySelectorAll('button'));
+                    const back = btns.find(b => b.textContent.trim() === 'Back');
+                    if (!back || back.disabled) return true;  // already on page 1
+                    back.click();
+                    return false;
+                }
+            """)
+            if done:
                 break
-            back.click()
             page.wait_for_timeout(800)
         except Exception:
             break
@@ -259,28 +274,46 @@ def reset_to_page_one(page):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+def normalize_name(name: str) -> str:
+    """Lowercase, strip punctuation — for fuzzy matching against board display names."""
+    return re.sub(r"[^a-z0-9 ]", "", name.lower()).strip()
+
+
+GET_PAGE_NAMES_JS = """
+() => Array.from(
+    document.querySelectorAll('table tbody tr td:nth-child(3) div[style*="font-weight: 600"]')
+).map(d => d.textContent.trim())
+"""
+
+
 def run():
     conn = get_db()
     all_players = get_players(conn)
 
     if not FORCE:
-        players = [p for p in all_players if not p["strengths"] and not p["weaknesses"]]
+        targets = [p for p in all_players if not p["strengths"] and not p["weaknesses"]]
     else:
-        players = list(all_players)
+        targets = list(all_players)
 
     if LIMIT:
-        players = players[:LIMIT]
+        targets = targets[:LIMIT]
 
-    print(f"JFoster Report Scraper — {len(players)} players to process")
+    print(f"JFoster Report Scraper — {len(targets)} players to process")
     if DRY_RUN:
         print("  DRY RUN — no DB writes")
 
-    if not players:
+    if not targets:
         print("  Nothing to do.")
         conn.close()
         return
 
-    done = skipped = failed = 0
+    # Build lookup: normalized_name → player row
+    target_map = {}
+    for p in targets:
+        target_map[normalize_name(p["full_name"])] = p
+
+    done = skipped = 0
+    found_set: set = set()
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
@@ -294,60 +327,78 @@ def run():
         page.goto(SITE_URL, wait_until="domcontentloaded", timeout=30000)
         wait_for_board(page)
         try_set_page_size(page)
-        print("  Board ready.")
+        print("  Board ready. Sweeping all board pages...\n")
 
-        for i, player in enumerate(players):
-            name  = player["full_name"]
-            pos   = player["position"]
-            jg_id = player["jg_id"]
+        board_page = 1
+        while True:
+            # Get names on current board page
+            board_names = page.evaluate(GET_PAGE_NAMES_JS)
+            hits = []
+            for board_name in board_names:
+                norm = normalize_name(board_name)
+                if norm in target_map:
+                    hits.append((board_name, target_map[norm]))
 
-            print(f"  [{i+1}/{len(players)}] {name} ({pos}) ...", end=" ", flush=True)
+            print(f"  [Board p{board_page}] {len(board_names)} rows, {len(hits)} target hits")
 
-            # First try on the current view
-            found = find_and_click(page, name)
+            for board_name, player in hits:
+                name  = player["full_name"]
+                pos   = player["position"]
+                jg_id = player["jg_id"]
+                print(f"    -> {name} ({pos}) ...", end=" ", flush=True)
 
-            if not found:
-                # Paginate through all pages to find the player
-                reset_to_page_one(page)
-                wait_for_board(page)
-                found_page = False
-                for pg in range(1, 25):
-                    if find_and_click(page, name):
-                        found_page = True
-                        break
-                    if not paginate_to_next(page):
-                        break
-                    wait_for_board(page)
+                # Click the row
+                clicked = page.evaluate("""
+                    (bname) => {
+                        const rows = Array.from(document.querySelectorAll('table tbody tr'));
+                        for (const row of rows) {
+                            const nameDiv = row.querySelector('td:nth-child(3) div[style*="font-weight: 600"]');
+                            if (nameDiv && nameDiv.textContent.trim() === bname) {
+                                row.click();
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                """, board_name)
 
-                if not found_page:
-                    print("NOT FOUND")
-                    failed += 1
-                    # Reset to page 1 for next player
-                    reset_to_page_one(page)
-                    wait_for_board(page)
+                if not clicked:
+                    print("click failed")
+                    skipped += 1
                     continue
 
-            # Scrape the modal
-            data = scrape_modal(page)
-            close_modal(page)
+                data = scrape_modal(page)
+                close_modal(page)
+                # Small wait for board to settle after modal close
+                page.wait_for_timeout(500)
 
-            s_count = len(data.get("strengths") or [])
-            w_count = len(data.get("weaknesses") or [])
-            pf      = data.get("pos_fit")
-            print(f"str={s_count} wk={w_count} fit={pf!r}")
+                s_count = len(data.get("strengths") or [])
+                w_count = len(data.get("weaknesses") or [])
+                pf      = data.get("pos_fit")
+                print(f"str={s_count} wk={w_count} fit={pf!r}")
 
-            if not DRY_RUN and (s_count or w_count or pf):
-                upsert(conn, jg_id, data.get("strengths"), data.get("weaknesses"), pf)
-                done += 1
-            else:
-                skipped += 1
+                if not DRY_RUN and (s_count or w_count or pf):
+                    upsert(conn, jg_id, data.get("strengths"), data.get("weaknesses"), pf)
+                    done += 1
+                else:
+                    skipped += 1
 
-            time.sleep(0.3)
+                found_set.add(normalize_name(name))
+                time.sleep(0.3)
+
+            # Paginate forward
+            if not paginate_to_next(page):
+                break
+            wait_for_board(page)
+            board_page += 1
 
         browser.close()
 
+    not_found = [p["full_name"] for p in targets if normalize_name(p["full_name"]) not in found_set]
     prefix = "[DRY RUN] " if DRY_RUN else ""
-    print(f"\n{prefix}Done.  Updated={done}  Empty/skipped={skipped}  Not found={failed}")
+    print(f"\n{prefix}Done.  Updated={done}  Empty/skipped={skipped}  Not found on board={len(not_found)}")
+    if not_found:
+        print("  Not found:", ", ".join(not_found))
     conn.close()
 
 
