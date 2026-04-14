@@ -22,7 +22,7 @@ import { FilmGradesCard } from '@/components/FilmGradesCard';
 import { RecentTrades } from '@/components/RecentTrades';
 import { POSITION_HEADLINE_STATS } from '@/lib/constants';
 import { getArchetypes } from '@/lib/archetypes';
-import { GraduationCap, Calendar, Ruler, Weight, Star, Newspaper, BarChart2, ExternalLink, Scale, AlertTriangle, ChevronLeft, ChevronRight, Share2, Check } from 'lucide-react';
+import { GraduationCap, Calendar, Ruler, Weight, Star, Newspaper, BarChart2, ExternalLink, Scale, AlertTriangle, ChevronLeft, ChevronRight, Share2, Check, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WatchlistButton } from '@/components/WatchlistButton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -738,6 +738,7 @@ export function PlayerProfileClient({
                                 {player.height_inches && <span className="flex items-center gap-1.5"><Ruler className="w-3 h-3 text-muted-foreground/40" /> {formatHeight(player.height_inches)}</span>}
                                 {player.weight_lbs && <span className="flex items-center gap-1.5"><Weight className="w-3 h-3 text-muted-foreground/40" /> {player.weight_lbs}lb</span>}
                                 {player.star_rating && <span className="flex items-center gap-1 text-yellow-400/80"><Star className="w-3 h-3 fill-yellow-400/80" /> {player.star_rating}-star</span>}
+                                {player.hometown && <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3 text-muted-foreground/40" /> {player.hometown}</span>}
                             </div>
 
                             {/* Key rank badges */}

@@ -270,6 +270,70 @@ function GroupRadar({ group, filmGrades }: { group: typeof WR_GROUPS[0]; filmGra
     );
 }
 
+// Jitter strip: one horizontal track per group, dots at metric values
+function JitterView({ groups, filmGrades }: { groups: typeof WR_GROUPS; filmGrades: Record<string, number> }) {
+    return (
+        <div className="space-y-4">
+            {groups.map(group => {
+                const points = group.keys
+                    .map(k => ({ label: k, value: filmGrades[k] ?? 0, shortLabel: shortKey(k) }))
+                    .filter(p => p.value > 0);
+                if (points.length === 0) return null;
+                const accent = TAG_RADAR[group.tag] ?? TAG_RADAR[''];
+                return (
+                    <div key={group.label}>
+                        <div className="flex items-center gap-2 mb-2">
+                            {group.tag && (
+                                <span className={cn('text-[9px] font-black px-1.5 py-0.5 rounded border', TAG_COLORS[group.tag])}>
+                                    {group.tag}
+                                </span>
+                            )}
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40">
+                                {group.label}
+                            </span>
+                        </div>
+                        {/* Track */}
+                        <div className="relative h-10 rounded-lg bg-border/10 border border-border/15">
+                            {/* Grid lines at 25/50/75 */}
+                            {[25, 50, 75].map(t => (
+                                <div key={t} className="absolute top-0 h-full w-px bg-white/[0.07]" style={{ left: `${t}%` }} />
+                            ))}
+                            {/* Dots */}
+                            {points.map(p => {
+                                const g = gradeOf(p.value);
+                                return (
+                                    <div
+                                        key={p.label}
+                                        title={`${p.label}: ${Math.round(p.value)}`}
+                                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 group cursor-default"
+                                        style={{ left: `${Math.max(2, Math.min(98, p.value))}%` }}
+                                    >
+                                        <div
+                                            className="w-3 h-3 rounded-full border border-background/50 transition-transform group-hover:scale-150"
+                                            style={{ backgroundColor: accent.stroke }}
+                                        />
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:flex flex-col items-center pointer-events-none z-10">
+                                            <div className="bg-popover border border-border/40 rounded px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap shadow-lg">
+                                                <span className={g.text}>{Math.round(p.value)}</span>
+                                                <span className="text-muted-foreground/60 ml-1">{p.label}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="flex justify-between mt-0.5 px-0.5">
+                            <span className="text-[8px] text-muted-foreground/25">POOR</span>
+                            <span className="text-[8px] text-muted-foreground/25">AVG</span>
+                            <span className="text-[8px] text-muted-foreground/25">ELITE</span>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
 export function FilmGradesCard({ jfoster, position }: Props) {
     const filmGrades: Record<string, number> = jfoster.film_grades
         ? JSON.parse(jfoster.film_grades)
@@ -280,7 +344,15 @@ export function FilmGradesCard({ jfoster, position }: Props) {
     const groups = getGroups(position);
     const skillMap = buildSkillMap(groups);
 
-    const [view, setView] = useState<'bar' | 'radar'>('bar');
+    const [view, setView] = useState<'bar' | 'radar' | 'jitter'>('bar');
+
+    // Parse strengths/weaknesses (stored as JSON array or plain text)
+    function parseList(raw?: string): string[] {
+        if (!raw) return [];
+        try { return JSON.parse(raw) as string[]; } catch { return [raw]; }
+    }
+    const strengths = parseList(jfoster.strengths);
+    const weaknesses = parseList(jfoster.weaknesses);
 
     // Composite keys to exclude from Skills at a Glance
     const compositeKeys = new Set(
@@ -329,6 +401,16 @@ export function FilmGradesCard({ jfoster, position }: Props) {
                         </span>
                     </div>
                 )}
+                {jfoster.pos_fit && (
+                    <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-border/10 border border-border/20">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+                            Align
+                        </span>
+                        <span className="text-sm font-black font-mono text-foreground">
+                            {jfoster.pos_fit}
+                        </span>
+                    </div>
+                )}
             </div>
 
             {/* Skills at a Glance (bar view only) */}
@@ -364,7 +446,7 @@ export function FilmGradesCard({ jfoster, position }: Props) {
                 </div>
             )}
 
-            {/* Film grade groups — BAR/RADAR toggle header */}
+            {/* Film grade groups — BAR/RADAR/JITTER toggle */}
             {hasFilmGrades && (
                 <div>
                     <div className="flex items-center justify-between mb-3">
@@ -372,7 +454,7 @@ export function FilmGradesCard({ jfoster, position }: Props) {
                             Film Grades by Category
                         </span>
                         <div className="flex items-center bg-white/[0.04] rounded-md border border-border/20 overflow-hidden">
-                            {(['bar', 'radar'] as const).map(v => (
+                            {(['bar', 'radar', 'jitter'] as const).map(v => (
                                 <button
                                     key={v}
                                     onClick={() => setView(v)}
@@ -389,14 +471,14 @@ export function FilmGradesCard({ jfoster, position }: Props) {
                     </div>
 
                     {view === 'radar' ? (
-                        /* Radar view: one chart per group */
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {groups.map(group => (
                                 <GroupRadar key={group.label} group={group} filmGrades={filmGrades} />
                             ))}
                         </div>
+                    ) : view === 'jitter' ? (
+                        <JitterView groups={groups} filmGrades={filmGrades} />
                     ) : (
-                        /* Bar view */
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {groups.map(group => {
                                 const rows = group.keys
@@ -414,6 +496,42 @@ export function FilmGradesCard({ jfoster, position }: Props) {
                                     </div>
                                 );
                             })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Strengths & Weaknesses */}
+            {(strengths.length > 0 || weaknesses.length > 0) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {strengths.length > 0 && (
+                        <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/15 px-4 py-3">
+                            <div className="text-[9px] font-black uppercase tracking-widest text-emerald-500/60 mb-2.5">
+                                + Strengths
+                            </div>
+                            <ul className="space-y-1.5">
+                                {strengths.map((s, i) => (
+                                    <li key={i} className="flex gap-2 text-[11px] text-muted-foreground/70 leading-relaxed">
+                                        <span className="text-emerald-500/50 shrink-0 mt-0.5">•</span>
+                                        <span>{s}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {weaknesses.length > 0 && (
+                        <div className="rounded-xl bg-red-500/5 border border-red-500/15 px-4 py-3">
+                            <div className="text-[9px] font-black uppercase tracking-widest text-red-500/60 mb-2.5">
+                                − Weaknesses
+                            </div>
+                            <ul className="space-y-1.5">
+                                {weaknesses.map((w, i) => (
+                                    <li key={i} className="flex gap-2 text-[11px] text-muted-foreground/70 leading-relaxed">
+                                        <span className="text-red-500/50 shrink-0 mt-0.5">•</span>
+                                        <span>{w}</span>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     )}
                 </div>
@@ -442,6 +560,13 @@ export function FilmGradesCard({ jfoster, position }: Props) {
                             <MetricBar label="Overall" value={jfoster.athletic_score} />
                         )}
                     </div>
+                </div>
+            )}
+
+            {/* Last updated */}
+            {jfoster.updated_at && (
+                <div className="text-[9px] text-muted-foreground/25 text-right">
+                    JFoster report last updated {new Date(jfoster.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>
             )}
         </div>

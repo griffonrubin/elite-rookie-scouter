@@ -229,6 +229,7 @@ export interface JFosterGrades {
     acceleration_score?: number;
     agility_score_jf?: number;
     athletic_score?: number;
+    pos_fit?: string;       // positional alignment (Z, X, F, slot, etc.)
     source?: string;
     updated_at?: string;
 }
