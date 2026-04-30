@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { WatchlistButton } from '@/components/WatchlistButton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AppHeader } from '@/components/AppHeader';
+import { NflTeamLogo, getDraftStatus } from '@/components/NflTeamLogo';
 import type { CollegeStats, JFosterGrades, Measurables, NflScoutProfile, Ranking } from '@/lib/types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -152,8 +153,8 @@ export function PlayerProfileClient({
         (player.espn_college_id ? `https://a.espncdn.com/i/headshots/college-football/players/full/${player.espn_college_id}.png` : null);
 
     const classRank: number | null = player.consensus_rank && player.consensus_rank > 0 ? player.consensus_rank : null;
-    const projRank: number | null = player.ktc_rank ?? player.consensus_rank ?? player.best_rank ?? null;
-    const draftSlot = projRank ? getDraftSlot(projRank) : null;
+    const projRank: number | null = (player as any).ktc_rank ?? player.consensus_rank ?? (player as any).best_rank ?? null;
+    const draftStatus = getDraftStatus(player);
     const tier = classRank ? getTierInfo(classRank) : { label: 'Unranked', color: 'bg-gray-500/20 text-gray-400 border-gray-500/40', accent: '#6b7280' };
 
     const headlines = POSITION_HEADLINE_STATS[pos] || [];
@@ -749,10 +750,25 @@ export function PlayerProfileClient({
                                     <span className="font-black font-[var(--font-jetbrains),monospace] text-sm">#{classRank ?? '—'}</span>
                                     <span className="text-xs uppercase tracking-widest opacity-60 font-bold">{tier.label}</span>
                                 </div>
-                                {draftSlot && (
-                                    <div className="rounded-lg px-3 py-1.5 border border-white/[0.08] flex items-center gap-2 text-xs" style={{ background: 'var(--bg-elevated)' }}>
-                                        <span className="font-black font-[var(--font-jetbrains),monospace] text-foreground">{draftSlot}</span>
-                                        <span className="text-xs uppercase tracking-widest text-muted-foreground/50 font-bold">Proj Pick</span>
+                                {/* Actual NFL draft result badge */}
+                                {draftStatus.type === 'drafted' && (
+                                    <div className="rounded-lg px-3 py-1.5 border border-yellow-500/30 bg-yellow-500/10 flex items-center gap-2 text-xs">
+                                        <NflTeamLogo abbr={draftStatus.team} size={18} />
+                                        <span className="font-black font-[var(--font-jetbrains),monospace] text-yellow-300">{draftStatus.team}</span>
+                                        <span className="font-black font-[var(--font-jetbrains),monospace] text-yellow-300/80">{draftStatus.slot}</span>
+                                        <span className="text-[10px] uppercase tracking-widest text-yellow-400/40 font-bold">2026 NFL Draft</span>
+                                    </div>
+                                )}
+                                {draftStatus.type === 'udfa' && (
+                                    <div className="rounded-lg px-3 py-1.5 border border-sky-500/30 bg-sky-500/10 flex items-center gap-2 text-xs">
+                                        <NflTeamLogo abbr={draftStatus.team} size={18} />
+                                        <span className="font-black font-[var(--font-jetbrains),monospace] text-sky-300">{draftStatus.team}</span>
+                                        <span className="text-[10px] uppercase tracking-widest text-sky-400/50 font-bold">UDFA</span>
+                                    </div>
+                                )}
+                                {draftStatus.type === 'undrafted' && (
+                                    <div className="rounded-lg px-3 py-1.5 border border-border/20 flex items-center gap-2 text-xs" style={{ background: 'var(--bg-elevated)' }}>
+                                        <span className="text-xs uppercase tracking-widest text-muted-foreground/40 font-bold">Undrafted</span>
                                     </div>
                                 )}
                                 {player.ktc_rank && (

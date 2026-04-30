@@ -5,6 +5,7 @@ import { Player } from '@/lib/types';
 import { POSITION_COLORS } from '@/lib/constants';
 import { WatchlistButton } from './WatchlistButton';
 import { cn } from '@/lib/utils';
+import { NflTeamLogo, getDraftStatus } from '@/components/NflTeamLogo';
 
 interface BoxViewProps {
     players: Player[];
@@ -78,12 +79,6 @@ function getTierStyle(rank: number) {
     if (rank <= 48) return { label: 'C Tier', bg: 'bg-violet-500/10 border-violet-500/30',   text: 'text-violet-300',  border: '#a78bfa' };
     if (rank <= 80) return { label: 'D Tier', bg: 'bg-amber-500/10 border-amber-500/30',     text: 'text-amber-300',   border: '#f59e0b' };
     return                 { label: 'Depth',  bg: 'bg-gray-500/10 border-gray-500/30',       text: 'text-gray-400',    border: '#6b7280' };
-}
-
-function getDraftSlot(rank: number): string {
-    const round = Math.ceil(rank / 12);
-    const pick = rank - (round - 1) * 12;
-    return `${round}.${String(pick).padStart(2, '0')}`;
 }
 
 function formatHeight(inches?: number | null) {
@@ -194,8 +189,8 @@ export function BoxView({ players, period }: BoxViewProps) {
                 const rank = p.consensus_rank ?? (index + 1);
                 const tier = getTierStyle(rank);
                 const posColor = POSITION_COLORS[player.position] || 'bg-gray-500/20 text-gray-300 border-gray-500/40';
-                const draftSlot = getDraftSlot(rank);
-                const school = p.school || player.nfl_team || '—';
+                const draftStatus = getDraftStatus(player);
+                const school = p.school || '—';
                 const ht = formatHeight(player.height_inches);
                 const wt = player.weight_lbs ? `${player.weight_lbs}lb` : null;
 
@@ -246,7 +241,22 @@ export function BoxView({ players, period }: BoxViewProps) {
                         <div className="flex items-center justify-between px-3 sm:px-4 pt-2 sm:pt-3 pb-1.5 sm:pb-2">
                             <div className="flex items-center gap-2">
                                 <span className={cn('text-sm font-extrabold font-mono', tier.text)}>#{rank}</span>
-                                <span className="text-[10px] font-bold font-mono text-muted-foreground/40">{draftSlot}</span>
+                                {/* Actual draft status */}
+                                {draftStatus.type === 'drafted' && (
+                                    <span className="flex items-center gap-1 text-[9px] font-bold font-mono text-yellow-300/80">
+                                        <NflTeamLogo abbr={draftStatus.team} size={11} />
+                                        {draftStatus.slot}
+                                    </span>
+                                )}
+                                {draftStatus.type === 'udfa' && (
+                                    <span className="flex items-center gap-1 text-[9px] font-bold font-mono text-sky-300/70">
+                                        <NflTeamLogo abbr={draftStatus.team} size={11} />
+                                        UDFA
+                                    </span>
+                                )}
+                                {draftStatus.type === 'undrafted' && (
+                                    <span className="text-[9px] font-mono text-muted-foreground/30">—</span>
+                                )}
                             </div>
                             <div className="flex items-center gap-2 mr-0.5">
                                 {p.recruiting_stars >= 4 && (
@@ -278,6 +288,19 @@ export function BoxView({ players, period }: BoxViewProps) {
                                     {player.full_name}
                                 </div>
                                 <div className="text-[11px] text-muted-foreground/60 truncate mt-0.5">{school}</div>
+                                {/* NFL destination line */}
+                                {draftStatus.type === 'drafted' && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                        <NflTeamLogo abbr={draftStatus.team} size={12} />
+                                        <span className="text-[10px] font-bold text-yellow-300/70">{draftStatus.team} · {draftStatus.slot}</span>
+                                    </div>
+                                )}
+                                {draftStatus.type === 'udfa' && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                        <NflTeamLogo abbr={draftStatus.team} size={12} />
+                                        <span className="text-[10px] font-semibold text-sky-300/60">UDFA – {draftStatus.team}</span>
+                                    </div>
+                                )}
                                 {p.breakout_age && (
                                     <div className="text-[10px] text-muted-foreground/40 font-mono mt-1">
                                         <span className={`font-bold ${p.breakout_age <= 19 ? 'text-emerald-400' : p.breakout_age <= 20 ? 'text-cyan-400' : ''}`}>

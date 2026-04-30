@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Player } from '@/lib/types';
 import { POSITION_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { NflTeamLogo, getDraftStatus } from '@/components/NflTeamLogo';
 
 interface HexViewProps {
     players: Player[];
@@ -85,6 +86,7 @@ export function HexView({ players, period }: HexViewProps) {
                                     const rank = (player as any).consensus_rank ?? globalRank;
                                     const tier = getTierStyle(rank);
                                     const posColor = POSITION_COLORS[player.position] || 'bg-gray-500/20 text-gray-300 border-gray-500/40';
+                                    const draftStatus = getDraftStatus(player);
 
                                     return (
                                         <Link
@@ -118,10 +120,22 @@ export function HexView({ players, period }: HexViewProps) {
                                                 {player.first_name?.[0] ? `${player.first_name[0]}.` : ''} {player.last_name}
                                             </div>
 
-                                            {/* School */}
-                                            <div className="text-[9px] text-muted-foreground/55 truncate leading-tight mt-0.5">
-                                                {(player as any).school || '—'}
-                                            </div>
+                                            {/* NFL team / draft status */}
+                                            {draftStatus.type === 'drafted' && (
+                                                <div className="flex items-center gap-0.5 mt-0.5">
+                                                    <NflTeamLogo abbr={draftStatus.team} size={10} />
+                                                    <span className="text-[8px] font-bold text-yellow-300/70 truncate leading-tight">{draftStatus.team} {draftStatus.slot}</span>
+                                                </div>
+                                            )}
+                                            {draftStatus.type === 'udfa' && (
+                                                <div className="flex items-center gap-0.5 mt-0.5">
+                                                    <NflTeamLogo abbr={draftStatus.team} size={10} />
+                                                    <span className="text-[8px] font-semibold text-sky-300/60 truncate leading-tight">UDFA</span>
+                                                </div>
+                                            )}
+                                            {draftStatus.type === 'undrafted' && (
+                                                <div className="text-[8px] text-muted-foreground/30 mt-0.5">—</div>
+                                            )}
                                         </Link>
                                     );
                                 })}

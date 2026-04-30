@@ -18,6 +18,7 @@ async function getPlayer(slug: string) {
                 p.id, p.slug, p.full_name, p.first_name, p.last_name,
                 p.position, p.dob, p.age_at_draft, p.height_inches, p.weight_lbs,
                 p.star_rating, p.draft_year, p.headshot_url, p.espn_college_id, p.nfl_team,
+                p.draft_round, p.draft_pick, p.draft_overall,
                 p.breakout_age, p.breakout_year, p.hometown,
                 p.recruiting_composite, p.recruiting_stars, p.recruiting_year,
                 COALESCE(
