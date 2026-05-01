@@ -91,6 +91,7 @@ const DRAFTED = [
   { slug: 'oscar-delp',          nfl_team: 'NO',  draft_round: 3, draft_pick: 9,  draft_overall: 73  },
   { slug: 'malachi-fields',      nfl_team: 'NYG', draft_round: 3, draft_pick: 10, draft_overall: 74  },
   { slug: 'caleb-douglas',       nfl_team: 'MIA', draft_round: 3, draft_pick: 11, draft_overall: 75  },
+  { slug: 'chris-bell',          nfl_team: 'MIA', draft_round: 3, draft_pick: 30, draft_overall: 94  },
   { slug: 'drew-allar',          nfl_team: 'PIT', draft_round: 3, draft_pick: 12, draft_overall: 76  },
   { slug: 'zachariah-branch',    nfl_team: 'ATL', draft_round: 3, draft_pick: 15, draft_overall: 79  },
   { slug: 'jakobi-lane',         nfl_team: 'BAL', draft_round: 3, draft_pick: 16, draft_overall: 80  },
