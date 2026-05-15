@@ -188,6 +188,7 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
             case 'fc':  { const v = format === 'SF'  ? (p as any).fantasycalc_sf_rank : (p as any).fantasycalc_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'dn':  { const v = format === 'SF' ? (p as any).dynasty_nerds_sf_rank : p.dynasty_nerds_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'tfc': { const v = (p as any).tyler_ff_sf_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
+            case 'pick':
             case 'adp': {
                 if (draftStatus.type === 'drafted') {
                     return (

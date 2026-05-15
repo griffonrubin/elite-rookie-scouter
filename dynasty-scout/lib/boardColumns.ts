@@ -22,6 +22,7 @@ const RAS:   ColDef = { key: 'ras',   label: 'RAS',   sortKey: 'ras',   tooltip:
 const ARM:   ColDef = { key: 'arm',   label: 'Arm',   sortKey: 'arm',   tooltip: 'Arm length in inches — important for contested catches and press coverage' };
 const HAND:  ColDef = { key: 'hand',  label: 'Hand',  sortKey: 'hand',  tooltip: 'Hand size in inches — larger hands = better ball security and catching in weather' };
 const STARS: ColDef = { key: 'stars', label: 'Rcrt',  sortKey: 'stars', tooltip: 'Recruiting Stars — High school recruiting stars (247Sports composite) — 5★ = top national recruit' };
+const PICK:  ColDef = { key: 'pick',  label: 'Pick',                      tooltip: 'NFL draft pick — team logo + draft slot (e.g. 1.03) or UDFA' };
 const FP:    ColDef = { key: 'fp',    label: 'FP',    subLabel: 'Devy',   sortKey: 'fp',  tooltip: 'FantasyPros — consensus dynasty devy/rookie ranking' };
 const KTC:   ColDef = { key: 'ktc',   label: 'KTC',   subLabel: 'Dyn',    sortKey: 'ktc', tooltip: 'KeepTradeCut — dynasty trade value ranking (updated daily from trade data)' };
 const FC:    ColDef = { key: 'fc',    label: 'FC',    subLabel: 'Rookie', sortKey: 'fc',  tooltip: 'FantasyCalc — startup/rookie draft ranking' };
@@ -32,43 +33,43 @@ const TIER:  ColDef = { key: 'tier',  label: 'Tier',                            
 /** Column set per position filter. */
 export function getColDefs(pos: string): ColDef[] {
     if (pos === 'QB') return [
-        FORTY, SPD, RAS, STARS,
+        PICK, FORTY, SPD, RAS, STARS,
         { key: 'best_pass_ypg', label: 'Pass/G',  subLabel: 'Best',   sortKey: 'pass_ypg' },
         { key: 'comp_pct',      label: 'Comp%',   subLabel: 'Career', sortKey: 'comp_pct' },
         { key: 'ypa',           label: 'YPA',     subLabel: 'Career', sortKey: 'ypa'      },
         FP, KTC, TIER,
-    ]; // 10 cols
+    ]; // 11 cols
 
     if (pos === 'RB') return [
-        FORTY, SPD, RAS, STARS,
+        PICK, FORTY, SPD, RAS, STARS,
         { key: 'best_dominator', label: 'Dom%',    subLabel: 'Best',   sortKey: 'dom'      },
         { key: 'scrim_ypg',      label: 'Scrim/G', subLabel: 'Career', sortKey: 'scrim_ypg'},
         { key: 'best_ypc',       label: 'YPC',     subLabel: 'Best',   sortKey: 'ypc'      },
         FP, KTC, TIER,
-    ]; // 10 cols
+    ]; // 11 cols
 
     if (pos === 'WR' || pos === 'TE') return [
-        FORTY, SPD, RAS, STARS,
+        PICK, FORTY, SPD, RAS, STARS,
         { key: 'best_dominator', label: 'Dom%',    subLabel: 'Best',   sortKey: 'dom'      },
         { key: 'scrim_ypg',      label: 'Scrim/G', subLabel: 'Career', sortKey: 'scrim_ypg'},
         { key: 'best_ypr',       label: 'Yds/Rec', subLabel: 'Best',   sortKey: 'ypr'      },
         FP, KTC, TIER,
-    ]; // 10 cols
+    ]; // 11 cols
 
-    // ALL — full measurables + five ranking sources (incl. TylerFFCreator SF)
-    return [FORTY, SPD, RAS, ARM, HAND, STARS, FP, KTC, FC, DN, TFC, TIER]; // 12 cols
+    // ALL — pick + full measurables + five ranking sources (incl. TylerFFCreator SF)
+    return [PICK, FORTY, SPD, RAS, ARM, HAND, STARS, FP, KTC, FC, DN, TFC, TIER]; // 13 cols
 }
 
 /** CSS grid-template-columns string for the right dynamic section. */
 export function getGridTemplate(pos: string): string {
     if (pos === 'ALL') {
-        // 12 cols — measurables tight on left, ranking cols narrower
-        return '0.47fr 0.47fr 0.47fr 0.47fr 0.47fr 0.5fr 0.55fr 0.55fr 0.55fr 0.55fr 0.55fr 1fr';
+        // 13 cols: pick | 5 measurables | stars | 5 rankings | tier
+        return '0.65fr 0.42fr 0.42fr 0.42fr 0.42fr 0.42fr 0.46fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.9fr';
     }
     if (pos === 'QB') {
-        // 10 cols
-        return '0.65fr 0.65fr 0.65fr 0.65fr 0.9fr 0.8fr 0.7fr 0.65fr 0.65fr 1fr';
+        // 11 cols: pick | 40 spd ras stars | pass/g comp% ypa | fp ktc | tier
+        return '0.65fr 0.58fr 0.58fr 0.58fr 0.58fr 0.88fr 0.75fr 0.65fr 0.6fr 0.6fr 1fr';
     }
-    // RB / WR / TE — 10 cols
-    return '0.65fr 0.65fr 0.65fr 0.65fr 0.75fr 0.85fr 0.65fr 0.65fr 0.65fr 1fr';
+    // RB / WR / TE — 11 cols: pick | 40 spd ras stars | dom scrim/g ypc/ypr | fp ktc | tier
+    return '0.65fr 0.58fr 0.58fr 0.58fr 0.58fr 0.72fr 0.82fr 0.62fr 0.6fr 0.6fr 1fr';
 }

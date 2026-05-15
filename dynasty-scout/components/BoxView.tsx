@@ -238,37 +238,34 @@ export function BoxView({ players, period }: BoxViewProps) {
                         }}
                     >
                         {/* ── Header ── */}
-                        <div className="flex items-center justify-between px-3 sm:px-4 pt-2 sm:pt-3 pb-1.5 sm:pb-2">
-                            <div className="flex items-center gap-2">
-                                <span className={cn('text-sm font-extrabold font-mono', tier.text)}>#{rank}</span>
-                                {/* Actual draft status */}
+                        <div className="flex items-start justify-between px-3 sm:px-4 pt-2 sm:pt-3 pb-1.5 sm:pb-2">
+                            <span className={cn('text-sm font-extrabold font-mono mt-0.5', tier.text)}>#{rank}</span>
+                            <div className="flex flex-col items-end gap-1">
+                                <div className="flex items-center gap-2">
+                                    {p.recruiting_stars >= 4 && (
+                                        <span className={`text-[11px] font-bold ${p.recruiting_stars >= 5 ? 'text-yellow-400' : 'text-yellow-400/60'}`}>
+                                            {'★'.repeat(p.recruiting_stars)}
+                                        </span>
+                                    )}
+                                    <WatchlistButton playerSlug={player.slug} className="flex-shrink-0" />
+                                    <span
+                                        style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 10, fontWeight: 800, lineHeight: 1 }}
+                                        className={cn('border inline-flex items-center', posColor)}
+                                    >{player.position}</span>
+                                </div>
+                                {/* Draft pick — single instance, larger, right under position pill */}
                                 {draftStatus.type === 'drafted' && (
-                                    <span className="flex items-center gap-1 text-[9px] font-bold font-mono text-yellow-300/80">
-                                        <NflTeamLogo abbr={draftStatus.team} size={11} />
-                                        {draftStatus.slot}
-                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                        <NflTeamLogo abbr={draftStatus.team} size={14} />
+                                        <span className="text-[11px] font-bold font-mono text-yellow-300">{draftStatus.team} {draftStatus.slot}</span>
+                                    </div>
                                 )}
                                 {draftStatus.type === 'udfa' && (
-                                    <span className="flex items-center gap-1 text-[9px] font-bold font-mono text-sky-300/70">
-                                        <NflTeamLogo abbr={draftStatus.team} size={11} />
-                                        UDFA
-                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                        <NflTeamLogo abbr={draftStatus.team} size={14} />
+                                        <span className="text-[11px] font-bold font-mono text-sky-300">UDFA</span>
+                                    </div>
                                 )}
-                                {draftStatus.type === 'undrafted' && (
-                                    <span className="text-[9px] font-mono text-muted-foreground/30">—</span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2 mr-0.5">
-                                {p.recruiting_stars >= 4 && (
-                                    <span className={`text-[11px] font-bold ${p.recruiting_stars >= 5 ? 'text-yellow-400' : 'text-yellow-400/60'}`}>
-                                        {'★'.repeat(p.recruiting_stars)}
-                                    </span>
-                                )}
-                                <WatchlistButton playerSlug={player.slug} className="flex-shrink-0" />
-                                <span
-                                    style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 10, fontWeight: 800, lineHeight: 1 }}
-                                    className={cn('border inline-flex items-center', posColor)}
-                                >{player.position}</span>
                             </div>
                         </div>
 
@@ -288,19 +285,6 @@ export function BoxView({ players, period }: BoxViewProps) {
                                     {player.full_name}
                                 </div>
                                 <div className="text-[11px] text-muted-foreground/60 truncate mt-0.5">{school}</div>
-                                {/* NFL destination line */}
-                                {draftStatus.type === 'drafted' && (
-                                    <div className="flex items-center gap-1 mt-1">
-                                        <NflTeamLogo abbr={draftStatus.team} size={12} />
-                                        <span className="text-[10px] font-bold text-yellow-300/70">{draftStatus.team} · {draftStatus.slot}</span>
-                                    </div>
-                                )}
-                                {draftStatus.type === 'udfa' && (
-                                    <div className="flex items-center gap-1 mt-1">
-                                        <NflTeamLogo abbr={draftStatus.team} size={12} />
-                                        <span className="text-[10px] font-semibold text-sky-300/60">UDFA – {draftStatus.team}</span>
-                                    </div>
-                                )}
                                 {p.breakout_age && (
                                     <div className="text-[10px] text-muted-foreground/40 font-mono mt-1">
                                         <span className={`font-bold ${p.breakout_age <= 19 ? 'text-emerald-400' : p.breakout_age <= 20 ? 'text-cyan-400' : ''}`}>
