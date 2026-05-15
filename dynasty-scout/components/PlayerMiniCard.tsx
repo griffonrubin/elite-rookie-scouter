@@ -193,7 +193,7 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                 if (draftStatus.type === 'drafted') {
                     return (
                         <span className="inline-flex items-center gap-1">
-                            <NflTeamLogo abbr={draftStatus.team} size={16} />
+                            <NflTeamLogo abbr={draftStatus.team} size={22} />
                             <span className="font-[var(--font-jetbrains),monospace] font-bold text-[14px] text-yellow-300/90">{draftStatus.slot}</span>
                         </span>
                     );
@@ -201,7 +201,7 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                 if (draftStatus.type === 'udfa') {
                     return (
                         <span className="inline-flex items-center gap-1">
-                            <NflTeamLogo abbr={draftStatus.team} size={16} />
+                            <NflTeamLogo abbr={draftStatus.team} size={22} />
                             <span className="font-[var(--font-jetbrains),monospace] font-bold text-[13px] text-sky-300/80">UDFA</span>
                         </span>
                     );
