@@ -31,6 +31,9 @@ if (!USE_POSTGRES) {
     const dbPath = path.join(process.cwd(), 'dynasty_scout.db');
     sqliteDb = new Database(dbPath);
     sqliteDb.pragma('journal_mode = WAL');
+    sqliteDb.pragma('synchronous = NORMAL');   // safe with WAL, faster than FULL
+    sqliteDb.pragma('cache_size = -65536');    // 64 MB page cache
+    sqliteDb.pragma('temp_store = MEMORY');    // CTEs/sorts in RAM not disk
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

@@ -196,6 +196,26 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     const colDefs = getColDefs(positionFilter);
     const gridTemplate = getGridTemplate(positionFilter);
 
+    // Pre-build ranking objects so PlayerMiniCard's React.memo sees stable references.
+    const rankingMap = useMemo(() => {
+        const rankField = format === '1QB' ? 'rank_1qb' : 'rank_sf';
+        const map = new Map<number, any>();
+        filteredPlayers.forEach((p, i) => {
+            map.set(p.id, {
+                id: 0, player_id: p.id, calculated_at: '',
+                rank_overall:    (p as any)[rankField]       ?? (i + 1),
+                avg_rank:        (p as any).avg_rank         ?? undefined,
+                best_rank:       (p as any).best_rank        ?? undefined,
+                worst_rank:      (p as any).worst_rank       ?? undefined,
+                num_sources:     (p as any).num_sources      ?? 0,
+                rank_change_1d:  (p as any).rank_change_1d   ?? 0,
+                rank_change_7d:  (p as any).rank_change_7d   ?? 0,
+                rank_change_30d: (p as any).rank_change_30d  ?? 0,
+            });
+        });
+        return map;
+    }, [filteredPlayers, format]);
+
     return (
         <div className="space-y-0">
             {/* ── Keyboard Shortcuts Help Modal ── */}
@@ -559,17 +579,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                         )}
                                         <PlayerMiniCard
                                             player={player}
-                                            ranking={{
-                                                id: 0, player_id: player.id, calculated_at: '',
-                                                rank_overall: (player as any)[rankField] ?? (index + 1),
-                                                avg_rank:     (player as any).avg_rank       ?? undefined,
-                                                best_rank:    (player as any).best_rank      ?? undefined,
-                                                worst_rank:   (player as any).worst_rank     ?? undefined,
-                                                num_sources:  (player as any).num_sources    ?? 0,
-                                                rank_change_1d:  (player as any).rank_change_1d  ?? 0,
-                                                rank_change_7d:  (player as any).rank_change_7d  ?? 0,
-                                                rank_change_30d: (player as any).rank_change_30d ?? 0,
-                                            }}
+                                            ranking={rankingMap.get(player.id)!}
                                             period="1d"
                                             index={index}
                                             positionFilter={positionFilter}
