@@ -12,7 +12,8 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { ViewModeSelector, ViewMode } from '@/components/ViewModeSelector';
 import { BoxView } from '@/components/BoxView';
 import { HexView } from '@/components/HexView';
-import { getColDefs, getGridTemplate, SortKey } from '@/lib/boardColumns';
+import { DatasetPicker } from '@/components/DatasetPicker';
+import { getColDefs, getGridTemplate, pickInIdentity, BoardDataset, SortKey } from '@/lib/boardColumns';
 
 interface DraftBoardProps { players: Player[]; }
 type SortDir = 'asc' | 'desc';
@@ -48,6 +49,11 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     const [showHelp, setShowHelp]             = useState(false);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [format, setFormat] = useState<'SF' | '1QB'>('SF');
+    const [dataset, setDataset] = useState<BoardDataset>(
+        (['snapshot', 'rankings', 'traits', 'production'].includes(searchParams.get('view') || '')
+            ? searchParams.get('view')
+            : 'snapshot') as BoardDataset
+    );
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Load watchlist from localStorage on mount and keep in sync
@@ -80,8 +86,20 @@ function DraftBoardContent({ players }: DraftBoardProps) {
         const params = new URLSearchParams();
         if (debouncedSearch) params.set('q', debouncedSearch);
         if (positionFilter !== 'ALL') params.set('position', positionFilter);
+        if (dataset !== 'snapshot') params.set('view', dataset);
         router.replace(`/?${params.toString()}`, { scroll: false });
-    }, [debouncedSearch, positionFilter, router]);
+    }, [debouncedSearch, positionFilter, dataset, router]);
+
+    // If the active sort column isn't part of the current dataset, fall back to consensus rank.
+    useEffect(() => {
+        const validSortKeys = new Set(
+            getColDefs(dataset, positionFilter).map(c => c.sortKey).filter(Boolean)
+        );
+        if (sortKey !== 'rank' && !validSortKeys.has(sortKey)) {
+            setSortKey('rank');
+            setSortDir('asc');
+        }
+    }, [dataset, positionFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -111,7 +129,8 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     }), [players]);
 
     // Higher = better for these — default to desc when first clicked
-    const DEFAULT_DESC: SortKey[] = ['ras', 'height', 'arm', 'hand', 'stars', 'spd', 'dom', 'scrim_ypg', 'pass_ypg', 'comp_pct', 'ypa', 'ypr', 'ypc'];
+    const DEFAULT_DESC: SortKey[] = ['ras', 'height', 'arm', 'hand', 'stars', 'spd', 'dom', 'scrim_ypg', 'pass_ypg', 'comp_pct', 'ypa', 'ypr', 'ypc',
+        'vert', 'broad', 'bench', 'gp', 'pass_yds', 'pass_td', 'rush_yds', 'rush_td', 'rec', 'rec_yds', 'rec_td', 'mv7'];
 
     function handleSort(key: SortKey) {
         if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -175,6 +194,21 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 case 'scrim_ypg':va = (a as any).career_games_cs > 0 ? (a as any).career_scrim_yards / (a as any).career_games_cs : MISS; vb = (b as any).career_games_cs > 0 ? (b as any).career_scrim_yards / (b as any).career_games_cs : MISS; break;
                 case 'ypr':      va = (a as any).best_ypr ?? MISS; vb = (b as any).best_ypr ?? MISS; break;
                 case 'ypc':      va = (a as any).best_ypc ?? MISS; vb = (b as any).best_ypc ?? MISS; break;
+                case 'vert':     va = (a as any).vertical_jump ?? MISS; vb = (b as any).vertical_jump ?? MISS; break;
+                case 'broad':    va = (a as any).broad_jump ?? MISS; vb = (b as any).broad_jump ?? MISS; break;
+                case 'cone':     va = (a as any).three_cone ?? MISS; vb = (b as any).three_cone ?? MISS; break;
+                case 'shuttle':  va = (a as any).shuttle ?? MISS; vb = (b as any).shuttle ?? MISS; break;
+                case 'bench':    va = (a as any).bench_press ?? MISS; vb = (b as any).bench_press ?? MISS; break;
+                case 'gp':       va = (a as any).career_games_cs ?? MISS; vb = (b as any).career_games_cs ?? MISS; break;
+                case 'pass_yds': va = (a as any).career_pass_yards ?? MISS; vb = (b as any).career_pass_yards ?? MISS; break;
+                case 'pass_td':  va = (a as any).career_pass_tds ?? MISS; vb = (b as any).career_pass_tds ?? MISS; break;
+                case 'rush_yds': va = (a as any).career_rush_yards ?? MISS; vb = (b as any).career_rush_yards ?? MISS; break;
+                case 'rush_td':  va = (a as any).career_rush_tds ?? MISS; vb = (b as any).career_rush_tds ?? MISS; break;
+                case 'rec':      va = (a as any).career_receptions ?? MISS; vb = (b as any).career_receptions ?? MISS; break;
+                case 'rec_yds':  va = (a as any).career_rec_yards ?? MISS; vb = (b as any).career_rec_yards ?? MISS; break;
+                case 'rec_td':   va = (a as any).career_rec_tds ?? MISS; vb = (b as any).career_rec_tds ?? MISS; break;
+                case 'avg_rank': { const f = format === '1QB' ? 'avg_rank_1qb' : 'avg_rank'; va = (a as any)[f] ?? MISS; vb = (b as any)[f] ?? MISS; break; }
+                case 'mv7':      { const f = format === '1QB' ? 'rank_change_7d_1qb' : 'rank_change_7d'; va = (a as any)[f] ?? MISS; vb = (b as any)[f] ?? MISS; break; }
                 case 'rank':
                 default: {
                     const rankField = format === '1QB' ? 'rank_1qb' : 'rank_sf';
@@ -193,8 +227,9 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     }), [prePositionPlayers]);
 
     const showTiers = sortKey === 'rank' && sortDir === 'asc' && !searchQuery.trim() && !favoritesOnly && draftCapFilter === 'all' && ageFilter === 'all' && rasFilter === 'all';
-    const colDefs = getColDefs(positionFilter);
-    const gridTemplate = getGridTemplate(positionFilter);
+    const colDefs = getColDefs(dataset, positionFilter);
+    const gridTemplate = getGridTemplate(dataset, positionFilter);
+    const showPickInIdentity = pickInIdentity(dataset);
 
     // Pre-build ranking objects so PlayerMiniCard's React.memo sees stable references.
     const rankingMap = useMemo(() => {
@@ -271,7 +306,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir(DEFAULT_DESC.includes(v as SortKey) ? 'desc' : 'asc'); }}>
                             <SelectTrigger className="w-[140px] sm:w-[180px] bg-card border-border/60 text-xs" style={{ height: '34px', paddingLeft: '14px', paddingRight: '14px', gap: '10px' }}>
                                 <SelectValue>
-                                    {({ rank: 'Consensus', ktc: 'KTC ' + format, sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FC ' + format, dn: 'DynNerds', tfc: 'TylerFF SF', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC' } as {[k:string]:string})[sortKey] ?? 'Consensus'}
+                                    {({ rank: 'Consensus', ktc: 'KTC ' + format, sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FC ' + format, dn: 'DynNerds', tfc: 'TylerFF SF', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC', vert: 'Vertical', broad: 'Broad Jump', cone: '3-Cone', shuttle: 'Shuttle', bench: 'Bench', gp: 'Games', pass_yds: 'Pass Yds', pass_td: 'Pass TD', rush_yds: 'Rush Yds', rush_td: 'Rush TD', rec: 'Receptions', rec_yds: 'Rec Yds', rec_td: 'Rec TD', avg_rank: 'Avg Rank', mv7: '7d Move' } as {[k:string]:string})[sortKey] ?? 'Consensus'}
                                 </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
@@ -429,6 +464,13 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         >reset</button>
                     )}
                 </div>{/* end collapsible filter wrapper */}
+
+                {/* Row 4: Dataset lens picker — table view only */}
+                {viewMode === 'table' && (
+                    <div className="pt-1 border-t border-white/[0.05]">
+                        <DatasetPicker dataset={dataset} onChange={setDataset} />
+                    </div>
+                )}
             </div>
 
             {/* ── Table View ── */}
@@ -438,8 +480,8 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                     {/* Column headers — sticky below the app header bar */}
                     <div className="flex items-stretch px-4 py-0 border-b border-white/[0.06] gap-0 min-h-[46px] sticky top-[54px] z-20"
                          style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(16px)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
-                        {/* Sticky identity group: star + rank + compare + player */}
-                        <div className="sticky left-0 z-10 flex items-center gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 lg:w-[304px]" style={{ background: 'var(--bg-elevated)' }}>
+                        {/* Sticky identity group: star + rank + compare + player (+ pick) */}
+                        <div className={`sticky left-0 z-10 flex items-center gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 ${showPickInIdentity ? 'lg:w-[416px]' : 'lg:w-[304px]'}`} style={{ background: 'var(--bg-elevated)' }}>
                         {/* Spacer for watchlist star */}
                         <div className="w-5 flex-shrink-0" />
 
@@ -465,6 +507,20 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         <div className="flex-1 min-w-0 lg:w-[224px] lg:min-w-[224px] lg:flex-none flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                             Player
                         </div>
+
+                        {/* Pick — pinned into identity for Traits / Production datasets */}
+                        {showPickInIdentity && (
+                            <Tooltip delayDuration={300}>
+                                <TooltipTrigger asChild>
+                                    <div className="hidden lg:flex w-[52px] flex-shrink-0 items-center justify-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border/30">
+                                        Pick
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="max-w-[240px] text-xs leading-snug">
+                                    NFL draft pick — team logo + draft slot (e.g. 1.03) or UDFA
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
                         </div>{/* end sticky identity group */}
 
                         {/* Dynamic stat columns — CSS grid, same template as PlayerMiniCard */}
@@ -584,6 +640,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                             index={index}
                                             positionFilter={positionFilter}
                                             format={format}
+                                            dataset={dataset}
                                         />
                                     </div>
                                 );

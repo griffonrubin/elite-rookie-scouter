@@ -7,7 +7,7 @@ import { POSITION_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { ConsensusRanking, Player } from '@/lib/types';
 import { WatchlistButton } from './WatchlistButton';
-import { getColDefs, getGridTemplate, ColDef } from '@/lib/boardColumns';
+import { getColDefs, getGridTemplate, pickInIdentity, BoardDataset, ColDef } from '@/lib/boardColumns';
 import { Scale } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { NflTeamLogo, getDraftStatus } from '@/components/NflTeamLogo';
@@ -19,6 +19,7 @@ interface PlayerMiniCardProps {
     index: number;
     positionFilter?: string;
     format?: 'SF' | '1QB';
+    dataset?: BoardDataset;
 }
 
 function getTier(rank: number): { label: string; color: string; border: string; accent: string } {
@@ -104,7 +105,7 @@ function RecruitStars({ stars }: { stars: number | null | undefined }) {
     return <span className={`text-[13px] font-bold ${color}`}>{'★'.repeat(stars)}</span>;
 }
 
-function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 'ALL', format = 'SF' }: PlayerMiniCardProps) {
+function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 'ALL', format = 'SF', dataset = 'snapshot' }: PlayerMiniCardProps) {
     const router = useRouter();
     const p = player as any;
     const positionColor = POSITION_COLORS[player.position] || 'bg-gray-500/20 text-gray-300 border-gray-500/40';
@@ -118,8 +119,9 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
     const wt        = player.weight_lbs    ? `${player.weight_lbs}lb`           : '—';
     const fortyYard = p.forty_yard as number | null | undefined;
 
-    const colDefs      = getColDefs(positionFilter);
-    const gridTemplate = getGridTemplate(positionFilter);
+    const colDefs           = getColDefs(dataset, positionFilter);
+    const gridTemplate      = getGridTemplate(dataset, positionFilter);
+    const showPickInIdentity = pickInIdentity(dataset);
 
     // Computed career stats used by position-specific columns
     const compPct   = p.career_pass_att > 0  ? ((p.career_completions  / p.career_pass_att)  * 100).toFixed(1) + '%' : null;
@@ -236,6 +238,34 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
             case 'scrim_ypg':         return <StatVal val={scrimYpg} />;
             case 'recruiting_stars':  return <RecruitStars stars={p.recruiting_stars} />;
 
+            // ── Traits — combine drills ────────────────────────────────────────
+            case 'vert':    return <StatVal val={p.vertical_jump != null ? `${Number(p.vertical_jump).toFixed(1)}"` : null} />;
+            case 'broad':   return <StatVal val={p.broad_jump != null ? `${Number(p.broad_jump)}"` : null} />;
+            case 'cone':    return <StatVal val={p.three_cone != null ? `${Number(p.three_cone).toFixed(2)}s` : null} />;
+            case 'shuttle': return <StatVal val={p.shuttle != null ? `${Number(p.shuttle).toFixed(2)}s` : null} />;
+            case 'bench':   return <StatVal val={p.bench_press != null ? String(p.bench_press) : null} />;
+
+            // ── Production — career college totals ─────────────────────────────
+            case 'gp':                 return <StatVal val={p.career_games_cs > 0 ? String(p.career_games_cs) : null} />;
+            case 'career_pass_tds':    return <StatVal val={p.career_pass_tds > 0 ? String(p.career_pass_tds) : null} />;
+            case 'career_rush_yards':  return <StatVal val={p.career_rush_yards > 0 ? Number(p.career_rush_yards).toLocaleString() : null} />;
+            case 'career_rush_tds':    return <StatVal val={p.career_rush_tds > 0 ? String(p.career_rush_tds) : null} />;
+            case 'career_rec_yards':   return <StatVal val={p.career_rec_yards > 0 ? Number(p.career_rec_yards).toLocaleString() : null} />;
+            case 'career_rec_tds':     return <StatVal val={p.career_rec_tds > 0 ? String(p.career_rec_tds) : null} />;
+            case 'career_receptions':  return <StatVal val={p.career_receptions > 0 ? String(p.career_receptions) : null} />;
+
+            // ── Rankings — consensus average + movement ────────────────────────
+            case 'avg_rank': {
+                const v = format === '1QB' ? p.avg_rank_1qb : p.avg_rank;
+                return <StatVal val={v != null ? Number(v).toFixed(1) : null} highlight={sourceRankColor(v)} />;
+            }
+            case 'mv7': {
+                const v = format === '1QB' ? p.rank_change_7d_1qb : p.rank_change_7d;
+                if (v == null || v === 0) return <StatVal val={null} />;
+                const up = v > 0;
+                return <span className={`font-[var(--font-jetbrains),monospace] font-bold text-[13px] ${up ? 'text-emerald-400' : 'text-red-400'}`}>{up ? '▲' : '▼'}{Math.abs(v)}</span>;
+            }
+
             default: return <StatVal val={null} />;
         }
     }
@@ -256,9 +286,9 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                 {/* Tier accent bar — absolutely positioned so it never shifts layout */}
                 <div className="absolute inset-y-0 left-0 w-[3px]" style={{ background: tier.border }} />
 
-                {/* Sticky identity group: star + rank + compare + player */}
+                {/* Sticky identity group: star + rank + compare + player (+ pick) */}
                 <div
-                    className="sticky left-0 z-10 flex items-center self-stretch gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 lg:w-[304px]"
+                    className={`sticky left-0 z-10 flex items-center self-stretch gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 ${showPickInIdentity ? 'lg:w-[416px]' : 'lg:w-[304px]'}`}
                 >
                     {/* Watchlist star */}
                     <WatchlistButton playerSlug={player.slug} className="flex-shrink-0" />
@@ -387,6 +417,13 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                             </div>
                         </HoverCardContent>
                     </HoverCard>
+
+                    {/* Pick — pinned into identity for Traits / Production datasets */}
+                    {showPickInIdentity && (
+                        <div className="hidden lg:flex w-[52px] flex-shrink-0 items-center justify-center self-stretch border-l border-white/[0.05]">
+                            {renderCell({ key: 'pick', label: 'Pick' })}
+                        </div>
+                    )}
                 </div>{/* end sticky identity group */}
 
                 {/* 3. Dynamic stat columns — CSS grid */}
