@@ -51,6 +51,7 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
         (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'FantasyCalc' ORDER BY scraped_at DESC LIMIT 1) as fantasycalc_rank,
         (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'DynastyNerds' ORDER BY scraped_at DESC LIMIT 1) as dynasty_nerds_rank,
         (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'DynastyNerds SF' ORDER BY scraped_at DESC LIMIT 1) as dynasty_nerds_sf_rank,
+        (SELECT rank_overall FROM rankings r WHERE r.player_id = p.id AND r.source = 'TylerFFCreator SF' ORDER BY scraped_at DESC LIMIT 1) as tyler_ff_sf_rank,
         (SELECT MAX(dominator_rating) FROM college_stats WHERE player_id = p.id) as best_dominator,
         (SELECT COALESCE(SUM(pass_yards),0) FROM college_stats WHERE player_id = p.id) as career_pass_yards,
         (SELECT COALESCE(SUM(pass_attempts),0) FROM college_stats WHERE player_id = p.id) as career_pass_att,

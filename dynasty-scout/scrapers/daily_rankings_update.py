@@ -12,7 +12,10 @@ import subprocess
 from datetime import datetime
 
 # Run from the dynasty-scout directory
-os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(_root)
+if _root not in sys.path:
+    sys.path.insert(0, _root)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,15 +53,12 @@ def step_dynasty_nerds():
 
 
 def step_fantasypros():
-    from scrapers.multi_rankings import scrape_fantasypros, get_db, load_players
-    conn = get_db()
-    player_map = load_players(conn)
-    scrape_fantasypros(conn, player_map)
-    conn.close()
+    from scrapers.rankings.fantasypros import FantasyProsRankingScraper
+    FantasyProsRankingScraper().scrape()
 
 
 def step_sttm():
-    """sticktothemodel.com — draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
+    """sticktothemodel.com - draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
     from scrapers.sttm_scraper import fetch_csv, sync_rankings, RANK_CSV
     import sqlite3
     db = sqlite3.connect("dynasty_scout.db")

@@ -160,6 +160,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 case 'fp':     { const f = format === 'SF' ? 'fantasypros_sf_rank' : 'fantasypros_rank'; va = (a as any)[f] ?? MISS; vb = (b as any)[f] ?? MISS; break; }
                 case 'fc':     { const f = format === 'SF' ? 'fantasycalc_sf_rank' : 'fantasycalc_rank'; va = (a as any)[f] ?? MISS; vb = (b as any)[f] ?? MISS; break; }
                 case 'dn':     { const f = format === 'SF' ? 'dynasty_nerds_sf_rank' : 'dynasty_nerds_rank'; va = (a as any)[f] ?? MISS; vb = (b as any)[f] ?? MISS; break; }
+                case 'tfc':    va = (a as any).tyler_ff_sf_rank ?? MISS; vb = (b as any).tyler_ff_sf_rank ?? MISS; break;
                 case 'forty':    va = (a as any).forty_yard ?? MISS; vb = (b as any).forty_yard ?? MISS; break;
                 case 'spd':      va = (a as any).speed_score ?? MISS; vb = (b as any).speed_score ?? MISS; break;
                 case 'ras':      va = (a as any).ras ?? MISS; vb = (b as any).ras ?? MISS; break;
@@ -250,7 +251,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir(DEFAULT_DESC.includes(v as SortKey) ? 'desc' : 'asc'); }}>
                             <SelectTrigger className="w-[140px] sm:w-[180px] bg-card border-border/60 text-xs" style={{ height: '34px', paddingLeft: '14px', paddingRight: '14px', gap: '10px' }}>
                                 <SelectValue>
-                                    {({ rank: 'Consensus', ktc: 'KTC ' + format, sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FC ' + format, dn: 'DynNerds', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC' } as {[k:string]:string})[sortKey] ?? 'Consensus'}
+                                    {({ rank: 'Consensus', ktc: 'KTC ' + format, sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FC ' + format, dn: 'DynNerds', tfc: 'TylerFF SF', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC' } as {[k:string]:string})[sortKey] ?? 'Consensus'}
                                 </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
@@ -259,6 +260,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 <SelectItem value="fp">FantasyPros</SelectItem>
                                 <SelectItem value="fc">FantasyCalc</SelectItem>
                                 <SelectItem value="dn">DynastyNerds</SelectItem>
+                                <SelectItem value="tfc">TylerFFCreator SF</SelectItem>
                                 <SelectItem value="forty">40yd Dash</SelectItem>
                                 <SelectItem value="spd">Speed Score</SelectItem>
                                 <SelectItem value="ras">RAS Score</SelectItem>

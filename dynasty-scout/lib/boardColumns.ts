@@ -3,7 +3,7 @@
 // to guarantee the header and data columns are ALWAYS pixel-perfectly aligned.
 
 export type SortKey =
-    | 'rank' | 'ktc' | 'sleeper' | 'fp' | 'fc' | 'dn'
+    | 'rank' | 'ktc' | 'sleeper' | 'fp' | 'fc' | 'dn' | 'tfc'
     | 'forty' | 'spd' | 'ras' | 'height' | 'arm' | 'hand' | 'stars'
     | 'dom' | 'scrim_ypg' | 'pass_ypg' | 'comp_pct' | 'ypa' | 'ypr' | 'ypc';
 
@@ -26,6 +26,7 @@ const FP:    ColDef = { key: 'fp',    label: 'FP',    subLabel: 'Devy',   sortKe
 const KTC:   ColDef = { key: 'ktc',   label: 'KTC',   subLabel: 'Dyn',    sortKey: 'ktc', tooltip: 'KeepTradeCut — dynasty trade value ranking (updated daily from trade data)' };
 const FC:    ColDef = { key: 'fc',    label: 'FC',    subLabel: 'Rookie', sortKey: 'fc',  tooltip: 'FantasyCalc — startup/rookie draft ranking' };
 const DN:    ColDef = { key: 'dn',    label: 'DN',    subLabel: 'Rookie', sortKey: 'dn',  tooltip: 'Dynasty Nerds — analyst consensus rookie ranking' };
+const TFC:   ColDef = { key: 'tfc',   label: 'TFC',   subLabel: 'SF',     sortKey: 'tfc', tooltip: 'TylerFFCreator — SF dynasty rookie ranking' };
 const TIER:  ColDef = { key: 'tier',  label: 'Tier',                                       tooltip: 'Dynasty value tier based on consensus rank. ⚠ Limited = ranked by 0 sources' };
 
 /** Column set per position filter. */
@@ -54,15 +55,15 @@ export function getColDefs(pos: string): ColDef[] {
         FP, KTC, TIER,
     ]; // 10 cols
 
-    // ALL — full measurables + four ranking sources
-    return [FORTY, SPD, RAS, ARM, HAND, STARS, FP, KTC, FC, DN, TIER]; // 11 cols
+    // ALL — full measurables + five ranking sources (incl. TylerFFCreator SF)
+    return [FORTY, SPD, RAS, ARM, HAND, STARS, FP, KTC, FC, DN, TFC, TIER]; // 12 cols
 }
 
 /** CSS grid-template-columns string for the right dynamic section. */
 export function getGridTemplate(pos: string): string {
     if (pos === 'ALL') {
-        // 11 cols — measurables tight on left, ranking cols narrower
-        return '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.55fr 0.6fr 0.6fr 0.6fr 0.6fr 1fr';
+        // 12 cols — measurables tight on left, ranking cols narrower
+        return '0.47fr 0.47fr 0.47fr 0.47fr 0.47fr 0.5fr 0.55fr 0.55fr 0.55fr 0.55fr 0.55fr 1fr';
     }
     if (pos === 'QB') {
         // 10 cols

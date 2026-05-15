@@ -187,6 +187,7 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
             case 'ktc': { const v = format === '1QB' ? (p as any).ktc_1qb_rank : (p as any).ktc_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'fc':  { const v = format === 'SF'  ? (p as any).fantasycalc_sf_rank : (p as any).fantasycalc_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'dn':  { const v = format === 'SF' ? (p as any).dynasty_nerds_sf_rank : p.dynasty_nerds_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
+            case 'tfc': { const v = (p as any).tyler_ff_sf_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'adp': {
                 if (draftStatus.type === 'drafted') {
                     return (
@@ -288,31 +289,6 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                                         style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 5px', lineHeight: 1, whiteSpace: 'nowrap', borderRadius: 9999, flexShrink: 0, fontSize: 9, fontWeight: 800, letterSpacing: '0.03em' }}
                                         className={cn('border sm:px-[7px] sm:text-[10px]', positionColor)}
                                     >{player.position}</span>
-                                    {/* Actual draft status badge */}
-                                    {draftStatus.type === 'drafted' && (
-                                        <span
-                                            className="hidden sm:inline-flex items-center gap-1 border border-yellow-500/30 bg-yellow-500/10 text-yellow-300/90 rounded-full flex-shrink-0"
-                                            style={{ padding: '2px 6px', fontSize: 9, fontWeight: 700, lineHeight: 1, whiteSpace: 'nowrap' }}
-                                        >
-                                            <NflTeamLogo abbr={draftStatus.team} size={10} />
-                                            {draftStatus.team} {draftStatus.slot}
-                                        </span>
-                                    )}
-                                    {draftStatus.type === 'udfa' && (
-                                        <span
-                                            className="hidden sm:inline-flex items-center gap-1 border border-sky-500/30 bg-sky-500/10 text-sky-300/80 rounded-full flex-shrink-0"
-                                            style={{ padding: '2px 6px', fontSize: 9, fontWeight: 700, lineHeight: 1, whiteSpace: 'nowrap' }}
-                                        >
-                                            <NflTeamLogo abbr={draftStatus.team} size={10} />
-                                            UDFA
-                                        </span>
-                                    )}
-                                    {draftStatus.type === 'undrafted' && (
-                                        <span
-                                            className="hidden sm:inline-flex border border-border/25 text-muted-foreground/35 rounded-full flex-shrink-0"
-                                            style={{ padding: '2px 6px', fontSize: 8, fontWeight: 700, lineHeight: 1, whiteSpace: 'nowrap' }}
-                                        >Undrafted</span>
-                                    )}
                                 </div>
                                 <div className="flex items-center text-[10px] sm:text-[11px] text-muted-foreground/60 gap-1 sm:gap-1.5 leading-none">
                                     <span className="truncate">{schoolDisplay || 'School TBD'}</span>
@@ -335,13 +311,31 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                                         {player.position}
                                     </div>
                                 )}
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-1">
                                     <div className="font-bold text-sm text-foreground leading-tight truncate">{player.full_name}</div>
                                     <div className="flex items-center gap-1.5 mt-0.5">
                                         <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded border', positionColor)}>{player.position}</span>
                                         <span className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded border', tier.color)}>{tier.label}</span>
                                     </div>
                                     <div className="text-[10px] text-muted-foreground/50 mt-1 truncate">{schoolDisplay || 'School TBD'}</div>
+                                    {/* Draft destination — prominent, in blank space under badges */}
+                                    {draftStatus.type === 'drafted' && (
+                                        <div className="flex items-center gap-1.5 mt-2">
+                                            <NflTeamLogo abbr={draftStatus.team} size={18} />
+                                            <span className="text-[13px] font-bold font-[var(--font-jetbrains),monospace] text-yellow-300 leading-none">{draftStatus.team} {draftStatus.slot}</span>
+                                        </div>
+                                    )}
+                                    {draftStatus.type === 'udfa' && (
+                                        <div className="flex items-center gap-1.5 mt-2">
+                                            <NflTeamLogo abbr={draftStatus.team} size={18} />
+                                            <span className="text-[13px] font-bold text-sky-300 leading-none">UDFA – {draftStatus.team}</span>
+                                        </div>
+                                    )}
+                                    {draftStatus.type === 'undrafted' && (
+                                        <div className="mt-2">
+                                            <span className="text-[11px] font-semibold text-muted-foreground/40">Undrafted</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="px-4 py-3 space-y-2">
@@ -389,33 +383,6 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                                         <span className="text-xs font-[var(--font-jetbrains),monospace] font-bold text-foreground">{s.val}</span>
                                     </div>
                                 ))}
-                                {/* NFL destination row */}
-                                <div className="pt-1 border-t border-white/[0.06] flex justify-between items-center">
-                                    {draftStatus.type === 'drafted' && (
-                                        <>
-                                            <span className="text-[10px] text-muted-foreground/40 uppercase tracking-wide font-semibold">Draft Pick</span>
-                                            <span className="flex items-center gap-1.5">
-                                                <NflTeamLogo abbr={draftStatus.team} size={14} />
-                                                <span className="text-xs font-[var(--font-jetbrains),monospace] font-bold text-yellow-300">{draftStatus.team} {draftStatus.slot}</span>
-                                            </span>
-                                        </>
-                                    )}
-                                    {draftStatus.type === 'udfa' && (
-                                        <>
-                                            <span className="text-[10px] text-muted-foreground/40 uppercase tracking-wide font-semibold">NFL Team</span>
-                                            <span className="flex items-center gap-1.5">
-                                                <NflTeamLogo abbr={draftStatus.team} size={14} />
-                                                <span className="text-xs font-bold text-sky-300">UDFA – {draftStatus.team}</span>
-                                            </span>
-                                        </>
-                                    )}
-                                    {draftStatus.type === 'undrafted' && (
-                                        <>
-                                            <span className="text-[10px] text-muted-foreground/40 uppercase tracking-wide font-semibold">Status</span>
-                                            <span className="text-xs text-muted-foreground/50 font-semibold">Undrafted</span>
-                                        </>
-                                    )}
-                                </div>
                             </div>
                         </HoverCardContent>
                     </HoverCard>
