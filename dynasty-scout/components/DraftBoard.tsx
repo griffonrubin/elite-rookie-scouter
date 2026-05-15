@@ -456,7 +456,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 <Tooltip key={col.key} delayDuration={300}>
                                 <TooltipTrigger asChild>
                                 <div
-                                    className={`flex items-center justify-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'fp' || col.key === 'tier' ? 'border-l border-border/20' : ''}`}
+                                    className={`flex items-center justify-center text-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'fp' || col.key === 'tier' ? 'border-l border-border/20' : ''}`}
                                 >
                                     {col.sortKey ? (
                                         <button
