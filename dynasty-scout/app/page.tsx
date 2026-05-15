@@ -167,6 +167,14 @@ export default async function Home() {
         </div>
       </AppHeader>
 
+      {/* Preload top-30 headshots so hover cards feel instant */}
+      {players.slice(0, 30).map(p => {
+        const src = (p as any).headshot_url || ((p as any).espn_college_id
+          ? `https://a.espncdn.com/i/headshots/college-football/players/full/${(p as any).espn_college_id}.png`
+          : null);
+        return src ? <link key={p.id} rel="preload" as="image" href={src} /> : null;
+      })}
+
       {/* ── Board ── */}
       <main className="w-full px-3 sm:px-8 lg:px-12 py-4 sm:py-6 mx-auto">
         {players.length === 0 ? (

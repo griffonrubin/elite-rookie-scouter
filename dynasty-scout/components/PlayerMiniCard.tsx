@@ -279,7 +279,7 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                     </button>
 
                     {/* Player info — wrapped in hover card for quick stats preview */}
-                    <HoverCard openDelay={500} closeDelay={100}>
+                    <HoverCard openDelay={200} closeDelay={80}>
                         <HoverCardTrigger asChild>
                             <div className="flex-1 min-w-0 lg:w-[224px] lg:min-w-[224px] lg:flex-none cursor-default">
                                 <div className="flex items-center gap-1 sm:gap-1.5 mb-0.5 overflow-hidden">
@@ -306,7 +306,7 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                             {/* Mini player preview card */}
                             <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]" style={{ background: 'var(--bg-elevated)' }}>
                                 {(p.headshot_url || p.espn_college_id) ? (
-                                    <img src={p.headshot_url || `https://a.espncdn.com/i/headshots/college-football/players/full/${p.espn_college_id}.png`} alt={player.full_name} className="w-10 h-12 rounded-lg object-cover object-top flex-shrink-0" />
+                                    <img src={p.headshot_url || `https://a.espncdn.com/i/headshots/college-football/players/full/${p.espn_college_id}.png`} alt={player.full_name} className="w-10 h-12 rounded-lg object-cover object-top flex-shrink-0" decoding="async" />
                                 ) : (
                                     <div className="w-10 h-12 rounded-lg bg-muted/40 flex items-center justify-center flex-shrink-0 text-lg font-black text-muted-foreground/30">
                                         {player.position}
