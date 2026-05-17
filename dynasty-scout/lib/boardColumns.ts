@@ -4,6 +4,7 @@
 
 export type SortKey =
     | 'rank' | 'ktc' | 'sleeper' | 'fp' | 'fc' | 'dn' | 'tfc'
+    | 'pfn' | 'tank' | 'tdn' | 'brug' | 'dj'
     | 'forty' | 'spd' | 'ras' | 'height' | 'arm' | 'hand' | 'stars'
     | 'dom' | 'scrim_ypg' | 'pass_ypg' | 'comp_pct' | 'ypa' | 'ypr' | 'ypc'
     | 'vert' | 'broad' | 'cone' | 'shuttle' | 'bench'
@@ -42,6 +43,13 @@ const FC:    ColDef = { key: 'fc',    label: 'FC',    subLabel: 'Rookie', sortKe
 const DN:    ColDef = { key: 'dn',    label: 'DN',    subLabel: 'Rookie', sortKey: 'dn',  tooltip: 'Dynasty Nerds — analyst consensus rookie ranking' };
 const TFC:   ColDef = { key: 'tfc',   label: 'TFC',   subLabel: 'SF',     sortKey: 'tfc', tooltip: 'TylerFFCreator — SF dynasty rookie ranking' };
 const TIER:  ColDef = { key: 'tier',  label: 'Tier',                                       tooltip: 'Dynasty value tier based on consensus rank. ⚠ Limited = ranked by 0 sources' };
+
+// ── NFL Draft scout big boards (format-neutral — shown in both SF and 1QB) ────
+const PFN:  ColDef = { key: 'pfn',  label: 'PFN',  subLabel: 'Board', sortKey: 'pfn',  tooltip: 'Pro Football Network — NFL draft prospect big board (format-neutral)' };
+const TANK: ColDef = { key: 'tank', label: 'Tank', subLabel: 'Board', sortKey: 'tank', tooltip: 'TankAthlete — NFL draft prospect big board (format-neutral)' };
+const TDN:  ColDef = { key: 'tdn',  label: 'TDN',  subLabel: 'Board', sortKey: 'tdn',  tooltip: 'The Draft Network — NFL draft prospect big board (format-neutral)' };
+const BRUG: ColDef = { key: 'brug', label: 'Brug', subLabel: 'Board', sortKey: 'brug', tooltip: 'Matt Brugler — NFL draft analyst big board (format-neutral)' };
+const DJ:   ColDef = { key: 'dj',   label: 'DJ',   subLabel: 'Board', sortKey: 'dj',   tooltip: 'Daniel Jeremiah — NFL Network draft analyst big board (format-neutral)' };
 
 // ── Traits atoms ──────────────────────────────────────────────────────────────
 const HW:      ColDef = { key: 'hw',      label: 'Ht/Wt',                 sortKey: 'height',  tooltip: 'Height and weight' };
@@ -159,7 +167,9 @@ function productionColDefs(pos: string): ColDef[] {
 export function getColDefs(dataset: BoardDataset, pos: string): ColDef[] {
     switch (dataset) {
         case 'rankings':
-            return [PICK, FP, KTC, FC, DN, TFC, AVG, MV7, TIER]; // 9 — position-agnostic
+            // 14 — position-agnostic. Fantasy sources (FP/KTC/FC/DN) are format-aware;
+            // TFC is SF-only; PFN/Tank/TDN/Brug/DJ are format-neutral NFL draft boards.
+            return [PICK, FP, KTC, FC, DN, TFC, PFN, TANK, TDN, BRUG, DJ, AVG, MV7, TIER];
         case 'traits':
             return [HW, FORTY, SPD, RAS, ARM, HAND, VERT, BROAD, CONE, SHUTTLE, BENCH, STARS]; // 12 — Pick pinned into identity
         case 'production':
@@ -186,8 +196,8 @@ export function pickInIdentity(dataset: BoardDataset): boolean {
 /** CSS grid-template-columns string for the right dynamic section. */
 export function getGridTemplate(dataset: BoardDataset, pos: string): string {
     if (dataset === 'rankings') {
-        // 9 cols: pick | fp ktc fc dn tfc | avg mv7 | tier
-        return '0.65fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.7fr 0.55fr 0.9fr';
+        // 14 cols: pick | fp ktc fc dn tfc | pfn tank tdn brug dj | avg mv7 | tier
+        return '0.6fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.6fr 0.5fr 0.95fr';
     }
     if (dataset === 'traits') {
         // 12 cols: ht/wt | 40 spd ras arm hand vert broad cone shuttle bench | stars

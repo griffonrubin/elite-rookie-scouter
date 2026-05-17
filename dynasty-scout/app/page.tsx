@@ -38,7 +38,12 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
           MAX(CASE WHEN source = 'FantasyCalc'         THEN rank_overall END) AS fantasycalc_rank,
           MAX(CASE WHEN source = 'DynastyNerds'        THEN rank_overall END) AS dynasty_nerds_rank,
           MAX(CASE WHEN source = 'DynastyNerds SF'     THEN rank_overall END) AS dynasty_nerds_sf_rank,
-          MAX(CASE WHEN source = 'TylerFFCreator SF'   THEN rank_overall END) AS tyler_ff_sf_rank
+          MAX(CASE WHEN source = 'TylerFFCreator SF'   THEN rank_overall END) AS tyler_ff_sf_rank,
+          MAX(CASE WHEN source = 'Pro Football Network' THEN rank_overall END) AS pfn_rank,
+          MAX(CASE WHEN source = 'TankAthlete'          THEN rank_overall END) AS tank_rank,
+          MAX(CASE WHEN source = 'The Draft Network'    THEN rank_overall END) AS tdn_rank,
+          MAX(CASE WHEN source = 'Matt Brugler'         THEN rank_overall END) AS brugler_rank,
+          MAX(CASE WHEN source = 'Daniel Jeremiah'      THEN rank_overall END) AS dj_rank
         FROM ranked_r WHERE rn = 1
         GROUP BY player_id
       ),
@@ -107,6 +112,7 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
         lr.ktc_rank, lr.ktc_1qb_rank, lr.fantasycalc_sf_rank, lr.sleeper_adp,
         lr.fantasypros_rank, lr.fantasypros_sf_rank, lr.fantasycalc_rank,
         lr.dynasty_nerds_rank, lr.dynasty_nerds_sf_rank, lr.tyler_ff_sf_rank,
+        lr.pfn_rank, lr.tank_rank, lr.tdn_rank, lr.brugler_rank, lr.dj_rank,
         ca.best_dominator, ca.career_pass_yards, ca.career_pass_att,
         ca.career_completions, ca.career_scrim_yards, ca.career_games_cs,
         ca.career_rush_yards, ca.career_rec_yards, ca.career_rush_tds,

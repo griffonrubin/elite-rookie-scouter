@@ -192,6 +192,11 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
             case 'fc':  { const v = format === 'SF'  ? (p as any).fantasycalc_sf_rank : (p as any).fantasycalc_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'dn':  { const v = format === 'SF' ? (p as any).dynasty_nerds_sf_rank : p.dynasty_nerds_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'tfc': { const v = (p as any).tyler_ff_sf_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
+            case 'pfn':  { const v = (p as any).pfn_rank;     return <StatVal val={v} highlight={sourceRankColor(v)} />; }
+            case 'tank': { const v = (p as any).tank_rank;    return <StatVal val={v} highlight={sourceRankColor(v)} />; }
+            case 'tdn':  { const v = (p as any).tdn_rank;     return <StatVal val={v} highlight={sourceRankColor(v)} />; }
+            case 'brug': { const v = (p as any).brugler_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
+            case 'dj':   { const v = (p as any).dj_rank;      return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'pick':
             case 'adp': {
                 if (draftStatus.type === 'drafted') {
@@ -564,7 +569,7 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                     {colDefs.map((col, i) => (
                         <div
                             key={col.key}
-                            className={`flex items-center justify-center text-center min-h-[38px] overflow-hidden ${i === 0 ? 'border-l border-white/[0.05]' : ''} ${col.key === 'fp' || col.key === 'tier' ? 'border-l border-white/[0.05]' : ''}`}
+                            className={`flex items-center justify-center text-center min-h-[38px] overflow-hidden ${i === 0 ? 'border-l border-white/[0.05]' : ''} ${col.key === 'fp' || col.key === 'pfn' || col.key === 'avg_rank' || col.key === 'tier' ? 'border-l border-white/[0.05]' : ''}`}
                         >
                             {renderCell(col)}
                         </div>
