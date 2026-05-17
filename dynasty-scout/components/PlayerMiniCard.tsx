@@ -175,6 +175,9 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
             case 'stars':
                 return <RecruitStars stars={p.recruiting_stars} />;
 
+            case 'age':
+                return <StatVal val={p.age_at_draft != null ? Number(p.age_at_draft).toFixed(1) : null} highlight={p.age_at_draft != null && p.age_at_draft <= 21 ? 'text-emerald-400 font-bold' : p.age_at_draft <= 22 ? 'text-sky-400' : undefined} />;
+
             // ── Legacy compact measurables (fallback) ─────────────────────────
             case 'measurables':
                 return (
@@ -393,6 +396,24 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                     : <StatVal val={null} />;
             case 'hist_sim':
                 return <StatVal val={p.hist_comp_sim != null ? Number(p.hist_comp_sim).toFixed(1) : null} />;
+            case 'hist_comp2':
+                return p.hist_comp2_name
+                    ? <span className="text-[11px] font-semibold text-foreground/60 text-center leading-tight truncate max-w-full px-1">{p.hist_comp2_name}</span>
+                    : <StatVal val={null} />;
+            case 'hist_sim2':
+                return <StatVal val={p.hist_comp2_sim != null ? Number(p.hist_comp2_sim).toFixed(1) : null} />;
+
+            // ── Seasons — career summary totals (position-aware) ──────────────
+            case 'career_td': {
+                const td = player.position === 'QB'
+                    ? (p.career_pass_tds ?? 0)
+                    : (p.career_rush_tds ?? 0) + (p.career_rec_tds ?? 0);
+                return <StatVal val={td > 0 ? String(td) : null} highlight={td >= 30 ? 'text-emerald-400 font-bold' : td >= 15 ? 'text-sky-400' : undefined} />;
+            }
+            case 'career_scr': {
+                const yds = player.position === 'QB' ? p.career_pass_yards : p.career_scrim_yards;
+                return <StatVal val={yds > 0 ? Number(yds).toLocaleString() : null} />;
+            }
 
             default: return <StatVal val={null} />;
         }
@@ -569,7 +590,7 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                     {colDefs.map((col, i) => (
                         <div
                             key={col.key}
-                            className={`flex items-center justify-center text-center min-h-[38px] overflow-hidden ${i === 0 ? 'border-l border-white/[0.05]' : ''} ${col.key === 'fp' || col.key === 'pfn' || col.key === 'avg_rank' || col.key === 'tier' ? 'border-l border-white/[0.05]' : ''}`}
+                            className={`flex items-center justify-center text-center min-h-[38px] overflow-hidden ${i === 0 ? 'border-l border-white/[0.05]' : ''} ${col.key === 'fp' || col.key === 'pfn' || col.key === 'avg_rank' || col.key === 'tier' || col.key === 'age' || col.key === 'career_td' || col.key === 's1' || col.key === 'hist_comp2' ? 'border-l border-white/[0.05]' : ''}`}
                         >
                             {renderCell(col)}
                         </div>

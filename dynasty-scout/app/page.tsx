@@ -152,7 +152,9 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
         jg.nfl_comp           AS jf_nfl_comp,
         jg.athletic_score     AS jf_athletic,
         hc.comp_name          AS hist_comp_name,
-        hc.similarity         AS hist_comp_sim
+        hc.similarity         AS hist_comp_sim,
+        hc2.comp_name         AS hist_comp2_name,
+        hc2.similarity        AS hist_comp2_sim
       FROM players p
       LEFT JOIN cc_latest     cc    ON p.id = cc.player_id    AND cc.rn = 1
       LEFT JOIN cr_latest     c_sf  ON p.id = c_sf.player_id  AND c_sf.format  = 'SF'  AND c_sf.rn  = 1
@@ -168,6 +170,7 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
       LEFT JOIN rb_advanced_career ra ON p.id = ra.player_id
       LEFT JOIN jfoster_grades     jg ON p.id = jg.player_id
       LEFT JOIN hc_top             hc ON p.id = hc.player_id AND hc.rn = 1
+      LEFT JOIN hc_top             hc2 ON p.id = hc2.player_id AND hc2.rn = 2
       WHERE p.draft_year = 2026
       ORDER BY c_sf.rank_overall ASC NULLS LAST
     `;

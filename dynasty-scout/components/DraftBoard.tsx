@@ -134,9 +134,10 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     // Higher = better for these — default to desc when first clicked
     const DEFAULT_DESC: SortKey[] = ['ras', 'height', 'arm', 'hand', 'stars', 'spd', 'dom', 'scrim_ypg', 'pass_ypg', 'comp_pct', 'ypa', 'ypr', 'ypc',
         'vert', 'broad', 'bench', 'gp', 'pass_yds', 'pass_td', 'rush_yds', 'rush_td', 'rec', 'rec_yds', 'rec_td', 'mv7',
+        'career_td', 'career_scr',
         'wr_yprr', 'adot', 'contested', 'yac_rec', 'slot', 'rb_yac', 'mtf', 'rb_yprr', 'brk', 'exp', 'rb_fd',
         'wr_catch', 'wr_mtf', 'wr_tgt', 'wr_open', 'wr_zyprr', 'wr_myprr', 'rb_ayprr', 'rb_tgt',
-        'jf_grade', 'athl', 'sim'];
+        'jf_grade', 'athl', 'sim', 'sim2'];
 
     function handleSort(key: SortKey) {
         if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -221,7 +222,16 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 case 'rec_td':   va = (a as any).career_rec_tds ?? MISS; vb = (b as any).career_rec_tds ?? MISS; break;
                 case 'avg_rank': { const f = format === '1QB' ? 'avg_rank_1qb' : 'avg_rank'; va = (a as any)[f] ?? MISS; vb = (b as any)[f] ?? MISS; break; }
                 case 'mv7':      { const f = format === '1QB' ? 'rank_change_7d_1qb' : 'rank_change_7d'; va = (a as any)[f] ?? MISS; vb = (b as any)[f] ?? MISS; break; }
+                case 'age':       va = (a as any).age_at_draft ?? MISS; vb = (b as any).age_at_draft ?? MISS; break;
                 case 'brkout':    va = (a as any).breakout_age ?? MISS; vb = (b as any).breakout_age ?? MISS; break;
+                case 'career_td': {
+                    const getTd = (p: any) => p.position === 'QB' ? (p.career_pass_tds ?? 0) : ((p.career_rush_tds ?? 0) + (p.career_rec_tds ?? 0));
+                    va = getTd(a) || MISS; vb = getTd(b) || MISS; break;
+                }
+                case 'career_scr': {
+                    const getScr = (p: any) => p.position === 'QB' ? (p.career_pass_yards ?? 0) : (p.career_scrim_yards ?? 0);
+                    va = getScr(a) || MISS; vb = getScr(b) || MISS; break;
+                }
                 case 'wr_yprr':   va = (a as any).wr_yprr ?? MISS; vb = (b as any).wr_yprr ?? MISS; break;
                 case 'adot':      va = (a as any).wr_adot ?? MISS; vb = (b as any).wr_adot ?? MISS; break;
                 case 'wr_drop':   va = (a as any).wr_drop_rate ?? MISS; vb = (b as any).wr_drop_rate ?? MISS; break;
@@ -249,6 +259,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 case 'jf_grade':  va = (a as any).jf_grade ?? MISS; vb = (b as any).jf_grade ?? MISS; break;
                 case 'athl':      va = (a as any).jf_athletic ?? MISS; vb = (b as any).jf_athletic ?? MISS; break;
                 case 'sim':       va = (a as any).hist_comp_sim ?? MISS; vb = (b as any).hist_comp_sim ?? MISS; break;
+                case 'sim2':      va = (a as any).hist_comp2_sim ?? MISS; vb = (b as any).hist_comp2_sim ?? MISS; break;
                 case 'rank':
                 default: {
                     const rankField = format === '1QB' ? 'rank_1qb' : 'rank_sf';
@@ -346,7 +357,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir(DEFAULT_DESC.includes(v as SortKey) ? 'desc' : 'asc'); }}>
                             <SelectTrigger className="w-[140px] sm:w-[180px] bg-card border-border/60 text-xs" style={{ height: '34px', paddingLeft: '14px', paddingRight: '14px', gap: '10px' }}>
                                 <SelectValue>
-                                    {({ rank: 'Consensus', ktc: 'KTC ' + format, sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FC ' + format, dn: 'DynNerds', tfc: 'TylerFF SF', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC', vert: 'Vertical', broad: 'Broad Jump', cone: '3-Cone', shuttle: 'Shuttle', bench: 'Bench', gp: 'Games', pass_yds: 'Pass Yds', pass_td: 'Pass TD', rush_yds: 'Rush Yds', rush_td: 'Rush TD', rec: 'Receptions', rec_yds: 'Rec Yds', rec_td: 'Rec TD', avg_rank: 'Avg Rank', mv7: '7d Move', pfn: 'Pro Football Net', tank: 'TankAthlete', tdn: 'The Draft Network', brug: 'Matt Brugler', dj: 'Daniel Jeremiah', brkout: 'Breakout Age', wr_yprr: 'WR YPRR', adot: 'aDOT', wr_drop: 'Drop Rate', contested: 'Contested%', yac_rec: 'YAC/Rec', slot: 'Slot Rate', rb_yac: 'Yds After Contact', mtf: 'MTF%', rb_yprr: 'RB YPRR', brk: 'Breakaway%', exp: 'Explosive%', rb_fd: '1st Down%', wr_catch: 'Catch%', wr_mtf: 'WR MTF%', wr_tgt: 'WR Target%', wr_open: 'Open%', wr_zyprr: 'YPRR vs Zone', wr_myprr: 'YPRR vs Man', rb_ayprr: 'RB aYPRR', rb_tgt: 'RB Target%', rb_drop: 'RB Drop%', rb_fum: 'Fumble%', rb_gap: 'Gap%', rb_zone: 'Zone%', jf_grade: 'JF Grade', athl: 'Athletic Score', sim: 'Hist Sim%' } as {[k:string]:string})[sortKey] ?? 'Consensus'}
+                                    {({ rank: 'Consensus', ktc: 'KTC ' + format, sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FC ' + format, dn: 'DynNerds', tfc: 'TylerFF SF', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC', vert: 'Vertical', broad: 'Broad Jump', cone: '3-Cone', shuttle: 'Shuttle', bench: 'Bench', gp: 'Games', pass_yds: 'Pass Yds', pass_td: 'Pass TD', rush_yds: 'Rush Yds', rush_td: 'Rush TD', rec: 'Receptions', rec_yds: 'Rec Yds', rec_td: 'Rec TD', avg_rank: 'Avg Rank', mv7: '7d Move', pfn: 'Pro Football Net', tank: 'TankAthlete', tdn: 'The Draft Network', brug: 'Matt Brugler', dj: 'Daniel Jeremiah', age: 'Age at Draft', brkout: 'Breakout Age', career_td: 'Career TDs', career_scr: 'Career Yards', wr_yprr: 'WR YPRR', adot: 'aDOT', wr_drop: 'Drop Rate', contested: 'Contested%', yac_rec: 'YAC/Rec', slot: 'Slot Rate', rb_yac: 'Yds After Contact', mtf: 'MTF%', rb_yprr: 'RB YPRR', brk: 'Breakaway%', exp: 'Explosive%', rb_fd: '1st Down%', wr_catch: 'Catch%', wr_mtf: 'WR MTF%', wr_tgt: 'WR Target%', wr_open: 'Open%', wr_zyprr: 'YPRR vs Zone', wr_myprr: 'YPRR vs Man', rb_ayprr: 'RB aYPRR', rb_tgt: 'RB Target%', rb_drop: 'RB Drop%', rb_fum: 'Fumble%', rb_gap: 'Gap%', rb_zone: 'Zone%', jf_grade: 'JF Grade', athl: 'Athletic Score', sim: 'Hist Sim #1', sim2: 'Hist Sim #2' } as {[k:string]:string})[sortKey] ?? 'Consensus'}
                                 </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
@@ -599,7 +610,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                 <Tooltip key={col.key} delayDuration={300}>
                                 <TooltipTrigger asChild>
                                 <div
-                                    className={`flex items-center justify-center text-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'fp' || col.key === 'pfn' || col.key === 'avg_rank' || col.key === 'tier' ? 'border-l border-border/20' : ''}`}
+                                    className={`flex items-center justify-center text-center min-h-[40px] ${i === 0 ? 'border-l border-border/30' : ''} ${col.key === 'fp' || col.key === 'pfn' || col.key === 'avg_rank' || col.key === 'tier' || col.key === 'age' || col.key === 'career_td' || col.key === 's1' || col.key === 'hist_comp2' ? 'border-l border-border/20' : ''}`}
                                 >
                                     {col.sortKey ? (
                                         <button

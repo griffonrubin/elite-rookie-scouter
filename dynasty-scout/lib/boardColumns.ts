@@ -10,11 +10,12 @@ export type SortKey =
     | 'vert' | 'broad' | 'cone' | 'shuttle' | 'bench'
     | 'gp' | 'pass_yds' | 'pass_td' | 'rush_yds' | 'rush_td' | 'rec' | 'rec_yds' | 'rec_td'
     | 'avg_rank' | 'mv7'
-    | 'brkout' | 'wr_yprr' | 'adot' | 'wr_drop' | 'contested' | 'yac_rec' | 'slot'
+    | 'age' | 'brkout' | 'career_td' | 'career_scr'
+    | 'wr_yprr' | 'adot' | 'wr_drop' | 'contested' | 'yac_rec' | 'slot'
     | 'wr_catch' | 'wr_mtf' | 'wr_tgt' | 'wr_open' | 'wr_zyprr' | 'wr_myprr'
     | 'rb_yac' | 'mtf' | 'rb_yprr' | 'brk' | 'exp' | 'rb_fd'
     | 'rb_ayprr' | 'rb_tgt' | 'rb_drop' | 'rb_fum' | 'rb_gap' | 'rb_zone'
-    | 'jf_grade' | 'sim' | 'athl';
+    | 'jf_grade' | 'sim' | 'sim2' | 'athl';
 
 // The dataset "lenses" — same player rows, different columns.
 export type BoardDataset =
@@ -51,6 +52,9 @@ const TDN:  ColDef = { key: 'tdn',  label: 'TDN',  subLabel: 'Board', sortKey: '
 const BRUG: ColDef = { key: 'brug', label: 'Brug', subLabel: 'Board', sortKey: 'brug', tooltip: 'Matt Brugler — NFL draft analyst big board (format-neutral)' };
 const DJ:   ColDef = { key: 'dj',   label: 'DJ',   subLabel: 'Board', sortKey: 'dj',   tooltip: 'Daniel Jeremiah — NFL Network draft analyst big board (format-neutral)' };
 
+// ── Profile atoms ─────────────────────────────────────────────────────────────
+const AGE: ColDef = { key: 'age', label: 'Age', subLabel: 'Draft', sortKey: 'age', tooltip: 'Age at time of the 2026 NFL Draft — younger prospects have more developmental runway' };
+
 // ── Traits atoms ──────────────────────────────────────────────────────────────
 const HW:      ColDef = { key: 'hw',      label: 'Ht/Wt',                 sortKey: 'height',  tooltip: 'Height and weight' };
 const VERT:    ColDef = { key: 'vert',    label: 'Vert',    subLabel: 'in',  sortKey: 'vert',    tooltip: 'Vertical jump (inches) — lower-body explosiveness' };
@@ -81,7 +85,9 @@ const SCRIM_YPG: ColDef = { key: 'scrim_ypg',          label: 'Scrim/G',  subLab
 const DOM:       ColDef = { key: 'best_dominator',     label: 'Dom%',     subLabel: 'Best',   sortKey: 'dom',       tooltip: 'Best-season dominator rating — share of team yards + TDs' };
 
 // ── Seasons atoms ─────────────────────────────────────────────────────────────
-const BRKOUT: ColDef = { key: 'breakout_age', label: 'Brkout', subLabel: 'Age', sortKey: 'brkout', tooltip: 'Breakout age — age during first dominant college season. Younger is better. QBs are not tracked.' };
+const BRKOUT:     ColDef = { key: 'breakout_age', label: 'Brkout',  subLabel: 'Age',    sortKey: 'brkout',     tooltip: 'Breakout age — age during first dominant college season. Younger is better. QBs are not tracked.' };
+const CAREER_TD:  ColDef = { key: 'career_td',   label: 'TD',      subLabel: 'Career', sortKey: 'career_td',  tooltip: 'Career college touchdowns — passing TDs for QB, rushing + receiving TDs for all others' };
+const CAREER_SCR: ColDef = { key: 'career_scr',  label: 'Yards',   subLabel: 'Career', sortKey: 'career_scr', tooltip: 'Career college yards — passing yards for QB, total scrimmage yards for all others' };
 const S1: ColDef = { key: 's1', label: 'Latest', subLabel: 'Season', tooltip: 'Most recent college season — scrimmage yards (passing yards for QB)' };
 const S2: ColDef = { key: 's2', label: '−1 Yr',  subLabel: 'Season', tooltip: 'Season before the latest' };
 const S3: ColDef = { key: 's3', label: '−2 Yr',  subLabel: 'Season', tooltip: 'Two seasons before the latest' };
@@ -121,8 +127,10 @@ const JF_RND:   ColDef = { key: 'jf_round',     label: 'Round',     subLabel: 'J
 const JF_FIT:   ColDef = { key: 'jf_fit',       label: 'Fit',       subLabel: 'Role', tooltip: 'J. Foster projected positional / role fit' };
 const JF_ATHL:  ColDef = { key: 'jf_athletic', label: 'Athl',      subLabel: 'Score', sortKey: 'athl',    tooltip: 'J. Foster athletic composite score' };
 const JF_COMP:  ColDef = { key: 'jf_nfl_comp', label: 'JF Comp',                      tooltip: 'J. Foster NFL player comparison' };
-const HIST_COMP: ColDef = { key: 'hist_comp',  label: 'Hist Comp',                    tooltip: 'Closest statistical historical NFL comp' };
-const HIST_SIM:  ColDef = { key: 'hist_sim',   label: 'Sim%',      subLabel: 'Match', sortKey: 'sim',     tooltip: 'Similarity score of the historical comp' };
+const HIST_COMP:  ColDef = { key: 'hist_comp',  label: 'Hist Comp', subLabel: '#1',        tooltip: 'Closest statistical historical NFL comp' };
+const HIST_SIM:   ColDef = { key: 'hist_sim',   label: 'Sim%',      subLabel: '#1 Match', sortKey: 'sim',  tooltip: 'Similarity score of the top historical comp' };
+const HIST_COMP2: ColDef = { key: 'hist_comp2', label: '#2 Comp',                          tooltip: '2nd closest statistical historical NFL comp' };
+const HIST_SIM2:  ColDef = { key: 'hist_sim2',  label: 'Sim%',      subLabel: '#2 Match', sortKey: 'sim2', tooltip: 'Similarity score of the 2nd historical comp' };
 
 /** Snapshot column set per position filter (the original board behavior). */
 function snapshotColDefs(pos: string): ColDef[] {
@@ -156,11 +164,11 @@ function snapshotColDefs(pos: string): ColDef[] {
 
 /** Production column set per position filter. No PICK (pinned into identity), no TIER. */
 function productionColDefs(pos: string): ColDef[] {
-    if (pos === 'QB') return [GP, PASS_YDS, PASS_TD, COMP_PCT, YPA, PASS_YPG];          // 6
-    if (pos === 'RB') return [GP, RUSH_YDS, RUSH_TD, BEST_YPC, SCRIM_YPG, REC, DOM];    // 7
-    if (pos === 'WR' || pos === 'TE') return [GP, REC, REC_YDS, REC_TD, BEST_YPR, SCRIM_YPG, DOM]; // 7
+    if (pos === 'QB') return [GP, PASS_YDS, PASS_TD, COMP_PCT, YPA, PASS_YPG, RUSH_YDS, RUSH_TD];              // 8
+    if (pos === 'RB') return [GP, RUSH_YDS, RUSH_TD, BEST_YPC, SCRIM_YPG, REC, REC_YDS, REC_TD, DOM];         // 9
+    if (pos === 'WR' || pos === 'TE') return [GP, REC, REC_YDS, REC_TD, BEST_YPR, SCRIM_YPG, RUSH_YDS, RUSH_TD, DOM]; // 9
     // ALL — generic production mix
-    return [GP, PASS_YDS, RUSH_YDS, REC, REC_YDS, SCRIM_YPG, DOM];                      // 7
+    return [GP, PASS_YDS, RUSH_YDS, REC, REC_YDS, REC_TD, SCRIM_YPG, DOM];                                     // 8
 }
 
 /** Column set for a given dataset lens + position filter. */
@@ -171,17 +179,17 @@ export function getColDefs(dataset: BoardDataset, pos: string): ColDef[] {
             // TFC is SF-only; PFN/Tank/TDN/Brug/DJ are format-neutral NFL draft boards.
             return [PICK, FP, KTC, FC, DN, TFC, PFN, TANK, TDN, BRUG, DJ, AVG, MV7, TIER];
         case 'traits':
-            return [HW, FORTY, SPD, RAS, ARM, HAND, VERT, BROAD, CONE, SHUTTLE, BENCH, STARS]; // 12 — Pick pinned into identity
+            return [HW, FORTY, SPD, RAS, ARM, HAND, VERT, BROAD, CONE, SHUTTLE, BENCH, STARS, AGE, BRKOUT]; // 14 — Pick pinned into identity
         case 'production':
             return productionColDefs(pos);
         case 'seasons':
-            return [BRKOUT, GP, S1, S2, S3, S4]; // 6 — Pick pinned into identity
+            return [BRKOUT, GP, CAREER_TD, CAREER_SCR, S1, S2, S3, S4]; // 8 — Pick pinned into identity
         case 'advanced':
             return pos === 'RB'
                 ? [RB_YAC, RB_MTF, RB_EXP, RB_BRK, RB_FD, RB_YPRR, RB_AYPRR, RB_TGT, RB_DROP, RB_FUM, RB_GAP, RB_ZONE]   // 12 — Pick pinned
                 : [WR_YPRR, WR_ADOT, WR_CATCH, WR_DROP, WR_CONT, WR_FMTF, WR_YACR, WR_TGT, WR_OPEN, WR_ZYPRR, WR_MYPRR, WR_SLOT]; // 12 — Pick pinned
         case 'scouting':
-            return [JF_GRADE, JF_RND, JF_FIT, JF_ATHL, JF_COMP, HIST_COMP, HIST_SIM]; // 7 — Pick pinned
+            return [JF_GRADE, JF_RND, JF_FIT, JF_ATHL, JF_COMP, HIST_COMP, HIST_SIM, HIST_COMP2, HIST_SIM2]; // 9 — Pick pinned
         case 'snapshot':
         default:
             return snapshotColDefs(pos);
@@ -200,25 +208,27 @@ export function getGridTemplate(dataset: BoardDataset, pos: string): string {
         return '0.6fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.6fr 0.5fr 0.95fr';
     }
     if (dataset === 'traits') {
-        // 12 cols: ht/wt | 40 spd ras arm hand vert broad cone shuttle bench | stars
-        return '0.7fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.55fr 0.55fr 0.6fr 0.55fr 0.55fr';
+        // 14 cols: ht/wt | 40 spd ras arm hand vert broad cone shuttle bench | stars age brkout
+        return '0.7fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.55fr 0.55fr 0.6fr 0.55fr 0.5fr 0.5fr 0.65fr';
     }
     if (dataset === 'production') {
-        if (pos === 'QB') return '0.62fr 0.85fr 0.72fr 0.7fr 0.6fr 0.72fr';            // 6
-        // RB / WR / TE / ALL — 7 cols
-        return '0.55fr 0.8fr 0.72fr 0.62fr 0.78fr 0.6fr 0.66fr';                       // 7
+        if (pos === 'QB') return '0.5fr 0.8fr 0.65fr 0.65fr 0.55fr 0.65fr 0.75fr 0.6fr';      // 8
+        if (pos === 'RB') return '0.5fr 0.75fr 0.62fr 0.6fr 0.72fr 0.5fr 0.75fr 0.62fr 0.62fr'; // 9
+        if (pos === 'WR' || pos === 'TE') return '0.5fr 0.5fr 0.78fr 0.62fr 0.7fr 0.72fr 0.78fr 0.62fr 0.62fr'; // 9
+        // ALL — 8 cols
+        return '0.5fr 0.78fr 0.75fr 0.5fr 0.78fr 0.62fr 0.72fr 0.62fr';               // 8
     }
     if (dataset === 'seasons') {
-        // 6 cols: brkout | gp | s1 s2 s3 s4
-        return '0.7fr 0.45fr 1fr 1fr 1fr 1fr';
+        // 8 cols: brkout | gp | career_td career_scr | s1 s2 s3 s4
+        return '0.65fr 0.45fr 0.52fr 0.8fr 1fr 1fr 1fr 1fr';
     }
     if (dataset === 'advanced') {
         // 12 cols: position-aware advanced metrics
         return 'repeat(12, 1fr)';
     }
     if (dataset === 'scouting') {
-        // 7 cols: grade | round | fit | athl | jf_comp | hist_comp | sim
-        return '0.55fr 0.6fr 0.75fr 0.6fr 1.1fr 1.1fr 0.55fr';
+        // 9 cols: grade | round | fit | athl | jf_comp | hist_comp sim | hist_comp2 sim2
+        return '0.5fr 0.55fr 0.7fr 0.55fr 1.0fr 1.0fr 0.5fr 1.0fr 0.5fr';
     }
 
     // snapshot
