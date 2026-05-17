@@ -266,6 +266,85 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                 return <span className={`font-[var(--font-jetbrains),monospace] font-bold text-[13px] ${up ? 'text-emerald-400' : 'text-red-400'}`}>{up ? '▲' : '▼'}{Math.abs(v)}</span>;
             }
 
+            // ── Seasons — per-season production + breakout age ─────────────────
+            case 's1':
+            case 's2':
+            case 's3':
+            case 's4': {
+                const n = col.key.slice(1);
+                const yr = p[`s${n}_yr`];
+                const stat = player.position === 'QB' ? p[`s${n}_pass`] : p[`s${n}_scrim`];
+                if (!yr || stat == null || stat === 0) return <StatVal val={null} />;
+                return (
+                    <div className="flex flex-col items-center leading-tight">
+                        <span className="font-[var(--font-jetbrains),monospace] font-bold text-[13px] text-foreground/80">{Number(stat).toLocaleString()}</span>
+                        <span className="font-[var(--font-jetbrains),monospace] text-[10px] text-muted-foreground/50">{yr}</span>
+                    </div>
+                );
+            }
+
+            // ── Advanced — WR receiving metrics (wr_advanced_career) ───────────
+            case 'wr_yprr': {
+                const v = p.wr_yprr;
+                return <StatVal val={v != null ? Number(v).toFixed(2) : null} highlight={v != null && v >= 2.5 ? 'text-emerald-400 font-bold' : v != null && v >= 1.8 ? 'text-sky-400' : undefined} />;
+            }
+            case 'wr_adot':
+                return <StatVal val={p.wr_adot != null ? Number(p.wr_adot).toFixed(1) : null} />;
+            case 'wr_drop': {
+                const v = p.wr_drop_rate;
+                return <StatVal val={v != null ? (Number(v) * 100).toFixed(1) + '%' : null} highlight={v != null && v < 0.03 ? 'text-emerald-400 font-bold' : v != null && v > 0.07 ? 'text-red-400' : undefined} />;
+            }
+            case 'wr_contested': {
+                const v = p.wr_contested;
+                return <StatVal val={v != null ? (Number(v) * 100).toFixed(1) + '%' : null} highlight={v != null && v >= 0.6 ? 'text-emerald-400 font-bold' : undefined} />;
+            }
+            case 'wr_yac_per_rec':
+                return <StatVal val={p.wr_yac_per_rec != null ? Number(p.wr_yac_per_rec).toFixed(1) : null} />;
+            case 'wr_slot':
+                return <StatVal val={p.wr_slot_rate != null ? (Number(p.wr_slot_rate) * 100).toFixed(0) + '%' : null} />;
+
+            // ── Advanced — RB rushing metrics (rb_advanced_career) ─────────────
+            case 'rb_yac':
+                return <StatVal val={p.rb_yds_after_contact != null ? Number(p.rb_yds_after_contact).toFixed(1) : null} />;
+            case 'rb_mtf': {
+                const v = p.rb_mtf_pct;
+                return <StatVal val={v != null ? Number(v).toFixed(1) + '%' : null} highlight={v != null && v >= 35 ? 'text-emerald-400 font-bold' : v != null && v >= 25 ? 'text-sky-400' : undefined} />;
+            }
+            case 'rb_yprr':
+                return <StatVal val={p.rb_yprr != null ? Number(p.rb_yprr).toFixed(2) : null} />;
+            case 'rb_brk':
+                return <StatVal val={p.rb_breakaway_rate != null ? Number(p.rb_breakaway_rate).toFixed(1) + '%' : null} />;
+            case 'rb_exp':
+                return <StatVal val={p.rb_explosive_rate != null ? Number(p.rb_explosive_rate).toFixed(1) + '%' : null} />;
+            case 'rb_fd':
+                return <StatVal val={p.rb_first_down_rate != null ? Number(p.rb_first_down_rate).toFixed(1) + '%' : null} />;
+
+            // ── Scouting — film grades + historical comps ──────────────────────
+            case 'jf_grade': {
+                const v = p.jf_grade;
+                return <StatVal val={v != null ? Number(v).toFixed(1) : null} highlight={v != null && v >= 8 ? 'text-emerald-400 font-bold' : v != null && v >= 6.5 ? 'text-sky-400' : undefined} />;
+            }
+            case 'jf_round':
+                return <StatVal val={p.jf_round_grade != null ? String(p.jf_round_grade) : null} />;
+            case 'jf_fit':
+                return p.jf_pos_fit
+                    ? <span className="text-[11px] font-semibold text-foreground/70 text-center leading-tight">{p.jf_pos_fit}</span>
+                    : <StatVal val={null} />;
+            case 'jf_athletic': {
+                const v = p.jf_athletic;
+                return <StatVal val={v != null ? Number(v).toFixed(1) : null} highlight={v != null && v >= 8 ? 'text-emerald-400 font-bold' : undefined} />;
+            }
+            case 'jf_nfl_comp':
+                return p.jf_nfl_comp
+                    ? <span className="text-[11px] font-semibold text-foreground/70 text-center leading-tight truncate max-w-full px-1">{p.jf_nfl_comp}</span>
+                    : <StatVal val={null} />;
+            case 'hist_comp':
+                return p.hist_comp_name
+                    ? <span className="text-[11px] font-semibold text-foreground/70 text-center leading-tight truncate max-w-full px-1">{p.hist_comp_name}</span>
+                    : <StatVal val={null} />;
+            case 'hist_sim':
+                return <StatVal val={p.hist_comp_sim != null ? Number(p.hist_comp_sim).toFixed(1) : null} />;
+
             default: return <StatVal val={null} />;
         }
     }

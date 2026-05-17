@@ -8,10 +8,15 @@ export type SortKey =
     | 'dom' | 'scrim_ypg' | 'pass_ypg' | 'comp_pct' | 'ypa' | 'ypr' | 'ypc'
     | 'vert' | 'broad' | 'cone' | 'shuttle' | 'bench'
     | 'gp' | 'pass_yds' | 'pass_td' | 'rush_yds' | 'rush_td' | 'rec' | 'rec_yds' | 'rec_td'
-    | 'avg_rank' | 'mv7';
+    | 'avg_rank' | 'mv7'
+    | 'brkout' | 'wr_yprr' | 'adot' | 'wr_drop' | 'contested' | 'yac_rec' | 'slot'
+    | 'rb_yac' | 'mtf' | 'rb_yprr' | 'brk' | 'exp' | 'rb_fd'
+    | 'jf_grade' | 'sim' | 'athl';
 
-// The four dataset "lenses" — same player rows, different columns.
-export type BoardDataset = 'snapshot' | 'rankings' | 'traits' | 'production';
+// The dataset "lenses" — same player rows, different columns.
+export type BoardDataset =
+    | 'snapshot' | 'rankings' | 'traits' | 'production'
+    | 'seasons' | 'advanced' | 'scouting';
 
 export interface ColDef {
     key: string;
@@ -65,6 +70,38 @@ const BEST_YPR:  ColDef = { key: 'best_ypr',           label: 'Yds/Rec',  subLab
 const SCRIM_YPG: ColDef = { key: 'scrim_ypg',          label: 'Scrim/G',  subLabel: 'Career', sortKey: 'scrim_ypg', tooltip: 'Career scrimmage yards per game' };
 const DOM:       ColDef = { key: 'best_dominator',     label: 'Dom%',     subLabel: 'Best',   sortKey: 'dom',       tooltip: 'Best-season dominator rating — share of team yards + TDs' };
 
+// ── Seasons atoms ─────────────────────────────────────────────────────────────
+const BRKOUT: ColDef = { key: 'breakout_age', label: 'Brkout', subLabel: 'Age', sortKey: 'brkout', tooltip: 'Breakout age — age during first dominant college season. Younger is better. QBs are not tracked.' };
+const S1: ColDef = { key: 's1', label: 'Latest', subLabel: 'Season', tooltip: 'Most recent college season — scrimmage yards (passing yards for QB)' };
+const S2: ColDef = { key: 's2', label: '−1 Yr',  subLabel: 'Season', tooltip: 'Season before the latest' };
+const S3: ColDef = { key: 's3', label: '−2 Yr',  subLabel: 'Season', tooltip: 'Two seasons before the latest' };
+const S4: ColDef = { key: 's4', label: '−3 Yr',  subLabel: 'Season', tooltip: 'Three seasons before the latest' };
+
+// ── Advanced atoms — WR receiving (wr_advanced_career) ────────────────────────
+const WR_YPRR: ColDef = { key: 'wr_yprr',         label: 'YPRR',   subLabel: 'Career', sortKey: 'wr_yprr',   tooltip: 'Yards per route run — efficiency per route' };
+const WR_ADOT: ColDef = { key: 'wr_adot',         label: 'aDOT',   subLabel: 'Career', sortKey: 'adot',      tooltip: 'Average depth of target (yards downfield)' };
+const WR_DROP: ColDef = { key: 'wr_drop',         label: 'Drop%',  subLabel: 'Career', sortKey: 'wr_drop',   tooltip: 'Drop rate — lower is better' };
+const WR_CONT: ColDef = { key: 'wr_contested',    label: 'Cont%',  subLabel: 'Career', sortKey: 'contested', tooltip: 'Contested-catch conversion rate' };
+const WR_YACR: ColDef = { key: 'wr_yac_per_rec',  label: 'YAC/R',  subLabel: 'Career', sortKey: 'yac_rec',   tooltip: 'Yards after catch per reception' };
+const WR_SLOT: ColDef = { key: 'wr_slot',         label: 'Slot%',  subLabel: 'Career', sortKey: 'slot',      tooltip: 'Share of routes run from the slot' };
+
+// ── Advanced atoms — RB rushing (rb_advanced_career) ──────────────────────────
+const RB_YAC:  ColDef = { key: 'rb_yac',  label: 'YdsAC',  subLabel: 'Career', sortKey: 'rb_yac',   tooltip: 'Career yards after contact' };
+const RB_MTF:  ColDef = { key: 'rb_mtf',  label: 'MTF%',   subLabel: 'Career', sortKey: 'mtf',      tooltip: 'Missed tackles forced (avoided-tackle) rate' };
+const RB_YPRR: ColDef = { key: 'rb_yprr', label: 'YPRR',   subLabel: 'Career', sortKey: 'rb_yprr',  tooltip: 'Receiving yards per route run' };
+const RB_BRK:  ColDef = { key: 'rb_brk',  label: 'Brk%',   subLabel: 'Career', sortKey: 'brk',      tooltip: 'Breakaway run rate — share of yards on 15+ yard runs' };
+const RB_EXP:  ColDef = { key: 'rb_exp',  label: 'Exp%',   subLabel: 'Career', sortKey: 'exp',      tooltip: 'Explosive run rate' };
+const RB_FD:   ColDef = { key: 'rb_fd',   label: '1D%',    subLabel: 'Career', sortKey: 'rb_fd',    tooltip: 'First-down rate per carry' };
+
+// ── Scouting atoms (jfoster_grades + historical_comps) ────────────────────────
+const JF_GRADE: ColDef = { key: 'jf_grade',     label: 'Grade',     subLabel: 'JF',   sortKey: 'jf_grade', tooltip: 'J. Foster overall film grade (0–10 scale)' };
+const JF_RND:   ColDef = { key: 'jf_round',     label: 'Round',     subLabel: 'JF',   tooltip: 'J. Foster projected draft round' };
+const JF_FIT:   ColDef = { key: 'jf_fit',       label: 'Fit',       subLabel: 'Role', tooltip: 'J. Foster projected positional / role fit' };
+const JF_ATHL:  ColDef = { key: 'jf_athletic', label: 'Athl',      subLabel: 'Score', sortKey: 'athl',    tooltip: 'J. Foster athletic composite score' };
+const JF_COMP:  ColDef = { key: 'jf_nfl_comp', label: 'JF Comp',                      tooltip: 'J. Foster NFL player comparison' };
+const HIST_COMP: ColDef = { key: 'hist_comp',  label: 'Hist Comp',                    tooltip: 'Closest statistical historical NFL comp' };
+const HIST_SIM:  ColDef = { key: 'hist_sim',   label: 'Sim%',      subLabel: 'Match', sortKey: 'sim',     tooltip: 'Similarity score of the historical comp' };
+
 /** Snapshot column set per position filter (the original board behavior). */
 function snapshotColDefs(pos: string): ColDef[] {
     if (pos === 'QB') return [
@@ -113,6 +150,14 @@ export function getColDefs(dataset: BoardDataset, pos: string): ColDef[] {
             return [HW, FORTY, SPD, RAS, ARM, HAND, VERT, BROAD, CONE, SHUTTLE, BENCH, STARS]; // 12 — Pick pinned into identity
         case 'production':
             return productionColDefs(pos);
+        case 'seasons':
+            return [BRKOUT, GP, S1, S2, S3, S4]; // 6 — Pick pinned into identity
+        case 'advanced':
+            return pos === 'RB'
+                ? [RB_YAC, RB_MTF, RB_YPRR, RB_BRK, RB_EXP, RB_FD]   // 6 — Pick pinned
+                : [WR_YPRR, WR_ADOT, WR_DROP, WR_CONT, WR_YACR, WR_SLOT]; // 6 — Pick pinned
+        case 'scouting':
+            return [JF_GRADE, JF_RND, JF_FIT, JF_ATHL, JF_COMP, HIST_COMP, HIST_SIM]; // 7 — Pick pinned
         case 'snapshot':
         default:
             return snapshotColDefs(pos);
@@ -121,7 +166,7 @@ export function getColDefs(dataset: BoardDataset, pos: string): ColDef[] {
 
 /** Whether Pick is pinned into the frozen identity group (true) or a scrollable column (false). */
 export function pickInIdentity(dataset: BoardDataset): boolean {
-    return dataset === 'traits' || dataset === 'production';
+    return dataset !== 'snapshot' && dataset !== 'rankings';
 }
 
 /** CSS grid-template-columns string for the right dynamic section. */
@@ -138,6 +183,18 @@ export function getGridTemplate(dataset: BoardDataset, pos: string): string {
         if (pos === 'QB') return '0.62fr 0.85fr 0.72fr 0.7fr 0.6fr 0.72fr';            // 6
         // RB / WR / TE / ALL — 7 cols
         return '0.55fr 0.8fr 0.72fr 0.62fr 0.78fr 0.6fr 0.66fr';                       // 7
+    }
+    if (dataset === 'seasons') {
+        // 6 cols: brkout | gp | s1 s2 s3 s4
+        return '0.7fr 0.45fr 1fr 1fr 1fr 1fr';
+    }
+    if (dataset === 'advanced') {
+        // 6 cols: position-aware stats (same width for both WR and RB sets)
+        return '0.75fr 0.65fr 0.7fr 0.65fr 0.65fr 0.65fr';
+    }
+    if (dataset === 'scouting') {
+        // 7 cols: grade | round | fit | athl | jf_comp | hist_comp | sim
+        return '0.55fr 0.6fr 0.75fr 0.6fr 1.1fr 1.1fr 0.55fr';
     }
 
     // snapshot

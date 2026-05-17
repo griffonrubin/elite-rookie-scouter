@@ -13,6 +13,9 @@ const DATASETS: { value: BoardDataset; label: string; hint: string }[] = [
     { value: 'rankings',   label: 'Rankings',   hint: 'Source ranks + consensus' },
     { value: 'traits',     label: 'Traits',     hint: 'Athletic measurables' },
     { value: 'production', label: 'Production', hint: 'College stats' },
+    { value: 'seasons',    label: 'Seasons',    hint: 'Season-by-season production + breakout age' },
+    { value: 'advanced',   label: 'Advanced',   hint: 'Advanced WR/RB metrics (YPRR, MTF%, etc.)' },
+    { value: 'scouting',   label: 'Scouting',   hint: 'Film grades + historical comps' },
 ];
 
 export function DatasetPicker({ dataset, onChange }: DatasetPickerProps) {

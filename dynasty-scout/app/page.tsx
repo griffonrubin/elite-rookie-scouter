@@ -73,6 +73,11 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
           ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY season DESC) AS rn
         FROM college_stats
         WHERE games_played > 0
+      ),
+      hc_top AS (
+        SELECT player_id, comp_name, similarity,
+          ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY similarity DESC) AS rn
+        FROM historical_comps
       )
       SELECT
         p.*,
@@ -110,7 +115,26 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
         s1.season AS s1_yr, s1.scrim AS s1_scrim, s1.pass_yds AS s1_pass,
         s2.season AS s2_yr, s2.scrim AS s2_scrim, s2.pass_yds AS s2_pass,
         s3.season AS s3_yr, s3.scrim AS s3_scrim, s3.pass_yds AS s3_pass,
-        s4.season AS s4_yr, s4.scrim AS s4_scrim, s4.pass_yds AS s4_pass
+        s4.season AS s4_yr, s4.scrim AS s4_scrim, s4.pass_yds AS s4_pass,
+        wa.yprr               AS wr_yprr,
+        wa.adot               AS wr_adot,
+        wa.drop_rate          AS wr_drop_rate,
+        wa.contested_catch_rate AS wr_contested,
+        wa.yac_per_rec        AS wr_yac_per_rec,
+        wa.slot_rate          AS wr_slot_rate,
+        ra.yds_after_contact  AS rb_yds_after_contact,
+        ra.avoided_tackle_pct AS rb_mtf_pct,
+        ra.yprr               AS rb_yprr,
+        ra.breakaway_rate     AS rb_breakaway_rate,
+        ra.explosive_rate     AS rb_explosive_rate,
+        ra.first_down_rate    AS rb_first_down_rate,
+        jg.overall_grade      AS jf_grade,
+        jg.round_grade        AS jf_round_grade,
+        jg.pos_fit            AS jf_pos_fit,
+        jg.nfl_comp           AS jf_nfl_comp,
+        jg.athletic_score     AS jf_athletic,
+        hc.comp_name          AS hist_comp_name,
+        hc.similarity         AS hist_comp_sim
       FROM players p
       LEFT JOIN cc_latest     cc    ON p.id = cc.player_id    AND cc.rn = 1
       LEFT JOIN cr_latest     c_sf  ON p.id = c_sf.player_id  AND c_sf.format  = 'SF'  AND c_sf.rn  = 1
@@ -122,6 +146,10 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
       LEFT JOIN cs_seasons    s2    ON p.id = s2.player_id AND s2.rn = 2
       LEFT JOIN cs_seasons    s3    ON p.id = s3.player_id AND s3.rn = 3
       LEFT JOIN cs_seasons    s4    ON p.id = s4.player_id AND s4.rn = 4
+      LEFT JOIN wr_advanced_career wa ON p.id = wa.player_id
+      LEFT JOIN rb_advanced_career ra ON p.id = ra.player_id
+      LEFT JOIN jfoster_grades     jg ON p.id = jg.player_id
+      LEFT JOIN hc_top             hc ON p.id = hc.player_id AND hc.rn = 1
       WHERE p.draft_year = 2026
       ORDER BY c_sf.rank_overall ASC NULLS LAST
     `;
