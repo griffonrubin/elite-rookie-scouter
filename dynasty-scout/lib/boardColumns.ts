@@ -10,7 +10,9 @@ export type SortKey =
     | 'gp' | 'pass_yds' | 'pass_td' | 'rush_yds' | 'rush_td' | 'rec' | 'rec_yds' | 'rec_td'
     | 'avg_rank' | 'mv7'
     | 'brkout' | 'wr_yprr' | 'adot' | 'wr_drop' | 'contested' | 'yac_rec' | 'slot'
+    | 'wr_catch' | 'wr_mtf' | 'wr_tgt' | 'wr_open' | 'wr_zyprr' | 'wr_myprr'
     | 'rb_yac' | 'mtf' | 'rb_yprr' | 'brk' | 'exp' | 'rb_fd'
+    | 'rb_ayprr' | 'rb_tgt' | 'rb_drop' | 'rb_fum' | 'rb_gap' | 'rb_zone'
     | 'jf_grade' | 'sim' | 'athl';
 
 // The dataset "lenses" — same player rows, different columns.
@@ -78,20 +80,32 @@ const S3: ColDef = { key: 's3', label: '−2 Yr',  subLabel: 'Season', tooltip: 
 const S4: ColDef = { key: 's4', label: '−3 Yr',  subLabel: 'Season', tooltip: 'Three seasons before the latest' };
 
 // ── Advanced atoms — WR receiving (wr_advanced_career) ────────────────────────
-const WR_YPRR: ColDef = { key: 'wr_yprr',         label: 'YPRR',   subLabel: 'Career', sortKey: 'wr_yprr',   tooltip: 'Yards per route run — efficiency per route' };
-const WR_ADOT: ColDef = { key: 'wr_adot',         label: 'aDOT',   subLabel: 'Career', sortKey: 'adot',      tooltip: 'Average depth of target (yards downfield)' };
-const WR_DROP: ColDef = { key: 'wr_drop',         label: 'Drop%',  subLabel: 'Career', sortKey: 'wr_drop',   tooltip: 'Drop rate — lower is better' };
-const WR_CONT: ColDef = { key: 'wr_contested',    label: 'Cont%',  subLabel: 'Career', sortKey: 'contested', tooltip: 'Contested-catch conversion rate' };
-const WR_YACR: ColDef = { key: 'wr_yac_per_rec',  label: 'YAC/R',  subLabel: 'Career', sortKey: 'yac_rec',   tooltip: 'Yards after catch per reception' };
-const WR_SLOT: ColDef = { key: 'wr_slot',         label: 'Slot%',  subLabel: 'Career', sortKey: 'slot',      tooltip: 'Share of routes run from the slot' };
+const WR_YPRR:  ColDef = { key: 'wr_yprr',         label: 'YPRR',   subLabel: 'Career',  sortKey: 'wr_yprr',   tooltip: 'Yards per route run — efficiency per route' };
+const WR_ADOT:  ColDef = { key: 'wr_adot',         label: 'aDOT',   subLabel: 'Career',  sortKey: 'adot',      tooltip: 'Average depth of target (yards downfield)' };
+const WR_CATCH: ColDef = { key: 'wr_catch',        label: 'Catch%', subLabel: 'Career',  sortKey: 'wr_catch',  tooltip: 'Catch rate — receptions per catchable target' };
+const WR_DROP:  ColDef = { key: 'wr_drop',         label: 'Drop%',  subLabel: 'Career',  sortKey: 'wr_drop',   tooltip: 'Drop rate — lower is better' };
+const WR_CONT:  ColDef = { key: 'wr_contested',    label: 'Cont%',  subLabel: 'Career',  sortKey: 'contested', tooltip: 'Contested-catch conversion rate' };
+const WR_FMTF:  ColDef = { key: 'wr_mtf',          label: 'MTF%',   subLabel: 'Career',  sortKey: 'wr_mtf',    tooltip: 'Forced missed-tackle rate after the catch' };
+const WR_YACR:  ColDef = { key: 'wr_yac_per_rec',  label: 'YAC/R',  subLabel: 'Career',  sortKey: 'yac_rec',   tooltip: 'Yards after catch per reception' };
+const WR_TGT:   ColDef = { key: 'wr_tgt',          label: 'Tgt%',   subLabel: 'Career',  sortKey: 'wr_tgt',    tooltip: 'Target share — share of team targets while on the field' };
+const WR_OPEN:  ColDef = { key: 'wr_open',         label: 'Open%',  subLabel: 'Career',  sortKey: 'wr_open',   tooltip: 'Open-target rate — share of targets with separation' };
+const WR_ZYPRR: ColDef = { key: 'wr_zyprr',        label: 'YPRR',   subLabel: 'vs Zone', sortKey: 'wr_zyprr',  tooltip: 'Yards per route run against zone coverage' };
+const WR_MYPRR: ColDef = { key: 'wr_myprr',        label: 'YPRR',   subLabel: 'vs Man',  sortKey: 'wr_myprr',  tooltip: 'Yards per route run against man coverage' };
+const WR_SLOT:  ColDef = { key: 'wr_slot',         label: 'Slot%',  subLabel: 'Career',  sortKey: 'slot',      tooltip: 'Share of routes run from the slot' };
 
 // ── Advanced atoms — RB rushing (rb_advanced_career) ──────────────────────────
-const RB_YAC:  ColDef = { key: 'rb_yac',  label: 'YdsAC',  subLabel: 'Career', sortKey: 'rb_yac',   tooltip: 'Career yards after contact' };
-const RB_MTF:  ColDef = { key: 'rb_mtf',  label: 'MTF%',   subLabel: 'Career', sortKey: 'mtf',      tooltip: 'Missed tackles forced (avoided-tackle) rate' };
-const RB_YPRR: ColDef = { key: 'rb_yprr', label: 'YPRR',   subLabel: 'Career', sortKey: 'rb_yprr',  tooltip: 'Receiving yards per route run' };
-const RB_BRK:  ColDef = { key: 'rb_brk',  label: 'Brk%',   subLabel: 'Career', sortKey: 'brk',      tooltip: 'Breakaway run rate — share of yards on 15+ yard runs' };
-const RB_EXP:  ColDef = { key: 'rb_exp',  label: 'Exp%',   subLabel: 'Career', sortKey: 'exp',      tooltip: 'Explosive run rate' };
-const RB_FD:   ColDef = { key: 'rb_fd',   label: '1D%',    subLabel: 'Career', sortKey: 'rb_fd',    tooltip: 'First-down rate per carry' };
+const RB_YAC:   ColDef = { key: 'rb_yac',   label: 'YdsAC',  subLabel: 'Career', sortKey: 'rb_yac',    tooltip: 'Career yards after contact' };
+const RB_MTF:   ColDef = { key: 'rb_mtf',   label: 'MTF%',   subLabel: 'Career', sortKey: 'mtf',       tooltip: 'Missed tackles forced (avoided-tackle) rate' };
+const RB_EXP:   ColDef = { key: 'rb_exp',   label: 'Exp%',   subLabel: 'Career', sortKey: 'exp',       tooltip: 'Explosive run rate' };
+const RB_BRK:   ColDef = { key: 'rb_brk',   label: 'Brk%',   subLabel: 'Career', sortKey: 'brk',       tooltip: 'Breakaway run rate — share of yards on 15+ yard runs' };
+const RB_FD:    ColDef = { key: 'rb_fd',    label: '1D%',    subLabel: 'Career', sortKey: 'rb_fd',     tooltip: 'First-down rate per carry' };
+const RB_YPRR:  ColDef = { key: 'rb_yprr',  label: 'YPRR',   subLabel: 'Career', sortKey: 'rb_yprr',   tooltip: 'Receiving yards per route run' };
+const RB_AYPRR: ColDef = { key: 'rb_ayprr', label: 'aYPRR',  subLabel: 'Career', sortKey: 'rb_ayprr',  tooltip: 'Adjusted yards per route run — receiving efficiency' };
+const RB_TGT:   ColDef = { key: 'rb_tgt',   label: 'Tgt%',   subLabel: 'Career', sortKey: 'rb_tgt',    tooltip: 'Target share while running a route' };
+const RB_DROP:  ColDef = { key: 'rb_drop',  label: 'Drop%',  subLabel: 'Career', sortKey: 'rb_drop',   tooltip: 'Drop rate on receiving targets — lower is better' };
+const RB_FUM:   ColDef = { key: 'rb_fum',   label: 'Fum%',   subLabel: 'Career', sortKey: 'rb_fum',    tooltip: 'Fumble rate per touch — lower is better' };
+const RB_GAP:   ColDef = { key: 'rb_gap',   label: 'Gap%',   subLabel: 'Career', sortKey: 'rb_gap',    tooltip: 'Share of carries on gap-scheme runs' };
+const RB_ZONE:  ColDef = { key: 'rb_zone',  label: 'Zone%',  subLabel: 'Career', sortKey: 'rb_zone',   tooltip: 'Share of carries on zone-scheme runs' };
 
 // ── Scouting atoms (jfoster_grades + historical_comps) ────────────────────────
 const JF_GRADE: ColDef = { key: 'jf_grade',     label: 'Grade',     subLabel: 'JF',   sortKey: 'jf_grade', tooltip: 'J. Foster overall film grade (0–10 scale)' };
@@ -154,8 +168,8 @@ export function getColDefs(dataset: BoardDataset, pos: string): ColDef[] {
             return [BRKOUT, GP, S1, S2, S3, S4]; // 6 — Pick pinned into identity
         case 'advanced':
             return pos === 'RB'
-                ? [RB_YAC, RB_MTF, RB_YPRR, RB_BRK, RB_EXP, RB_FD]   // 6 — Pick pinned
-                : [WR_YPRR, WR_ADOT, WR_DROP, WR_CONT, WR_YACR, WR_SLOT]; // 6 — Pick pinned
+                ? [RB_YAC, RB_MTF, RB_EXP, RB_BRK, RB_FD, RB_YPRR, RB_AYPRR, RB_TGT, RB_DROP, RB_FUM, RB_GAP, RB_ZONE]   // 12 — Pick pinned
+                : [WR_YPRR, WR_ADOT, WR_CATCH, WR_DROP, WR_CONT, WR_FMTF, WR_YACR, WR_TGT, WR_OPEN, WR_ZYPRR, WR_MYPRR, WR_SLOT]; // 12 — Pick pinned
         case 'scouting':
             return [JF_GRADE, JF_RND, JF_FIT, JF_ATHL, JF_COMP, HIST_COMP, HIST_SIM]; // 7 — Pick pinned
         case 'snapshot':
@@ -189,8 +203,8 @@ export function getGridTemplate(dataset: BoardDataset, pos: string): string {
         return '0.7fr 0.45fr 1fr 1fr 1fr 1fr';
     }
     if (dataset === 'advanced') {
-        // 6 cols: position-aware stats (same width for both WR and RB sets)
-        return '0.75fr 0.65fr 0.7fr 0.65fr 0.65fr 0.65fr';
+        // 12 cols: position-aware advanced metrics
+        return 'repeat(12, 1fr)';
     }
     if (dataset === 'scouting') {
         // 7 cols: grade | round | fit | athl | jf_comp | hist_comp | sim

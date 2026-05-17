@@ -302,6 +302,30 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                 return <StatVal val={p.wr_yac_per_rec != null ? Number(p.wr_yac_per_rec).toFixed(1) : null} />;
             case 'wr_slot':
                 return <StatVal val={p.wr_slot_rate != null ? (Number(p.wr_slot_rate) * 100).toFixed(0) + '%' : null} />;
+            case 'wr_catch': {
+                const v = p.wr_catch_rate;
+                return <StatVal val={v != null ? (Number(v) * 100).toFixed(1) + '%' : null} highlight={v != null && v >= 0.72 ? 'text-emerald-400 font-bold' : v != null && v >= 0.62 ? 'text-sky-400' : undefined} />;
+            }
+            case 'wr_mtf': {
+                const v = p.wr_mtf;
+                return <StatVal val={v != null ? (Number(v) * 100).toFixed(1) + '%' : null} highlight={v != null && v >= 0.15 ? 'text-emerald-400 font-bold' : undefined} />;
+            }
+            case 'wr_tgt': {
+                const v = p.wr_target_rate;
+                return <StatVal val={v != null ? (Number(v) * 100).toFixed(1) + '%' : null} highlight={v != null && v >= 0.25 ? 'text-emerald-400 font-bold' : v != null && v >= 0.2 ? 'text-sky-400' : undefined} />;
+            }
+            case 'wr_open': {
+                const v = p.wr_open_rate;
+                return <StatVal val={v != null ? (Number(v) * 100).toFixed(1) + '%' : null} highlight={v != null && v >= 0.8 ? 'text-emerald-400 font-bold' : undefined} />;
+            }
+            case 'wr_zyprr': {
+                const v = p.wr_zone_yprr;
+                return <StatVal val={v != null ? Number(v).toFixed(2) : null} highlight={v != null && v >= 2.5 ? 'text-emerald-400 font-bold' : v != null && v >= 1.8 ? 'text-sky-400' : undefined} />;
+            }
+            case 'wr_myprr': {
+                const v = p.wr_man_yprr;
+                return <StatVal val={v != null ? Number(v).toFixed(2) : null} highlight={v != null && v >= 2.5 ? 'text-emerald-400 font-bold' : v != null && v >= 1.8 ? 'text-sky-400' : undefined} />;
+            }
 
             // ── Advanced — RB rushing metrics (rb_advanced_career) ─────────────
             case 'rb_yac':
@@ -318,6 +342,24 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                 return <StatVal val={p.rb_explosive_rate != null ? Number(p.rb_explosive_rate).toFixed(1) + '%' : null} />;
             case 'rb_fd':
                 return <StatVal val={p.rb_first_down_rate != null ? Number(p.rb_first_down_rate).toFixed(1) + '%' : null} />;
+            case 'rb_ayprr': {
+                const v = p.rb_ayprr;
+                return <StatVal val={v != null ? Number(v).toFixed(2) : null} highlight={v != null && v >= 2 ? 'text-emerald-400 font-bold' : v != null && v >= 1.4 ? 'text-sky-400' : undefined} />;
+            }
+            case 'rb_tgt':
+                return <StatVal val={p.rb_target_rate != null ? Number(p.rb_target_rate).toFixed(1) + '%' : null} highlight={p.rb_target_rate != null && p.rb_target_rate >= 20 ? 'text-emerald-400 font-bold' : undefined} />;
+            case 'rb_drop': {
+                const v = p.rb_drop_rate;
+                return <StatVal val={v != null ? Number(v).toFixed(1) + '%' : null} highlight={v != null && v < 3 ? 'text-emerald-400 font-bold' : v != null && v > 9 ? 'text-red-400' : undefined} />;
+            }
+            case 'rb_fum': {
+                const v = p.rb_fumble_rate;
+                return <StatVal val={v != null ? Number(v).toFixed(1) + '%' : null} highlight={v != null && v <= 0.5 ? 'text-emerald-400 font-bold' : v != null && v > 1.5 ? 'text-red-400' : undefined} />;
+            }
+            case 'rb_gap':
+                return <StatVal val={p.rb_gap_rate != null ? Number(p.rb_gap_rate).toFixed(1) + '%' : null} />;
+            case 'rb_zone':
+                return <StatVal val={p.rb_zone_rate != null ? Number(p.rb_zone_rate).toFixed(1) + '%' : null} />;
 
             // ── Scouting — film grades + historical comps ──────────────────────
             case 'jf_grade': {
