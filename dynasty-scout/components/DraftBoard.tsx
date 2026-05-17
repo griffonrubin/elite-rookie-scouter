@@ -268,8 +268,18 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 case 'sim2':      va = (a as any).hist_comp2_sim ?? MISS; vb = (b as any).hist_comp2_sim ?? MISS; break;
                 case 'rank':
                 default: {
-                    const rankField = format === '1QB' ? 'rank_1qb' : 'rank_sf';
-                    va = (a as any)[rankField] ?? MISS; vb = (b as any)[rankField] ?? MISS; break;
+                    // Bayesian shrinkage — same formula as the SQL ORDER BY in page.tsx.
+                    // Pulls 1–2 source players toward prior rank 120; fully-ranked players barely move.
+                    const PRIOR_RANK = 120;
+                    const PRIOR_WEIGHT = 1.5;
+                    const getAdjRank = (p: any) => {
+                        const n = p.num_sources ?? 0;
+                        if (n === 0) return MISS;
+                        const avgR = format === '1QB' ? (p.avg_rank_1qb ?? p.avg_rank) : p.avg_rank;
+                        if (avgR == null) return MISS;
+                        return (n * avgR + PRIOR_WEIGHT * PRIOR_RANK) / (n + PRIOR_WEIGHT);
+                    };
+                    va = getAdjRank(a); vb = getAdjRank(b); break;
                 }
             }
             return sortDir === 'asc' ? va - vb : vb - va;

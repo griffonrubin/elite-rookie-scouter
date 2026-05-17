@@ -172,7 +172,17 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
       LEFT JOIN hc_top             hc ON p.id = hc.player_id AND hc.rn = 1
       LEFT JOIN hc_top             hc2 ON p.id = hc2.player_id AND hc2.rn = 2
       WHERE p.draft_year = 2026
-      ORDER BY c_sf.rank_overall ASC NULLS LAST
+      ORDER BY (
+        -- Bayesian shrinkage: pull low-source-count players toward a neutral prior (rank 120).
+        -- This prevents a single bullish source from floating a prospect to the top of the board.
+        -- Formula: (N * avg_rank + 1.5 * 120) / (N + 1.5)
+        -- 1 source @ rank 30 → ~84 | 5 sources @ rank 30 → ~43 | 0 sources → NULL (end)
+        CASE
+          WHEN c_sf.num_sources IS NULL OR c_sf.num_sources = 0 THEN NULL
+          ELSE (CAST(c_sf.num_sources AS FLOAT) * c_sf.avg_rank + 1.5 * 120.0)
+               / (CAST(c_sf.num_sources AS FLOAT) + 1.5)
+        END
+      ) ASC NULLS LAST
     `;
     const players = await query<Player>(sql, []);
 
