@@ -7,6 +7,7 @@ import { POSITION_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { ConsensusRanking, Player } from '@/lib/types';
 import { WatchlistButton } from './WatchlistButton';
+import { DraftedButton } from './DraftedButton';
 import { getColDefs, getGridTemplate, pickInIdentity, BoardDataset, ColDef } from '@/lib/boardColumns';
 import { Scale } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
@@ -20,6 +21,7 @@ interface PlayerMiniCardProps {
     positionFilter?: string;
     format?: 'SF' | '1QB';
     dataset?: BoardDataset;
+    isDrafted?: boolean;
 }
 
 function getTier(rank: number): { label: string; color: string; border: string; accent: string } {
@@ -105,7 +107,7 @@ function RecruitStars({ stars }: { stars: number | null | undefined }) {
     return <span className={`text-[13px] font-bold ${color}`}>{'★'.repeat(stars)}</span>;
 }
 
-function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 'ALL', format = 'SF', dataset = 'snapshot' }: PlayerMiniCardProps) {
+function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 'ALL', format = 'SF', dataset = 'snapshot', isDrafted = false }: PlayerMiniCardProps) {
     const router = useRouter();
     const p = player as any;
     const positionColor = POSITION_COLORS[player.position] || 'bg-gray-500/20 text-gray-300 border-gray-500/40';
@@ -402,6 +404,7 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                     'border-b border-white/[0.04]',
                     'hover:bg-white/[0.03]',
                     isEven ? 'bg-transparent' : 'bg-white/[0.015]',
+                    isDrafted && 'opacity-45',
                 )}
             >
                 {/* Tier accent bar — absolutely positioned so it never shifts layout */}
@@ -409,7 +412,7 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
 
                 {/* Sticky identity group: star + rank + compare + player (+ pick) */}
                 <div
-                    className={`sticky left-0 z-10 flex items-center self-stretch gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 ${showPickInIdentity ? 'lg:w-[416px]' : 'lg:w-[304px]'}`}
+                    className={`sticky left-0 z-10 flex items-center self-stretch gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 ${showPickInIdentity ? 'lg:w-[450px]' : 'lg:w-[340px]'}`}
                 >
                     {/* Watchlist star */}
                     <WatchlistButton playerSlug={player.slug} className="flex-shrink-0" />
@@ -429,12 +432,18 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                         <Scale className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </button>
 
+                    {/* Mark drafted toggle */}
+                    <DraftedButton playerSlug={player.slug} className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+
                     {/* Player info — wrapped in hover card for quick stats preview */}
                     <HoverCard openDelay={200} closeDelay={80}>
                         <HoverCardTrigger asChild>
                             <div className="flex-1 min-w-0 lg:w-[224px] lg:min-w-[224px] lg:flex-none cursor-default">
                                 <div className="flex items-center gap-1 sm:gap-1.5 mb-0.5 overflow-hidden">
-                                    <span className="font-bold text-[13px] sm:text-[15px] text-foreground group-hover:text-primary transition-colors leading-snug truncate">
+                                    <span className={cn(
+                                        'font-bold text-[13px] sm:text-[15px] text-foreground group-hover:text-primary transition-colors leading-snug truncate',
+                                        isDrafted && 'line-through decoration-2',
+                                    )}>
                                         {player.full_name}
                                     </span>
                                     <span

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { Player } from '@/lib/types';
 import { POSITION_COLORS } from '@/lib/constants';
 import { WatchlistButton } from './WatchlistButton';
+import { DraftedButton } from './DraftedButton';
+import { useDrafted } from '@/lib/useDrafted';
 import { cn } from '@/lib/utils';
 import { NflTeamLogo, getDraftStatus } from '@/components/NflTeamLogo';
 
@@ -177,6 +179,8 @@ function MiniBarChart({ seasons, color, label }: { seasons: SeasonBar[]; color: 
 
 // ── Main export ───────────────────────────────────────────────────────────────
 export function BoxView({ players, period }: BoxViewProps) {
+    const { drafted } = useDrafted();
+
     if (players.length === 0) {
         return <div className="p-12 text-center text-muted-foreground">No players found.</div>;
     }
@@ -190,6 +194,7 @@ export function BoxView({ players, period }: BoxViewProps) {
                 const tier = getTierStyle(rank);
                 const posColor = POSITION_COLORS[player.position] || 'bg-gray-500/20 text-gray-300 border-gray-500/40';
                 const draftStatus = getDraftStatus(player);
+                const isDrafted = drafted.has(player.slug);
                 const school = p.school || '—';
                 const ht = formatHeight(player.height_inches);
                 const wt = player.weight_lbs ? `${player.weight_lbs}lb` : null;
@@ -231,6 +236,7 @@ export function BoxView({ players, period }: BoxViewProps) {
                             'hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-200',
                             tier.bg,
                             rank <= 5 && 'ring-1 ring-orange-500/20 shadow-lg shadow-orange-500/5',
+                            isDrafted && 'opacity-45',
                         )}
                         style={{
                             borderLeft: `3px solid ${tier.border}70`,
@@ -248,6 +254,7 @@ export function BoxView({ players, period }: BoxViewProps) {
                                         </span>
                                     )}
                                     <WatchlistButton playerSlug={player.slug} className="flex-shrink-0" />
+                                    <DraftedButton playerSlug={player.slug} className="flex-shrink-0" />
                                     <span
                                         style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 10, fontWeight: 800, lineHeight: 1 }}
                                         className={cn('border inline-flex items-center', posColor)}
@@ -281,7 +288,10 @@ export function BoxView({ players, period }: BoxViewProps) {
                                 <div className="w-8 h-10 rounded-md bg-muted/20 flex items-center justify-center text-[9px] font-black text-muted-foreground/30 flex-shrink-0 mt-0.5">{pos[0]}</div>
                             )}
                             <div className="min-w-0 flex-1">
-                                <div className="font-bold text-[14px] text-foreground group-hover:text-primary transition-colors leading-snug" title={player.full_name}>
+                                <div className={cn(
+                                    'font-bold text-[14px] text-foreground group-hover:text-primary transition-colors leading-snug',
+                                    isDrafted && 'line-through decoration-2',
+                                )} title={player.full_name}>
                                     {player.full_name}
                                 </div>
                                 <div className="text-[11px] text-muted-foreground/60 truncate mt-0.5">{school}</div>

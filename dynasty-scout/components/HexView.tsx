@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { Gavel } from 'lucide-react';
 import { Player } from '@/lib/types';
 import { POSITION_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { useDrafted } from '@/lib/useDrafted';
 import { NflTeamLogo, getDraftStatus } from '@/components/NflTeamLogo';
 
 interface HexViewProps {
@@ -23,6 +25,8 @@ function getTierStyle(rank: number): { border: string; bg: string; pickColor: st
 }
 
 export function HexView({ players, period }: HexViewProps) {
+    const { drafted, toggle } = useDrafted();
+
     if (players.length === 0) {
         return <div className="p-12 text-center text-muted-foreground">No players found.</div>;
     }
@@ -87,17 +91,29 @@ export function HexView({ players, period }: HexViewProps) {
                                     const tier = getTierStyle(rank);
                                     const posColor = POSITION_COLORS[player.position] || 'bg-gray-500/20 text-gray-300 border-gray-500/40';
                                     const draftStatus = getDraftStatus(player);
+                                    const isDrafted = drafted.has(player.slug);
 
                                     return (
                                         <Link
                                             key={player.id}
                                             href={`/players/${player.slug}`}
                                             className={cn(
-                                                'group flex-1 min-w-[90px] flex flex-col rounded border px-2 py-1.5 cursor-pointer overflow-hidden',
+                                                'group relative flex-1 min-w-[90px] flex flex-col rounded border px-2 py-1.5 cursor-pointer overflow-hidden',
                                                 'transition-all duration-150 hover:scale-[1.04] hover:z-10 hover:shadow-lg hover:shadow-black/40',
-                                                tier.border, tier.bg
+                                                tier.border, tier.bg,
+                                                isDrafted && 'opacity-40',
                                             )}
                                         >
+                                            {/* Mark drafted toggle — hover only */}
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(player.slug); }}
+                                                title={isDrafted ? 'Mark as available' : 'Mark as drafted'}
+                                                aria-label={isDrafted ? 'Mark as available' : 'Mark as drafted'}
+                                                className="absolute top-0.5 right-0.5 z-10 p-0.5 rounded bg-card/90 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <Gavel className={cn('w-3 h-3', isDrafted ? 'text-emerald-400' : 'text-muted-foreground')} />
+                                            </button>
                                             {/* Pick + position */}
                                             <div className="flex items-center justify-between gap-1">
                                                 <span className={`text-[9px] font-black font-mono leading-none ${tier.pickColor}`}>
@@ -113,7 +129,10 @@ export function HexView({ players, period }: HexViewProps) {
 
                                             {/* Name */}
                                             <div
-                                                className="text-[11px] font-bold text-foreground leading-snug group-hover:text-primary transition-colors mt-1"
+                                                className={cn(
+                                                    'text-[11px] font-bold text-foreground leading-snug group-hover:text-primary transition-colors mt-1',
+                                                    isDrafted && 'line-through decoration-2',
+                                                )}
                                                 title={player.full_name}
                                                 style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                                             >

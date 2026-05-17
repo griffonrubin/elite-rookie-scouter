@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Player } from '@/lib/types';
 import { PlayerMiniCard } from '@/components/PlayerMiniCard';
-import { Search, ChevronUp, ChevronDown, ChevronsUpDown, Star } from 'lucide-react';
+import { Search, ChevronUp, ChevronDown, ChevronsUpDown, Star, Gavel } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Fuse from 'fuse.js';
@@ -13,6 +13,7 @@ import { ViewModeSelector, ViewMode } from '@/components/ViewModeSelector';
 import { BoxView } from '@/components/BoxView';
 import { HexView } from '@/components/HexView';
 import { DatasetPicker } from '@/components/DatasetPicker';
+import { useDrafted } from '@/lib/useDrafted';
 import { getColDefs, getGridTemplate, pickInIdentity, BoardDataset, SortKey } from '@/lib/boardColumns';
 
 interface DraftBoardProps { players: Player[]; }
@@ -42,7 +43,9 @@ function DraftBoardContent({ players }: DraftBoardProps) {
     const [sortKey, setSortKey]             = useState<SortKey>('rank');
     const [sortDir, setSortDir]             = useState<SortDir>('asc');
     const [favoritesOnly, setFavoritesOnly] = useState(false);
+    const [availableOnly, setAvailableOnly] = useState(false);
     const [watchlist, setWatchlist]         = useState<string[]>([]);
+    const { drafted, reset: resetDrafted }  = useDrafted();
     const [draftCapFilter, setDraftCapFilter] = useState<'all' | 'r1' | 'r2plus' | 'day3'>('all');
     const [ageFilter, setAgeFilter]           = useState<'all' | 'u21' | 'u22'>('all');
     const [rasFilter, setRasFilter]           = useState<'all' | 'ras7' | 'ras8'>('all');
@@ -167,8 +170,9 @@ function DraftBoardContent({ players }: DraftBoardProps) {
             if (rasFilter === 'ras8') return ras >= 8.5;
             return true;
         });
+        if (availableOnly) result = result.filter(p => !drafted.has(p.slug));
         return result;
-    }, [searchQuery, favoritesOnly, watchlist, draftCapFilter, ageFilter, rasFilter, players, fuse, format]);
+    }, [searchQuery, favoritesOnly, watchlist, draftCapFilter, ageFilter, rasFilter, availableOnly, drafted, players, fuse, format]);
 
     const filteredPlayers = useMemo(() => {
         let result = prePositionPlayers;
@@ -257,7 +261,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
         TE: prePositionPlayers.filter(p => p.position === 'TE').length,
     }), [prePositionPlayers]);
 
-    const showTiers = sortKey === 'rank' && sortDir === 'asc' && !searchQuery.trim() && !favoritesOnly && draftCapFilter === 'all' && ageFilter === 'all' && rasFilter === 'all';
+    const showTiers = sortKey === 'rank' && sortDir === 'asc' && !searchQuery.trim() && !favoritesOnly && !availableOnly && draftCapFilter === 'all' && ageFilter === 'all' && rasFilter === 'all';
     const colDefs = getColDefs(dataset, positionFilter);
     const gridTemplate = getGridTemplate(dataset, positionFilter);
     const showPickInIdentity = pickInIdentity(dataset);
@@ -417,7 +421,31 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         {watchlist.length > 0 && <span style={{ opacity: favoritesOnly ? 1 : 0.6 }}>{watchlist.length}</span>}
                     </button>
 
-                    {(positionFilter !== 'ALL' || searchQuery.trim() || favoritesOnly || draftCapFilter !== 'all' || ageFilter !== 'all' || rasFilter !== 'all') && (
+                    {/* Available (hide drafted) filter pill */}
+                    <button
+                        onClick={() => setAvailableOnly(a => !a)}
+                        style={{ display: 'inline-flex', alignItems: 'center', borderRadius: 9999, fontWeight: 700, whiteSpace: 'nowrap', lineHeight: 1 }}
+                        className={`px-2.5 py-1 text-[10px] gap-1 sm:px-3.5 sm:py-1.5 sm:text-[12px] sm:gap-1.5 border transition-all duration-150 ${
+                            availableOnly
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/60'
+                                : 'text-muted-foreground border-border/60 hover:border-emerald-500/40 hover:text-emerald-400'
+                        }`}
+                    >
+                        <Gavel className="w-3 h-3" />
+                        Available
+                    </button>
+
+                    {drafted.size > 0 && (
+                        <span className="text-[11px] text-muted-foreground ml-1 flex items-center gap-1.5">
+                            <span><span className="text-emerald-400 font-semibold">{drafted.size}</span> drafted</span>
+                            <button
+                                onClick={() => resetDrafted()}
+                                className="underline decoration-dotted hover:text-foreground transition-colors"
+                            >reset</button>
+                        </span>
+                    )}
+
+                    {(positionFilter !== 'ALL' || searchQuery.trim() || favoritesOnly || availableOnly || draftCapFilter !== 'all' || ageFilter !== 'all' || rasFilter !== 'all') && (
                         <span className="text-[11px] text-muted-foreground ml-1">
                             Showing <span className="text-foreground font-semibold">{filteredPlayers.length}</span> of <span className="text-foreground font-semibold">{(players || []).length}</span>
                         </span>
@@ -512,7 +540,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                     <div className="flex items-stretch px-4 py-0 border-b border-white/[0.06] gap-0 min-h-[46px] sticky top-[54px] z-20"
                          style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(16px)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
                         {/* Sticky identity group: star + rank + compare + player (+ pick) */}
-                        <div className={`sticky left-0 z-10 flex items-center gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 ${showPickInIdentity ? 'lg:w-[416px]' : 'lg:w-[304px]'}`} style={{ background: 'var(--bg-elevated)' }}>
+                        <div className={`sticky left-0 z-10 flex items-center gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 ${showPickInIdentity ? 'lg:w-[450px]' : 'lg:w-[340px]'}`} style={{ background: 'var(--bg-elevated)' }}>
                         {/* Spacer for watchlist star */}
                         <div className="w-5 flex-shrink-0" />
 
@@ -532,6 +560,9 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         </div>
 
                         {/* Spacer for compare button column */}
+                        <div className="w-5 sm:w-6 flex-shrink-0" />
+
+                        {/* Spacer for mark-drafted button column */}
                         <div className="w-5 sm:w-6 flex-shrink-0" />
 
                         {/* Player */}
@@ -672,6 +703,7 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                                             positionFilter={positionFilter}
                                             format={format}
                                             dataset={dataset}
+                                            isDrafted={drafted.has(player.slug)}
                                         />
                                     </div>
                                 );
