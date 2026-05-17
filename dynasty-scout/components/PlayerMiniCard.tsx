@@ -194,7 +194,8 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
             case 'ktc': { const v = format === '1QB' ? (p as any).ktc_1qb_rank : (p as any).ktc_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'fc':  { const v = format === 'SF'  ? (p as any).fantasycalc_sf_rank : (p as any).fantasycalc_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'dn':  { const v = format === 'SF' ? (p as any).dynasty_nerds_sf_rank : p.dynasty_nerds_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
-            case 'tfc': { const v = (p as any).tyler_ff_sf_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
+            case 'tfc':      { const v = (p as any).tyler_ff_sf_rank; return <StatVal val={v} highlight={sourceRankColor(v)} />; }
+            case 'flock_sf': { const v = (p as any).flock_sf_rank;    return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'pfn':  { const v = (p as any).pfn_rank;     return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'tank': { const v = (p as any).tank_rank;    return <StatVal val={v} highlight={sourceRankColor(v)} />; }
             case 'tdn':  { const v = (p as any).tdn_rank;     return <StatVal val={v} highlight={sourceRankColor(v)} />; }
@@ -590,7 +591,7 @@ function PlayerMiniCardInner({ player, ranking, period, index, positionFilter = 
                     {colDefs.map((col, i) => (
                         <div
                             key={col.key}
-                            className={`flex items-center justify-center text-center min-h-[38px] overflow-hidden ${i === 0 ? 'border-l border-white/[0.05]' : ''} ${col.key === 'fp' || col.key === 'pfn' || col.key === 'avg_rank' || col.key === 'tier' || col.key === 'age' || col.key === 'career_td' || col.key === 's1' || col.key === 'hist_comp2' ? 'border-l border-white/[0.05]' : ''}`}
+                            className={`flex items-center justify-center text-center min-h-[38px] overflow-hidden ${i === 0 ? 'border-l border-white/[0.05]' : ''} ${col.key === 'fp' || col.key === 'pfn' || col.key === 'flock_sf' || col.key === 'avg_rank' || col.key === 'tier' || col.key === 'age' || col.key === 'career_td' || col.key === 's1' || col.key === 'hist_comp2' ? 'border-l border-white/[0.05]' : ''}`}
                         >
                             {renderCell(col)}
                         </div>
