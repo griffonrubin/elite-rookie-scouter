@@ -10,7 +10,7 @@ export type SortKey =
     | 'vert' | 'broad' | 'cone' | 'shuttle' | 'bench'
     | 'gp' | 'pass_yds' | 'pass_td' | 'rush_yds' | 'rush_td' | 'rec' | 'rec_yds' | 'rec_td'
     | 'avg_rank' | 'mv7'
-    | 'age' | 'brkout' | 'career_td' | 'career_scr'
+    | 'pick' | 'age' | 'brkout' | 'career_td' | 'career_scr'
     | 'wr_yprr' | 'adot' | 'wr_drop' | 'contested' | 'yac_rec' | 'slot'
     | 'wr_catch' | 'wr_mtf' | 'wr_tgt' | 'wr_open' | 'wr_zyprr' | 'wr_myprr'
     | 'rb_yac' | 'mtf' | 'rb_yprr' | 'brk' | 'exp' | 'rb_fd'
@@ -37,7 +37,7 @@ const RAS:   ColDef = { key: 'ras',   label: 'RAS',   sortKey: 'ras',   tooltip:
 const ARM:   ColDef = { key: 'arm',   label: 'Arm',   sortKey: 'arm',   tooltip: 'Arm length in inches — important for contested catches and press coverage' };
 const HAND:  ColDef = { key: 'hand',  label: 'Hand',  sortKey: 'hand',  tooltip: 'Hand size in inches — larger hands = better ball security and catching in weather' };
 const STARS: ColDef = { key: 'stars', label: 'Rcrt',  sortKey: 'stars', tooltip: 'Recruiting Stars — High school recruiting stars (247Sports composite) — 5★ = top national recruit' };
-const PICK:  ColDef = { key: 'pick',  label: 'Pick',                      tooltip: 'NFL draft pick — team logo + draft slot (e.g. 1.03) or UDFA' };
+const PICK:  ColDef = { key: 'pick',  label: 'Pick',  sortKey: 'pick',    tooltip: 'NFL draft pick — team logo + draft slot (e.g. 1.03) or UDFA. Click to sort by pick order.' };
 const FP:    ColDef = { key: 'fp',    label: 'FP',    subLabel: 'Devy',   sortKey: 'fp',  tooltip: 'FantasyPros — consensus dynasty devy/rookie ranking' };
 const KTC:   ColDef = { key: 'ktc',   label: 'KTC',   subLabel: 'Dyn',    sortKey: 'ktc', tooltip: 'KeepTradeCut — dynasty trade value ranking (updated daily from trade data)' };
 const FC:    ColDef = { key: 'fc',    label: 'FC',    subLabel: 'Rookie', sortKey: 'fc',  tooltip: 'FantasyCalc — startup/rookie draft ranking' };

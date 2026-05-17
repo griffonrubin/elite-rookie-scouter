@@ -222,6 +222,12 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                 case 'rec_td':   va = (a as any).career_rec_tds ?? MISS; vb = (b as any).career_rec_tds ?? MISS; break;
                 case 'avg_rank': { const f = format === '1QB' ? 'avg_rank_1qb' : 'avg_rank'; va = (a as any)[f] ?? MISS; vb = (b as any)[f] ?? MISS; break; }
                 case 'mv7':      { const f = format === '1QB' ? 'rank_change_7d_1qb' : 'rank_change_7d'; va = (a as any)[f] ?? MISS; vb = (b as any)[f] ?? MISS; break; }
+                case 'pick': {
+                    const pickVal = (p: any) => p.draft_round != null && p.draft_pick != null
+                        ? p.draft_round * 1000 + p.draft_pick
+                        : p.nfl_team ? 50000 : MISS;
+                    va = pickVal(a); vb = pickVal(b); break;
+                }
                 case 'age':       va = (a as any).age_at_draft ?? MISS; vb = (b as any).age_at_draft ?? MISS; break;
                 case 'brkout':    va = (a as any).breakout_age ?? MISS; vb = (b as any).breakout_age ?? MISS; break;
                 case 'career_td': {
@@ -357,11 +363,12 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         <Select value={sortKey} onValueChange={(v: SortKey) => { setSortKey(v); setSortDir(DEFAULT_DESC.includes(v as SortKey) ? 'desc' : 'asc'); }}>
                             <SelectTrigger className="w-[140px] sm:w-[180px] bg-card border-border/60 text-xs" style={{ height: '34px', paddingLeft: '14px', paddingRight: '14px', gap: '10px' }}>
                                 <SelectValue>
-                                    {({ rank: 'Consensus', ktc: 'KTC ' + format, sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FC ' + format, dn: 'DynNerds', tfc: 'TylerFF SF', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC', vert: 'Vertical', broad: 'Broad Jump', cone: '3-Cone', shuttle: 'Shuttle', bench: 'Bench', gp: 'Games', pass_yds: 'Pass Yds', pass_td: 'Pass TD', rush_yds: 'Rush Yds', rush_td: 'Rush TD', rec: 'Receptions', rec_yds: 'Rec Yds', rec_td: 'Rec TD', avg_rank: 'Avg Rank', mv7: '7d Move', pfn: 'Pro Football Net', tank: 'TankAthlete', tdn: 'The Draft Network', brug: 'Matt Brugler', dj: 'Daniel Jeremiah', age: 'Age at Draft', brkout: 'Breakout Age', career_td: 'Career TDs', career_scr: 'Career Yards', wr_yprr: 'WR YPRR', adot: 'aDOT', wr_drop: 'Drop Rate', contested: 'Contested%', yac_rec: 'YAC/Rec', slot: 'Slot Rate', rb_yac: 'Yds After Contact', mtf: 'MTF%', rb_yprr: 'RB YPRR', brk: 'Breakaway%', exp: 'Explosive%', rb_fd: '1st Down%', wr_catch: 'Catch%', wr_mtf: 'WR MTF%', wr_tgt: 'WR Target%', wr_open: 'Open%', wr_zyprr: 'YPRR vs Zone', wr_myprr: 'YPRR vs Man', rb_ayprr: 'RB aYPRR', rb_tgt: 'RB Target%', rb_drop: 'RB Drop%', rb_fum: 'Fumble%', rb_gap: 'Gap%', rb_zone: 'Zone%', jf_grade: 'JF Grade', athl: 'Athletic Score', sim: 'Hist Sim #1', sim2: 'Hist Sim #2' } as {[k:string]:string})[sortKey] ?? 'Consensus'}
+                                    {({ rank: 'Consensus', pick: 'Draft Pick', ktc: 'KTC ' + format, sleeper: 'Sleeper', fp: 'FantasyPros', fc: 'FC ' + format, dn: 'DynNerds', tfc: 'TylerFF SF', forty: '40yd Dash', spd: 'Speed Score', ras: 'RAS Score', height: 'Height', arm: 'Arm Length', hand: 'Hand Size', stars: 'Recruit', dom: 'Dom%', scrim_ypg: 'Scrim/G', pass_ypg: 'Pass/G', comp_pct: 'Comp%', ypa: 'YPA', ypr: 'Yds/Rec', ypc: 'YPC', vert: 'Vertical', broad: 'Broad Jump', cone: '3-Cone', shuttle: 'Shuttle', bench: 'Bench', gp: 'Games', pass_yds: 'Pass Yds', pass_td: 'Pass TD', rush_yds: 'Rush Yds', rush_td: 'Rush TD', rec: 'Receptions', rec_yds: 'Rec Yds', rec_td: 'Rec TD', avg_rank: 'Avg Rank', mv7: '7d Move', pfn: 'Pro Football Net', tank: 'TankAthlete', tdn: 'The Draft Network', brug: 'Matt Brugler', dj: 'Daniel Jeremiah', age: 'Age at Draft', brkout: 'Breakout Age', career_td: 'Career TDs', career_scr: 'Career Yards', wr_yprr: 'WR YPRR', adot: 'aDOT', wr_drop: 'Drop Rate', contested: 'Contested%', yac_rec: 'YAC/Rec', slot: 'Slot Rate', rb_yac: 'Yds After Contact', mtf: 'MTF%', rb_yprr: 'RB YPRR', brk: 'Breakaway%', exp: 'Explosive%', rb_fd: '1st Down%', wr_catch: 'Catch%', wr_mtf: 'WR MTF%', wr_tgt: 'WR Target%', wr_open: 'Open%', wr_zyprr: 'YPRR vs Zone', wr_myprr: 'YPRR vs Man', rb_ayprr: 'RB aYPRR', rb_tgt: 'RB Target%', rb_drop: 'RB Drop%', rb_fum: 'Fumble%', rb_gap: 'Gap%', rb_zone: 'Zone%', jf_grade: 'JF Grade', athl: 'Athletic Score', sim: 'Hist Sim #1', sim2: 'Hist Sim #2' } as {[k:string]:string})[sortKey] ?? 'Consensus'}
                                 </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="rank">Consensus</SelectItem>
+                                <SelectItem value="pick">Draft Pick</SelectItem>
                                 <SelectItem value="ktc">KTC Dynasty</SelectItem>
                                 <SelectItem value="fp">FantasyPros</SelectItem>
                                 <SelectItem value="fc">FantasyCalc</SelectItem>
@@ -590,12 +597,22 @@ function DraftBoardContent({ players }: DraftBoardProps) {
                         {showPickInIdentity && (
                             <Tooltip delayDuration={300}>
                                 <TooltipTrigger asChild>
-                                    <div className="hidden lg:flex w-[52px] flex-shrink-0 items-center justify-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border/30">
-                                        Pick
+                                    <div className="hidden lg:flex w-[52px] flex-shrink-0 items-center justify-center border-l border-border/30">
+                                        <button
+                                            onClick={() => handleSort('pick')}
+                                            className="flex items-center gap-0.5 cursor-pointer group bg-transparent border-0 p-0"
+                                        >
+                                            <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-0.5 ${sortKey === 'pick' ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                                                Pick
+                                                {sortKey === 'pick'
+                                                    ? (sortDir === 'asc' ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />)
+                                                    : <ChevronsUpDown className="w-2.5 h-2.5 opacity-25 group-hover:opacity-50" />}
+                                            </span>
+                                        </button>
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent side="bottom" className="max-w-[240px] text-xs leading-snug">
-                                    NFL draft pick — team logo + draft slot (e.g. 1.03) or UDFA
+                                    NFL draft pick — click to sort by pick order (1.01 first, UDFA last)
                                 </TooltipContent>
                             </Tooltip>
                         )}
