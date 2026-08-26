@@ -340,3 +340,115 @@ export interface TierPlayer {
     player_order: number;
     created_at?: string;
 }
+
+// ── Redraft mode ─────────────────────────────────────────────────────────────
+
+/** One row of the redraft board — a player plus their market and production. */
+export interface RedraftPlayer {
+    id: number;
+    slug: string;
+    full_name: string;
+    position: string;
+    nfl_team: string | null;
+    nfl_headshot_url: string | null;
+    headshot_url: string | null;
+    dob: string | null;
+    years_exp: number | null;
+    nfl_draft_year: number | null;
+    /** 2026 means this player is also on the rookie board (college profile exists). */
+    draft_year: number | null;
+    height_inches: number | null;
+    weight_lbs: number | null;
+    team_logo: string | null;
+    team_color: string | null;
+
+    /** Live board position — array index from the ordered query. */
+    board_rank?: number;
+
+    // consensus
+    rank_overall: number | null;
+    rank_positional: number | null;
+    avg_rank: number | null;
+    best_rank: number | null;
+    worst_rank: number | null;
+    std_deviation: number | null;
+    num_sources: number | null;
+
+    // per-source ranks
+    fp_rank: number | null;
+    espn_rank: number | null;
+    ktc_rank: number | null;
+    cbs_rank: number | null;
+    yahoo_rank: number | null;
+    sleeper_rank: number | null;
+    fc_rank: number | null;
+    flock_rank: number | null;
+    fp_tier: number | null;
+
+    // 2025 season
+    pts25: number | null;
+    ppg25: number | null;
+    fin25: number | null;
+    fin25_ov: number | null;
+    games25: number | null;
+    team25: string | null;
+    pass_yards: number | null;
+    pass_tds: number | null;
+    interceptions: number | null;
+    completions: number | null;
+    pass_attempts: number | null;
+    carries: number | null;
+    rush_yards: number | null;
+    rush_tds: number | null;
+    targets: number | null;
+    receptions: number | null;
+    rec_yards: number | null;
+    rec_tds: number | null;
+    fg_made: number | null;
+    fg_att: number | null;
+    fg_pct: number | null;
+    fg_made_50plus: number | null;
+    fg_long: number | null;
+    xp_made: number | null;
+    dst_sacks: number | null;
+    dst_ints: number | null;
+    dst_tds: number | null;
+    dst_fum_rec: number | null;
+    dst_points_allowed: number | null;
+
+    // prior seasons
+    pts21: number | null; pts22: number | null; pts23: number | null; pts24: number | null;
+    fin21: number | null; fin22: number | null; fin23: number | null; fin24: number | null;
+    seasons_played: number | null;
+
+    // projections
+    proj_points: number | null;
+    proj_ppg: number | null;
+    proj_sources: number | null;
+}
+
+/** One season row from nfl_season_stats. */
+export interface NflSeasonStat {
+    player_id: number;
+    season: number;
+    team: string | null;
+    position: string | null;
+    games: number | null;
+    fantasy_points_ppr: number | null;
+    ppg_ppr: number | null;
+    finish_overall: number | null;
+    finish_positional: number | null;
+    [key: string]: number | string | null;
+}
+
+/** One source's 2026 projection for a player. */
+export interface Projection {
+    player_id: number;
+    source: string;
+    season: number;
+    proj_points: number | null;
+    proj_ppg: number | null;
+    proj_rank_overall: number | null;
+    proj_rank_positional: number | null;
+    scraped_at: string;
+}
