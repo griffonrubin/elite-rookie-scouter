@@ -7,11 +7,13 @@ import { useDrafted } from '@/lib/useDrafted';
 interface Props {
     playerSlug: string;
     className?: string;
+    /** Override the localStorage key (redraft board passes REDRAFT_DRAFTED_KEY). */
+    storageKey?: string;
 }
 
 /** Per-player toggle that marks a player drafted (off the board). */
-export function DraftedButton({ playerSlug, className }: Props) {
-    const { drafted, toggle } = useDrafted();
+export function DraftedButton({ playerSlug, className, storageKey }: Props) {
+    const { drafted, toggle } = useDrafted(storageKey);
     const isDrafted = drafted.has(playerSlug);
     return (
         <button

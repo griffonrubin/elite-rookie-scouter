@@ -21,9 +21,11 @@ export const POSITION_HEADLINE_STATS: Record<string, { key: string, label: strin
     ],
 };
 
-// Canonical position color system — single source of truth
+// Canonical position color system — single source of truth.
+// K and DST are redraft-only positions (no rookie-board players carry them).
 export const POSITION_RAW: Record<string, string> = {
     QB: '#ef4444', RB: '#38bdf8', WR: '#34d399', TE: '#a78bfa',
+    K: '#fbbf24', DST: '#94a3b8',
 };
 
 export const POSITION_COLORS: Record<string, string> = {
@@ -31,6 +33,8 @@ export const POSITION_COLORS: Record<string, string> = {
     RB: 'bg-sky-400/15 text-sky-400 border border-sky-400/35',
     WR: 'bg-emerald-400/15 text-emerald-400 border border-emerald-400/35',
     TE: 'bg-violet-400/15 text-violet-400 border border-violet-400/35',
+    K: 'bg-amber-400/15 text-amber-400 border border-amber-400/35',
+    DST: 'bg-slate-400/15 text-slate-300 border border-slate-400/35',
 };
 
 export const POSITION_PILL_ACTIVE: Record<string, { active: string; inactive: string }> = {
@@ -54,6 +58,14 @@ export const POSITION_PILL_ACTIVE: Record<string, { active: string; inactive: st
         active: 'bg-violet-400/25 text-violet-200 border-violet-400/60 shadow-[0_0_12px_rgba(167,139,250,0.2)]',
         inactive: 'text-muted-foreground border-white/10 hover:border-violet-400/40 hover:text-violet-400',
     },
+    K: {
+        active: 'bg-amber-400/25 text-amber-200 border-amber-400/60 shadow-[0_0_12px_rgba(251,191,36,0.2)]',
+        inactive: 'text-muted-foreground border-white/10 hover:border-amber-400/40 hover:text-amber-400',
+    },
+    DST: {
+        active: 'bg-slate-400/25 text-slate-200 border-slate-400/60 shadow-[0_0_12px_rgba(148,163,184,0.2)]',
+        inactive: 'text-muted-foreground border-white/10 hover:border-slate-400/40 hover:text-slate-300',
+    },
 };
 
 export const SOURCES = [
@@ -63,3 +75,25 @@ export const SOURCES = [
     { name: 'Flock Fantasy', url: 'https://flockfantasy.com' },
     { name: 'Walter Football', url: 'https://walterfootball.com/dynastyrookierankings.php' },
 ];
+
+/** Redraft (seasonal PPR) ranking sources — displayed on the redraft board. */
+export const REDRAFT_SOURCES = [
+    { name: 'FantasyPros PPR', short: 'FP', url: 'https://www.fantasypros.com/nfl/rankings/ppr-cheatsheets.php' },
+    { name: 'ESPN Redraft', short: 'ESPN', url: 'https://www.espn.com/fantasy/football/' },
+    { name: 'Yahoo Redraft', short: 'YHO', url: 'https://football.fantasysports.yahoo.com/f1/draftanalysis' },
+    { name: 'CBS Redraft', short: 'CBS', url: 'https://www.cbssports.com/fantasy/football/rankings/ppr/top200/' },
+    { name: 'Sleeper Redraft', short: 'SLP', url: 'https://sleeper.com' },
+    { name: 'KeepTradeCut Redraft', short: 'KTC', url: 'https://keeptradecut.com/fantasy-rankings' },
+    { name: 'FantasyCalc Redraft', short: 'FC', url: 'https://fantasycalc.com' },
+    { name: 'Flock Redraft', short: 'FLK', url: 'https://flockfantasy.com' },
+];
+
+/** Sources that publish 2026 seasonal point projections. */
+export const PROJECTION_SOURCES = [
+    { name: 'FantasyPros', short: 'FP' },
+    { name: 'ESPN', short: 'ESPN' },
+    { name: 'Sleeper', short: 'SLP' },
+    { name: 'CBS', short: 'CBS' },
+];
+
+export const REDRAFT_POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST'] as const;

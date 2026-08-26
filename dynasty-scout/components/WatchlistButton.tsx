@@ -8,15 +8,20 @@ interface Props {
     playerSlug: string;
     variant?: 'icon' | 'badge';
     className?: string;
+    /** Override the localStorage key (redraft board passes REDRAFT_WATCHLIST_KEY). */
+    storageKey?: string;
 }
 
-export function WatchlistButton({ playerSlug, variant = 'icon', className }: Props) {
+/** Redraft mode keeps its own watchlist so the two boards never collide. */
+export const REDRAFT_WATCHLIST_KEY = 'redraft_watchlist';
+
+export function WatchlistButton({ playerSlug, variant = 'icon', className, storageKey = 'dynasty_watchlist' }: Props) {
     const [isWatched, setIsWatched] = useState(false);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
-        const stored = localStorage.getItem('dynasty_watchlist');
+        const stored = localStorage.getItem(storageKey);
         if (stored) {
             try {
                 const list = JSON.parse(stored);
@@ -28,7 +33,7 @@ export function WatchlistButton({ playerSlug, variant = 'icon', className }: Pro
 
         // Listen for cross-component updates
         const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'dynasty_watchlist') {
+            if (e.key === storageKey) {
                 try {
                     const newList = e.newValue ? JSON.parse(e.newValue) : [];
                     setIsWatched(Array.isArray(newList) && newList.includes(playerSlug));
@@ -39,7 +44,7 @@ export function WatchlistButton({ playerSlug, variant = 'icon', className }: Pro
         // Custom event for same-tab updates
         const handleLocalChange = () => {
             try {
-                const current = JSON.parse(localStorage.getItem('dynasty_watchlist') || '[]');
+                const current = JSON.parse(localStorage.getItem(storageKey) || '[]');
                 setIsWatched(Array.isArray(current) && current.includes(playerSlug));
             } catch { setIsWatched(false); }
         };
@@ -51,13 +56,13 @@ export function WatchlistButton({ playerSlug, variant = 'icon', className }: Pro
             window.removeEventListener('storage', handleStorageChange);
             window.removeEventListener('watchlist-updated', handleLocalChange);
         };
-    }, [playerSlug]);
+    }, [playerSlug, storageKey]);
 
     const toggleWatchlist = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
 
-        const stored = localStorage.getItem('dynasty_watchlist');
+        const stored = localStorage.getItem(storageKey);
         let list: string[] = [];
         try {
             if (stored) list = JSON.parse(stored);
@@ -69,7 +74,7 @@ export function WatchlistButton({ playerSlug, variant = 'icon', className }: Pro
             list.push(playerSlug);
         }
 
-        localStorage.setItem('dynasty_watchlist', JSON.stringify(list));
+        localStorage.setItem(storageKey, JSON.stringify(list));
         setIsWatched(!isWatched);
 
         // Dispatch event so other components on the page update immediately
