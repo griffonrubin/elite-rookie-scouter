@@ -1,0 +1,5330 @@
+[
+  {
+    "season": 2021,
+    "gsis_id": "00-0023682",
+    "name": "Ryan Fitzpatrick",
+    "position": "QB",
+    "team": "WAS",
+    "ppr": 0.72
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0024243",
+    "name": "Marcedes Lewis",
+    "position": "TE",
+    "team": "GB",
+    "ppr": 44.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0025394",
+    "name": "Adrian Peterson",
+    "position": "RB",
+    "team": "SEA",
+    "ppr": 26.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0026035",
+    "name": "Danny Amendola",
+    "position": "WR",
+    "team": "HOU",
+    "ppr": 68.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0026189",
+    "name": "DeSean Jackson",
+    "position": "WR",
+    "team": "LV",
+    "ppr": 75.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0026197",
+    "name": "Chad Henne",
+    "position": "QB",
+    "team": "KC",
+    "ppr": 3.28
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0026625",
+    "name": "Brian Hoyer",
+    "position": "QB",
+    "team": "NE",
+    "ppr": 12.28
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0027691",
+    "name": "Andre Roberts",
+    "position": "WR",
+    "team": "LAC",
+    "ppr": 12.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0027696",
+    "name": "Jimmy Graham",
+    "position": "TE",
+    "team": "CHI",
+    "ppr": 50.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0027944",
+    "name": "Julio Jones",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 80.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0027948",
+    "name": "Blaine Gabbert",
+    "position": "QB",
+    "team": "TB",
+    "ppr": 1.98
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0027981",
+    "name": "Kyle Rudolph",
+    "position": "TE",
+    "team": "NYG",
+    "ppr": 59.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0028042",
+    "name": "Luke Stocker",
+    "position": "TE",
+    "team": "MIN",
+    "ppr": 3.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0028237",
+    "name": "Chris Hogan",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 14.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0029119",
+    "name": "Derek Carrier",
+    "position": "TE",
+    "team": "LV",
+    "ppr": 3.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0029239",
+    "name": "Brandon Bolden",
+    "position": "RB",
+    "team": "NE",
+    "ppr": 124.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0029293",
+    "name": "Marvin Jones",
+    "position": "WR",
+    "team": "JAX",
+    "ppr": 180.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0029567",
+    "name": "Nick Foles",
+    "position": "QB",
+    "team": "CHI",
+    "ppr": 16.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0029608",
+    "name": "T.Y. Hilton",
+    "position": "WR",
+    "team": "IND",
+    "ppr": 74.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0029632",
+    "name": "Mohamed Sanu",
+    "position": "WR",
+    "team": "SF",
+    "ppr": 32.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0029664",
+    "name": "Josh Gordon",
+    "position": "WR",
+    "team": "KC",
+    "ppr": 14.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030068",
+    "name": "Marquise Goodwin",
+    "position": "WR",
+    "team": "CHI",
+    "ppr": 57.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030085",
+    "name": "Kenny Stills",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 18.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030108",
+    "name": "Ryan Griffin",
+    "position": "TE",
+    "team": "NYJ",
+    "ppr": 65.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030155",
+    "name": "Demetrius Harris",
+    "position": "TE",
+    "team": "ARI",
+    "ppr": 4.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030288",
+    "name": "Rex Burkhead",
+    "position": "RB",
+    "team": "HOU",
+    "ppr": 104.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030431",
+    "name": "Robert Woods",
+    "position": "WR",
+    "team": "LA",
+    "ppr": 137.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030456",
+    "name": "Giovani Bernard",
+    "position": "RB",
+    "team": "TB",
+    "ppr": 59.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030513",
+    "name": "Latavius Murray",
+    "position": "RB",
+    "team": "BAL",
+    "ppr": 103.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030525",
+    "name": "Tavon Austin",
+    "position": "WR",
+    "team": "JAX",
+    "ppr": 53.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030578",
+    "name": "Cordarrelle Patterson",
+    "position": "RB",
+    "team": "ATL",
+    "ppr": 234.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030663",
+    "name": "Willie Snead",
+    "position": "WR",
+    "team": "CAR",
+    "ppr": 7.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030669",
+    "name": "Albert Wilson",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 48.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0030874",
+    "name": "Damien Williams",
+    "position": "RB",
+    "team": "CHI",
+    "ppr": 60.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031045",
+    "name": "Carlos Hyde",
+    "position": "RB",
+    "team": "JAX",
+    "ppr": 45.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031237",
+    "name": "Teddy Bridgewater",
+    "position": "QB",
+    "team": "DEN",
+    "ppr": 202.68
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031260",
+    "name": "Logan Thomas",
+    "position": "TE",
+    "team": "WAS",
+    "ppr": 53.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031384",
+    "name": "Richard Rodgers",
+    "position": "TE",
+    "team": "PHI",
+    "ppr": 3.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031395",
+    "name": "Garrett Gilbert",
+    "position": "QB",
+    "team": "WAS",
+    "ppr": 7.76
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031428",
+    "name": "Allen Robinson",
+    "position": "WR",
+    "team": "CHI",
+    "ppr": 87.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031545",
+    "name": "Kevin White",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 4.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031547",
+    "name": "DeVante Parker",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 103.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031549",
+    "name": "Nelson Agholor",
+    "position": "WR",
+    "team": "NE",
+    "ppr": 103.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031558",
+    "name": "Maxx Williams",
+    "position": "TE",
+    "team": "ARI",
+    "ppr": 41.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031598",
+    "name": "Nick Boyle",
+    "position": "TE",
+    "team": "BAL",
+    "ppr": 1.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031763",
+    "name": "DeAndre Carter",
+    "position": "WR",
+    "team": "WAS",
+    "ppr": 86.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031787",
+    "name": "Jake Kumerow",
+    "position": "WR",
+    "team": "BUF",
+    "ppr": 4.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031800",
+    "name": "Taylor Heinicke",
+    "position": "QB",
+    "team": "WAS",
+    "ppr": 222.86
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031806",
+    "name": "Malcolm Brown",
+    "position": "RB",
+    "team": "MIA",
+    "ppr": 22.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031868",
+    "name": "Damiere Byrd",
+    "position": "WR",
+    "team": "CHI",
+    "ppr": 66.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031941",
+    "name": "Jamison Crowder",
+    "position": "WR",
+    "team": "NYJ",
+    "ppr": 109.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0031951",
+    "name": "James O'Shaughnessy",
+    "position": "TE",
+    "team": "JAX",
+    "ppr": 50.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032009",
+    "name": "Adam Humphries",
+    "position": "WR",
+    "team": "WAS",
+    "ppr": 79.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032054",
+    "name": "Breshad Perriman",
+    "position": "WR",
+    "team": "TB",
+    "ppr": 33.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032058",
+    "name": "Tevin Coleman",
+    "position": "RB",
+    "team": "NYJ",
+    "ppr": 51.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032062",
+    "name": "Blake Bell",
+    "position": "TE",
+    "team": "KC",
+    "ppr": 18.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032098",
+    "name": "Daniel Brown",
+    "position": "TE",
+    "team": "NYJ",
+    "ppr": 4.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032128",
+    "name": "Chris Conley",
+    "position": "WR",
+    "team": "HOU",
+    "ppr": 64.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032134",
+    "name": "C.J. Uzomah",
+    "position": "TE",
+    "team": "CIN",
+    "ppr": 128.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032135",
+    "name": "Jesse James",
+    "position": "TE",
+    "team": "CHI",
+    "ppr": 19.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032141",
+    "name": "Geoff Swaim",
+    "position": "TE",
+    "team": "TEN",
+    "ppr": 70.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032144",
+    "name": "Melvin Gordon",
+    "position": "RB",
+    "team": "DEN",
+    "ppr": 195.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032156",
+    "name": "Trevor Siemian",
+    "position": "QB",
+    "team": "NO",
+    "ppr": 90.16
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032187",
+    "name": "David Johnson",
+    "position": "RB",
+    "team": "HOU",
+    "ppr": 81.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032200",
+    "name": "Ty Montgomery",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 29.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032214",
+    "name": "Tyler Kroft",
+    "position": "TE",
+    "team": "NYJ",
+    "ppr": 39.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032257",
+    "name": "Duke Johnson",
+    "position": "RB",
+    "team": "MIA",
+    "ppr": 59.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032355",
+    "name": "Chester Rogers",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 67.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032426",
+    "name": "Alex Collins",
+    "position": "RB",
+    "team": "SEA",
+    "ppr": 68.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032450",
+    "name": "Dwayne Washington",
+    "position": "RB",
+    "team": "NO",
+    "ppr": 4.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032543",
+    "name": "Alex Erickson",
+    "position": "WR",
+    "team": "CAR",
+    "ppr": 8.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032688",
+    "name": "Robbie Chosen",
+    "position": "WR",
+    "team": "CAR",
+    "ppr": 138.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032725",
+    "name": "Stephen Anderson",
+    "position": "TE",
+    "team": "LAC",
+    "ppr": 38.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032741",
+    "name": "Peyton Barber",
+    "position": "RB",
+    "team": "LV",
+    "ppr": 49.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032780",
+    "name": "Jordan Howard",
+    "position": "RB",
+    "team": "PHI",
+    "ppr": 62.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032791",
+    "name": "Jakeem Grant",
+    "position": "WR",
+    "team": "CHI",
+    "ppr": 43.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032881",
+    "name": "Tommylee Lewis",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 1.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032972",
+    "name": "Devontae Booker",
+    "position": "RB",
+    "team": "NYG",
+    "ppr": 144.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032975",
+    "name": "Jonathan Williams",
+    "position": "RB",
+    "team": "WAS",
+    "ppr": 20.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032977",
+    "name": "Rashard Higgins",
+    "position": "WR",
+    "team": "CLE",
+    "ppr": 57.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0032980",
+    "name": "Marcus Johnson",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 24.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033006",
+    "name": "Jaydon Mickens",
+    "position": "WR",
+    "team": "JAX",
+    "ppr": 3.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033094",
+    "name": "Marvin Hall",
+    "position": "WR",
+    "team": "ATL",
+    "ppr": 2.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033095",
+    "name": "Garrett Griffin",
+    "position": "TE",
+    "team": "NO",
+    "ppr": 7.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033111",
+    "name": "Pharoh Cooper",
+    "position": "WR",
+    "team": "NYG",
+    "ppr": 7.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033114",
+    "name": "Mike Thomas",
+    "position": "WR",
+    "team": "CIN",
+    "ppr": 10.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033118",
+    "name": "Kenyan Drake",
+    "position": "RB",
+    "team": "LV",
+    "ppr": 102.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033215",
+    "name": "Cyril Grayson",
+    "position": "WR",
+    "team": "TB",
+    "ppr": 44.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033251",
+    "name": "Zach Pascal",
+    "position": "WR",
+    "team": "IND",
+    "ppr": 94.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033275",
+    "name": "PJ Walker",
+    "position": "QB",
+    "team": "CAR",
+    "ppr": 13.78
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033296",
+    "name": "Alex Armah",
+    "position": "RB",
+    "team": "WAS",
+    "ppr": 9.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033308",
+    "name": "Matt Breida",
+    "position": "RB",
+    "team": "BUF",
+    "ppr": 42.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033338",
+    "name": "Cethan Carter",
+    "position": "TE",
+    "team": "MIA",
+    "ppr": 3.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033367",
+    "name": "C.J. Board",
+    "position": "WR",
+    "team": "NYG",
+    "ppr": 9.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033376",
+    "name": "Patrick Ricard",
+    "position": "RB",
+    "team": "BAL",
+    "ppr": 20.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033386",
+    "name": "Cody Hollister",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 7.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033421",
+    "name": "Antony Auclair",
+    "position": "TE",
+    "team": "HOU",
+    "ppr": 15.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033455",
+    "name": "Anthony Firkser",
+    "position": "TE",
+    "team": "TEN",
+    "ppr": 73.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033460",
+    "name": "John Ross",
+    "position": "WR",
+    "team": "NYG",
+    "ppr": 41.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033466",
+    "name": "Isaiah McKenzie",
+    "position": "WR",
+    "team": "BUF",
+    "ppr": 54.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033471",
+    "name": "Isaiah Ford",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 40.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033572",
+    "name": "Jamal Agnew",
+    "position": "WR",
+    "team": "JAX",
+    "ppr": 82.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033591",
+    "name": "Noah Brown",
+    "position": "WR",
+    "team": "DAL",
+    "ppr": 34.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033611",
+    "name": "Ricky Seals-Jones",
+    "position": "TE",
+    "team": "WAS",
+    "ppr": 69.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033681",
+    "name": "Keelan Cole",
+    "position": "WR",
+    "team": "NYJ",
+    "ppr": 78.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033725",
+    "name": "Corey Clement",
+    "position": "RB",
+    "team": "DAL",
+    "ppr": 28.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033733",
+    "name": "Greg Ward",
+    "position": "WR",
+    "team": "PHI",
+    "ppr": 34.58
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033839",
+    "name": "Dede Westbrook",
+    "position": "WR",
+    "team": "MIN",
+    "ppr": 16.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033871",
+    "name": "Corey Davis",
+    "position": "WR",
+    "team": "NYJ",
+    "ppr": 105.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033879",
+    "name": "O.J. Howard",
+    "position": "TE",
+    "team": "TB",
+    "ppr": 33.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033893",
+    "name": "Dalvin Cook",
+    "position": "RB",
+    "team": "MIN",
+    "ppr": 206.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033895",
+    "name": "Gerald Everett",
+    "position": "TE",
+    "team": "SEA",
+    "ppr": 117.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033896",
+    "name": "Adam Shaheen",
+    "position": "TE",
+    "team": "MIA",
+    "ppr": 23.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033936",
+    "name": "C.J. Beathard",
+    "position": "QB",
+    "team": "JAX",
+    "ppr": 1.52
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033950",
+    "name": "Wayne Gallman",
+    "position": "RB",
+    "team": "MIN",
+    "ppr": 13.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033951",
+    "name": "Marlon Mack",
+    "position": "RB",
+    "team": "IND",
+    "ppr": 12.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0033958",
+    "name": "Nathan Peterman",
+    "position": "QB",
+    "team": "LV",
+    "ppr": 0.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034052",
+    "name": "Brandon Zylstra",
+    "position": "WR",
+    "team": "CAR",
+    "ppr": 49.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034073",
+    "name": "Ross Dwelley",
+    "position": "TE",
+    "team": "SF",
+    "ppr": 15.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034104",
+    "name": "Cam Sims",
+    "position": "WR",
+    "team": "WAS",
+    "ppr": 48.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034109",
+    "name": "Phillip Lindsay",
+    "position": "RB",
+    "team": "MIA",
+    "ppr": 45.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034115",
+    "name": "Jeff Wilson",
+    "position": "RB",
+    "team": "SF",
+    "ppr": 51.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034132",
+    "name": "Christian Blake",
+    "position": "WR",
+    "team": "ATL",
+    "ppr": 6.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034164",
+    "name": "Trenton Cannon",
+    "position": "RB",
+    "team": "SF",
+    "ppr": 0.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034177",
+    "name": "Tim Boyle",
+    "position": "QB",
+    "team": "DET",
+    "ppr": 24.34
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034193",
+    "name": "Kevin Rader",
+    "position": "TE",
+    "team": "PIT",
+    "ppr": 2.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034208",
+    "name": "Mike Boone",
+    "position": "RB",
+    "team": "DEN",
+    "ppr": 7.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034279",
+    "name": "Equanimeous St. Brown",
+    "position": "WR",
+    "team": "GB",
+    "ppr": 20.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034297",
+    "name": "Byron Pringle",
+    "position": "WR",
+    "team": "KC",
+    "ppr": 128.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034301",
+    "name": "Darrel Williams",
+    "position": "RB",
+    "team": "KC",
+    "ppr": 196.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034311",
+    "name": "Johnny Stanton",
+    "position": "RB",
+    "team": "CLE",
+    "ppr": 9.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034317",
+    "name": "Keith Kirkwood",
+    "position": "WR",
+    "team": "CAR",
+    "ppr": 4.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034319",
+    "name": "Deon Yelder",
+    "position": "TE",
+    "team": "TB",
+    "ppr": 1.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034331",
+    "name": "Jaylen Samuels",
+    "position": "RB",
+    "team": "HOU",
+    "ppr": 5.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034353",
+    "name": "Anthony Miller",
+    "position": "WR",
+    "team": "PIT",
+    "ppr": 14.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034364",
+    "name": "Jordan Akins",
+    "position": "TE",
+    "team": "HOU",
+    "ppr": 41.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034366",
+    "name": "Keke Coutee",
+    "position": "WR",
+    "team": "IND",
+    "ppr": 1.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034367",
+    "name": "Nyheim Hines",
+    "position": "RB",
+    "team": "IND",
+    "ppr": 116.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034401",
+    "name": "Mike White",
+    "position": "QB",
+    "team": "NYJ",
+    "ppr": 44.02
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034411",
+    "name": "Russell Gage",
+    "position": "WR",
+    "team": "ATL",
+    "ppr": 163.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034414",
+    "name": "Boston Scott",
+    "position": "RB",
+    "team": "PHI",
+    "ppr": 98.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034433",
+    "name": "Nick Bawden",
+    "position": "RB",
+    "team": "NYJ",
+    "ppr": 3.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034440",
+    "name": "Justin Jackson",
+    "position": "RB",
+    "team": "LAC",
+    "ppr": 86.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034449",
+    "name": "Buddy Howell",
+    "position": "RB",
+    "team": "LA",
+    "ppr": 1.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034578",
+    "name": "Reggie Bonnafon",
+    "position": "RB",
+    "team": "CAR",
+    "ppr": 3.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034597",
+    "name": "Ryan Nall",
+    "position": "RB",
+    "team": "CHI",
+    "ppr": 1.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034614",
+    "name": "Godwin Igwebuike",
+    "position": "RB",
+    "team": "DET",
+    "ppr": 26.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034646",
+    "name": "Brandon Powell",
+    "position": "WR",
+    "team": "LA",
+    "ppr": 6.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034652",
+    "name": "Cameron Batson",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 11.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034672",
+    "name": "Ethan Wolf",
+    "position": "TE",
+    "team": "NO",
+    "ppr": 2.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034676",
+    "name": "James Washington",
+    "position": "WR",
+    "team": "PIT",
+    "ppr": 65.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034686",
+    "name": "Auden Tate",
+    "position": "WR",
+    "team": "CIN",
+    "ppr": 12.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034764",
+    "name": "Michael Gallup",
+    "position": "WR",
+    "team": "DAL",
+    "ppr": 91.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034765",
+    "name": "Tre'Quan Smith",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 87.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034766",
+    "name": "Chris Herndon",
+    "position": "TE",
+    "team": "MIN",
+    "ppr": 14.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034777",
+    "name": "DJ Chark",
+    "position": "WR",
+    "team": "JAX",
+    "ppr": 34.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034799",
+    "name": "Kalen Ballage",
+    "position": "RB",
+    "team": "PIT",
+    "ppr": 6.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034808",
+    "name": "John Kelly",
+    "position": "RB",
+    "team": "CLE",
+    "ppr": 1.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034816",
+    "name": "Ronald Jones",
+    "position": "RB",
+    "team": "TB",
+    "ppr": 79.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034830",
+    "name": "Hayden Hurst",
+    "position": "TE",
+    "team": "ATL",
+    "ppr": 64.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034838",
+    "name": "Royce Freeman",
+    "position": "RB",
+    "team": "HOU",
+    "ppr": 34.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0034930",
+    "name": "Trinity Benson",
+    "position": "WR",
+    "team": "DET",
+    "ppr": 20.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035022",
+    "name": "Penny Hart",
+    "position": "WR",
+    "team": "SEA",
+    "ppr": 12.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035101",
+    "name": "Davion Davis",
+    "position": "WR",
+    "team": "HOU",
+    "ppr": 2.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035126",
+    "name": "Antoine Wesley",
+    "position": "WR",
+    "team": "ARI",
+    "ppr": 57.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035184",
+    "name": "Devine Ozigbo",
+    "position": "RB",
+    "team": "NO",
+    "ppr": 1.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035187",
+    "name": "Austin Walter",
+    "position": "RB",
+    "team": "NYJ",
+    "ppr": 19.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035215",
+    "name": "Deonte Harty",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 115.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035222",
+    "name": "Zach Gentry",
+    "position": "TE",
+    "team": "PIT",
+    "ppr": 35.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035246",
+    "name": "J.J. Arcega-Whiteside",
+    "position": "WR",
+    "team": "PHI",
+    "ppr": 5.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035259",
+    "name": "Trevon Wesco",
+    "position": "TE",
+    "team": "NYJ",
+    "ppr": 6.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035268",
+    "name": "Ryquell Armstead",
+    "position": "RB",
+    "team": "JAX",
+    "ppr": 12.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035273",
+    "name": "Qadree Ollison",
+    "position": "RB",
+    "team": "ATL",
+    "ppr": 19.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035308",
+    "name": "Tommy Sweeney",
+    "position": "TE",
+    "team": "BUF",
+    "ppr": 19.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035311",
+    "name": "Myles Gaskin",
+    "position": "RB",
+    "team": "MIA",
+    "ppr": 173.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035329",
+    "name": "Donald Parham",
+    "position": "TE",
+    "team": "LAC",
+    "ppr": 59.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035342",
+    "name": "Patrick Laird",
+    "position": "RB",
+    "team": "MIA",
+    "ppr": 5.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035350",
+    "name": "Preston Williams",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 13.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035399",
+    "name": "Stanley Morgan",
+    "position": "WR",
+    "team": "CIN",
+    "ppr": 3.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035414",
+    "name": "Jalen Guyton",
+    "position": "WR",
+    "team": "LAC",
+    "ppr": 97.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035428",
+    "name": "Daniel Helm",
+    "position": "TE",
+    "team": "LV",
+    "ppr": 0.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035432",
+    "name": "Jason Moore",
+    "position": "WR",
+    "team": "LAC",
+    "ppr": 8.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035448",
+    "name": "Damarea Crockett",
+    "position": "RB",
+    "team": "DEN",
+    "ppr": 0.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035480",
+    "name": "Malik Taylor",
+    "position": "WR",
+    "team": "GB",
+    "ppr": 3.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035510",
+    "name": "Jeff Smith",
+    "position": "WR",
+    "team": "NYJ",
+    "ppr": 19.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035547",
+    "name": "Joseph Fortson",
+    "position": "TE",
+    "team": "KC",
+    "ppr": 21.7
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035572",
+    "name": "Parker Hesse",
+    "position": "TE",
+    "team": "ATL",
+    "ppr": 9.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035593",
+    "name": "Juwann Winfree",
+    "position": "WR",
+    "team": "GB",
+    "ppr": 11.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035624",
+    "name": "N'Keal Harry",
+    "position": "TE",
+    "team": "NE",
+    "ppr": 30.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035639",
+    "name": "Parris Campbell",
+    "position": "WR",
+    "team": "IND",
+    "ppr": 32.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035664",
+    "name": "Darrell Henderson",
+    "position": "RB",
+    "team": "LA",
+    "ppr": 163.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035703",
+    "name": "Miles Boykin",
+    "position": "WR",
+    "team": "BAL",
+    "ppr": 1.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035715",
+    "name": "Derrick Gore",
+    "position": "RB",
+    "team": "KC",
+    "ppr": 56.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035726",
+    "name": "Jakob Johnson",
+    "position": "RB",
+    "team": "NE",
+    "ppr": 8.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035752",
+    "name": "Chris Streveler",
+    "position": "QB",
+    "team": "ARI",
+    "ppr": 2.04
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035760",
+    "name": "Jacques Patrick",
+    "position": "RB",
+    "team": "SF",
+    "ppr": 1.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035771",
+    "name": "Mitchell Wilcox",
+    "position": "TE",
+    "team": "CIN",
+    "ppr": 4.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035831",
+    "name": "James Robinson",
+    "position": "RB",
+    "team": "JAX",
+    "ppr": 173.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035835",
+    "name": "Nathan Cottrell",
+    "position": "RB",
+    "team": "JAX",
+    "ppr": 0.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035860",
+    "name": "Tony Jones",
+    "position": "RB",
+    "team": "NO",
+    "ppr": 22.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035864",
+    "name": "Kendall Hinton",
+    "position": "WR",
+    "team": "DEN",
+    "ppr": 38.54
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0035957",
+    "name": "Rodney Smith",
+    "position": "RB",
+    "team": "CAR",
+    "ppr": 9.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036069",
+    "name": "Scottie Phillips",
+    "position": "RB",
+    "team": "HOU",
+    "ppr": 4.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036080",
+    "name": "Easop Winston",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 1.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036096",
+    "name": "J.J. Taylor",
+    "position": "RB",
+    "team": "NE",
+    "ppr": 18.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036110",
+    "name": "Ja'Marcus Bradley",
+    "position": "WR",
+    "team": "CLE",
+    "ppr": 10.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036133",
+    "name": "James Proche",
+    "position": "WR",
+    "team": "BAL",
+    "ppr": 36.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036173",
+    "name": "Tommy Hudson",
+    "position": "TE",
+    "team": "TEN",
+    "ppr": 6.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036183",
+    "name": "Kristian Wilkerson",
+    "position": "WR",
+    "team": "NE",
+    "ppr": 20.2
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036197",
+    "name": "Jake Fromm",
+    "position": "QB",
+    "team": "NYG",
+    "ppr": 10.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036219",
+    "name": "Marquez Callaway",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 151.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036228",
+    "name": "Dezmon Patmon",
+    "position": "WR",
+    "team": "IND",
+    "ppr": 10.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036232",
+    "name": "Harrison Bryant",
+    "position": "TE",
+    "team": "CLE",
+    "ppr": 62.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036247",
+    "name": "Freddie Swain",
+    "position": "WR",
+    "team": "SEA",
+    "ppr": 86.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036250",
+    "name": "Tyler Davis",
+    "position": "TE",
+    "team": "GB",
+    "ppr": 7.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036254",
+    "name": "Collin Johnson",
+    "position": "WR",
+    "team": "NYG",
+    "ppr": 21.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036268",
+    "name": "Laviska Shenault Jr.",
+    "position": "WR",
+    "team": "JAX",
+    "ppr": 127.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036277",
+    "name": "Quintez Cephus",
+    "position": "WR",
+    "team": "DET",
+    "ppr": 49.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036278",
+    "name": "Jason Huntley",
+    "position": "RB",
+    "team": "PHI",
+    "ppr": 5.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036297",
+    "name": "Darrynton Evans",
+    "position": "RB",
+    "team": "TEN",
+    "ppr": 3.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036360",
+    "name": "Clyde Edwards-Helaire",
+    "position": "RB",
+    "team": "KC",
+    "ppr": 117.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036365",
+    "name": "Bryan Edwards",
+    "position": "WR",
+    "team": "LV",
+    "ppr": 109.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036370",
+    "name": "Joshua Kelley",
+    "position": "RB",
+    "team": "LAC",
+    "ppr": 17.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036383",
+    "name": "Eno Benjamin",
+    "position": "RB",
+    "team": "ARI",
+    "ppr": 28.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036412",
+    "name": "KJ Hamler",
+    "position": "WR",
+    "team": "DEN",
+    "ppr": 12.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036414",
+    "name": "Cam Akers",
+    "position": "RB",
+    "team": "LA",
+    "ppr": 4.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036424",
+    "name": "Brycen Hopkins",
+    "position": "TE",
+    "team": "LA",
+    "ppr": 1.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036450",
+    "name": "Ke'Shawn Vaughn",
+    "position": "RB",
+    "team": "TB",
+    "ppr": 36.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036456",
+    "name": "Dominique Dafney",
+    "position": "TE",
+    "team": "GB",
+    "ppr": 5.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036457",
+    "name": "Ty'Son Williams",
+    "position": "RB",
+    "team": "BAL",
+    "ppr": 41.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036482",
+    "name": "Mike Strachan",
+    "position": "WR",
+    "team": "IND",
+    "ppr": 4.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036493",
+    "name": "Deon Jackson",
+    "position": "RB",
+    "team": "IND",
+    "ppr": 9.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036510",
+    "name": "Kenny Yeboah",
+    "position": "TE",
+    "team": "NYJ",
+    "ppr": 5.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036567",
+    "name": "Elijah Mitchell",
+    "position": "RB",
+    "team": "SF",
+    "ppr": 165.0
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036572",
+    "name": "Shi Smith",
+    "position": "WR",
+    "team": "CAR",
+    "ppr": 16.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036620",
+    "name": "Dee Eskridge",
+    "position": "WR",
+    "team": "SEA",
+    "ppr": 28.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036627",
+    "name": "Dez Fitzpatrick",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 15.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036650",
+    "name": "Larry Rountree III",
+    "position": "RB",
+    "team": "LAC",
+    "ppr": 15.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036654",
+    "name": "Demetric Felton",
+    "position": "RB",
+    "team": "CLE",
+    "ppr": 50.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036657",
+    "name": "Seth Williams",
+    "position": "WR",
+    "team": "DEN",
+    "ppr": 4.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036669",
+    "name": "Kylin Hill",
+    "position": "RB",
+    "team": "GB",
+    "ppr": 3.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036671",
+    "name": "Dax Milne",
+    "position": "WR",
+    "team": "WAS",
+    "ppr": 15.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036698",
+    "name": "Mekhi Sargent",
+    "position": "RB",
+    "team": "JAX",
+    "ppr": 1.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036768",
+    "name": "JaQuan Hardy",
+    "position": "RB",
+    "team": "DAL",
+    "ppr": 8.9
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036857",
+    "name": "Chris Evans",
+    "position": "RB",
+    "team": "CIN",
+    "ppr": 49.8
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036860",
+    "name": "Jake Funk",
+    "position": "RB",
+    "team": "LA",
+    "ppr": 0.5
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036877",
+    "name": "Jaelon Darden",
+    "position": "WR",
+    "team": "TB",
+    "ppr": 11.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036907",
+    "name": "Dazz Newsome",
+    "position": "WR",
+    "team": "CHI",
+    "ppr": 4.3
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036910",
+    "name": "C.J. Saunders",
+    "position": "WR",
+    "team": "CAR",
+    "ppr": 3.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036936",
+    "name": "Rondale Moore",
+    "position": "WR",
+    "team": "ARI",
+    "ppr": 111.1
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036951",
+    "name": "Frank Darby",
+    "position": "WR",
+    "team": "ATL",
+    "ppr": 2.4
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036991",
+    "name": "Amari Rodgers",
+    "position": "WR",
+    "team": "GB",
+    "ppr": 9.6
+  },
+  {
+    "season": 2021,
+    "gsis_id": "00-0036999",
+    "name": "Anthony Schwartz",
+    "position": "WR",
+    "team": "CLE",
+    "ppr": 33.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0024243",
+    "name": "Marcedes Lewis",
+    "position": "TE",
+    "team": "GB",
+    "ppr": 26.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0026189",
+    "name": "DeSean Jackson",
+    "position": "WR",
+    "team": "BAL",
+    "ppr": 24.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0026544",
+    "name": "Chase Daniel",
+    "position": "QB",
+    "team": "LAC",
+    "ppr": 8.48
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0026625",
+    "name": "Brian Hoyer",
+    "position": "QB",
+    "team": "NE",
+    "ppr": 1.48
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0027944",
+    "name": "Julio Jones",
+    "position": "WR",
+    "team": "TB",
+    "ppr": 70.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0027948",
+    "name": "Blaine Gabbert",
+    "position": "QB",
+    "team": "TB",
+    "ppr": 5.16
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0027981",
+    "name": "Kyle Rudolph",
+    "position": "TE",
+    "team": "TB",
+    "ppr": 11.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0029239",
+    "name": "Brandon Bolden",
+    "position": "RB",
+    "team": "LV",
+    "ppr": 27.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0029293",
+    "name": "Marvin Jones",
+    "position": "WR",
+    "team": "JAX",
+    "ppr": 116.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0029567",
+    "name": "Nick Foles",
+    "position": "QB",
+    "team": "IND",
+    "ppr": 1.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0029608",
+    "name": "T.Y. Hilton",
+    "position": "WR",
+    "team": "DAL",
+    "ppr": 19.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0030068",
+    "name": "Marquise Goodwin",
+    "position": "WR",
+    "team": "SEA",
+    "ppr": 90.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0030108",
+    "name": "Ryan Griffin",
+    "position": "TE",
+    "team": "CHI",
+    "ppr": 6.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0030288",
+    "name": "Rex Burkhead",
+    "position": "RB",
+    "team": "HOU",
+    "ppr": 71.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0030431",
+    "name": "Robert Woods",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 117.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0030456",
+    "name": "Giovani Bernard",
+    "position": "RB",
+    "team": "TB",
+    "ppr": 4.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0030513",
+    "name": "Latavius Murray",
+    "position": "RB",
+    "team": "DEN",
+    "ppr": 154.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0030578",
+    "name": "Cordarrelle Patterson",
+    "position": "RB",
+    "team": "ATL",
+    "ppr": 154.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0030874",
+    "name": "Damien Williams",
+    "position": "RB",
+    "team": "ATL",
+    "ppr": 0.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031051",
+    "name": "John Brown",
+    "position": "WR",
+    "team": "BUF",
+    "ppr": 11.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031237",
+    "name": "Teddy Bridgewater",
+    "position": "QB",
+    "team": "MIA",
+    "ppr": 38.02
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031260",
+    "name": "Logan Thomas",
+    "position": "TE",
+    "team": "WAS",
+    "ppr": 77.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031384",
+    "name": "Richard Rodgers",
+    "position": "TE",
+    "team": "LAC",
+    "ppr": 1.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031428",
+    "name": "Allen Robinson",
+    "position": "WR",
+    "team": "LA",
+    "ppr": 84.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031545",
+    "name": "Kevin White",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 9.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031547",
+    "name": "DeVante Parker",
+    "position": "WR",
+    "team": "NE",
+    "ppr": 102.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031549",
+    "name": "Nelson Agholor",
+    "position": "WR",
+    "team": "NE",
+    "ppr": 75.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031558",
+    "name": "Maxx Williams",
+    "position": "TE",
+    "team": "ARI",
+    "ppr": 4.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031763",
+    "name": "DeAndre Carter",
+    "position": "WR",
+    "team": "LAC",
+    "ppr": 114.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031787",
+    "name": "Jake Kumerow",
+    "position": "WR",
+    "team": "BUF",
+    "ppr": 10.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031800",
+    "name": "Taylor Heinicke",
+    "position": "QB",
+    "team": "WAS",
+    "ppr": 115.96
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031806",
+    "name": "Malcolm Brown",
+    "position": "RB",
+    "team": "LA",
+    "ppr": 22.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031868",
+    "name": "Damiere Byrd",
+    "position": "WR",
+    "team": "ATL",
+    "ppr": 51.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0031941",
+    "name": "Jamison Crowder",
+    "position": "WR",
+    "team": "BUF",
+    "ppr": 12.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032054",
+    "name": "Breshad Perriman",
+    "position": "WR",
+    "team": "TB",
+    "ppr": 23.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032058",
+    "name": "Tevin Coleman",
+    "position": "RB",
+    "team": "SF",
+    "ppr": 22.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032062",
+    "name": "Blake Bell",
+    "position": "TE",
+    "team": "KC",
+    "ppr": 10.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032128",
+    "name": "Chris Conley",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 8.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032134",
+    "name": "C.J. Uzomah",
+    "position": "TE",
+    "team": "NYJ",
+    "ppr": 56.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032141",
+    "name": "Geoff Swaim",
+    "position": "TE",
+    "team": "TEN",
+    "ppr": 23.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032144",
+    "name": "Melvin Gordon",
+    "position": "RB",
+    "team": "DEN",
+    "ppr": 87.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032156",
+    "name": "Trevor Siemian",
+    "position": "QB",
+    "team": "CHI",
+    "ppr": 10.16
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032187",
+    "name": "David Johnson",
+    "position": "RB",
+    "team": "NO",
+    "ppr": 9.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032200",
+    "name": "Ty Montgomery",
+    "position": "WR",
+    "team": "NE",
+    "ppr": 10.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032214",
+    "name": "Tyler Kroft",
+    "position": "TE",
+    "team": "SF",
+    "ppr": 9.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032257",
+    "name": "Duke Johnson",
+    "position": "RB",
+    "team": "BUF",
+    "ppr": 0.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032436",
+    "name": "Jeff Driskel",
+    "position": "QB",
+    "team": "HOU",
+    "ppr": 17.22
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032450",
+    "name": "Dwayne Washington",
+    "position": "RB",
+    "team": "NO",
+    "ppr": 5.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032688",
+    "name": "Robbie Chosen",
+    "position": "WR",
+    "team": "ARI",
+    "ppr": 52.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032725",
+    "name": "Stephen Anderson",
+    "position": "TE",
+    "team": "ARI",
+    "ppr": 3.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032780",
+    "name": "Jordan Howard",
+    "position": "RB",
+    "team": "NO",
+    "ppr": 0.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032975",
+    "name": "Jonathan Williams",
+    "position": "RB",
+    "team": "WAS",
+    "ppr": 26.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0032980",
+    "name": "Marcus Johnson",
+    "position": "WR",
+    "team": "NYG",
+    "ppr": 18.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033111",
+    "name": "Pharoh Cooper",
+    "position": "WR",
+    "team": "ARI",
+    "ppr": 4.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033114",
+    "name": "Mike Thomas",
+    "position": "WR",
+    "team": "CIN",
+    "ppr": 7.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033118",
+    "name": "Kenyan Drake",
+    "position": "RB",
+    "team": "BAL",
+    "ppr": 104.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033251",
+    "name": "Zach Pascal",
+    "position": "WR",
+    "team": "PHI",
+    "ppr": 36.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033275",
+    "name": "PJ Walker",
+    "position": "QB",
+    "team": "CAR",
+    "ppr": 39.14
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033308",
+    "name": "Matt Breida",
+    "position": "RB",
+    "team": "NYG",
+    "ppr": 59.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033367",
+    "name": "C.J. Board",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 1.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033376",
+    "name": "Patrick Ricard",
+    "position": "RB",
+    "team": "BAL",
+    "ppr": 20.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033386",
+    "name": "Cody Hollister",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 8.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033455",
+    "name": "Anthony Firkser",
+    "position": "TE",
+    "team": "ATL",
+    "ppr": 19.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033466",
+    "name": "Isaiah McKenzie",
+    "position": "WR",
+    "team": "BUF",
+    "ppr": 119.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033550",
+    "name": "Davis Webb",
+    "position": "QB",
+    "team": "NYG",
+    "ppr": 20.82
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033572",
+    "name": "Jamal Agnew",
+    "position": "WR",
+    "team": "JAX",
+    "ppr": 70.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033591",
+    "name": "Noah Brown",
+    "position": "WR",
+    "team": "DAL",
+    "ppr": 114.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033681",
+    "name": "Keelan Cole",
+    "position": "WR",
+    "team": "LV",
+    "ppr": 30.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033725",
+    "name": "Corey Clement",
+    "position": "RB",
+    "team": "ARI",
+    "ppr": 21.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033798",
+    "name": "Mason Schreck",
+    "position": "TE",
+    "team": "HOU",
+    "ppr": 2.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033871",
+    "name": "Corey Davis",
+    "position": "WR",
+    "team": "NYJ",
+    "ppr": 97.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033879",
+    "name": "O.J. Howard",
+    "position": "TE",
+    "team": "HOU",
+    "ppr": 36.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033893",
+    "name": "Dalvin Cook",
+    "position": "RB",
+    "team": "MIN",
+    "ppr": 237.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033895",
+    "name": "Gerald Everett",
+    "position": "TE",
+    "team": "LAC",
+    "ppr": 139.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033951",
+    "name": "Marlon Mack",
+    "position": "RB",
+    "team": "DEN",
+    "ppr": 38.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0033958",
+    "name": "Nathan Peterman",
+    "position": "QB",
+    "team": "CHI",
+    "ppr": 8.26
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034054",
+    "name": "River Cracraft",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 31.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034073",
+    "name": "Ross Dwelley",
+    "position": "TE",
+    "team": "SF",
+    "ppr": 19.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034104",
+    "name": "Cam Sims",
+    "position": "WR",
+    "team": "WAS",
+    "ppr": 16.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034109",
+    "name": "Phillip Lindsay",
+    "position": "RB",
+    "team": "IND",
+    "ppr": 14.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034115",
+    "name": "Jeff Wilson",
+    "position": "RB",
+    "team": "MIA",
+    "ppr": 158.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034208",
+    "name": "Mike Boone",
+    "position": "RB",
+    "team": "DEN",
+    "ppr": 28.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034279",
+    "name": "Equanimeous St. Brown",
+    "position": "WR",
+    "team": "CHI",
+    "ppr": 64.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034286",
+    "name": "Richie James",
+    "position": "WR",
+    "team": "NYG",
+    "ppr": 138.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034297",
+    "name": "Byron Pringle",
+    "position": "WR",
+    "team": "CHI",
+    "ppr": 35.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034301",
+    "name": "Darrel Williams",
+    "position": "RB",
+    "team": "ARI",
+    "ppr": 21.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034317",
+    "name": "Keith Kirkwood",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 3.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034364",
+    "name": "Jordan Akins",
+    "position": "TE",
+    "team": "HOU",
+    "ppr": 116.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034366",
+    "name": "Keke Coutee",
+    "position": "WR",
+    "team": "IND",
+    "ppr": 1.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034367",
+    "name": "Nyheim Hines",
+    "position": "RB",
+    "team": "BUF",
+    "ppr": 81.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034400",
+    "name": "Jordan Wilkins",
+    "position": "RB",
+    "team": "IND",
+    "ppr": 14.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034401",
+    "name": "Mike White",
+    "position": "QB",
+    "team": "NYJ",
+    "ppr": 56.58
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034411",
+    "name": "Russell Gage",
+    "position": "WR",
+    "team": "TB",
+    "ppr": 123.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034414",
+    "name": "Boston Scott",
+    "position": "RB",
+    "team": "PHI",
+    "ppr": 46.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034440",
+    "name": "Justin Jackson",
+    "position": "RB",
+    "team": "DET",
+    "ppr": 51.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034578",
+    "name": "Reggie Bonnafon",
+    "position": "RB",
+    "team": "WAS",
+    "ppr": 0.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034614",
+    "name": "Godwin Igwebuike",
+    "position": "RB",
+    "team": "SEA",
+    "ppr": 1.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034646",
+    "name": "Brandon Powell",
+    "position": "WR",
+    "team": "LA",
+    "ppr": 47.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034764",
+    "name": "Michael Gallup",
+    "position": "WR",
+    "team": "DAL",
+    "ppr": 105.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034765",
+    "name": "Tre'Quan Smith",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 52.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034777",
+    "name": "DJ Chark",
+    "position": "WR",
+    "team": "DET",
+    "ppr": 98.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034816",
+    "name": "Ronald Jones",
+    "position": "RB",
+    "team": "KC",
+    "ppr": 16.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034830",
+    "name": "Hayden Hurst",
+    "position": "TE",
+    "team": "CIN",
+    "ppr": 105.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034838",
+    "name": "Royce Freeman",
+    "position": "RB",
+    "team": "HOU",
+    "ppr": 19.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034899",
+    "name": "John Wolford",
+    "position": "QB",
+    "team": "LA",
+    "ppr": 14.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034928",
+    "name": "Steven Sims",
+    "position": "WR",
+    "team": "PIT",
+    "ppr": 31.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0034970",
+    "name": "Irv Smith",
+    "position": "TE",
+    "team": "MIN",
+    "ppr": 55.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035022",
+    "name": "Penny Hart",
+    "position": "WR",
+    "team": "SEA",
+    "ppr": 5.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035146",
+    "name": "Trace McSorley",
+    "position": "QB",
+    "team": "ARI",
+    "ppr": 8.58
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035184",
+    "name": "Devine Ozigbo",
+    "position": "RB",
+    "team": "DEN",
+    "ppr": 1.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035215",
+    "name": "Deonte Harty",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 3.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035222",
+    "name": "Zach Gentry",
+    "position": "TE",
+    "team": "PIT",
+    "ppr": 32.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035259",
+    "name": "Trevon Wesco",
+    "position": "TE",
+    "team": "CHI",
+    "ppr": 6.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035308",
+    "name": "Tommy Sweeney",
+    "position": "TE",
+    "team": "BUF",
+    "ppr": 1.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035311",
+    "name": "Myles Gaskin",
+    "position": "RB",
+    "team": "MIA",
+    "ppr": 9.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035329",
+    "name": "Donald Parham",
+    "position": "TE",
+    "team": "LAC",
+    "ppr": 29.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035414",
+    "name": "Jalen Guyton",
+    "position": "WR",
+    "team": "LAC",
+    "ppr": 8.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035432",
+    "name": "Jason Moore",
+    "position": "WR",
+    "team": "LAC",
+    "ppr": 1.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035510",
+    "name": "Jeff Smith",
+    "position": "WR",
+    "team": "NYJ",
+    "ppr": 21.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035547",
+    "name": "Joseph Fortson",
+    "position": "TE",
+    "team": "KC",
+    "ppr": 31.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035572",
+    "name": "Parker Hesse",
+    "position": "TE",
+    "team": "ATL",
+    "ppr": 17.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035593",
+    "name": "Juwann Winfree",
+    "position": "WR",
+    "team": "GB",
+    "ppr": 2.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035621",
+    "name": "Nsimba Webster",
+    "position": "WR",
+    "team": "CHI",
+    "ppr": 3.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035624",
+    "name": "N'Keal Harry",
+    "position": "TE",
+    "team": "CHI",
+    "ppr": 24.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035639",
+    "name": "Parris Campbell",
+    "position": "WR",
+    "team": "IND",
+    "ppr": 149.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035664",
+    "name": "Darrell Henderson",
+    "position": "RB",
+    "team": "LA",
+    "ppr": 73.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035703",
+    "name": "Miles Boykin",
+    "position": "WR",
+    "team": "PIT",
+    "ppr": 3.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035726",
+    "name": "Jakob Johnson",
+    "position": "RB",
+    "team": "LV",
+    "ppr": 6.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035752",
+    "name": "Chris Streveler",
+    "position": "QB",
+    "team": "NYJ",
+    "ppr": 9.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035771",
+    "name": "Mitchell Wilcox",
+    "position": "TE",
+    "team": "CIN",
+    "ppr": 36.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035823",
+    "name": "Ben Ellefson",
+    "position": "TE",
+    "team": "MIN",
+    "ppr": 5.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035831",
+    "name": "James Robinson",
+    "position": "RB",
+    "team": "NYJ",
+    "ppr": 88.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035860",
+    "name": "Tony Jones",
+    "position": "RB",
+    "team": "SEA",
+    "ppr": 10.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035864",
+    "name": "Kendall Hinton",
+    "position": "WR",
+    "team": "DEN",
+    "ppr": 56.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035876",
+    "name": "Andre Baccellia",
+    "position": "WR",
+    "team": "ARI",
+    "ppr": 11.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035939",
+    "name": "Bryce Perkins",
+    "position": "QB",
+    "team": "LA",
+    "ppr": 15.44
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0035956",
+    "name": "Giovanni Ricci",
+    "position": "TE",
+    "team": "CAR",
+    "ppr": 18.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036096",
+    "name": "J.J. Taylor",
+    "position": "RB",
+    "team": "NE",
+    "ppr": 2.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036133",
+    "name": "James Proche",
+    "position": "WR",
+    "team": "BAL",
+    "ppr": 12.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036194",
+    "name": "Devin Asiasi",
+    "position": "TE",
+    "team": "CIN",
+    "ppr": 2.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036219",
+    "name": "Marquez Callaway",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 37.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036226",
+    "name": "Jacob Eason",
+    "position": "QB",
+    "team": "CAR",
+    "ppr": 0.36
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036228",
+    "name": "Dezmon Patmon",
+    "position": "WR",
+    "team": "IND",
+    "ppr": 4.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036232",
+    "name": "Harrison Bryant",
+    "position": "TE",
+    "team": "CLE",
+    "ppr": 61.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036247",
+    "name": "Freddie Swain",
+    "position": "WR",
+    "team": "DEN",
+    "ppr": 11.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036250",
+    "name": "Tyler Davis",
+    "position": "TE",
+    "team": "GB",
+    "ppr": 6.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036268",
+    "name": "Laviska Shenault Jr.",
+    "position": "WR",
+    "team": "CAR",
+    "ppr": 72.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036277",
+    "name": "Quintez Cephus",
+    "position": "WR",
+    "team": "DET",
+    "ppr": 3.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036297",
+    "name": "Darrynton Evans",
+    "position": "RB",
+    "team": "CHI",
+    "ppr": 10.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036360",
+    "name": "Clyde Edwards-Helaire",
+    "position": "RB",
+    "team": "KC",
+    "ppr": 98.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036365",
+    "name": "Bryan Edwards",
+    "position": "WR",
+    "team": "ATL",
+    "ppr": 4.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036370",
+    "name": "Joshua Kelley",
+    "position": "RB",
+    "team": "LAC",
+    "ppr": 64.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036383",
+    "name": "Eno Benjamin",
+    "position": "RB",
+    "team": "NO",
+    "ppr": 89.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036412",
+    "name": "KJ Hamler",
+    "position": "WR",
+    "team": "DEN",
+    "ppr": 25.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036414",
+    "name": "Cam Akers",
+    "position": "RB",
+    "team": "LA",
+    "ppr": 141.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036424",
+    "name": "Brycen Hopkins",
+    "position": "TE",
+    "team": "LA",
+    "ppr": 17.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036438",
+    "name": "Stephen Sullivan",
+    "position": "TE",
+    "team": "CAR",
+    "ppr": 6.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036439",
+    "name": "Tyrie Cleveland",
+    "position": "WR",
+    "team": "DEN",
+    "ppr": 4.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036450",
+    "name": "Ke'Shawn Vaughn",
+    "position": "RB",
+    "team": "TB",
+    "ppr": 10.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036457",
+    "name": "Ty'Son Williams",
+    "position": "RB",
+    "team": "ARI",
+    "ppr": 1.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036482",
+    "name": "Mike Strachan",
+    "position": "WR",
+    "team": "IND",
+    "ppr": 8.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036493",
+    "name": "Deon Jackson",
+    "position": "RB",
+    "team": "IND",
+    "ppr": 84.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036527",
+    "name": "DJ Turner",
+    "position": "WR",
+    "team": "LV",
+    "ppr": 2.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036543",
+    "name": "Spencer Brown",
+    "position": "RB",
+    "team": "CAR",
+    "ppr": 7.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036567",
+    "name": "Elijah Mitchell",
+    "position": "RB",
+    "team": "SF",
+    "ppr": 43.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036572",
+    "name": "Shi Smith",
+    "position": "WR",
+    "team": "CAR",
+    "ppr": 61.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036620",
+    "name": "Dee Eskridge",
+    "position": "WR",
+    "team": "SEA",
+    "ppr": 13.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036650",
+    "name": "Larry Rountree III",
+    "position": "RB",
+    "team": "LAC",
+    "ppr": 5.3
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036654",
+    "name": "Demetric Felton",
+    "position": "RB",
+    "team": "CLE",
+    "ppr": 2.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036669",
+    "name": "Kylin Hill",
+    "position": "RB",
+    "team": "GB",
+    "ppr": 0.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036671",
+    "name": "Dax Milne",
+    "position": "WR",
+    "team": "WAS",
+    "ppr": 15.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036810",
+    "name": "Cade Johnson",
+    "position": "WR",
+    "team": "SEA",
+    "ppr": 4.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036829",
+    "name": "Caleb Huntley",
+    "position": "RB",
+    "team": "ATL",
+    "ppr": 44.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036857",
+    "name": "Chris Evans",
+    "position": "RB",
+    "team": "CIN",
+    "ppr": 12.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036858",
+    "name": "Jalen Camp",
+    "position": "WR",
+    "team": "HOU",
+    "ppr": 1.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036877",
+    "name": "Jaelon Darden",
+    "position": "WR",
+    "team": "CLE",
+    "ppr": 4.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036918",
+    "name": "Jacob Harris",
+    "position": "WR",
+    "team": "LA",
+    "ppr": 1.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036936",
+    "name": "Rondale Moore",
+    "position": "WR",
+    "team": "ARI",
+    "ppr": 87.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036950",
+    "name": "Avery Williams",
+    "position": "RB",
+    "team": "ATL",
+    "ppr": 36.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036951",
+    "name": "Frank Darby",
+    "position": "WR",
+    "team": "ATL",
+    "ppr": 2.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036991",
+    "name": "Amari Rodgers",
+    "position": "WR",
+    "team": "HOU",
+    "ppr": 43.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0036999",
+    "name": "Anthony Schwartz",
+    "position": "WR",
+    "team": "CLE",
+    "ppr": 18.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037087",
+    "name": "Trestan Ebner",
+    "position": "RB",
+    "team": "CHI",
+    "ppr": 6.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037168",
+    "name": "Armani Rogers",
+    "position": "TE",
+    "team": "WAS",
+    "ppr": 14.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037175",
+    "name": "Anthony Brown",
+    "position": "QB",
+    "team": "BAL",
+    "ppr": 5.58
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037265",
+    "name": "Snoop Conner",
+    "position": "RB",
+    "team": "JAX",
+    "ppr": 10.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037272",
+    "name": "Montrell Washington",
+    "position": "WR",
+    "team": "DEN",
+    "ppr": 7.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037273",
+    "name": "Kyle Philips",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 15.8
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037286",
+    "name": "Kevin Harris",
+    "position": "RB",
+    "team": "NE",
+    "ppr": 11.2
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037299",
+    "name": "Keaontay Ingram",
+    "position": "RB",
+    "team": "ARI",
+    "ppr": 18.1
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037331",
+    "name": "Zander Horvath",
+    "position": "RB",
+    "team": "LAC",
+    "ppr": 18.6
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037355",
+    "name": "Braylon Sanders",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 1.7
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037387",
+    "name": "Jalen Virgil",
+    "position": "WR",
+    "team": "DEN",
+    "ppr": 15.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037429",
+    "name": "Raheem Blackshear",
+    "position": "RB",
+    "team": "CAR",
+    "ppr": 45.0
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037456",
+    "name": "Troy Hairston",
+    "position": "RB",
+    "team": "HOU",
+    "ppr": 6.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037569",
+    "name": "Peyton Hendershot",
+    "position": "TE",
+    "team": "DAL",
+    "ppr": 39.5
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0037827",
+    "name": "Tyrion Davis-Price",
+    "position": "RB",
+    "team": "SF",
+    "ppr": 9.9
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0038045",
+    "name": "Isaiah Spiller",
+    "position": "RB",
+    "team": "LAC",
+    "ppr": 8.4
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0038122",
+    "name": "Desmond Ridder",
+    "position": "QB",
+    "team": "ATL",
+    "ppr": 38.72
+  },
+  {
+    "season": 2022,
+    "gsis_id": "00-0038147",
+    "name": "Daylen Baldwin",
+    "position": "WR",
+    "team": "CLE",
+    "ppr": 4.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0024243",
+    "name": "Marcedes Lewis",
+    "position": "TE",
+    "team": "CHI",
+    "ppr": 12.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0026625",
+    "name": "Brian Hoyer",
+    "position": "QB",
+    "team": "LV",
+    "ppr": 4.94
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0027696",
+    "name": "Jimmy Graham",
+    "position": "TE",
+    "team": "NO",
+    "ppr": 33.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0027944",
+    "name": "Julio Jones",
+    "position": "WR",
+    "team": "PHI",
+    "ppr": 36.4
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0027948",
+    "name": "Blaine Gabbert",
+    "position": "QB",
+    "team": "KC",
+    "ppr": 5.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0029239",
+    "name": "Brandon Bolden",
+    "position": "RB",
+    "team": "LV",
+    "ppr": 11.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0029293",
+    "name": "Marvin Jones",
+    "position": "WR",
+    "team": "DET",
+    "ppr": 6.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0030068",
+    "name": "Marquise Goodwin",
+    "position": "WR",
+    "team": "CLE",
+    "ppr": 14.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0030431",
+    "name": "Robert Woods",
+    "position": "WR",
+    "team": "HOU",
+    "ppr": 89.3
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0030513",
+    "name": "Latavius Murray",
+    "position": "RB",
+    "team": "BUF",
+    "ppr": 82.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0030578",
+    "name": "Cordarrelle Patterson",
+    "position": "RB",
+    "team": "ATL",
+    "ppr": 36.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0030663",
+    "name": "Willie Snead",
+    "position": "WR",
+    "team": "SF",
+    "ppr": 3.4
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0030874",
+    "name": "Damien Williams",
+    "position": "RB",
+    "team": "ARI",
+    "ppr": 7.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0031260",
+    "name": "Logan Thomas",
+    "position": "TE",
+    "team": "WAS",
+    "ppr": 126.8
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0031428",
+    "name": "Allen Robinson",
+    "position": "WR",
+    "team": "PIT",
+    "ppr": 62.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0031547",
+    "name": "DeVante Parker",
+    "position": "WR",
+    "team": "NE",
+    "ppr": 72.4
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0031549",
+    "name": "Nelson Agholor",
+    "position": "WR",
+    "team": "BAL",
+    "ppr": 97.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0031763",
+    "name": "DeAndre Carter",
+    "position": "WR",
+    "team": "LV",
+    "ppr": 9.7
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0031800",
+    "name": "Taylor Heinicke",
+    "position": "QB",
+    "team": "ATL",
+    "ppr": 66.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0031941",
+    "name": "Jamison Crowder",
+    "position": "WR",
+    "team": "WAS",
+    "ppr": 37.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0032062",
+    "name": "Blake Bell",
+    "position": "TE",
+    "team": "KC",
+    "ppr": 11.6
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0032128",
+    "name": "Chris Conley",
+    "position": "WR",
+    "team": "SF",
+    "ppr": 9.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0032134",
+    "name": "C.J. Uzomah",
+    "position": "TE",
+    "team": "NYJ",
+    "ppr": 19.8
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0032141",
+    "name": "Geoff Swaim",
+    "position": "TE",
+    "team": "ARI",
+    "ppr": 19.4
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0032144",
+    "name": "Melvin Gordon",
+    "position": "RB",
+    "team": "BAL",
+    "ppr": 19.7
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0032156",
+    "name": "Trevor Siemian",
+    "position": "QB",
+    "team": "NYJ",
+    "ppr": 26.96
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0032200",
+    "name": "Ty Montgomery",
+    "position": "WR",
+    "team": "NE",
+    "ppr": 9.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0032436",
+    "name": "Jeff Driskel",
+    "position": "QB",
+    "team": "CLE",
+    "ppr": 13.94
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0032543",
+    "name": "Alex Erickson",
+    "position": "WR",
+    "team": "LAC",
+    "ppr": 45.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0032688",
+    "name": "Robbie Chosen",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 22.6
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0033118",
+    "name": "Kenyan Drake",
+    "position": "RB",
+    "team": "GB",
+    "ppr": 3.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0033251",
+    "name": "Zach Pascal",
+    "position": "WR",
+    "team": "ARI",
+    "ppr": 5.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0033275",
+    "name": "PJ Walker",
+    "position": "QB",
+    "team": "CLE",
+    "ppr": 19.96
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0033296",
+    "name": "Alex Armah",
+    "position": "RB",
+    "team": "WAS",
+    "ppr": 4.3
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0033308",
+    "name": "Matt Breida",
+    "position": "RB",
+    "team": "NYG",
+    "ppr": 46.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0033376",
+    "name": "Patrick Ricard",
+    "position": "RB",
+    "team": "BAL",
+    "ppr": 16.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0033466",
+    "name": "Isaiah McKenzie",
+    "position": "WR",
+    "team": "IND",
+    "ppr": 20.6
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0033572",
+    "name": "Jamal Agnew",
+    "position": "WR",
+    "team": "JAX",
+    "ppr": 40.3
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0033591",
+    "name": "Noah Brown",
+    "position": "WR",
+    "team": "HOU",
+    "ppr": 101.6
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0033893",
+    "name": "Dalvin Cook",
+    "position": "RB",
+    "team": "NYJ",
+    "ppr": 40.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0033895",
+    "name": "Gerald Everett",
+    "position": "TE",
+    "team": "LAC",
+    "ppr": 111.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0033936",
+    "name": "C.J. Beathard",
+    "position": "QB",
+    "team": "JAX",
+    "ppr": 21.46
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034054",
+    "name": "River Cracraft",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 27.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034073",
+    "name": "Ross Dwelley",
+    "position": "TE",
+    "team": "SF",
+    "ppr": 2.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034115",
+    "name": "Jeff Wilson",
+    "position": "RB",
+    "team": "MIA",
+    "ppr": 41.3
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034177",
+    "name": "Tim Boyle",
+    "position": "QB",
+    "team": "NYJ",
+    "ppr": 10.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034193",
+    "name": "Kevin Rader",
+    "position": "TE",
+    "team": "TEN",
+    "ppr": 1.6
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034208",
+    "name": "Mike Boone",
+    "position": "RB",
+    "team": "HOU",
+    "ppr": 13.3
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034279",
+    "name": "Equanimeous St. Brown",
+    "position": "WR",
+    "team": "CHI",
+    "ppr": 11.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034286",
+    "name": "Richie James",
+    "position": "WR",
+    "team": "KC",
+    "ppr": 21.4
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034297",
+    "name": "Byron Pringle",
+    "position": "WR",
+    "team": "WAS",
+    "ppr": 30.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034317",
+    "name": "Keith Kirkwood",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 14.7
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034364",
+    "name": "Jordan Akins",
+    "position": "TE",
+    "team": "CLE",
+    "ppr": 28.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034401",
+    "name": "Mike White",
+    "position": "QB",
+    "team": "MIA",
+    "ppr": 2.06
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034414",
+    "name": "Boston Scott",
+    "position": "RB",
+    "team": "PHI",
+    "ppr": 17.8
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034433",
+    "name": "Nick Bawden",
+    "position": "RB",
+    "team": "NYJ",
+    "ppr": 11.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034575",
+    "name": "David Wells",
+    "position": "TE",
+    "team": "TB",
+    "ppr": 1.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034646",
+    "name": "Brandon Powell",
+    "position": "WR",
+    "team": "MIN",
+    "ppr": 69.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034764",
+    "name": "Michael Gallup",
+    "position": "WR",
+    "team": "DAL",
+    "ppr": 87.8
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034777",
+    "name": "DJ Chark",
+    "position": "WR",
+    "team": "CAR",
+    "ppr": 115.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034830",
+    "name": "Hayden Hurst",
+    "position": "TE",
+    "team": "CAR",
+    "ppr": 42.4
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034838",
+    "name": "Royce Freeman",
+    "position": "RB",
+    "team": "LA",
+    "ppr": 46.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034928",
+    "name": "Steven Sims",
+    "position": "WR",
+    "team": "HOU",
+    "ppr": 5.6
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0034970",
+    "name": "Irv Smith",
+    "position": "TE",
+    "team": "CIN",
+    "ppr": 33.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035120",
+    "name": "Keelan Doss",
+    "position": "WR",
+    "team": "LAC",
+    "ppr": 9.3
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035164",
+    "name": "Cody Thompson",
+    "position": "WR",
+    "team": "SEA",
+    "ppr": 2.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035184",
+    "name": "Devine Ozigbo",
+    "position": "RB",
+    "team": "DET",
+    "ppr": 2.3
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035215",
+    "name": "Deonte Harty",
+    "position": "WR",
+    "team": "BUF",
+    "ppr": 42.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035259",
+    "name": "Trevon Wesco",
+    "position": "TE",
+    "team": "TEN",
+    "ppr": 3.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035329",
+    "name": "Donald Parham",
+    "position": "TE",
+    "team": "LAC",
+    "ppr": 79.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035414",
+    "name": "Jalen Guyton",
+    "position": "WR",
+    "team": "LAC",
+    "ppr": 24.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035480",
+    "name": "Malik Taylor",
+    "position": "WR",
+    "team": "NYJ",
+    "ppr": 3.3
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035639",
+    "name": "Parris Campbell",
+    "position": "WR",
+    "team": "NYG",
+    "ppr": 30.4
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035664",
+    "name": "Darrell Henderson",
+    "position": "RB",
+    "team": "LA",
+    "ppr": 43.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035703",
+    "name": "Miles Boykin",
+    "position": "WR",
+    "team": "PIT",
+    "ppr": 4.7
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035715",
+    "name": "Derrick Gore",
+    "position": "RB",
+    "team": "WAS",
+    "ppr": 2.6
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035726",
+    "name": "Jakob Johnson",
+    "position": "RB",
+    "team": "LV",
+    "ppr": 2.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035771",
+    "name": "Mitchell Wilcox",
+    "position": "TE",
+    "team": "CIN",
+    "ppr": 14.6
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035831",
+    "name": "James Robinson",
+    "position": "RB",
+    "team": "GB",
+    "ppr": 1.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035860",
+    "name": "Tony Jones",
+    "position": "RB",
+    "team": "ARI",
+    "ppr": 32.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035934",
+    "name": "Trishton Jackson",
+    "position": "WR",
+    "team": "MIN",
+    "ppr": 4.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0035956",
+    "name": "Giovanni Ricci",
+    "position": "TE",
+    "team": "CAR",
+    "ppr": 1.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036232",
+    "name": "Harrison Bryant",
+    "position": "TE",
+    "team": "CLE",
+    "ppr": 37.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036254",
+    "name": "Collin Johnson",
+    "position": "WR",
+    "team": "CHI",
+    "ppr": 2.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036268",
+    "name": "Laviska Shenault Jr.",
+    "position": "WR",
+    "team": "CAR",
+    "ppr": 21.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036297",
+    "name": "Darrynton Evans",
+    "position": "RB",
+    "team": "MIA",
+    "ppr": 30.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036360",
+    "name": "Clyde Edwards-Helaire",
+    "position": "RB",
+    "team": "KC",
+    "ppr": 70.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036364",
+    "name": "Lynn Bowden",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 22.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036370",
+    "name": "Joshua Kelley",
+    "position": "RB",
+    "team": "LAC",
+    "ppr": 61.7
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036414",
+    "name": "Cam Akers",
+    "position": "RB",
+    "team": "MIN",
+    "ppr": 46.7
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036424",
+    "name": "Brycen Hopkins",
+    "position": "TE",
+    "team": "LA",
+    "ppr": 12.8
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036438",
+    "name": "Stephen Sullivan",
+    "position": "TE",
+    "team": "CAR",
+    "ppr": 24.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036450",
+    "name": "Ke'Shawn Vaughn",
+    "position": "RB",
+    "team": "TB",
+    "ppr": 6.4
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036482",
+    "name": "Mike Strachan",
+    "position": "WR",
+    "team": "CAR",
+    "ppr": 5.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036493",
+    "name": "Deon Jackson",
+    "position": "RB",
+    "team": "NYG",
+    "ppr": 4.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036510",
+    "name": "Kenny Yeboah",
+    "position": "TE",
+    "team": "NYJ",
+    "ppr": 4.8
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036567",
+    "name": "Elijah Mitchell",
+    "position": "RB",
+    "team": "SF",
+    "ppr": 47.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036620",
+    "name": "Dee Eskridge",
+    "position": "WR",
+    "team": "SEA",
+    "ppr": 0.5
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036857",
+    "name": "Chris Evans",
+    "position": "RB",
+    "team": "CIN",
+    "ppr": 2.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036860",
+    "name": "Jake Funk",
+    "position": "RB",
+    "team": "IND",
+    "ppr": 3.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0036936",
+    "name": "Rondale Moore",
+    "position": "WR",
+    "team": "ARI",
+    "ppr": 105.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0037216",
+    "name": "Justyn Ross",
+    "position": "WR",
+    "team": "KC",
+    "ppr": 11.3
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0037273",
+    "name": "Kyle Philips",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 33.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0037286",
+    "name": "Kevin Harris",
+    "position": "RB",
+    "team": "NE",
+    "ppr": 21.3
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0037299",
+    "name": "Keaontay Ingram",
+    "position": "RB",
+    "team": "ARI",
+    "ppr": 14.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0037306",
+    "name": "John FitzPatrick",
+    "position": "TE",
+    "team": "ATL",
+    "ppr": 2.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0037420",
+    "name": "Kwamie Lassiter II",
+    "position": "WR",
+    "team": "CIN",
+    "ppr": 1.2
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0037429",
+    "name": "Raheem Blackshear",
+    "position": "RB",
+    "team": "CAR",
+    "ppr": 17.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0037506",
+    "name": "Cole Fotheringham",
+    "position": "TE",
+    "team": "LV",
+    "ppr": 1.6
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0037569",
+    "name": "Peyton Hendershot",
+    "position": "TE",
+    "team": "DAL",
+    "ppr": 7.8
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0037654",
+    "name": "Tucker Fisk",
+    "position": "TE",
+    "team": "ATL",
+    "ppr": 1.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0037827",
+    "name": "Tyrion Davis-Price",
+    "position": "RB",
+    "team": "SF",
+    "ppr": 2.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0038045",
+    "name": "Isaiah Spiller",
+    "position": "RB",
+    "team": "LAC",
+    "ppr": 19.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0038122",
+    "name": "Desmond Ridder",
+    "position": "QB",
+    "team": "ATL",
+    "ppr": 177.14
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0038582",
+    "name": "Clayton Tune",
+    "position": "QB",
+    "team": "ARI",
+    "ppr": 7.48
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0038583",
+    "name": "Dorian Thompson-Robinson",
+    "position": "QB",
+    "team": "CLE",
+    "ppr": 22.1
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0038598",
+    "name": "Jaren Hall",
+    "position": "QB",
+    "team": "MIN",
+    "ppr": 2.12
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0038612",
+    "name": "A.T. Perry",
+    "position": "WR",
+    "team": "NO",
+    "ppr": 60.6
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0038632",
+    "name": "Colton Dowell",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 1.3
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0038738",
+    "name": "Hunter Luepke",
+    "position": "RB",
+    "team": "DAL",
+    "ppr": 12.7
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0038821",
+    "name": "Rakim Jarrett",
+    "position": "WR",
+    "team": "TB",
+    "ppr": 10.0
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0038862",
+    "name": "Elijah Dotson",
+    "position": "RB",
+    "team": "LAC",
+    "ppr": 3.9
+  },
+  {
+    "season": 2023,
+    "gsis_id": "00-0039136",
+    "name": "Zach Evans",
+    "position": "RB",
+    "team": "LA",
+    "ppr": 1.9
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0024243",
+    "name": "Marcedes Lewis",
+    "position": "TE",
+    "team": "CHI",
+    "ppr": 1.2
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0030431",
+    "name": "Robert Woods",
+    "position": "WR",
+    "team": "HOU",
+    "ppr": 38.3
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0030578",
+    "name": "Cordarrelle Patterson",
+    "position": "RB",
+    "team": "PIT",
+    "ppr": 37.5
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0031428",
+    "name": "Allen Robinson",
+    "position": "WR",
+    "team": "DET",
+    "ppr": 6.0
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0031549",
+    "name": "Nelson Agholor",
+    "position": "WR",
+    "team": "BAL",
+    "ppr": 49.1
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0031763",
+    "name": "DeAndre Carter",
+    "position": "WR",
+    "team": "CHI",
+    "ppr": 16.2
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0031800",
+    "name": "Taylor Heinicke",
+    "position": "QB",
+    "team": "LAC",
+    "ppr": 3.12
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0031941",
+    "name": "Jamison Crowder",
+    "position": "WR",
+    "team": "WAS",
+    "ppr": 28.2
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0032128",
+    "name": "Chris Conley",
+    "position": "WR",
+    "team": "SF",
+    "ppr": 13.6
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0032141",
+    "name": "Geoff Swaim",
+    "position": "TE",
+    "team": "CLE",
+    "ppr": 1.7
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0032688",
+    "name": "Robbie Chosen",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 1.5
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0033376",
+    "name": "Patrick Ricard",
+    "position": "RB",
+    "team": "BAL",
+    "ppr": 11.2
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0033460",
+    "name": "John Ross",
+    "position": "WR",
+    "team": "PHI",
+    "ppr": 1.6
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0033591",
+    "name": "Noah Brown",
+    "position": "WR",
+    "team": "WAS",
+    "ppr": 86.3
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0033893",
+    "name": "Dalvin Cook",
+    "position": "RB",
+    "team": "DAL",
+    "ppr": 4.0
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0033895",
+    "name": "Gerald Everett",
+    "position": "TE",
+    "team": "CHI",
+    "ppr": 11.6
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0034054",
+    "name": "River Cracraft",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 13.6
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0034073",
+    "name": "Ross Dwelley",
+    "position": "TE",
+    "team": "ATL",
+    "ppr": 1.5
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0034115",
+    "name": "Jeff Wilson",
+    "position": "RB",
+    "team": "MIA",
+    "ppr": 10.6
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0034177",
+    "name": "Tim Boyle",
+    "position": "QB",
+    "team": "NYG",
+    "ppr": 13.94
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0034208",
+    "name": "Mike Boone",
+    "position": "RB",
+    "team": "CAR",
+    "ppr": 5.9
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0034353",
+    "name": "Anthony Miller",
+    "position": "WR",
+    "team": "BAL",
+    "ppr": 2.6
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0034364",
+    "name": "Jordan Akins",
+    "position": "TE",
+    "team": "CLE",
+    "ppr": 91.0
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0034401",
+    "name": "Mike White",
+    "position": "QB",
+    "team": "BUF",
+    "ppr": 1.12
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0034646",
+    "name": "Brandon Powell",
+    "position": "WR",
+    "team": "MIN",
+    "ppr": 14.1
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0034777",
+    "name": "DJ Chark",
+    "position": "WR",
+    "team": "LAC",
+    "ppr": 13.1
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0034830",
+    "name": "Hayden Hurst",
+    "position": "TE",
+    "team": "LAC",
+    "ppr": 15.3
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0035311",
+    "name": "Myles Gaskin",
+    "position": "RB",
+    "team": "MIN",
+    "ppr": 2.0
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0035547",
+    "name": "Joseph Fortson",
+    "position": "TE",
+    "team": "KC",
+    "ppr": 1.5
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0035639",
+    "name": "Parris Campbell",
+    "position": "WR",
+    "team": "PHI",
+    "ppr": 15.0
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0035860",
+    "name": "Tony Jones",
+    "position": "RB",
+    "team": "ARI",
+    "ppr": 11.5
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036096",
+    "name": "J.J. Taylor",
+    "position": "RB",
+    "team": "HOU",
+    "ppr": 6.4
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036133",
+    "name": "James Proche",
+    "position": "WR",
+    "team": "CLE",
+    "ppr": 5.1
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036183",
+    "name": "Kristian Wilkerson",
+    "position": "WR",
+    "team": "LV",
+    "ppr": 9.8
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036232",
+    "name": "Harrison Bryant",
+    "position": "TE",
+    "team": "LV",
+    "ppr": 17.6
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036254",
+    "name": "Collin Johnson",
+    "position": "WR",
+    "team": "CHI",
+    "ppr": 1.6
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036268",
+    "name": "Laviska Shenault Jr.",
+    "position": "WR",
+    "team": "SEA",
+    "ppr": 14.7
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036297",
+    "name": "Darrynton Evans",
+    "position": "RB",
+    "team": "CHI",
+    "ppr": 0.3
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036360",
+    "name": "Clyde Edwards-Helaire",
+    "position": "RB",
+    "team": "NO",
+    "ppr": 10.0
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036370",
+    "name": "Joshua Kelley",
+    "position": "RB",
+    "team": "TEN",
+    "ppr": 0.2
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036414",
+    "name": "Cam Akers",
+    "position": "RB",
+    "team": "MIN",
+    "ppr": 93.2
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036450",
+    "name": "Ke'Shawn Vaughn",
+    "position": "RB",
+    "team": "SF",
+    "ppr": 0.4
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036510",
+    "name": "Kenny Yeboah",
+    "position": "TE",
+    "team": "NYJ",
+    "ppr": 15.7
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036527",
+    "name": "DJ Turner",
+    "position": "WR",
+    "team": "LV",
+    "ppr": 47.1
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036620",
+    "name": "Dee Eskridge",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 7.4
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036640",
+    "name": "Zach Davidson",
+    "position": "TE",
+    "team": "BUF",
+    "ppr": 1.5
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0036877",
+    "name": "Jaelon Darden",
+    "position": "WR",
+    "team": "SEA",
+    "ppr": 1.6
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0037306",
+    "name": "John FitzPatrick",
+    "position": "TE",
+    "team": "GB",
+    "ppr": 1.2
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0037429",
+    "name": "Raheem Blackshear",
+    "position": "RB",
+    "team": "CAR",
+    "ppr": 8.0
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0037450",
+    "name": "Tyreik McAllister",
+    "position": "WR",
+    "team": "LV",
+    "ppr": 1.1
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0037569",
+    "name": "Peyton Hendershot",
+    "position": "TE",
+    "team": "KC",
+    "ppr": 10.1
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0037609",
+    "name": "Aaron Shampklin",
+    "position": "RB",
+    "team": "PIT",
+    "ppr": 1.7
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0037654",
+    "name": "Tucker Fisk",
+    "position": "TE",
+    "team": "LAC",
+    "ppr": 10.9
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0037827",
+    "name": "Tyrion Davis-Price",
+    "position": "RB",
+    "team": "PHI",
+    "ppr": 0.7
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0038122",
+    "name": "Desmond Ridder",
+    "position": "QB",
+    "team": "LV",
+    "ppr": 21.92
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0038489",
+    "name": "Ben VanSumeren",
+    "position": "RB",
+    "team": "PHI",
+    "ppr": 1.0
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0038507",
+    "name": "Grant DuBose",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 3.1
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0038583",
+    "name": "Dorian Thompson-Robinson",
+    "position": "QB",
+    "team": "CLE",
+    "ppr": 15.8
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0038636",
+    "name": "Kenny McIntosh",
+    "position": "RB",
+    "team": "SEA",
+    "ppr": 22.4
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0038738",
+    "name": "Hunter Luepke",
+    "position": "RB",
+    "team": "DAL",
+    "ppr": 26.9
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0038821",
+    "name": "Rakim Jarrett",
+    "position": "WR",
+    "team": "TB",
+    "ppr": 21.4
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0038920",
+    "name": "John Shenker",
+    "position": "TE",
+    "team": "LV",
+    "ppr": 1.7
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0039393",
+    "name": "Jase McClellan",
+    "position": "RB",
+    "team": "ATL",
+    "ppr": 3.2
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0039543",
+    "name": "Ramel Keyton",
+    "position": "WR",
+    "team": "LV",
+    "ppr": 1.7
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0039573",
+    "name": "Blake Watson",
+    "position": "RB",
+    "team": "DEN",
+    "ppr": 3.3
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0039613",
+    "name": "Dallin Holker",
+    "position": "TE",
+    "team": "NO",
+    "ppr": 5.1
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0039747",
+    "name": "Ainias Smith",
+    "position": "WR",
+    "team": "PHI",
+    "ppr": 17.7
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0039757",
+    "name": "Terrell Jennings",
+    "position": "RB",
+    "team": "NE",
+    "ppr": 3.3
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0039853",
+    "name": "Javon Baker",
+    "position": "WR",
+    "team": "NE",
+    "ppr": 2.2
+  },
+  {
+    "season": 2024,
+    "gsis_id": "00-0039907",
+    "name": "Ja'Lynn Polk",
+    "position": "WR",
+    "team": "NE",
+    "ppr": 32.7
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0031237",
+    "name": "Teddy Bridgewater",
+    "position": "QB",
+    "team": "TB",
+    "ppr": 2.88
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0032688",
+    "name": "Robbie Chosen",
+    "position": "WR",
+    "team": "WAS",
+    "ppr": 10.3
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0033376",
+    "name": "Patrick Ricard",
+    "position": "RB",
+    "team": "BAL",
+    "ppr": 2.1
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0033455",
+    "name": "Anthony Firkser",
+    "position": "TE",
+    "team": "DET",
+    "ppr": 13.3
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0033591",
+    "name": "Noah Brown",
+    "position": "WR",
+    "team": "WAS",
+    "ppr": 13.3
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0034073",
+    "name": "Ross Dwelley",
+    "position": "TE",
+    "team": "DET",
+    "ppr": 2.7
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0035311",
+    "name": "Myles Gaskin",
+    "position": "RB",
+    "team": "SEA",
+    "ppr": 0.6
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0035876",
+    "name": "Andre Baccellia",
+    "position": "WR",
+    "team": "ARI",
+    "ppr": 2.8
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0036133",
+    "name": "James Proche",
+    "position": "WR",
+    "team": "TEN",
+    "ppr": 12.5
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0036232",
+    "name": "Harrison Bryant",
+    "position": "TE",
+    "team": "HOU",
+    "ppr": 2.7
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0036360",
+    "name": "Clyde Edwards-Helaire",
+    "position": "RB",
+    "team": "KC",
+    "ppr": 4.2
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0036414",
+    "name": "Cam Akers",
+    "position": "RB",
+    "team": "SEA",
+    "ppr": 7.18
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0036620",
+    "name": "Dee Eskridge",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 10.2
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0037015",
+    "name": "Sal Cannella",
+    "position": "TE",
+    "team": "CLE",
+    "ppr": 3.1
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0037306",
+    "name": "John FitzPatrick",
+    "position": "TE",
+    "team": "GB",
+    "ppr": 25.2
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0037654",
+    "name": "Tucker Fisk",
+    "position": "TE",
+    "team": "LAC",
+    "ppr": 3.9
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0038582",
+    "name": "Clayton Tune",
+    "position": "QB",
+    "team": "GB",
+    "ppr": 1.98
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0038738",
+    "name": "Hunter Luepke",
+    "position": "RB",
+    "team": "DAL",
+    "ppr": 37.0
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0039757",
+    "name": "Terrell Jennings",
+    "position": "RB",
+    "team": "NE",
+    "ppr": 15.2
+  },
+  {
+    "season": 2025,
+    "gsis_id": "00-0039884",
+    "name": "Tahj Washington",
+    "position": "WR",
+    "team": "MIA",
+    "ppr": 4.7
+  }
+]

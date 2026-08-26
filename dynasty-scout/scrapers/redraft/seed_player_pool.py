@@ -36,6 +36,12 @@ CROSSWALK_URL = "https://github.com/dynastyprocess/data/raw/master/files/db_play
 FANTASY_POSITIONS = {"QB", "RB", "WR", "TE", "K"}
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; DyCharts/1.0)"}
 
+# Sleeper's search_rank is a rough fantasy-relevance ordering. Unsigned players
+# below this cutoff still belong in the pool — a free agent in August (Tyreek
+# Hill sat at 145) gets drafted the moment he signs. Above it is the long tail
+# of camp bodies nobody drafts.
+FREE_AGENT_RANK_CUTOFF = 400
+
 INSERT_PLAYER = """
     INSERT INTO players
         (slug, full_name, first_name, last_name, position, dob,
@@ -155,14 +161,19 @@ def seed():
     by_slug, by_name, used_slugs = load_existing(cursor)
     print(f"Existing players in DB: {len(by_slug)}")
 
-    pool = [
-        v for v in sleeper.values()
-        if v.get("team")
-        and v.get("status") == "Active"
-        and v.get("position") in FANTASY_POSITIONS
-        and (v.get("full_name") or v.get("last_name"))
-    ]
-    print(f"Active fantasy-position players on a roster: {len(pool)}")
+    def in_pool(v):
+        if v.get("position") not in FANTASY_POSITIONS:
+            return False
+        if not (v.get("full_name") or v.get("last_name")):
+            return False
+        if v.get("team"):
+            return True  # rostered — any status, incl. IR/PUP (still drafted)
+        rank = v.get("search_rank")
+        return rank is not None and rank < FREE_AGENT_RANK_CUTOFF
+
+    pool = [v for v in sleeper.values() if in_pool(v)]
+    rostered = sum(1 for v in pool if v.get("team"))
+    print(f"Pool: {len(pool)} ({rostered} rostered, {len(pool) - rostered} notable free agents)")
 
     matched = inserted = 0
     id_fill = defaultdict(int)
