@@ -59,3 +59,5 @@ postgres_seed.sql
 next-env.d.ts
 
 .vercel
+scrapers/redraft_update.log
+scrapers/redraft/unmatched_nflverse.json
