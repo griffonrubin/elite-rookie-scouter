@@ -77,7 +77,7 @@ class ESPNRedraft(BaseRedraftScraper):
             raise ValueError("kona_player_info returned no players")
         print(f"[{self.SOURCE}] {len(players)} players returned")
 
-        ranked = 0
+        rank_entries = []
         projected = []
 
         for entry in players:
@@ -93,40 +93,20 @@ class ESPNRedraft(BaseRedraftScraper):
 
             rank = ((p.get("draftRanksByRankType") or {}).get("PPR") or {}).get("rank")
             if rank:
-                self.save_ranking(pid, rank_overall=rank)
-                ranked += 1
+                # ESPN ranks against its whole player universe (values reach
+                # 1972 for 830 ranked players), so store the dense position.
+                rank_entries.append((pid, rank, pos))
 
             pts = season_projection(p)
             if pts is not None:
                 projected.append((pid, pos, pts))
 
-        if ranked == 0:
+        if not rank_entries:
             raise ValueError("no PPR draft ranks found — ESPN changed their schema")
 
-        # Positional rank comes from the rank order, and projection ranks from
-        # the projected totals, so both are derived after the full pass.
-        self._assign_positional_ranks()
+        self.save_dense_rankings(rank_entries)
         self._save_projections(projected)
-        print(f"[{self.SOURCE}] {ranked} ranks, {len(projected)} projections")
-
-    def _assign_positional_ranks(self):
-        """ESPN publishes only an overall rank, so derive the positional one."""
-        self.cursor.execute(
-            """SELECT r.player_id, r.rank_overall, p.position
-               FROM rankings r JOIN players p ON p.id = r.player_id
-               WHERE r.source = ? AND r.scraped_at = ? AND r.rank_overall IS NOT NULL
-               ORDER BY r.rank_overall ASC""",
-            (self.SOURCE, self.today),
-        )
-        counters = {}
-        for row in self.cursor.fetchall():
-            pos = (row["position"] or "").upper()
-            counters[pos] = counters.get(pos, 0) + 1
-            self.cursor.execute(
-                "UPDATE rankings SET rank_positional = ? "
-                "WHERE player_id = ? AND source = ? AND scraped_at = ?",
-                (counters[pos], row["player_id"], self.SOURCE, self.today),
-            )
+        print(f"[{self.SOURCE}] {len(rank_entries)} ranks, {len(projected)} projections")
 
     def _save_projections(self, projected):
         """Rank projections overall and within position by projected points."""

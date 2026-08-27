@@ -55,6 +55,7 @@ class FantasyProsRedraft(BaseRedraftScraper):
               f"{data.get('total_experts', '?')} experts "
               f"(updated {data.get('last_updated', '?')})")
 
+        entries = []
         for p in players:
             pos = (p.get("player_position_id") or "").upper()
             name = p.get("player_name")
@@ -67,19 +68,9 @@ class FantasyProsRedraft(BaseRedraftScraper):
                 self.note_unmatched(name, pos, team, p.get("rank_ecr"))
                 continue
 
-            # "WR12" -> 12
-            pos_rank = None
-            if p.get("pos_rank"):
-                digits = re.sub(r"\D", "", str(p["pos_rank"]))
-                pos_rank = int(digits) if digits else None
+            entries.append((pid, p.get("rank_ecr"), pos, p.get("tier")))
 
-            self.save_ranking(
-                pid,
-                rank_overall=p.get("rank_ecr"),
-                rank_positional=pos_rank,
-                tier=p.get("tier"),
-                value=p.get("rank_std"),   # expert disagreement
-            )
+        self.save_dense_rankings(entries)
 
 
 if __name__ == "__main__":

@@ -29,6 +29,8 @@ const REDRAFT_SOURCE_STYLE: Record<string, { short: string; color: string }> = {
     'Sleeper Redraft':      { short: 'Sleeper',      color: '#22d3ee' },
     'FantasyCalc Redraft':  { short: 'FantasyCalc',  color: '#34d399' },
     'Flock Redraft':        { short: 'Flock',        color: '#fb923c' },
+    'Underdog Redraft':     { short: 'Underdog',     color: '#f472b6' },
+    'FFPC Redraft':         { short: 'FFPC',         color: '#64748b' },
 };
 
 export function RedraftSourceRankings({

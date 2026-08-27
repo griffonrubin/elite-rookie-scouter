@@ -39,6 +39,7 @@ SQLITE_PATH = "dynasty_scout.db"
 REDRAFT_SOURCES = (
     "FantasyPros PPR", "ESPN Redraft", "KeepTradeCut Redraft", "CBS Redraft",
     "Yahoo Redraft", "Sleeper Redraft", "FantasyCalc Redraft", "Flock Redraft",
+    "Underdog Redraft", "FFPC Redraft",
 )
 
 PLAYER_COLUMNS = [

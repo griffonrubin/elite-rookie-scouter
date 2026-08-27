@@ -170,6 +170,52 @@ class BaseRedraftScraper:
         ))
         self.saved += 1
 
+    def save_dense_rankings(self, entries):
+        """
+        Write a source's ranks as a dense 1..N ordering.
+
+        Sources publish ranks on their own scale: KTC numbers 365 players up
+        to 969, ESPN 830 up to 1972, and ADP sources use fractional pick
+        positions. Storing those raw makes the cross-source spread stats
+        (best/worst/avg/std_deviation) meaningless, because a "969" from one
+        source sits next to a "200" from another that means the same thing.
+
+        So rank_overall is always the dense position within this source, and
+        the source's native number is preserved in `value`.
+
+        entries: iterable of (player_id, sort_value, position) or
+                 (player_id, sort_value, position, tier)
+        """
+        rows = list(entries)
+        if not rows:
+            return
+        rows.sort(key=lambda t: t[1])
+
+        # Two source rows can resolve to the same player (a duplicate listing,
+        # or two spellings normalising to one name). Keep the best rank —
+        # without this the second write overwrites the first and leaves a hole
+        # in the 1..N sequence.
+        deduped, seen = [], set()
+        for row in rows:
+            if row[0] in seen:
+                continue
+            seen.add(row[0])
+            deduped.append(row)
+        rows = deduped
+
+        pos_counter = {}
+        for overall, row in enumerate(rows, 1):
+            pid, raw, pos = row[0], row[1], (row[2] or "").upper()
+            tier = row[3] if len(row) > 3 else None
+            pos_counter[pos] = pos_counter.get(pos, 0) + 1
+            self.save_ranking(
+                pid,
+                rank_overall=overall,
+                rank_positional=pos_counter[pos],
+                tier=tier,
+                value=raw,
+            )
+
     def note_unmatched(self, name, position=None, team=None, rank=None):
         self.unmatched.append(
             {"name": name, "position": position, "team": team, "rank": rank}

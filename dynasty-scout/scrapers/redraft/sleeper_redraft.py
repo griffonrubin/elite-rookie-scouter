@@ -78,20 +78,13 @@ class SleeperRedraft(BaseRedraftScraper):
         return {r["id"]: (r["position"] or "").upper() for r in self.cursor.fetchall()}
 
     def _save_ranks(self, by_adp):
-        """ADP is a float draft slot; rank order is what the board consumes."""
+        """ADP is a float draft slot; the dense rank order is what the board uses."""
         if not by_adp:
             return
-        ordered = sorted(by_adp, key=lambda t: t[1])
-        positions = self._positions([pid for pid, _ in ordered])
-        pos_counter = {}
-        for overall, (pid, adp) in enumerate(ordered, 1):
-            pos = positions.get(pid, "")
-            pos_counter[pos] = pos_counter.get(pos, 0) + 1
-            self.save_ranking(
-                pid, rank_overall=overall,
-                rank_positional=pos_counter[pos],
-                value=adp,
-            )
+        positions = self._positions([pid for pid, _ in by_adp])
+        self.save_dense_rankings(
+            (pid, adp, positions.get(pid, "")) for pid, adp in by_adp
+        )
 
     def _save_projections(self, projected):
         if not projected:

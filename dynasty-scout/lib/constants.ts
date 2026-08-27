@@ -86,6 +86,8 @@ export const REDRAFT_SOURCES = [
     { name: 'KeepTradeCut Redraft', short: 'KTC', url: 'https://keeptradecut.com/fantasy-rankings' },
     { name: 'FantasyCalc Redraft', short: 'FC', url: 'https://fantasycalc.com' },
     { name: 'Flock Redraft', short: 'FLK', url: 'https://flockfantasy.com' },
+    { name: 'Underdog Redraft', short: 'UD', url: 'https://underdogfantasy.com' },
+    { name: 'FFPC Redraft', short: 'FFPC', url: 'https://myffpc.com' },
 ];
 
 /** Sources that publish 2026 seasonal point projections. */

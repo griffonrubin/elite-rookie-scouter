@@ -44,6 +44,8 @@ function sortValue(p: RedraftPlayer, key: RedraftSortKey): number | null {
         case 'sleeper':   return p.sleeper_rank;
         case 'fc':        return p.fc_rank;
         case 'flock':     return p.flock_rank;
+        case 'underdog':  return p.underdog_rank;
+        case 'ffpc':      return p.ffpc_rank;
         case 'proj':      return p.proj_points;
         case 'proj_ppg':  return p.proj_ppg;
         case 'pts25':     return p.pts25;
@@ -83,7 +85,8 @@ function sortValue(p: RedraftPlayer, key: RedraftSortKey): number | null {
 /** Ranks read best ascending; production reads best descending. */
 const ASCENDING_KEYS = new Set<RedraftSortKey>([
     'rank', 'pos_rank', 'avg_rank', 'best', 'worst', 'fp', 'espn', 'ktc', 'cbs',
-    'yahoo', 'sleeper', 'fc', 'flock', 'fin25', 'fin25_ov', 'age', 'ints', 'dst_pa',
+    'yahoo', 'sleeper', 'fc', 'flock', 'underdog', 'ffpc',
+    'fin25', 'fin25_ov', 'age', 'ints', 'dst_pa',
 ]);
 
 function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {

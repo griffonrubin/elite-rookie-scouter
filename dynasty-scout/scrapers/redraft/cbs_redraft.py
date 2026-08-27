@@ -50,6 +50,7 @@ class CBSRedraft(BaseRedraftScraper):
             raise ValueError("no player rows found — CBS changed their layout")
 
         seen = set()
+        entries = []
         for chunk in chunks[1:]:
             rank_m = RANK_RE.search(chunk)
             link_m = LINK_RE.search(chunk)
@@ -68,12 +69,12 @@ class CBSRedraft(BaseRedraftScraper):
             if not pid:
                 self.note_unmatched(slug, pos, None, rank)
                 continue
-            self.save_ranking(pid, rank_overall=rank)
+            entries.append((pid, rank, pos))
 
-        if self.saved == 0:
+        if not entries:
             raise ValueError("parsed rows but matched nothing — check the slug pattern")
 
-        self._assign_positional_ranks()
+        self.save_dense_rankings(entries)
 
     def _match(self, cbs_slug, pos):
         """CBS slugs are the full hyphenated name, which maps onto our own."""
@@ -85,24 +86,6 @@ class CBSRedraft(BaseRedraftScraper):
         if pos in ("DST", "DEF", "D/ST"):
             return self.by_dst_name.get(normalize_name(name))
         return None
-
-    def _assign_positional_ranks(self):
-        self.cursor.execute(
-            """SELECT r.player_id, p.position FROM rankings r
-               JOIN players p ON p.id = r.player_id
-               WHERE r.source = ? AND r.scraped_at = ? AND r.rank_overall IS NOT NULL
-               ORDER BY r.rank_overall ASC""",
-            (self.SOURCE, self.today),
-        )
-        counters = {}
-        for row in self.cursor.fetchall():
-            pos = (row["position"] or "").upper()
-            counters[pos] = counters.get(pos, 0) + 1
-            self.cursor.execute(
-                "UPDATE rankings SET rank_positional = ? "
-                "WHERE player_id = ? AND source = ? AND scraped_at = ?",
-                (counters[pos], row["player_id"], self.SOURCE, self.today),
-            )
 
 
 if __name__ == "__main__":

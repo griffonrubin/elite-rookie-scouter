@@ -73,6 +73,7 @@ export function RedraftBoxView({ players, drafted }: Props) {
                     ['FP', p.fp_rank], ['ESPN', p.espn_rank], ['KTC', p.ktc_rank],
                     ['CBS', p.cbs_rank], ['YHO', p.yahoo_rank], ['SLP', p.sleeper_rank],
                     ['FC', p.fc_rank], ['FLK', p.flock_rank],
+                    ['UD', p.underdog_rank], ['FFPC', p.ffpc_rank],
                 ] as [string, number | null][]).filter(([, v]) => v != null);
 
                 return (

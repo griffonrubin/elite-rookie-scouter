@@ -123,6 +123,8 @@ function RedraftMiniCardInner({
             case 'sleeper_rank': return <StatVal val={num(p.sleeper_rank)} />;
             case 'fc_rank':      return <StatVal val={num(p.fc_rank)} />;
             case 'flock_rank':   return <StatVal val={num(p.flock_rank)} />;
+            case 'underdog_rank':return <StatVal val={num(p.underdog_rank)} />;
+            case 'ffpc_rank':    return <StatVal val={num(p.ffpc_rank)} />;
 
             // ── fantasy production ──────────────────────────────────────────
             case 'pts25':
@@ -302,6 +304,7 @@ function RedraftMiniCardInner({
                                         ['KTC', player.ktc_rank], ['CBS', player.cbs_rank],
                                         ['YHO', player.yahoo_rank], ['SLP', player.sleeper_rank],
                                         ['FC', player.fc_rank], ['FLK', player.flock_rank],
+                                        ['UD', player.underdog_rank], ['FFPC', player.ffpc_rank],
                                     ] as [string, number | null][])
                                         .filter(([, v]) => v != null)
                                         .map(([label, v]) => (

@@ -1,0 +1,501 @@
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 61
+    """sticktothemodel.com \ufffd draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
+                           ^
+SyntaxError: Non-UTF-8 code starting with '\x97' in file C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py on line 61, but no encoding declared; see https://peps.python.org/pep-0263/ for details
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 61
+    """sticktothemodel.com \ufffd draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
+                           ^
+SyntaxError: Non-UTF-8 code starting with '\x97' in file C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py on line 61, but no encoding declared; see https://peps.python.org/pep-0263/ for details
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 61
+    """sticktothemodel.com \ufffd draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
+                           ^
+SyntaxError: Non-UTF-8 code starting with '\x97' in file C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py on line 61, but no encoding declared; see https://peps.python.org/pep-0263/ for details
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 61
+    """sticktothemodel.com \ufffd draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
+                           ^
+SyntaxError: Non-UTF-8 code starting with '\x97' in file C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py on line 61, but no encoding declared; see https://peps.python.org/pep-0263/ for details
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 61
+    """sticktothemodel.com \ufffd draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
+                           ^
+SyntaxError: Non-UTF-8 code starting with '\x97' in file C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py on line 61, but no encoding declared; see https://peps.python.org/pep-0263/ for details
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 61
+    """sticktothemodel.com \ufffd draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
+                           ^
+SyntaxError: Non-UTF-8 code starting with '\x97' in file C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py on line 61, but no encoding declared; see https://peps.python.org/pep-0263/ for details
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 61
+    """sticktothemodel.com \ufffd draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
+                           ^
+SyntaxError: Non-UTF-8 code starting with '\x97' in file C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py on line 61, but no encoding declared; see https://peps.python.org/pep-0263/ for details
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 61
+    """sticktothemodel.com \ufffd draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
+                           ^
+SyntaxError: Non-UTF-8 code starting with '\x97' in file C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py on line 61, but no encoding declared; see https://peps.python.org/pep-0263/ for details
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 61
+    """sticktothemodel.com \ufffd draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
+                           ^
+SyntaxError: Non-UTF-8 code starting with '\x97' in file C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py on line 61, but no encoding declared; see https://peps.python.org/pep-0263/ for details
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 61
+    """sticktothemodel.com \ufffd draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
+                           ^
+SyntaxError: Non-UTF-8 code starting with '\x97' in file C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py on line 61, but no encoding declared; see https://peps.python.org/pep-0263/ for details
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 61
+    """sticktothemodel.com \ufffd draft board rankings (TankAthlete, PFN, TDN, Brugler, Jeremiah)"""
+                           ^
+SyntaxError: Non-UTF-8 code starting with '\x97' in file C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py on line 61, but no encoding declared; see https://peps.python.org/pep-0263/ for details
+2026-05-15 10:05:39,724 INFO: === Daily Rankings Update starting at 2026-05-15 10:05 ===
+2026-05-15 10:05:39,724 INFO: --- KTC (SF + 1QB) ---
+2026-05-15 10:05:39,725 ERROR:   KTC (SF + 1QB) FAILED: No module named 'scrapers'
+2026-05-15 10:05:39,725 INFO: --- FantasyCalc (1QB+SF) ---
+2026-05-15 10:05:39,726 ERROR:   FantasyCalc (1QB+SF) FAILED: No module named 'scrapers'
+2026-05-15 10:05:39,726 INFO: --- DynastyNerds ---
+2026-05-15 10:05:39,726 ERROR:   DynastyNerds FAILED: No module named 'scrapers'
+2026-05-15 10:05:39,726 INFO: --- FantasyPros ---
+2026-05-15 10:05:39,727 ERROR:   FantasyPros FAILED: No module named 'scrapers'
+2026-05-15 10:05:39,727 INFO: --- Draft Boards (STTM) ---
+2026-05-15 10:05:39,727 ERROR:   Draft Boards (STTM) FAILED: No module named 'scrapers'
+2026-05-15 10:05:39,727 INFO: --- Consensus ---
+2026-05-15 10:05:39,728 ERROR:   Consensus FAILED: No module named 'scrapers'
+2026-05-15 10:05:39,728 INFO: === Daily Rankings Update complete ===
+2026-05-15 10:06:45,383 INFO: === Daily Rankings Update starting at 2026-05-15 10:06 ===
+2026-05-15 10:06:45,383 INFO: --- KTC (SF + 1QB) ---
+2026-05-15 10:06:45,755 INFO: Scraping KeepTradeCut from https://keeptradecut.com/dynasty-rankings using JS evaluation...
+2026-05-15 10:07:16,443 INFO: Found 500 players in JSON payload.
+2026-05-15 10:07:16,453 INFO: Saved rank 1 for player 471 from KeepTradeCut
+2026-05-15 10:07:16,453 INFO: [KeepTradeCut SF] 2026 Relative #1 -> Jeremiyah Love (Raw #14)
+2026-05-15 10:07:16,455 INFO: Saved rank 2 for player 473 from KeepTradeCut
+2026-05-15 10:07:16,455 INFO: [KeepTradeCut SF] 2026 Relative #2 -> Carnell Tate (Raw #36)
+2026-05-15 10:07:16,457 INFO: Saved rank 3 for player 472 from KeepTradeCut
+2026-05-15 10:07:16,457 INFO: [KeepTradeCut SF] 2026 Relative #3 -> Fernando Mendoza (Raw #41)
+2026-05-15 10:07:16,459 INFO: Saved rank 4 for player 475 from KeepTradeCut
+2026-05-15 10:07:16,459 INFO: [KeepTradeCut SF] 2026 Relative #4 -> Jordyn Tyson (Raw #54)
+2026-05-15 10:07:16,460 INFO: Saved rank 5 for player 474 from KeepTradeCut
+2026-05-15 10:07:16,460 INFO: [KeepTradeCut SF] 2026 Relative #5 -> Makai Lemon (Raw #57)
+2026-05-15 10:07:16,461 INFO: Saved rank 6 for player 479 from KeepTradeCut
+2026-05-15 10:07:16,461 INFO: [KeepTradeCut SF] 2026 Relative #6 -> Jadarian Price (Raw #77)
+2026-05-15 10:07:16,463 INFO: Saved rank 7 for player 477 from KeepTradeCut
+2026-05-15 10:07:16,463 INFO: [KeepTradeCut SF] 2026 Relative #7 -> KC Concepcion (Raw #83)
+2026-05-15 10:07:16,464 INFO: Saved rank 8 for player 476 from KeepTradeCut
+2026-05-15 10:07:16,464 INFO: [KeepTradeCut SF] 2026 Relative #8 -> Kenyon Sadiq (Raw #91)
+2026-05-15 10:07:16,465 INFO: Saved rank 9 for player 480 from KeepTradeCut
+2026-05-15 10:07:16,465 INFO: [KeepTradeCut SF] 2026 Relative #9 -> Omar Cooper Jr. (Raw #101)
+2026-05-15 10:07:16,467 INFO: Saved rank 10 for player 482 from KeepTradeCut
+2026-05-15 10:07:16,467 INFO: [KeepTradeCut SF] 2026 Relative #10 -> Ty Simpson (Raw #104)
+2026-05-15 10:07:16,468 INFO: Saved rank 11 for player 489 from KeepTradeCut
+2026-05-15 10:07:16,468 INFO: [KeepTradeCut SF] 2026 Relative #11 -> Eli Stowers (Raw #114)
+2026-05-15 10:07:16,470 INFO: Saved rank 12 for player 478 from KeepTradeCut
+2026-05-15 10:07:16,470 INFO: [KeepTradeCut SF] 2026 Relative #12 -> Denzel Boston (Raw #119)
+2026-05-15 10:07:16,471 INFO: Saved rank 13 for player 481 from KeepTradeCut
+2026-05-15 10:07:16,471 INFO: [KeepTradeCut SF] 2026 Relative #13 -> Jonah Coleman (Raw #148)
+2026-05-15 10:07:16,473 INFO: Saved rank 14 for player 491 from KeepTradeCut
+2026-05-15 10:07:16,473 INFO: [KeepTradeCut SF] 2026 Relative #14 -> Chris Bell (Raw #155)
+2026-05-15 10:07:16,474 INFO: Saved rank 15 for player 495 from KeepTradeCut
+2026-05-15 10:07:16,474 INFO: [KeepTradeCut SF] 2026 Relative #15 -> Germie Bernard (Raw #157)
+2026-05-15 10:07:16,475 INFO: Saved rank 16 for player 483 from KeepTradeCut
+2026-05-15 10:07:16,475 INFO: [KeepTradeCut SF] 2026 Relative #16 -> Nicholas Singleton (Raw #162)
+2026-05-15 10:07:16,477 INFO: Saved rank 17 for player 497 from KeepTradeCut
+2026-05-15 10:07:16,477 INFO: [KeepTradeCut SF] 2026 Relative #17 -> Antonio Williams (Raw #172)
+2026-05-15 10:07:16,478 INFO: Saved rank 18 for player 484 from KeepTradeCut
+2026-05-15 10:07:16,478 INFO: [KeepTradeCut SF] 2026 Relative #18 -> Elijah Sarratt (Raw #175)
+2026-05-15 10:07:16,480 INFO: Saved rank 19 for player 487 from KeepTradeCut
+2026-05-15 10:07:16,480 INFO: [KeepTradeCut SF] 2026 Relative #19 -> Malachi Fields (Raw #188)
+2026-05-15 10:07:16,481 INFO: Saved rank 20 for player 486 from KeepTradeCut
+2026-05-15 10:07:16,481 INFO: [KeepTradeCut SF] 2026 Relative #20 -> Zachariah Branch (Raw #193)
+2026-05-15 10:07:16,483 INFO: Saved rank 21 for player 490 from KeepTradeCut
+2026-05-15 10:07:16,483 INFO: [KeepTradeCut SF] 2026 Relative #21 -> Chris Brazzell II (Raw #199)
+2026-05-15 10:07:16,484 INFO: Saved rank 22 for player 485 from KeepTradeCut
+2026-05-15 10:07:16,484 INFO: [KeepTradeCut SF] 2026 Relative #22 -> Emmett Johnson (Raw #205)
+2026-05-15 10:07:16,486 INFO: Saved rank 23 for player 498 from KeepTradeCut
+2026-05-15 10:07:16,486 INFO: [KeepTradeCut SF] 2026 Relative #23 -> Skyler Bell (Raw #207)
+2026-05-15 10:07:16,487 INFO: Saved rank 24 for player 493 from KeepTradeCut
+2026-05-15 10:07:16,488 INFO: [KeepTradeCut SF] 2026 Relative #24 -> Kaytron Allen (Raw #210)
+2026-05-15 10:07:16,489 INFO: Saved rank 25 for player 492 from KeepTradeCut
+2026-05-15 10:07:16,489 INFO: [KeepTradeCut SF] 2026 Relative #25 -> Mike Washington Jr. (Raw #223)
+2026-05-15 10:07:16,490 INFO: Saved rank 26 for player 496 from KeepTradeCut
+2026-05-15 10:07:16,490 INFO: [KeepTradeCut SF] 2026 Relative #26 -> Ja'Kobi Lane (Raw #229)
+2026-05-15 10:07:16,492 INFO: Saved rank 27 for player 499 from KeepTradeCut
+2026-05-15 10:07:16,492 INFO: [KeepTradeCut SF] 2026 Relative #27 -> Max Klare (Raw #260)
+2026-05-15 10:07:16,493 INFO: Saved rank 28 for player 502 from KeepTradeCut
+2026-05-15 10:07:16,493 INFO: [KeepTradeCut SF] 2026 Relative #28 -> Ted Hurst (Raw #264)
+2026-05-15 10:07:16,495 INFO: Saved rank 29 for player 538 from KeepTradeCut
+2026-05-15 10:07:16,495 INFO: [KeepTradeCut SF] 2026 Relative #29 -> De'Zhaun Stribling (Raw #279)
+2026-05-15 10:07:16,496 INFO: Saved rank 30 for player 528 from KeepTradeCut
+2026-05-15 10:07:16,496 INFO: [KeepTradeCut SF] 2026 Relative #30 -> Kevin Coleman (Raw #312)
+2026-05-15 10:07:16,497 INFO: Saved rank 31 for player 514 from KeepTradeCut
+2026-05-15 10:07:16,497 INFO: [KeepTradeCut SF] 2026 Relative #31 -> Cade Klubnik (Raw #313)
+2026-05-15 10:07:16,499 INFO: Saved rank 32 for player 494 from KeepTradeCut
+2026-05-15 10:07:16,499 INFO: [KeepTradeCut SF] 2026 Relative #32 -> Garrett Nussmeier (Raw #316)
+2026-05-15 10:07:16,501 INFO: Saved rank 33 for player 501 from KeepTradeCut
+2026-05-15 10:07:16,501 INFO: [KeepTradeCut SF] 2026 Relative #33 -> Demond Claiborne (Raw #322)
+2026-05-15 10:07:16,503 INFO: Saved rank 34 for player 522 from KeepTradeCut
+2026-05-15 10:07:16,503 INFO: [KeepTradeCut SF] 2026 Relative #34 -> Justin Joly (Raw #366)
+2026-05-15 10:07:16,504 INFO: Saved rank 35 for player 524 from KeepTradeCut
+2026-05-15 10:07:16,504 INFO: [KeepTradeCut SF] 2026 Relative #35 -> Carson Beck (Raw #371)
+2026-05-15 10:07:16,506 INFO: Saved rank 36 for player 519 from KeepTradeCut
+2026-05-15 10:07:16,506 INFO: [KeepTradeCut SF] 2026 Relative #36 -> Drew Allar (Raw #381)
+2026-05-15 10:07:16,507 INFO: Saved rank 37 for player 523 from KeepTradeCut
+2026-05-15 10:07:16,507 INFO: [KeepTradeCut SF] 2026 Relative #37 -> Brenen Thompson (Raw #383)
+2026-05-15 10:07:16,508 INFO: Saved rank 38 for player 533 from KeepTradeCut
+2026-05-15 10:07:16,509 INFO: [KeepTradeCut SF] 2026 Relative #38 -> Kaelon Black (Raw #392)
+2026-05-15 10:07:16,510 INFO: Saved rank 39 for player 500 from KeepTradeCut
+2026-05-15 10:07:16,510 INFO: [KeepTradeCut SF] 2026 Relative #39 -> Michael Trigg (Raw #400)
+2026-05-15 10:07:16,511 INFO: Saved rank 40 for player 569 from KeepTradeCut
+2026-05-15 10:07:16,511 INFO: [KeepTradeCut SF] 2026 Relative #40 -> Zavion Thomas (Raw #401)
+2026-05-15 10:07:16,513 INFO: Saved rank 41 for player 532 from KeepTradeCut
+2026-05-15 10:07:16,513 INFO: [KeepTradeCut SF] 2026 Relative #41 -> Eli Raridon (Raw #415)
+2026-05-15 10:07:16,514 INFO: Saved rank 42 for player 516 from KeepTradeCut
+2026-05-15 10:07:16,514 INFO: [KeepTradeCut SF] 2026 Relative #42 -> Bryce Lance (Raw #418)
+2026-05-15 10:07:16,516 INFO: Saved rank 43 for player 527 from KeepTradeCut
+2026-05-15 10:07:16,516 INFO: [KeepTradeCut SF] 2026 Relative #43 -> Oscar Delp (Raw #421)
+2026-05-15 10:07:16,517 INFO: Saved rank 44 for player 505 from KeepTradeCut
+2026-05-15 10:07:16,517 INFO: [KeepTradeCut SF] 2026 Relative #44 -> Deion Burks (Raw #425)
+2026-05-15 10:07:16,519 INFO: Saved rank 45 for player 508 from KeepTradeCut
+2026-05-15 10:07:16,519 INFO: [KeepTradeCut SF] 2026 Relative #45 -> Le'Veon Moss (Raw #436)
+2026-05-15 10:07:16,520 INFO: Saved rank 46 for player 584 from KeepTradeCut
+2026-05-15 10:07:16,520 INFO: [KeepTradeCut SF] 2026 Relative #46 -> Caleb Douglas (Raw #457)
+2026-05-15 10:07:16,521 INFO: Saved rank 47 for player 542 from KeepTradeCut
+2026-05-15 10:07:16,522 INFO: [KeepTradeCut SF] 2026 Relative #47 -> Eli Heidenreich (Raw #459)
+2026-05-15 10:07:16,523 INFO: Saved rank 48 for player 546 from KeepTradeCut
+2026-05-15 10:07:16,523 INFO: [KeepTradeCut SF] 2026 Relative #48 -> Adam Randall (Raw #461)
+2026-05-15 10:07:16,524 INFO: Saved rank 49 for player 506 from KeepTradeCut
+2026-05-15 10:07:16,524 INFO: [KeepTradeCut SF] 2026 Relative #49 -> Seth McGowan (Raw #467)
+2026-05-15 10:07:16,525 INFO: Saved rank 50 for player 510 from KeepTradeCut
+2026-05-15 10:07:16,525 INFO: [KeepTradeCut SF] 2026 Relative #50 -> Jam Miller (Raw #471)
+2026-05-15 10:07:16,527 INFO: Saved rank 51 for player 511 from KeepTradeCut
+2026-05-15 10:07:16,527 INFO: [KeepTradeCut SF] 2026 Relative #51 -> J'Mari Taylor (Raw #473)
+2026-05-15 10:07:16,528 INFO: Saved rank 52 for player 529 from KeepTradeCut
+2026-05-15 10:07:16,528 INFO: [KeepTradeCut SF] 2026 Relative #52 -> Cole Payton (Raw #475)
+2026-05-15 10:07:16,530 INFO: Saved rank 53 for player 507 from KeepTradeCut
+2026-05-15 10:07:16,530 INFO: [KeepTradeCut SF] 2026 Relative #53 -> CJ Daniels (Raw #477)
+2026-05-15 10:07:16,531 INFO: Saved rank 54 for player 504 from KeepTradeCut
+2026-05-15 10:07:16,532 INFO: [KeepTradeCut SF] 2026 Relative #54 -> Jack Endries (Raw #478)
+2026-05-15 10:07:16,533 INFO: Saved rank 55 for player 526 from KeepTradeCut
+2026-05-15 10:07:16,533 INFO: [KeepTradeCut SF] 2026 Relative #55 -> Taylen Green (Raw #480)
+2026-05-15 10:07:16,535 INFO: Saved rank 56 for player 509 from KeepTradeCut
+2026-05-15 10:07:16,535 INFO: [KeepTradeCut SF] 2026 Relative #56 -> Barion Brown (Raw #487)
+2026-05-15 10:07:16,536 INFO: Saved rank 57 for player 525 from KeepTradeCut
+2026-05-15 10:07:16,537 INFO: [KeepTradeCut SF] 2026 Relative #57 -> Sam Roush (Raw #550)
+2026-05-15 10:07:16,538 INFO: Saved rank 1 for player 471 from KeepTradeCut 1QB
+2026-05-15 10:07:16,538 INFO: [KeepTradeCut 1QB] 2026 Relative #1 -> Jeremiyah Love (Raw #10)
+2026-05-15 10:07:16,539 INFO: Saved rank 2 for player 473 from KeepTradeCut 1QB
+2026-05-15 10:07:16,540 INFO: [KeepTradeCut 1QB] 2026 Relative #2 -> Carnell Tate (Raw #29)
+2026-05-15 10:07:16,541 INFO: Saved rank 3 for player 475 from KeepTradeCut 1QB
+2026-05-15 10:07:16,541 INFO: [KeepTradeCut 1QB] 2026 Relative #3 -> Jordyn Tyson (Raw #42)
+2026-05-15 10:07:16,543 INFO: Saved rank 4 for player 474 from KeepTradeCut 1QB
+2026-05-15 10:07:16,543 INFO: [KeepTradeCut 1QB] 2026 Relative #4 -> Makai Lemon (Raw #46)
+2026-05-15 10:07:16,544 INFO: Saved rank 5 for player 479 from KeepTradeCut 1QB
+2026-05-15 10:07:16,544 INFO: [KeepTradeCut 1QB] 2026 Relative #5 -> Jadarian Price (Raw #66)
+2026-05-15 10:07:16,546 INFO: Saved rank 6 for player 477 from KeepTradeCut 1QB
+2026-05-15 10:07:16,546 INFO: [KeepTradeCut 1QB] 2026 Relative #6 -> KC Concepcion (Raw #73)
+2026-05-15 10:07:16,547 INFO: Saved rank 7 for player 476 from KeepTradeCut 1QB
+2026-05-15 10:07:16,548 INFO: [KeepTradeCut 1QB] 2026 Relative #7 -> Kenyon Sadiq (Raw #86)
+2026-05-15 10:07:16,549 INFO: Saved rank 8 for player 480 from KeepTradeCut 1QB
+2026-05-15 10:07:16,549 INFO: [KeepTradeCut 1QB] 2026 Relative #8 -> Omar Cooper Jr. (Raw #87)
+2026-05-15 10:07:16,551 INFO: Saved rank 9 for player 472 from KeepTradeCut 1QB
+2026-05-15 10:07:16,551 INFO: [KeepTradeCut 1QB] 2026 Relative #9 -> Fernando Mendoza (Raw #90)
+2026-05-15 10:07:16,552 INFO: Saved rank 10 for player 489 from KeepTradeCut 1QB
+2026-05-15 10:07:16,552 INFO: [KeepTradeCut 1QB] 2026 Relative #10 -> Eli Stowers (Raw #106)
+2026-05-15 10:07:16,554 INFO: Saved rank 11 for player 478 from KeepTradeCut 1QB
+2026-05-15 10:07:16,554 INFO: [KeepTradeCut 1QB] 2026 Relative #11 -> Denzel Boston (Raw #110)
+2026-05-15 10:07:16,555 INFO: Saved rank 12 for player 481 from KeepTradeCut 1QB
+2026-05-15 10:07:16,556 INFO: [KeepTradeCut 1QB] 2026 Relative #12 -> Jonah Coleman (Raw #142)
+2026-05-15 10:07:16,557 INFO: Saved rank 13 for player 491 from KeepTradeCut 1QB
+2026-05-15 10:07:16,557 INFO: [KeepTradeCut 1QB] 2026 Relative #13 -> Chris Bell (Raw #153)
+2026-05-15 10:07:16,558 INFO: Saved rank 14 for player 483 from KeepTradeCut 1QB
+2026-05-15 10:07:16,559 INFO: [KeepTradeCut 1QB] 2026 Relative #14 -> Nicholas Singleton (Raw #157)
+2026-05-15 10:07:16,560 INFO: Saved rank 15 for player 495 from KeepTradeCut 1QB
+2026-05-15 10:07:16,560 INFO: [KeepTradeCut 1QB] 2026 Relative #15 -> Germie Bernard (Raw #160)
+2026-05-15 10:07:16,561 INFO: Saved rank 16 for player 484 from KeepTradeCut 1QB
+2026-05-15 10:07:16,561 INFO: [KeepTradeCut 1QB] 2026 Relative #16 -> Elijah Sarratt (Raw #180)
+2026-05-15 10:07:16,563 INFO: Saved rank 17 for player 486 from KeepTradeCut 1QB
+2026-05-15 10:07:16,563 INFO: [KeepTradeCut 1QB] 2026 Relative #17 -> Zachariah Branch (Raw #187)
+2026-05-15 10:07:16,564 INFO: Saved rank 18 for player 487 from KeepTradeCut 1QB
+2026-05-15 10:07:16,565 INFO: [KeepTradeCut 1QB] 2026 Relative #18 -> Malachi Fields (Raw #191)
+2026-05-15 10:07:16,566 INFO: Saved rank 19 for player 482 from KeepTradeCut 1QB
+2026-05-15 10:07:16,566 INFO: [KeepTradeCut 1QB] 2026 Relative #19 -> Ty Simpson (Raw #193)
+2026-05-15 10:07:16,568 INFO: Saved rank 20 for player 490 from KeepTradeCut 1QB
+2026-05-15 10:07:16,568 INFO: [KeepTradeCut 1QB] 2026 Relative #20 -> Chris Brazzell II (Raw #195)
+2026-05-15 10:07:16,569 INFO: Saved rank 21 for player 485 from KeepTradeCut 1QB
+2026-05-15 10:07:16,570 INFO: [KeepTradeCut 1QB] 2026 Relative #21 -> Emmett Johnson (Raw #196)
+2026-05-15 10:07:16,571 INFO: Saved rank 22 for player 497 from KeepTradeCut 1QB
+2026-05-15 10:07:16,571 INFO: [KeepTradeCut 1QB] 2026 Relative #22 -> Antonio Williams (Raw #199)
+2026-05-15 10:07:16,573 INFO: Saved rank 23 for player 493 from KeepTradeCut 1QB
+2026-05-15 10:07:16,573 INFO: [KeepTradeCut 1QB] 2026 Relative #23 -> Kaytron Allen (Raw #206)
+2026-05-15 10:07:16,574 INFO: Saved rank 24 for player 498 from KeepTradeCut 1QB
+2026-05-15 10:07:16,574 INFO: [KeepTradeCut 1QB] 2026 Relative #24 -> Skyler Bell (Raw #212)
+2026-05-15 10:07:16,575 INFO: Saved rank 25 for player 492 from KeepTradeCut 1QB
+2026-05-15 10:07:16,575 INFO: [KeepTradeCut 1QB] 2026 Relative #25 -> Mike Washington Jr. (Raw #219)
+2026-05-15 10:07:16,577 INFO: Saved rank 26 for player 496 from KeepTradeCut 1QB
+2026-05-15 10:07:16,577 INFO: [KeepTradeCut 1QB] 2026 Relative #26 -> Ja'Kobi Lane (Raw #226)
+2026-05-15 10:07:16,578 INFO: Saved rank 27 for player 499 from KeepTradeCut 1QB
+2026-05-15 10:07:16,578 INFO: [KeepTradeCut 1QB] 2026 Relative #27 -> Max Klare (Raw #271)
+2026-05-15 10:07:16,580 INFO: Saved rank 28 for player 502 from KeepTradeCut 1QB
+2026-05-15 10:07:16,580 INFO: [KeepTradeCut 1QB] 2026 Relative #28 -> Ted Hurst (Raw #280)
+2026-05-15 10:07:16,581 INFO: Saved rank 29 for player 528 from KeepTradeCut 1QB
+2026-05-15 10:07:16,581 INFO: [KeepTradeCut 1QB] 2026 Relative #29 -> Kevin Coleman (Raw #307)
+2026-05-15 10:07:16,582 INFO: Saved rank 30 for player 501 from KeepTradeCut 1QB
+2026-05-15 10:07:16,582 INFO: [KeepTradeCut 1QB] 2026 Relative #30 -> Demond Claiborne (Raw #313)
+2026-05-15 10:07:16,584 INFO: Saved rank 31 for player 538 from KeepTradeCut 1QB
+2026-05-15 10:07:16,584 INFO: [KeepTradeCut 1QB] 2026 Relative #31 -> De'Zhaun Stribling (Raw #318)
+2026-05-15 10:07:16,585 INFO: Saved rank 32 for player 494 from KeepTradeCut 1QB
+2026-05-15 10:07:16,585 INFO: [KeepTradeCut 1QB] 2026 Relative #32 -> Garrett Nussmeier (Raw #353)
+2026-05-15 10:07:16,587 INFO: Saved rank 33 for player 500 from KeepTradeCut 1QB
+2026-05-15 10:07:16,587 INFO: [KeepTradeCut 1QB] 2026 Relative #33 -> Michael Trigg (Raw #365)
+2026-05-15 10:07:16,588 INFO: Saved rank 34 for player 522 from KeepTradeCut 1QB
+2026-05-15 10:07:16,588 INFO: [KeepTradeCut 1QB] 2026 Relative #34 -> Justin Joly (Raw #375)
+2026-05-15 10:07:16,590 INFO: Saved rank 35 for player 523 from KeepTradeCut 1QB
+2026-05-15 10:07:16,590 INFO: [KeepTradeCut 1QB] 2026 Relative #35 -> Brenen Thompson (Raw #394)
+2026-05-15 10:07:16,591 INFO: Saved rank 36 for player 533 from KeepTradeCut 1QB
+2026-05-15 10:07:16,591 INFO: [KeepTradeCut 1QB] 2026 Relative #36 -> Kaelon Black (Raw #398)
+2026-05-15 10:07:16,592 INFO: Saved rank 37 for player 508 from KeepTradeCut 1QB
+2026-05-15 10:07:16,593 INFO: [KeepTradeCut 1QB] 2026 Relative #37 -> Le'Veon Moss (Raw #407)
+2026-05-15 10:07:16,594 INFO: Saved rank 38 for player 532 from KeepTradeCut 1QB
+2026-05-15 10:07:16,594 INFO: [KeepTradeCut 1QB] 2026 Relative #38 -> Eli Raridon (Raw #408)
+2026-05-15 10:07:16,595 INFO: Saved rank 39 for player 569 from KeepTradeCut 1QB
+2026-05-15 10:07:16,595 INFO: [KeepTradeCut 1QB] 2026 Relative #39 -> Zavion Thomas (Raw #413)
+2026-05-15 10:07:16,597 INFO: Saved rank 40 for player 505 from KeepTradeCut 1QB
+2026-05-15 10:07:16,597 INFO: [KeepTradeCut 1QB] 2026 Relative #40 -> Deion Burks (Raw #414)
+2026-05-15 10:07:16,598 INFO: Saved rank 41 for player 516 from KeepTradeCut 1QB
+2026-05-15 10:07:16,598 INFO: [KeepTradeCut 1QB] 2026 Relative #41 -> Bryce Lance (Raw #417)
+2026-05-15 10:07:16,600 INFO: Saved rank 42 for player 514 from KeepTradeCut 1QB
+2026-05-15 10:07:16,600 INFO: [KeepTradeCut 1QB] 2026 Relative #42 -> Cade Klubnik (Raw #424)
+2026-05-15 10:07:16,601 INFO: Saved rank 43 for player 527 from KeepTradeCut 1QB
+2026-05-15 10:07:16,601 INFO: [KeepTradeCut 1QB] 2026 Relative #43 -> Oscar Delp (Raw #434)
+2026-05-15 10:07:16,603 INFO: Saved rank 44 for player 506 from KeepTradeCut 1QB
+2026-05-15 10:07:16,603 INFO: [KeepTradeCut 1QB] 2026 Relative #44 -> Seth McGowan (Raw #442)
+2026-05-15 10:07:16,604 INFO: Saved rank 45 for player 542 from KeepTradeCut 1QB
+2026-05-15 10:07:16,604 INFO: [KeepTradeCut 1QB] 2026 Relative #45 -> Eli Heidenreich (Raw #446)
+2026-05-15 10:07:16,605 INFO: Saved rank 46 for player 584 from KeepTradeCut 1QB
+2026-05-15 10:07:16,606 INFO: [KeepTradeCut 1QB] 2026 Relative #46 -> Caleb Douglas (Raw #447)
+2026-05-15 10:07:16,607 INFO: Saved rank 47 for player 510 from KeepTradeCut 1QB
+2026-05-15 10:07:16,607 INFO: [KeepTradeCut 1QB] 2026 Relative #47 -> Jam Miller (Raw #450)
+2026-05-15 10:07:16,608 INFO: Saved rank 48 for player 507 from KeepTradeCut 1QB
+2026-05-15 10:07:16,608 INFO: [KeepTradeCut 1QB] 2026 Relative #48 -> CJ Daniels (Raw #456)
+2026-05-15 10:07:16,610 INFO: Saved rank 49 for player 511 from KeepTradeCut 1QB
+2026-05-15 10:07:16,610 INFO: [KeepTradeCut 1QB] 2026 Relative #49 -> J'Mari Taylor (Raw #460)
+2026-05-15 10:07:16,612 INFO: Saved rank 50 for player 504 from KeepTradeCut 1QB
+2026-05-15 10:07:16,612 INFO: [KeepTradeCut 1QB] 2026 Relative #50 -> Jack Endries (Raw #464)
+2026-05-15 10:07:16,613 INFO: Saved rank 51 for player 546 from KeepTradeCut 1QB
+2026-05-15 10:07:16,613 INFO: [KeepTradeCut 1QB] 2026 Relative #51 -> Adam Randall (Raw #465)
+2026-05-15 10:07:16,615 INFO: Saved rank 52 for player 509 from KeepTradeCut 1QB
+2026-05-15 10:07:16,615 INFO: [KeepTradeCut 1QB] 2026 Relative #52 -> Barion Brown (Raw #479)
+2026-05-15 10:07:16,617 INFO: Saved rank 53 for player 525 from KeepTradeCut 1QB
+2026-05-15 10:07:16,617 INFO: [KeepTradeCut 1QB] 2026 Relative #53 -> Sam Roush (Raw #538)
+2026-05-15 10:07:16,618 INFO: Saved rank 54 for player 526 from KeepTradeCut 1QB
+2026-05-15 10:07:16,618 INFO: [KeepTradeCut 1QB] 2026 Relative #54 -> Taylen Green (Raw #730)
+2026-05-15 10:07:16,620 INFO: Saved rank 55 for player 529 from KeepTradeCut 1QB
+2026-05-15 10:07:16,620 INFO: [KeepTradeCut 1QB] 2026 Relative #55 -> Cole Payton (Raw #732)
+2026-05-15 10:07:16,621 INFO: Saved rank 56 for player 519 from KeepTradeCut 1QB
+2026-05-15 10:07:16,621 INFO: [KeepTradeCut 1QB] 2026 Relative #56 -> Drew Allar (Raw #739)
+2026-05-15 10:07:16,623 INFO: Saved rank 57 for player 524 from KeepTradeCut 1QB
+2026-05-15 10:07:16,623 INFO: [KeepTradeCut 1QB] 2026 Relative #57 -> Carson Beck (Raw #749)
+2026-05-15 10:07:16,882 INFO:   KTC (SF + 1QB): OK
+2026-05-15 10:07:16,883 INFO: --- FantasyCalc (1QB+SF) ---
+2026-05-15 10:07:19,768 INFO:   FantasyCalc (1QB+SF): OK
+2026-05-15 10:07:19,768 INFO: --- DynastyNerds ---
+2026-05-15 10:07:48,176 INFO:   DynastyNerds: OK
+2026-05-15 10:07:48,176 INFO: --- FantasyPros ---
+2026-05-15 10:07:51,930 INFO:   [FantasyPros] 2026 Relative #1 -> Jeremiyah Love (Raw #32)
+2026-05-15 10:07:51,932 INFO:   [FantasyPros] 2026 Relative #2 -> Carnell Tate (Raw #64)
+2026-05-15 10:07:51,933 INFO:   [FantasyPros] 2026 Relative #3 -> Jadarian Price (Raw #67)
+2026-05-15 10:07:51,935 INFO:   [FantasyPros] 2026 Relative #4 -> Jordyn Tyson (Raw #70)
+2026-05-15 10:07:51,937 INFO:   [FantasyPros] 2026 Relative #5 -> Makai Lemon (Raw #75)
+2026-05-15 10:07:51,938 INFO:   [FantasyPros] 2026 Relative #6 -> KC Concepcion (Raw #133)
+2026-05-15 10:07:51,940 INFO:   [FantasyPros] 2026 Relative #7 -> Jonah Coleman (Raw #138)
+2026-05-15 10:07:51,941 INFO:   [FantasyPros] 2026 Relative #8 -> Denzel Boston (Raw #147)
+2026-05-15 10:07:51,943 INFO:   [FantasyPros] 2026 Relative #9 -> Omar Cooper Jr. (Raw #156)
+2026-05-15 10:07:51,944 INFO:   [FantasyPros] 2026 Relative #10 -> Kenyon Sadiq (Raw #158)
+2026-05-15 10:07:51,946 INFO:   [FantasyPros] 2026 Relative #11 -> Mike Washington Jr. (Raw #163)
+2026-05-15 10:07:51,948 INFO:   [FantasyPros] 2026 Relative #12 -> Emmett Johnson (Raw #164)
+2026-05-15 10:07:51,949 INFO:   [FantasyPros] 2026 Relative #13 -> Kaytron Allen (Raw #177)
+2026-05-15 10:07:51,951 INFO:   [FantasyPros] 2026 Relative #14 -> Antonio Williams (Raw #179)
+2026-05-15 10:07:51,952 INFO:   [FantasyPros] 2026 Relative #15 -> Eli Stowers (Raw #213)
+2026-05-15 10:07:51,954 INFO:   [FantasyPros] 2026 Relative #16 -> Demond Claiborne (Raw #214)
+2026-05-15 10:07:51,955 INFO:   [FantasyPros] 2026 Relative #17 -> Germie Bernard (Raw #217)
+2026-05-15 10:07:51,957 INFO:   [FantasyPros] 2026 Relative #18 -> Chris Bell (Raw #223)
+2026-05-15 10:07:51,959 INFO:   [FantasyPros] 2026 Relative #19 -> Elijah Sarratt (Raw #227)
+2026-05-15 10:07:51,960 INFO:   [FantasyPros] 2026 Relative #20 -> De'Zhaun Stribling (Raw #234)
+2026-05-15 10:07:51,962 INFO:   [FantasyPros] 2026 Relative #21 -> Fernando Mendoza (Raw #235)
+2026-05-15 10:07:51,963 INFO:   [FantasyPros] 2026 Relative #22 -> Zachariah Branch (Raw #238)
+2026-05-15 10:07:51,965 INFO:   [FantasyPros] 2026 Relative #23 -> Ja'Kobi Lane (Raw #242)
+2026-05-15 10:07:51,966 INFO:   [FantasyPros] 2026 Relative #24 -> Adam Randall (Raw #243)
+2026-05-15 10:07:51,968 INFO:   [FantasyPros] 2026 Relative #25 -> Chris Brazzell II (Raw #245)
+2026-05-15 10:07:51,970 INFO:   [FantasyPros] 2026 Relative #26 -> Skyler Bell (Raw #253)
+2026-05-15 10:07:51,971 INFO:   [FantasyPros] 2026 Relative #27 -> Malachi Fields (Raw #254)
+2026-05-15 10:07:51,973 INFO:   [FantasyPros] 2026 Relative #28 -> Ted Hurst (Raw #262)
+2026-05-15 10:07:51,975 INFO:   [FantasyPros] 2026 Relative #29 -> Keon Coleman (Raw #264)
+2026-05-15 10:07:51,976 INFO:   [FantasyPros] 2026 Relative #30 -> Max Klare (Raw #280)
+2026-05-15 10:07:51,978 INFO:   [FantasyPros] 2026 Relative #31 -> Seth McGowan (Raw #305)
+2026-05-15 10:07:51,980 INFO:   [FantasyPros] 2026 Relative #32 -> Oscar Delp (Raw #314)
+2026-05-15 10:07:51,981 INFO:   [FantasyPros] 2026 Relative #33 -> Ty Simpson (Raw #316)
+2026-05-15 10:07:51,983 INFO:   [FantasyPros] 2026 Relative #34 -> Kaelon Black (Raw #329)
+2026-05-15 10:07:51,985 INFO:   [FantasyPros] 2026 Relative #35 -> Caleb Douglas (Raw #347)
+2026-05-15 10:07:51,986 INFO:   [FantasyPros] 2026 Relative #36 -> Justin Joly (Raw #348)
+2026-05-15 10:07:51,988 INFO:   [FantasyPros] 2026 Relative #37 -> Eli Heidenreich (Raw #355)
+2026-05-15 10:07:51,989 INFO:   [FantasyPros] 2026 Relative #38 -> Bryce Lance (Raw #357)
+2026-05-15 10:07:51,991 INFO:   [FantasyPros] 2026 Relative #39 -> Brenen Thompson (Raw #362)
+2026-05-15 10:07:51,993 INFO:   [FantasyPros] 2026 Relative #40 -> Carson Beck (Raw #371)
+2026-05-15 10:07:51,994 INFO:   [FantasyPros] 2026 Relative #41 -> CJ Daniels (Raw #387)
+2026-05-15 10:07:51,996 INFO:   [FantasyPros] 2026 Relative #42 -> Cyrus Allen (Raw #392)
+2026-05-15 10:07:51,997 INFO:   [FantasyPros] 2026 Relative #43 -> Malik Benson (Raw #399)
+2026-05-15 10:07:51,999 INFO:   [FantasyPros] 2026 Relative #44 -> J'Mari Taylor (Raw #400)
+2026-05-15 10:07:52,001 INFO:   [FantasyPros] 2026 Relative #45 -> Zavion Thomas (Raw #407)
+2026-05-15 10:07:52,002 INFO:   [FantasyPros] 2026 Relative #46 -> Eli Raridon (Raw #412)
+2026-05-15 10:07:52,004 INFO:   [FantasyPros] 2026 Relative #47 -> Deion Burks (Raw #415)
+2026-05-15 10:07:52,005 INFO:   [FantasyPros] 2026 Relative #48 -> Sam Roush (Raw #418)
+2026-05-15 10:07:52,007 INFO:   [FantasyPros] 2026 Relative #49 -> Jam Miller (Raw #419)
+2026-05-15 10:07:52,008 INFO:   [FantasyPros] 2026 Relative #50 -> Marlin Klein (Raw #423)
+2026-05-15 10:07:52,008 INFO:   FantasyPros done: 50 matched
+2026-05-15 10:07:52,010 INFO:   FantasyPros: OK
+2026-05-15 10:07:52,010 INFO: --- Draft Boards (STTM) ---
+2026-05-15 10:07:52,434 INFO:   Draft Boards (STTM): OK
+2026-05-15 10:07:52,434 INFO: --- Consensus ---
+2026-05-15 10:07:52,458 INFO: [SF] Active sources: ['KeepTradeCut', 'FantasyCalc SF', 'FantasyPros SF', 'DynastyNerds SF']
+2026-05-15 10:07:52,462 INFO: [SF] Consensus saved — 105 ranked, 112 unranked
+2026-05-15 10:07:52,466 INFO: [1QB] Active sources: ['KeepTradeCut 1QB', 'FantasyCalc', 'FantasyPros', 'DynastyNerds']
+2026-05-15 10:07:52,470 INFO: [1QB] Consensus saved — 105 ranked, 112 unranked
+2026-05-15 10:07:52,470 INFO: Both SF and 1QB consensus complete.
+2026-05-15 10:07:52,470 INFO:   Consensus: OK
+2026-05-15 10:07:52,470 INFO: === Daily Rankings Update complete ===
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'
+Traceback (most recent call last):
+  File "C:\Users\Griffon Rubin\Desktop\Draft Tool\dynasty-scout\scrapers\daily_rankings_update.py", line 25, in <module>
+    logging.FileHandler("scrapers/rankings_update.log"),
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\Griffon Rubin\AppData\Local\Python\pythoncore-3.14-64\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Griffon Rubin\\Desktop\\Draft Tool\\dynasty-scout\\scrapers\\rankings_update.log'

@@ -46,7 +46,7 @@ class KTCRedraft(BaseRedraftScraper):
         players = json.loads(raw)
         print(f"[{self.SOURCE}] {len(players)} players in playersArray")
 
-        ranked = 0
+        entries = []
         for p in players:
             vals = p.get("oneQBValues") or {}
             rank = vals.get("startSitOverallRank")
@@ -58,17 +58,13 @@ class KTCRedraft(BaseRedraftScraper):
             if not pid:
                 self.note_unmatched(name, pos, p.get("team"), rank)
                 continue
-            self.save_ranking(
-                pid,
-                rank_overall=rank,
-                rank_positional=vals.get("startSitPositionalRank"),
-                tier=vals.get("startSitOverallTier"),
-                value=vals.get("startSitValue"),
-            )
-            ranked += 1
+            # KTC numbers its 365 seasonal players against a much larger
+            # universe (ranks reach 969), so store the dense position.
+            entries.append((pid, rank, pos, vals.get("startSitOverallTier")))
 
-        if ranked == 0:
+        if not entries:
             raise ValueError("no startSit ranks present — KTC changed their schema")
+        self.save_dense_rankings(entries)
 
 
 if __name__ == "__main__":

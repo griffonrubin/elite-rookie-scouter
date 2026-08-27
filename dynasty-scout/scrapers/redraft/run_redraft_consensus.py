@@ -26,17 +26,27 @@ from datetime import date
 DB_FILE = "dynasty_scout.db"
 FORMAT = "REDRAFT"
 
-# FantasyPros leads because its ECR is itself a 100+ expert consensus and it
-# is the only source covering the full board including K and D/ST.
+# Weighted to balance two different kinds of signal:
+#
+#   editorial boards — what analysts think should happen
+#   market ADP       — where players actually get drafted
+#
+# FantasyPros leads the editorial half because its ECR is itself a 100+
+# expert consensus and it is the only source covering the full board
+# including K and D/ST. Sleeper leads the market half on depth (1300+).
 SOURCE_WEIGHTS = {
-    "FantasyPros PPR":      0.20,
-    "ESPN Redraft":         0.15,
-    "KeepTradeCut Redraft": 0.15,
-    "CBS Redraft":          0.10,
-    "Yahoo Redraft":        0.10,
-    "Sleeper Redraft":      0.10,
-    "FantasyCalc Redraft":  0.10,
+    # editorial
+    "FantasyPros PPR":      0.18,
+    "ESPN Redraft":         0.12,
     "Flock Redraft":        0.10,
+    "CBS Redraft":          0.08,
+    # market / ADP
+    "Sleeper Redraft":      0.12,
+    "Yahoo Redraft":        0.10,
+    "Underdog Redraft":     0.10,
+    "FantasyCalc Redraft":  0.07,
+    "KeepTradeCut Redraft": 0.07,
+    "FFPC Redraft":         0.06,
 }
 
 # A player nobody ranked sits at the bottom of a source's distribution

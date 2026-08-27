@@ -6,6 +6,7 @@
 export type RedraftSortKey =
     | 'rank' | 'pos_rank' | 'avg_rank' | 'best' | 'worst' | 'sd' | 'sources'
     | 'fp' | 'ktc' | 'fc' | 'espn' | 'yahoo' | 'cbs' | 'sleeper' | 'flock'
+    | 'underdog' | 'ffpc'
     | 'proj' | 'proj_ppg'
     | 'pts25' | 'ppg25' | 'fin25' | 'fin25_ov'
     | 'pts24' | 'pts23' | 'pts22' | 'pts21'
@@ -41,7 +42,9 @@ const CBS:     RedraftColDef = { key: 'cbs_rank',     label: 'CBS',   subLabel: 
 const YAHOO:   RedraftColDef = { key: 'yahoo_rank',   label: 'YHO',   subLabel: 'PPR',  sortKey: 'yahoo',   tooltip: 'Yahoo — PPR redraft ranking' };
 const SLEEPER: RedraftColDef = { key: 'sleeper_rank', label: 'SLP',   subLabel: 'ADP',  sortKey: 'sleeper', tooltip: 'Sleeper — draft position ranking' };
 const FC:      RedraftColDef = { key: 'fc_rank',      label: 'FC',    subLabel: 'Val',  sortKey: 'fc',      tooltip: 'FantasyCalc — market value ranking (redraft PPR)' };
-const FLOCK:   RedraftColDef = { key: 'flock_rank',   label: 'FLK',   subLabel: 'PPR',  sortKey: 'flock',   tooltip: 'Flock Fantasy — expert PPR redraft ranking' };
+const FLOCK:   RedraftColDef = { key: 'flock_rank',   label: 'FLK',   subLabel: 'Exp',  sortKey: 'flock',   tooltip: 'Flock Fantasy — their analysts own PPR board (an editorial ranking, not an ADP aggregate)' };
+const UNDERDOG: RedraftColDef = { key: 'underdog_rank', label: 'UD',  subLabel: 'ADP',  sortKey: 'underdog', tooltip: 'Underdog — best-ball average draft position' };
+const FFPC:    RedraftColDef = { key: 'ffpc_rank',    label: 'FFPC',  subLabel: 'ADP',  sortKey: 'ffpc',    tooltip: 'FFPC — high-stakes average draft position (leans TE-premium)' };
 
 // ── Fantasy production atoms ─────────────────────────────────────────────────
 const PTS25: RedraftColDef = { key: 'pts25', label: 'Pts',  subLabel: "'25",   sortKey: 'pts25', tooltip: 'Total PPR fantasy points scored in the 2025 season' };
@@ -115,7 +118,9 @@ function productionColDefs(pos: string): RedraftColDef[] {
 export function getRedraftColDefs(dataset: RedraftDataset, pos: string): RedraftColDef[] {
     switch (dataset) {
         case 'sources':
-            return [FP, ESPN, KTC, CBS, YAHOO, SLEEPER, FC, FLOCK, AVG, BEST, WORST, SD, NSRC]; // 13
+            // Editorial boards first, then market ADP, then the spread summary.
+            return [FP, ESPN, FLOCK, CBS, SLEEPER, YAHOO, UNDERDOG, FFPC, KTC, FC,
+                    AVG, BEST, WORST, SD, NSRC]; // 15
         case 'production':
             return productionColDefs(pos);
         case 'seasons':
@@ -131,8 +136,9 @@ export function getRedraftColDefs(dataset: RedraftDataset, pos: string): Redraft
 /** CSS grid-template-columns for the scrollable (non-identity) section. */
 export function getRedraftGridTemplate(dataset: RedraftDataset, pos: string): string {
     if (dataset === 'sources') {
-        // 8 source ranks | avg best worst sd | src count
-        return '0.5fr 0.55fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.6fr 0.55fr 0.6fr 0.55fr 0.5fr';
+        // 10 source ranks | avg best worst sd | src count
+        return '0.5fr 0.55fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.55fr 0.5fr 0.5fr '
+             + '0.6fr 0.55fr 0.6fr 0.55fr 0.5fr';
     }
     if (dataset === 'seasons') {
         return '0.5fr 1fr 1fr 1fr 1fr 1fr 0.7fr';

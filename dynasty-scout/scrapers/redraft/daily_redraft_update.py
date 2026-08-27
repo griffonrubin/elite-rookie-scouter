@@ -26,13 +26,13 @@ import traceback
 from datetime import datetime
 
 from scrapers.redraft import (
-    cbs_redraft, espn_redraft, fantasycalc_redraft, flock_redraft,
-    fp_redraft, ktc_redraft, sleeper_redraft, yahoo_redraft,
+    cbs_redraft, espn_redraft, fantasycalc_redraft, flock_csv_import,
+    fp_redraft, ktc_redraft, sleeper_redraft,
 )
 
 # Ordered best-coverage-first so a partial run still produces a usable board.
-# Yahoo and Flock are auth-walled and expected to no-op; they stay in the list
-# so the run reports them and so enabling one needs no change here.
+# The Flock CSV import runs last and supplies four sources at once (Flock,
+# Yahoo, Underdog, FFPC); it no-ops when no export file is present.
 RANKING_SCRAPERS = [
     ("FantasyPros PPR", fp_redraft.FantasyProsRedraft),
     ("ESPN", espn_redraft.ESPNRedraft),
@@ -40,8 +40,7 @@ RANKING_SCRAPERS = [
     ("KeepTradeCut", ktc_redraft.KTCRedraft),
     ("CBS", cbs_redraft.CBSRedraft),
     ("FantasyCalc", fantasycalc_redraft.FantasyCalcRedraft),
-    ("Yahoo", yahoo_redraft.YahooRedraft),
-    ("Flock", flock_redraft.FlockRedraft),
+    ("Flock CSV (+Yahoo/Underdog/FFPC)", flock_csv_import.FlockCsvImport),
 ]
 
 

@@ -33,6 +33,8 @@ const BOARD_SQL = `
       MAX(CASE WHEN r.source = 'Sleeper Redraft'      THEN r.rank_overall END) AS sleeper_rank,
       MAX(CASE WHEN r.source = 'FantasyCalc Redraft'  THEN r.rank_overall END) AS fc_rank,
       MAX(CASE WHEN r.source = 'Flock Redraft'        THEN r.rank_overall END) AS flock_rank,
+      MAX(CASE WHEN r.source = 'Underdog Redraft'     THEN r.rank_overall END) AS underdog_rank,
+      MAX(CASE WHEN r.source = 'FFPC Redraft'         THEN r.rank_overall END) AS ffpc_rank,
       MAX(CASE WHEN r.source = 'FantasyPros PPR'      THEN r.tier END)         AS fp_tier
     FROM rankings r
     JOIN (
@@ -72,7 +74,8 @@ const BOARD_SQL = `
     c.rank_overall, c.rank_positional, c.avg_rank, c.best_rank, c.worst_rank,
     c.std_deviation, c.num_sources,
     lsr.fp_rank, lsr.espn_rank, lsr.ktc_rank, lsr.cbs_rank, lsr.yahoo_rank,
-    lsr.sleeper_rank, lsr.fc_rank, lsr.flock_rank, lsr.fp_tier,
+    lsr.sleeper_rank, lsr.fc_rank, lsr.flock_rank, lsr.underdog_rank,
+    lsr.ffpc_rank, lsr.fp_tier,
     s.fantasy_points_ppr AS pts25, s.ppg_ppr AS ppg25,
     s.finish_positional AS fin25, s.finish_overall AS fin25_ov,
     s.games AS games25, s.team AS team25,

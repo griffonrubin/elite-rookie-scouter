@@ -383,6 +383,8 @@ export interface RedraftPlayer {
     sleeper_rank: number | null;
     fc_rank: number | null;
     flock_rank: number | null;
+    underdog_rank: number | null;
+    ffpc_rank: number | null;
     fp_tier: number | null;
 
     // 2025 season

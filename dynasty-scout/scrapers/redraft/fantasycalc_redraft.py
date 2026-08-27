@@ -33,6 +33,7 @@ class FantasyCalcRedraft(BaseRedraftScraper):
 
         print(f"[{self.SOURCE}] {len(data)} players returned")
 
+        entries = []
         for row in data:
             p = row.get("player") or {}
             name = p.get("name")
@@ -45,13 +46,9 @@ class FantasyCalcRedraft(BaseRedraftScraper):
                 self.note_unmatched(name, pos, p.get("maybeTeam"), row.get("overallRank"))
                 continue
 
-            self.save_ranking(
-                pid,
-                rank_overall=row.get("overallRank"),
-                rank_positional=row.get("positionRank"),
-                tier=row.get("maybeTier"),
-                value=row.get("value"),
-            )
+            entries.append((pid, row.get("overallRank"), pos, row.get("maybeTier")))
+
+        self.save_dense_rankings(entries)
 
 
 if __name__ == "__main__":
