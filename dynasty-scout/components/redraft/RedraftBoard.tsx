@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Fuse from 'fuse.js';
-import { Search, X, Star, Gavel, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Search, X, Star, Gavel, ChevronUp, ChevronDown, ChevronsUpDown, LayoutList, LayoutGrid } from 'lucide-react';
 import { RedraftPlayer } from '@/lib/types';
 import { POSITION_PILL_ACTIVE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useDrafted, REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
 import { REDRAFT_WATCHLIST_KEY } from '@/components/WatchlistButton';
 import { RedraftMiniCard } from './RedraftMiniCard';
+import { RedraftBoxView } from './RedraftBoxView';
 import {
     getRedraftColDefs, getRedraftGridTemplate,
     RedraftDataset, RedraftSortKey, REDRAFT_POSITION_FILTERS,
@@ -94,6 +95,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
     const [dataset, setDataset] = useState<RedraftDataset>(
         (searchParams.get('view') as RedraftDataset) || 'snapshot'
     );
+    const [viewMode, setViewMode] = useState<'table' | 'box'>('table');
     const [sortKey, setSortKey] = useState<RedraftSortKey>('rank');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
     const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -102,6 +104,14 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
 
     const { drafted, reset: resetDrafted } = useDrafted(REDRAFT_DRAFTED_KEY);
     const debouncedQuery = useDebounce(searchQuery, 300);
+
+    // The stat table needs horizontal room; below `md` cards read far better.
+    useEffect(() => {
+        const apply = () => { if (window.innerWidth < 768) setViewMode('box'); };
+        apply();
+        window.addEventListener('resize', apply);
+        return () => window.removeEventListener('resize', apply);
+    }, []);
 
     // Watchlist lives in localStorage; mirror it so the filter can read it.
     useEffect(() => {
@@ -231,6 +241,27 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
 
                     {/* Toggles */}
                     <div className="flex items-center gap-1 ml-auto">
+                        <div className="flex items-center gap-0.5 bg-card border border-border/60 rounded-lg p-1 mr-1">
+                            {([
+                                ['table', LayoutList, 'List view'],
+                                ['box', LayoutGrid, 'Card view'],
+                            ] as const).map(([mode, Icon, label]) => (
+                                <button
+                                    key={mode}
+                                    type="button"
+                                    aria-label={label}
+                                    onClick={() => setViewMode(mode)}
+                                    className={cn(
+                                        'flex h-6 w-6 items-center justify-center rounded-md transition-all',
+                                        viewMode === mode
+                                            ? 'bg-sky-500/20 text-sky-400'
+                                            : 'text-muted-foreground hover:text-foreground hover:bg-accent/40',
+                                    )}
+                                >
+                                    <Icon className="h-3.5 w-3.5" />
+                                </button>
+                            ))}
+                        </div>
                         <button
                             onClick={() => setFavoritesOnly(v => !v)}
                             className={cn(
@@ -267,7 +298,8 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                     </div>
                 </div>
 
-                {/* Dataset lens picker */}
+                {/* Dataset lens picker — table view only; cards have a fixed layout */}
+                {viewMode === 'table' ? (
                 <div className="flex items-center gap-1 pt-1 border-t border-white/[0.05] overflow-x-auto">
                     {DATASETS.map(d => (
                         <Tooltip key={d.value} delayDuration={400}>
@@ -291,9 +323,17 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                         {visible.length} shown
                     </span>
                 </div>
+                ) : (
+                    <div className="flex items-center pt-1 border-t border-white/[0.05]">
+                        <span className="ml-auto text-[11px] text-muted-foreground/60">
+                            {visible.length} shown
+                        </span>
+                    </div>
+                )}
             </div>
 
             {/* ── Table ── */}
+            {viewMode === 'table' ? (
             <div className="rounded-2xl border border-white/[0.05] overflow-x-clip" style={{ background: 'var(--bg-card)' }}>
                 {/* Header row — mirrors RedraftMiniCard's identity + grid split */}
                 <div
@@ -380,6 +420,15 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                     ))
                 )}
             </div>
+            ) : (
+                visible.length === 0 ? (
+                    <div className="p-16 text-center text-muted-foreground text-sm border border-dashed border-border rounded-2xl">
+                        No players match these filters.
+                    </div>
+                ) : (
+                    <RedraftBoxView players={visible} drafted={drafted} />
+                )
+            )}
         </div>
     );
 }

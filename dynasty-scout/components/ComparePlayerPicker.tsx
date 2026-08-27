@@ -16,9 +16,13 @@ interface ComparePlayerPickerProps {
     currentSlugB?: string;
     currentNameA?: string;
     currentNameB?: string;
+    /** Search endpoint — redraft mode passes its own pool-scoped route. */
+    apiPath?: string;
+    /** Where picking a player navigates to. */
+    comparePath?: string;
 }
 
-function usePlayerSearch(query: string) {
+function usePlayerSearch(query: string, apiPath: string) {
     const [results, setResults] = useState<PlayerResult[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -26,12 +30,12 @@ function usePlayerSearch(query: string) {
         if (!query.trim() || query.length < 2) { setResults([]); return; }
         const controller = new AbortController();
         setLoading(true);
-        fetch(`/api/players/search?q=${encodeURIComponent(query)}&limit=8`, { signal: controller.signal })
+        fetch(`${apiPath}?q=${encodeURIComponent(query)}&limit=8`, { signal: controller.signal })
             .then(r => r.json())
             .then(data => { setResults(data || []); setLoading(false); })
             .catch(() => setLoading(false));
         return () => controller.abort();
-    }, [query]);
+    }, [query, apiPath]);
 
     return { results, loading };
 }
@@ -42,17 +46,21 @@ function PlayerSlot({
     currentSlug,
     currentName,
     otherSlug,
+    apiPath,
+    comparePath,
 }: {
     label: string;
     slugKey: 'a' | 'b';
     currentSlug?: string;
     currentName?: string;
     otherSlug?: string;
+    apiPath: string;
+    comparePath: string;
 }) {
     const router = useRouter();
     const [query, setQuery] = useState('');
     const [open, setOpen] = useState(false);
-    const { results } = usePlayerSearch(query);
+    const { results } = usePlayerSearch(query, apiPath);
 
     const select = (slug: string) => {
         setOpen(false);
@@ -65,7 +73,7 @@ function PlayerSlot({
             params.set('b', slug);
             if (otherSlug) params.set('a', otherSlug);
         }
-        router.push(`/compare?${params.toString()}`);
+        router.push(`${comparePath}?${params.toString()}`);
     };
 
     return (
@@ -123,7 +131,11 @@ function PlayerSlot({
     );
 }
 
-export function ComparePlayerPicker({ currentSlugA, currentSlugB, currentNameA, currentNameB }: ComparePlayerPickerProps) {
+export function ComparePlayerPicker({
+    currentSlugA, currentSlugB, currentNameA, currentNameB,
+    apiPath = '/api/players/search',
+    comparePath = '/compare',
+}: ComparePlayerPickerProps) {
     return (
         <div className="bg-card border border-border/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-8">
             <div className="flex items-center gap-2 mb-2 sm:mb-3">
@@ -138,6 +150,8 @@ export function ComparePlayerPicker({ currentSlugA, currentSlugB, currentNameA, 
                     currentSlug={currentSlugA}
                     currentName={currentNameA}
                     otherSlug={currentSlugB}
+                    apiPath={apiPath}
+                    comparePath={comparePath}
                 />
                 <div className="flex items-center justify-center py-0.5 sm:pt-7 sm:py-0">
                     <span className="text-sm sm:text-lg font-black text-muted-foreground/40">vs</span>
@@ -148,6 +162,8 @@ export function ComparePlayerPicker({ currentSlugA, currentSlugB, currentNameA, 
                     currentSlug={currentSlugB}
                     currentName={currentNameB}
                     otherSlug={currentSlugA}
+                    apiPath={apiPath}
+                    comparePath={comparePath}
                 />
             </div>
         </div>
