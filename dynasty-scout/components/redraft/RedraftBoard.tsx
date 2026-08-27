@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Fuse from 'fuse.js';
-import { Search, X, Star, Gavel, ChevronUp, ChevronDown, ChevronsUpDown, LayoutList, LayoutGrid } from 'lucide-react';
+import { Search, X, Star, Gavel, ChevronUp, ChevronDown, ChevronsUpDown, LayoutList, LayoutGrid, LayoutPanelTop } from 'lucide-react';
 import { RedraftPlayer } from '@/lib/types';
 import { POSITION_PILL_ACTIVE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ import { useDrafted, REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
 import { REDRAFT_WATCHLIST_KEY } from '@/components/WatchlistButton';
 import { RedraftMiniCard } from './RedraftMiniCard';
 import { RedraftBoxView } from './RedraftBoxView';
+import { RedraftDraftBoard } from './RedraftDraftBoard';
 import {
     getRedraftColDefs, getRedraftGridTemplate,
     RedraftDataset, RedraftSortKey, REDRAFT_POSITION_FILTERS,
@@ -98,7 +99,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
     const [dataset, setDataset] = useState<RedraftDataset>(
         (searchParams.get('view') as RedraftDataset) || 'snapshot'
     );
-    const [viewMode, setViewMode] = useState<'table' | 'box'>('table');
+    const [viewMode, setViewMode] = useState<'table' | 'box' | 'board'>('table');
     const [sortKey, setSortKey] = useState<RedraftSortKey>('rank');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
     const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -248,6 +249,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                             {([
                                 ['table', LayoutList, 'List view'],
                                 ['box', LayoutGrid, 'Card view'],
+                                ['board', LayoutPanelTop, 'Draft board'],
                             ] as const).map(([mode, Icon, label]) => (
                                 <button
                                     key={mode}
@@ -423,6 +425,8 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                     ))
                 )}
             </div>
+            ) : viewMode === 'board' ? (
+                <RedraftDraftBoard players={visible} />
             ) : (
                 visible.length === 0 ? (
                     <div className="p-16 text-center text-muted-foreground text-sm border border-dashed border-border rounded-2xl">

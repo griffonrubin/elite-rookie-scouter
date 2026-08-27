@@ -12,7 +12,7 @@ import { DraftedButton } from '@/components/DraftedButton';
 import { REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import {
-    getRedraftColDefs, getRedraftGridTemplate,
+    getRedraftColDefs, getRedraftGridTemplate, getRedraftTier,
     RedraftDataset, RedraftColDef,
 } from '@/lib/redraftColumns';
 
@@ -23,16 +23,6 @@ interface Props {
     positionFilter?: string;
     dataset?: RedraftDataset;
     isDrafted?: boolean;
-}
-
-/** Tier bands sized for a ~500-deep redraft board (roughly draft rounds). */
-function getTier(rank: number) {
-    if (rank <= 12)  return { label: 'Round 1',  border: 'rgba(249,115,22,0.5)' };
-    if (rank <= 36)  return { label: 'Rounds 2-3', border: 'rgba(34,197,94,0.5)' };
-    if (rank <= 72)  return { label: 'Rounds 4-6', border: 'rgba(56,189,248,0.5)' };
-    if (rank <= 120) return { label: 'Rounds 7-10', border: 'rgba(167,139,250,0.5)' };
-    if (rank <= 200) return { label: 'Late',      border: 'rgba(245,158,11,0.45)' };
-    return { label: 'Deep', border: 'rgba(71,85,105,0.3)' };
 }
 
 function getRankColor(rank: number): string {
@@ -98,7 +88,7 @@ function RedraftMiniCardInner({
 }: Props) {
     const router = useRouter();
     const pos = (player.position || '').toUpperCase();
-    const tier = getTier(rank);
+    const tier = getRedraftTier(rank);
     const cols = getRedraftColDefs(dataset, positionFilter);
     const grid = getRedraftGridTemplate(dataset, positionFilter);
     const isRookie = player.draft_year === 2026;
@@ -206,7 +196,7 @@ function RedraftMiniCardInner({
                 isDrafted && 'opacity-45',
             )}>
                 {/* Tier accent bar */}
-                <div className="absolute inset-y-0 left-0 w-[3px]" style={{ background: tier.border }} />
+                <div className="absolute inset-y-0 left-0 w-[3px]" style={{ background: tier.accent }} />
 
                 {/* Sticky identity group */}
                 <div className="sticky left-0 z-10 flex items-center self-stretch gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 lg:w-[340px]">

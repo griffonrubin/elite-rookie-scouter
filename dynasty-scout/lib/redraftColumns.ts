@@ -158,3 +158,32 @@ export function getRedraftGridTemplate(dataset: RedraftDataset, pos: string): st
 
 /** Positions the redraft board can filter to. */
 export const REDRAFT_POSITION_FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K', 'DST'] as const;
+
+// ── Shared tier bands ────────────────────────────────────────────────────────
+// Bands are expressed in draft rounds rather than arbitrary rank cutoffs, so
+// they stay meaningful on both the list and the draft board. Used by
+// RedraftMiniCard, RedraftBoxView and RedraftDraftBoard so a player's tier
+// colour is identical in every view.
+export interface RedraftTier {
+    label: string;
+    short: string;
+    /** Inclusive upper bound of the band, by overall rank. */
+    max: number;
+    accent: string;
+    border: string;
+    bg: string;
+    text: string;
+}
+
+export const REDRAFT_TIERS: RedraftTier[] = [
+    { label: 'Round 1',      short: 'R1',   max: 12,       accent: '#f97316', border: 'border-orange-500/70',  bg: 'bg-orange-500/[0.08]',  text: 'text-orange-400' },
+    { label: 'Rounds 2-3',   short: 'R2-3', max: 36,       accent: '#22c55e', border: 'border-emerald-500/60', bg: 'bg-emerald-500/[0.06]', text: 'text-emerald-400' },
+    { label: 'Rounds 4-6',   short: 'R4-6', max: 72,       accent: '#38bdf8', border: 'border-cyan-500/50',    bg: 'bg-cyan-500/[0.05]',    text: 'text-cyan-400' },
+    { label: 'Rounds 7-10',  short: 'R7-10', max: 120,     accent: '#a78bfa', border: 'border-violet-500/50',  bg: 'bg-violet-500/[0.05]',  text: 'text-violet-400' },
+    { label: 'Late',         short: 'Late', max: 200,      accent: '#f59e0b', border: 'border-amber-500/40',   bg: 'bg-amber-500/[0.05]',   text: 'text-amber-400' },
+    { label: 'Deep',         short: 'Deep', max: Infinity, accent: '#475569', border: 'border-border/25',      bg: 'bg-card/50',            text: 'text-muted-foreground/50' },
+];
+
+export function getRedraftTier(rank: number): RedraftTier {
+    return REDRAFT_TIERS.find(t => rank <= t.max) ?? REDRAFT_TIERS[REDRAFT_TIERS.length - 1];
+}

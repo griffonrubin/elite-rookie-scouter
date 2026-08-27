@@ -24,20 +24,38 @@ import {
 import { Tier, Player } from '@/lib/types';
 import { DraggablePlayerCard } from './DraggablePlayerCard';
 import { Button } from '@/components/ui/button';
-import { Plus, GripHorizontal, Search } from 'lucide-react';
+import { Plus, GripHorizontal, Search, Trash2 } from 'lucide-react';
 
 interface TierBuilderProps {
-    initialTiers?: Tier[];
+    /** 'rookie' (default) or 'redraft' — scopes which tiers are loaded and created. */
+    mode?: 'rookie' | 'redraft';
+    /** Endpoint for the pool of draggable players. */
+    playersApi?: string;
+    /** Position pills to offer; redraft adds K and DST. */
+    positions?: readonly string[];
+    /** Accent used for active controls. */
+    accent?: 'primary' | 'sky';
 }
 
-export function TierBuilder() {
+const DEFAULT_POSITIONS = ['ALL', 'QB', 'RB', 'WR', 'TE'] as const;
+
+/** Palette cycled through when creating a tier. */
+const TIER_COLORS = ['#f97316', '#38bdf8', '#22c55e', '#f59e0b', '#ef4444', '#a78bfa'];
+
+export function TierBuilder({
+    mode = 'rookie',
+    playersApi = '/api/players?limit=300',
+    positions = DEFAULT_POSITIONS,
+    accent = 'primary',
+}: TierBuilderProps = {}) {
     const [tiers, setTiers] = useState<Tier[]>([]);
     const [availablePlayers, setAvailablePlayers] = useState<Player[]>([]);
     const [activeId, setActiveId] = useState<number | null>(null);
     const [activePlayer, setActivePlayer] = useState<Player | null>(null);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
-    const [posFilter, setPosFilter] = useState<'ALL' | 'QB' | 'RB' | 'WR' | 'TE'>('ALL');
+    const [posFilter, setPosFilter] = useState<string>('ALL');
+    const [creating, setCreating] = useState(false);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -58,11 +76,12 @@ export function TierBuilder() {
             await fetchAvailablePlayers();
         };
         loadData();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mode, playersApi]);
 
     const fetchTiers = async () => {
         try {
-            const res = await fetch('/api/tiers');
+            const res = await fetch(`/api/tiers?mode=${mode}`);
             const data = await res.json();
             setTiers(data);
         } catch (error) {
@@ -72,7 +91,7 @@ export function TierBuilder() {
 
     const fetchAvailablePlayers = async () => {
         try {
-            const res = await fetch('/api/players?limit=300');
+            const res = await fetch(playersApi);
             const data = await res.json();
 
             // Filter out players already in tiers (this logic should ideally happen on backend or efficiently here)
@@ -233,7 +252,40 @@ export function TierBuilder() {
         return null;
     };
 
-    if (loading) return <div>Loading tiers...</div>;
+    const addTier = async () => {
+        setCreating(true);
+        try {
+            const res = await fetch('/api/tiers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tier_name: `Tier ${tiers.length + 1}`,
+                    tier_color: TIER_COLORS[tiers.length % TIER_COLORS.length],
+                    tier_order: tiers.length + 1,
+                    mode,
+                }),
+            });
+            if (!res.ok) throw new Error(`create failed: ${res.status}`);
+            await fetchTiers();
+        } catch (e) {
+            console.error('Failed to create tier', e);
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const removeTier = async (tierId: number) => {
+        // Optimistic — the players simply return to the available pool.
+        setTiers(prev => prev.filter(t => t.id !== tierId));
+        try {
+            await fetch(`/api/tiers/${tierId}`, { method: 'DELETE' });
+        } catch (e) {
+            console.error('Failed to delete tier', e);
+            fetchTiers();
+        }
+    };
+
+    if (loading) return <div className="py-16 text-center text-muted-foreground text-sm animate-pulse">Loading tiers…</div>;
 
     return (
         <DndContext
@@ -261,13 +313,17 @@ export function TierBuilder() {
                         </div>
                         {/* Position filters */}
                         <div className="flex gap-1">
-                            {(['ALL','QB','RB','WR','TE'] as const).map(pos => (
+                            {positions.map(pos => (
                                 <button
                                     key={pos}
                                     onClick={() => setPosFilter(pos)}
-                                    className={`px-2 py-1 rounded text-[10px] font-bold transition-colors ${posFilter === pos ? 'bg-primary text-white' : 'bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                                    className={`px-2 py-1 rounded text-[10px] font-bold transition-colors ${
+                                        posFilter === pos
+                                            ? (accent === 'sky' ? 'bg-sky-500 text-white' : 'bg-primary text-white')
+                                            : 'bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted'
+                                    }`}
                                 >
-                                    {pos}
+                                    {pos === 'DST' ? 'D/ST' : pos}
                                 </button>
                             ))}
                         </div>
@@ -297,8 +353,23 @@ export function TierBuilder() {
                 <div className="w-full md:w-2/3 space-y-4 md:space-y-6 overflow-y-auto pb-20">
                     <div className="flex justify-between items-center">
                         <h2 className="text-2xl font-bold tracking-tight">My Rankings</h2>
-                        <Button size="sm"><Plus className="w-4 h-4 mr-2" /> Add Tier</Button>
+                        <Button
+                            size="sm"
+                            onClick={addTier}
+                            disabled={creating}
+                            className={accent === 'sky' ? 'bg-sky-500 hover:bg-sky-600 text-white' : undefined}
+                        >
+                            <Plus className="w-4 h-4 mr-2" /> {creating ? 'Adding…' : 'Add Tier'}
+                        </Button>
                     </div>
+
+                    {tiers.length === 0 && (
+                        <div className="p-12 text-center border border-dashed border-border rounded-2xl">
+                            <div className="text-sm text-muted-foreground">
+                                No tiers yet — add one, then drag players in from the left.
+                            </div>
+                        </div>
+                    )}
 
                     <div className="space-y-5">
                         {tiers.map((tier, idx) => {
@@ -321,6 +392,15 @@ export function TierBuilder() {
                                         <span className="font-bold text-sm" style={{ color: accent }}>{tier.tier_name}</span>
                                         <span className="text-xs text-muted-foreground/40 font-semibold">({tier.players?.length || 0})</span>
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeTier(tier.id)}
+                                        title="Delete tier"
+                                        aria-label={`Delete ${tier.tier_name}`}
+                                        className="text-muted-foreground/30 hover:text-red-400 transition-colors p-1"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
                                 </div>
 
                                 {/* Sortable Area */}

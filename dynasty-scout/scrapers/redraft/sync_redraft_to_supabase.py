@@ -168,6 +168,8 @@ def ensure_schema(pg):
         "ALTER TABLE consensus_rankings ADD COLUMN IF NOT EXISTS rank_positional INTEGER",
         "ALTER TABLE consensus_rankings ADD COLUMN IF NOT EXISTS value REAL",
         "ALTER TABLE consensus_rankings ADD COLUMN IF NOT EXISTS sentiment_score REAL",
+        # Tier builder tables are shared by both modes; tiers need a discriminator.
+        "ALTER TABLE user_tiers ADD COLUMN IF NOT EXISTS mode TEXT DEFAULT 'rookie'",
     ):
         cur.execute(stmt)
     for stmt in INDEXES:

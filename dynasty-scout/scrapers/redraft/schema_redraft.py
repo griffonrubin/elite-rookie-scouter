@@ -78,6 +78,11 @@ CREATE TABLE IF NOT EXISTS projections (
 );
 """
 
+# The tier builder's tables are shared between both modes, so tiers need a
+# discriminator or a redraft tier would show up on the rookie board.
+# Existing rows default to 'rookie', leaving the rookie tier builder untouched.
+TIER_MODE_COLUMN = ("mode", "TEXT DEFAULT 'rookie'")
+
 INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_nss_player_season ON nfl_season_stats(player_id, season)",
     "CREATE INDEX IF NOT EXISTS idx_nss_season ON nfl_season_stats(season)",
@@ -109,6 +114,12 @@ def migrate():
 
     cursor.execute(NFL_SEASON_STATS)
     cursor.execute(PROJECTIONS)
+
+    name, coltype = TIER_MODE_COLUMN
+    if name not in existing_columns(cursor, "user_tiers"):
+        cursor.execute(f"ALTER TABLE user_tiers ADD COLUMN {name} {coltype}")
+        added.append(f"user_tiers.{name}")
+    cursor.execute("UPDATE user_tiers SET mode = 'rookie' WHERE mode IS NULL")
     for stmt in INDEXES:
         cursor.execute(stmt)
 

@@ -17,6 +17,7 @@ const ROOKIE_NAV = [
 const REDRAFT_NAV = [
   { href: '/redraft',         label: 'Board'   },
   { href: '/redraft/compare', label: 'Compare' },
+  { href: '/redraft/tiers',   label: 'Tiers'   },
 ] as const;
 
 /** Hrefs that are section roots — these need an exact match to be "active". */
