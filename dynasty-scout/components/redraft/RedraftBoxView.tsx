@@ -13,6 +13,7 @@ import { REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
 interface Props {
     players: RedraftPlayer[];
     drafted: Set<string>;
+    onToggleDrafted?: (slug: string) => void;
 }
 
 /** Four seasons of PPG as a tiny inline sparkline — shape over precision. */
@@ -57,7 +58,7 @@ function fmt(v: number | null | undefined, digits = 0): string {
     return digits > 0 ? Number(v).toFixed(digits) : Math.round(Number(v)).toLocaleString();
 }
 
-export function RedraftBoxView({ players, drafted }: Props) {
+export function RedraftBoxView({ players, drafted, onToggleDrafted }: Props) {
     return (
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {players.map((p, i) => {
@@ -90,6 +91,15 @@ export function RedraftBoxView({ players, drafted }: Props) {
                             background: 'var(--bg-card)',
                             animationDelay: `${Math.min(i * 30, 500)}ms`,
                         }}
+                        onContextMenu={(e) => {
+                            if (!onToggleDrafted) return;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onToggleDrafted(p.slug);
+                        }}
+                        title={isDrafted
+                            ? 'Right-click to put back on the board'
+                            : 'Right-click to mark drafted'}
                     >
                         {/* Position accent stripe */}
                         <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-2xl"
@@ -121,7 +131,10 @@ export function RedraftBoxView({ players, drafted }: Props) {
                             )}
                             <div className="min-w-0">
                                 <div className="flex items-center gap-1">
-                                    <span className="text-[13px] font-bold truncate group-hover:text-sky-400 transition-colors">
+                                    <span className={cn(
+                                        'text-[13px] font-bold truncate group-hover:text-sky-400 transition-colors',
+                                        isDrafted && 'line-through decoration-2 decoration-emerald-400/60',
+                                    )}>
                                         {p.full_name}
                                     </span>
                                     {isRookie && <GraduationCap className="w-3 h-3 text-primary/70 flex-shrink-0" />}

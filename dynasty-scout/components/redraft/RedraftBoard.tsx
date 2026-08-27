@@ -106,7 +106,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
     const [availableOnly, setAvailableOnly] = useState(false);
     const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
 
-    const { drafted, reset: resetDrafted } = useDrafted(REDRAFT_DRAFTED_KEY);
+    const { drafted, toggle: toggleDrafted, reset: resetDrafted } = useDrafted(REDRAFT_DRAFTED_KEY);
     const debouncedQuery = useDebounce(searchQuery, 300);
 
     // The stat table needs horizontal room; below `md` cards read far better.
@@ -325,12 +325,18 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                         </Tooltip>
                     ))}
                     <span className="ml-auto text-[11px] text-muted-foreground/60 whitespace-nowrap pl-3">
+                        <span className="hidden lg:inline text-muted-foreground/40 mr-3">
+                            Right-click a player to mark them drafted
+                        </span>
                         {visible.length} shown
                     </span>
                 </div>
                 ) : (
                     <div className="flex items-center pt-1 border-t border-white/[0.05]">
                         <span className="ml-auto text-[11px] text-muted-foreground/60">
+                            <span className="hidden lg:inline text-muted-foreground/40 mr-3">
+                                Right-click a player to mark them drafted
+                            </span>
                             {visible.length} shown
                         </span>
                     </div>
@@ -421,6 +427,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                             positionFilter={positionFilter}
                             dataset={dataset}
                             isDrafted={drafted.has(p.slug)}
+                            onToggleDrafted={toggleDrafted}
                         />
                     ))
                 )}
@@ -433,7 +440,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                         No players match these filters.
                     </div>
                 ) : (
-                    <RedraftBoxView players={visible} drafted={drafted} />
+                    <RedraftBoxView players={visible} drafted={drafted} onToggleDrafted={toggleDrafted} />
                 )
             )}
         </div>

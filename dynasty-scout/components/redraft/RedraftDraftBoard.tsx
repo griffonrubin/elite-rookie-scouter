@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Gavel } from 'lucide-react';
 import { RedraftPlayer } from '@/lib/types';
-import { POSITION_COLORS } from '@/lib/constants';
+import { POSITION_COLORS, POSITION_RAW, REDRAFT_POSITIONS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useDrafted, REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
-import { getRedraftTier, REDRAFT_TIERS } from '@/lib/redraftColumns';
+
 
 interface Props {
     players: RedraftPlayer[];
@@ -16,6 +16,17 @@ interface Props {
 /** Redraft leagues are usually 10 or 12 teams; 14 shows up in deeper formats. */
 const LEAGUE_SIZES = [8, 10, 12, 14, 16] as const;
 const DEFAULT_SIZE = 12;
+
+/** Cells are tinted by position — the convention on every draft board, and
+ *  it makes positional runs visible at a glance as the draft unfolds. */
+function positionStyle(pos: string) {
+    const c = POSITION_RAW[pos] || '#64748b';
+    return {
+        borderColor: `${c}66`,
+        background: `linear-gradient(160deg, ${c}1f 0%, ${c}0a 60%, transparent 100%)`,
+        accent: c,
+    };
+}
 
 /** "A. St. Brown" — keeps two-word surnames intact in a narrow cell. */
 function shortName(p: RedraftPlayer): string {
@@ -47,11 +58,11 @@ export function RedraftDraftBoard({ players }: Props) {
         <div className="space-y-2">
             {/* Legend + league size */}
             <div className="flex items-center gap-4 px-2 pb-1 flex-wrap">
-                <span className="text-muted-foreground/40 uppercase tracking-widest text-[9px] font-bold">Tier</span>
-                {REDRAFT_TIERS.map(t => (
-                    <span key={t.label} className="flex items-center gap-1 text-[10px] text-muted-foreground/60 font-semibold">
-                        <span className="inline-block w-2 h-2 rounded-sm" style={{ background: t.accent }} />
-                        {t.label}
+                <span className="text-muted-foreground/40 uppercase tracking-widest text-[9px] font-bold">Position</span>
+                {REDRAFT_POSITIONS.map(pos => (
+                    <span key={pos} className="flex items-center gap-1 text-[10px] text-muted-foreground/60 font-semibold">
+                        <span className="inline-block w-2 h-2 rounded-sm" style={{ background: POSITION_RAW[pos] }} />
+                        {pos === 'DST' ? 'D/ST' : pos}
                     </span>
                 ))}
 
@@ -105,9 +116,8 @@ export function RedraftDraftBoard({ players }: Props) {
                                         );
                                     }
 
-                                    const rank = player.board_rank ?? roundIdx * perRound + pickIdx + 1;
-                                    const tier = getRedraftTier(rank);
                                     const pos = (player.position || '').toUpperCase();
+                                    const style = positionStyle(pos);
                                     const isDrafted = drafted.has(player.slug);
 
                                     return (
@@ -117,10 +127,19 @@ export function RedraftDraftBoard({ players }: Props) {
                                             className={cn(
                                                 'group relative flex-1 min-w-[90px] flex flex-col rounded border px-2 py-1.5 cursor-pointer overflow-hidden',
                                                 'transition-all duration-150 hover:scale-[1.04] hover:z-10 hover:shadow-lg hover:shadow-black/40',
-                                                tier.border, tier.bg,
-                                                isDrafted && 'opacity-40',
+                                                isDrafted && 'opacity-40 grayscale',
                                             )}
-                                            style={{ minHeight: '62px' }}
+                                            style={{
+                                                minHeight: '62px',
+                                                borderColor: style.borderColor,
+                                                background: style.background,
+                                            }}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                toggle(player.slug);
+                                            }}
+                                            title={`${player.full_name} — right-click to ${isDrafted ? 'put back on the board' : 'mark drafted'}`}
                                         >
                                             {/* Mark drafted — hover only, so the grid stays clean */}
                                             <button
@@ -135,7 +154,10 @@ export function RedraftDraftBoard({ players }: Props) {
 
                                             {/* Pick slot + position */}
                                             <div className="flex items-center justify-between gap-1">
-                                                <span className={`text-[9px] font-black font-[var(--font-jetbrains),monospace] leading-none ${tier.text}`}>
+                                                <span
+                                                    className="text-[9px] font-black font-[var(--font-jetbrains),monospace] leading-none"
+                                                    style={{ color: style.accent }}
+                                                >
                                                     {pickLabel}
                                                 </span>
                                                 <span
@@ -150,7 +172,7 @@ export function RedraftDraftBoard({ players }: Props) {
                                             <div
                                                 className={cn(
                                                     'text-[11px] font-bold text-foreground leading-snug mt-1 group-hover:text-sky-400 transition-colors',
-                                                    isDrafted && 'line-through decoration-2',
+                                                    isDrafted && 'line-through decoration-2 decoration-emerald-400/60',
                                                 )}
                                                 title={player.full_name}
                                                 style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}

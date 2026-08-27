@@ -23,6 +23,11 @@ interface Props {
     positionFilter?: string;
     dataset?: RedraftDataset;
     isDrafted?: boolean;
+    /**
+     * Passed down from the board rather than each row calling useDrafted —
+     * 1300+ rows each subscribing to storage events would be wasteful.
+     */
+    onToggleDrafted?: (slug: string) => void;
 }
 
 function getRankColor(rank: number): string {
@@ -84,7 +89,7 @@ function num(v: number | null | undefined, digits = 0): string | null {
 
 function RedraftMiniCardInner({
     player, index, rank, positionFilter = 'ALL',
-    dataset = 'snapshot', isDrafted = false,
+    dataset = 'snapshot', isDrafted = false, onToggleDrafted,
 }: Props) {
     const router = useRouter();
     const pos = (player.position || '').toUpperCase();
@@ -187,8 +192,24 @@ function RedraftMiniCardInner({
     const headshot = player.nfl_headshot_url || player.headshot_url;
     const isEven = index % 2 === 0;
 
+    // Right-click anywhere on the row marks the player drafted — the fastest
+    // way to clear picks off the board while a live draft is running.
+    const handleContextMenu = (e: React.MouseEvent) => {
+        if (!onToggleDrafted) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onToggleDrafted(player.slug);
+    };
+
     return (
-        <Link href={`/redraft/players/${player.slug}`} className="block group">
+        <Link
+            href={`/redraft/players/${player.slug}`}
+            className="block group"
+            onContextMenu={handleContextMenu}
+            title={isDrafted
+                ? 'Right-click to put back on the board'
+                : 'Right-click to mark drafted'}
+        >
             <div className={cn(
                 'relative flex items-center px-4 py-3 transition-all duration-150 gap-3',
                 'border-b border-white/[0.04] hover:bg-white/[0.03]',
@@ -231,7 +252,10 @@ function RedraftMiniCardInner({
                         <HoverCardTrigger asChild>
                             <div className="flex-1 min-w-0 lg:w-[224px] lg:min-w-[224px] lg:flex-none cursor-default">
                                 <div className="flex items-center gap-1 sm:gap-1.5 mb-0.5 overflow-hidden">
-                                    <span className="text-[13px] sm:text-sm font-semibold text-foreground truncate group-hover:text-sky-400 transition-colors">
+                                    <span className={cn(
+                                        'text-[13px] sm:text-sm font-semibold text-foreground truncate group-hover:text-sky-400 transition-colors',
+                                        isDrafted && 'line-through decoration-2 decoration-emerald-400/60',
+                                    )}>
                                         {player.full_name}
                                     </span>
                                     {isRookie && (
