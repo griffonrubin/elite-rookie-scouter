@@ -16,6 +16,7 @@ const ROOKIE_NAV = [
 
 const REDRAFT_NAV = [
   { href: '/redraft',         label: 'Board'   },
+  { href: '/redraft/mock',    label: 'Mock'    },
   { href: '/redraft/compare', label: 'Compare' },
   { href: '/redraft/tiers',   label: 'Tiers'   },
 ] as const;
