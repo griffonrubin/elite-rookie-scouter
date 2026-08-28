@@ -1,10 +1,16 @@
 import { query, queryOne } from '@/lib/db';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { RedraftPlayer, NflSeasonStat, Projection } from '@/lib/types';
+import {
+    NflAdvancedSeason, NflSeasonStat, Projection, RedraftPlayer,
+    VegasGameLine, VegasTeamSeason,
+} from '@/lib/types';
 import { RedraftProfileClient } from '@/components/redraft/RedraftProfileClient';
 
 export const dynamic = "force-dynamic";
+
+/** The season the redraft board is being built for. */
+const TARGET_SEASON = 2026;
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -38,6 +44,9 @@ async function getPlayer(slug: string) {
         [player.id]
     );
 
+    // Both placeholders are numbered and bound separately: Postgres is happy
+    // either way, but lib/db.ts rewrites every $N to a positional ? for local
+    // SQLite, where a reused $1 needs a second value or the query throws.
     const sourceRanks = await query<{ source: string; rank_overall: number; rank_positional: number | null; tier: number | null }>(
         `SELECT r.source, r.rank_overall, r.rank_positional, r.tier
          FROM rankings r
@@ -45,16 +54,59 @@ async function getPlayer(slug: string) {
            SELECT source, MAX(scraped_at) AS md
            FROM rankings WHERE player_id = $1 GROUP BY source
          ) l ON l.source = r.source AND r.scraped_at = l.md
-         WHERE r.player_id = $1 AND r.rank_overall IS NOT NULL
+         WHERE r.player_id = $2 AND r.rank_overall IS NOT NULL
          ORDER BY r.rank_overall ASC`,
-        [player.id]
+        [player.id, player.id]
     );
 
     const projections = await query<Projection>(
-        `SELECT * FROM projections WHERE player_id = $1 AND season = 2026
+        `SELECT * FROM projections WHERE player_id = $1 AND season = $2
          ORDER BY proj_points DESC NULLS LAST`,
+        [player.id, TARGET_SEASON]
+    );
+
+    const advanced = await query<NflAdvancedSeason>(
+        `SELECT * FROM nfl_advanced_season WHERE player_id = $1 ORDER BY season DESC`,
         [player.id]
     );
+
+    // Percentiles are only meaningful against the same position in the same
+    // season, so pull the whole field for the seasons this player actually has.
+    const peers = advanced.length
+        ? await query<NflAdvancedSeason>(
+            `SELECT * FROM nfl_advanced_season
+             WHERE position = $1 AND season IN (${advanced.map((_, i) => `$${i + 2}`).join(', ')})`,
+            [player.position, ...advanced.map(a => a.season)]
+        )
+        : [];
+    const peersBySeason: Record<number, NflAdvancedSeason[]> = {};
+    for (const row of peers) {
+        (peersBySeason[row.season] ??= []).push(row);
+    }
+
+    const vegasTeam = player.nfl_team
+        ? await queryOne<VegasTeamSeason>(
+            `SELECT * FROM vegas_team_season WHERE season = $1 AND team = $2`,
+            [TARGET_SEASON, player.nfl_team]
+        ) ?? null
+        : null;
+
+    const vegasSchedule = player.nfl_team
+        ? await query<VegasGameLine>(
+            `SELECT * FROM vegas_game_lines
+             WHERE season = $1 AND team = $2 ORDER BY week ASC`,
+            [TARGET_SEASON, player.nfl_team]
+        )
+        : [];
+
+    const teamLogos = await query<{ abbreviation: string; logo_url: string | null }>(
+        `SELECT abbreviation, logo_url FROM nfl_teams`,
+        []
+    );
+    const logos: Record<string, string> = {};
+    for (const t of teamLogos) {
+        if (t.logo_url) logos[t.abbreviation] = t.logo_url;
+    }
 
     // Prev / next by board order, so the profile can page through the board.
     const ordered = await query<{ slug: string; full_name: string }>(
@@ -76,6 +128,11 @@ async function getPlayer(slug: string) {
         seasons,
         sourceRanks,
         projections,
+        advanced,
+        peersBySeason,
+        vegasTeam,
+        vegasSchedule,
+        logos,
         boardRank: idx >= 0 ? idx + 1 : null,
         prev: idx > 0 ? ordered[idx - 1] : null,
         next: idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1] : null,
@@ -90,7 +147,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const pos = player.position;
     return {
         title: `${player.full_name} — ${pos} ${player.nfl_team ?? 'FA'} | Redraft | DyCharts`,
-        description: `2026 PPR redraft profile for ${player.full_name}: rankings, projections, and NFL production 2021-2025.`,
+        description: `${TARGET_SEASON} PPR redraft profile for ${player.full_name}: rankings, projections, Vegas lines and advanced NFL production 2021-2025.`,
     };
 }
 
@@ -111,6 +168,12 @@ export default async function RedraftPlayerPage({ params }: PageProps) {
             seasons={data.seasons}
             sourceRanks={data.sourceRanks}
             projections={data.projections}
+            advanced={data.advanced}
+            peersBySeason={data.peersBySeason}
+            vegasTeam={data.vegasTeam}
+            vegasSchedule={data.vegasSchedule}
+            teamLogos={data.logos}
+            season={TARGET_SEASON}
             boardRank={data.boardRank}
             prev={data.prev}
             next={data.next}

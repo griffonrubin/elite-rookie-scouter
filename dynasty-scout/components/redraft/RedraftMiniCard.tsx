@@ -51,6 +51,24 @@ function ppgColor(ppg: number, pos: string): string {
     return 'text-muted-foreground/60';
 }
 
+/** Implied team totals cluster between 16 and 30 — fixed bands read truer
+ *  here than a percentile, because 27 is a good spot however the rest of the
+ *  league is priced. */
+function impliedColor(implied: number): string {
+    if (implied >= 25.5) return 'text-emerald-400 font-bold';
+    if (implied >= 23.5) return 'text-sky-400 font-semibold';
+    if (implied >= 21.5) return 'text-foreground/75';
+    return 'text-muted-foreground/60';
+}
+
+/** Target share is the receiving stat that travels between seasons. */
+function shareColor(share: number): string {
+    if (share >= 25) return 'text-emerald-400 font-bold';
+    if (share >= 20) return 'text-sky-400 font-semibold';
+    if (share >= 15) return 'text-foreground/75';
+    return 'text-muted-foreground/60';
+}
+
 /** Wide disagreement between sources is the signal worth surfacing. */
 function sdColor(sd: number): string {
     if (sd >= 25) return 'text-amber-400 font-bold';
@@ -85,6 +103,18 @@ function finishLabel(pos: string, fin: number | null): string | null {
 function num(v: number | null | undefined, digits = 0): string | null {
     if (v == null) return null;
     return digits > 0 ? Number(v).toFixed(digits) : Math.round(Number(v)).toLocaleString();
+}
+
+/** Advanced rates are stored 0-100, so the % sign is all that is missing. */
+function pctVal(v: number | null | undefined, digits = 1): string | null {
+    return v == null ? null : `${Number(v).toFixed(digits)}%`;
+}
+
+/** EPA and spreads only read correctly with their sign attached. */
+function signedVal(v: number | null | undefined, digits = 2): string | null {
+    if (v == null) return null;
+    const n = Number(v);
+    return `${n > 0 ? '+' : ''}${n.toFixed(digits)}`;
 }
 
 function RedraftMiniCardInner({
@@ -184,6 +214,55 @@ function RedraftMiniCardInner({
             case 'dst_ints':           return <StatVal val={num(p.dst_ints)} />;
             case 'dst_tds':            return <StatVal val={num(p.dst_tds)} />;
             case 'dst_points_allowed': return <StatVal val={num(p.dst_points_allowed)} />;
+
+            // ── advanced rates (2025) ───────────────────────────────────────
+            case 'adv_snap_share':       return <StatVal val={pctVal(p.adv_snap_share, 0)} />;
+            case 'adv_touches_per_game': return <StatVal val={num(p.adv_touches_per_game, 1)} />;
+            case 'adv_yards_per_touch':  return <StatVal val={num(p.adv_yards_per_touch, 1)} />;
+            case 'adv_epa_per_dropback': return <StatVal val={signedVal(p.adv_epa_per_dropback, 2)} />;
+            case 'adv_cpoe':             return <StatVal val={signedVal(p.adv_cpoe, 1)} />;
+            case 'adv_yards_per_attempt':return <StatVal val={num(p.adv_yards_per_attempt, 1)} />;
+            case 'adv_pass_td_rate':     return <StatVal val={pctVal(p.adv_pass_td_rate, 1)} />;
+            case 'adv_int_rate':         return <StatVal val={pctVal(p.adv_int_rate, 1)} />;
+            case 'adv_pressure_pct':     return <StatVal val={pctVal(p.adv_pressure_pct, 0)} />;
+            case 'adv_sack_rate':        return <StatVal val={pctVal(p.adv_sack_rate, 1)} />;
+            case 'adv_carries_per_game': return <StatVal val={num(p.adv_carries_per_game, 1)} />;
+            case 'adv_yards_per_carry':  return <StatVal val={num(p.adv_yards_per_carry, 2)} />;
+            case 'adv_yards_after_contact_att': return <StatVal val={num(p.adv_yards_after_contact_att, 2)} />;
+            case 'adv_rush_mtf_rate':    return <StatVal val={pctVal(p.adv_rush_mtf_rate, 1)} />;
+            case 'adv_breakaway_rush_rate': return <StatVal val={pctVal(p.adv_breakaway_rush_rate, 1)} />;
+            case 'adv_epa_per_rush':     return <StatVal val={signedVal(p.adv_epa_per_rush, 2)} />;
+            case 'adv_target_share':
+                return <StatVal val={pctVal(p.adv_target_share, 1)}
+                    highlight={p.adv_target_share != null ? shareColor(p.adv_target_share) : undefined} />;
+            case 'adv_air_yards_share':  return <StatVal val={pctVal(p.adv_air_yards_share, 1)} />;
+            case 'adv_wopr':             return <StatVal val={num(p.adv_wopr, 2)} />;
+            case 'adv_targets_per_game': return <StatVal val={num(p.adv_targets_per_game, 1)} />;
+            case 'adv_yards_per_snap':   return <StatVal val={num(p.adv_yards_per_snap, 2)} />;
+            case 'adv_yards_per_target': return <StatVal val={num(p.adv_yards_per_target, 1)} />;
+            case 'adv_adot':             return <StatVal val={num(p.adv_adot, 1)} />;
+            case 'adv_yards_after_catch_rec': return <StatVal val={num(p.adv_yards_after_catch_rec, 1)} />;
+            case 'adv_catch_rate':       return <StatVal val={pctVal(p.adv_catch_rate, 0)} />;
+            case 'adv_epa_per_target':   return <StatVal val={signedVal(p.adv_epa_per_target, 2)} />;
+            case 'adv_fg_att_per_game':  return <StatVal val={num(p.adv_fg_att_per_game, 2)} />;
+            case 'adv_fg_pct':           return <StatVal val={pctVal(p.adv_fg_pct, 1)} />;
+            case 'adv_fg_pct_40plus':    return <StatVal val={pctVal(p.adv_fg_pct_40plus, 0)} />;
+            case 'adv_avg_fg_distance':  return <StatVal val={num(p.adv_avg_fg_distance, 1)} />;
+            case 'adv_fg_50plus_att':    return <StatVal val={num(p.adv_fg_50plus_att)} />;
+            case 'adv_xp_pct':           return <StatVal val={pctVal(p.adv_xp_pct, 0)} />;
+            case 'adv_dst_sacks_per_game': return <StatVal val={num(p.adv_dst_sacks_per_game, 2)} />;
+            case 'adv_dst_takeaways_per_game': return <StatVal val={num(p.adv_dst_takeaways_per_game, 2)} />;
+            case 'adv_dst_points_allowed_per_game': return <StatVal val={num(p.adv_dst_points_allowed_per_game, 1)} />;
+
+            // ── Vegas (2026) ────────────────────────────────────────────────
+            case 'vegas_implied_total':
+                return <StatVal val={num(p.vegas_implied_total, 1)}
+                    highlight={p.vegas_implied_total != null ? impliedColor(p.vegas_implied_total) : undefined} />;
+            case 'vegas_implied_rank': return <StatVal val={num(p.vegas_implied_rank)} />;
+            case 'vegas_total':        return <StatVal val={num(p.vegas_total, 1)} />;
+            case 'vegas_spread':       return <StatVal val={signedVal(p.vegas_spread, 1)} />;
+            case 'vegas_win_pct':
+                return <StatVal val={p.vegas_win_pct != null ? `${Math.round(p.vegas_win_pct * 100)}%` : null} />;
 
             default: return <StatVal val={null} />;
         }

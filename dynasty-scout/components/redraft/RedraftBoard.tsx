@@ -23,6 +23,8 @@ const DATASETS: { value: RedraftDataset; label: string; hint: string }[] = [
     { value: 'snapshot',    label: 'Snapshot',    hint: 'Recent production plus where the market has them' },
     { value: 'sources',     label: 'Sources',     hint: 'Every source rank side by side, with the spread' },
     { value: 'production',  label: 'Production',  hint: 'Full 2025 counting-stat line' },
+    { value: 'advanced',    label: 'Advanced',    hint: 'Efficiency and opportunity rates behind the 2025 box score' },
+    { value: 'vegas',       label: 'Vegas',       hint: 'The 2026 betting market around each player: implied totals, spreads, win rate' },
     { value: 'seasons',     label: 'Seasons',     hint: 'Points and finish for each season, 2021-2025' },
     { value: 'projections', label: 'Projections', hint: '2026 projections vs last season' },
 ];
@@ -79,6 +81,50 @@ function sortValue(p: RedraftPlayer, key: RedraftSortKey): number | null {
         case 'dst_ints':  return p.dst_ints;
         case 'dst_td':    return p.dst_tds;
         case 'dst_pa':    return p.dst_points_allowed;
+
+        // advanced rates (2025)
+        case 'snap_share':  return p.adv_snap_share;
+        case 'touches':     return p.adv_touches_per_game;
+        case 'y_per_touch': return p.adv_yards_per_touch;
+        case 'epa_db':      return p.adv_epa_per_dropback;
+        case 'cpoe':        return p.adv_cpoe;
+        case 'ypa':         return p.adv_yards_per_attempt;
+        case 'pass_td_rate':return p.adv_pass_td_rate;
+        case 'int_rate':    return p.adv_int_rate;
+        case 'pressure':    return p.adv_pressure_pct;
+        case 'sack_rate':   return p.adv_sack_rate;
+        case 'att_g':       return p.adv_carries_per_game;
+        case 'ypc':         return p.adv_yards_per_carry;
+        case 'yaco':        return p.adv_yards_after_contact_att;
+        case 'rush_mtf':    return p.adv_rush_mtf_rate;
+        case 'breakaway':   return p.adv_breakaway_rush_rate;
+        case 'epa_rush':    return p.adv_epa_per_rush;
+        case 'tgt_share':   return p.adv_target_share;
+        case 'ay_share':    return p.adv_air_yards_share;
+        case 'wopr':        return p.adv_wopr;
+        case 'tgt_g':       return p.adv_targets_per_game;
+        case 'y_snap':      return p.adv_yards_per_snap;
+        case 'y_tgt':       return p.adv_yards_per_target;
+        case 'adot':        return p.adv_adot;
+        case 'yac_rec':     return p.adv_yards_after_catch_rec;
+        case 'catch_rate':  return p.adv_catch_rate;
+        case 'epa_tgt':     return p.adv_epa_per_target;
+        case 'fga_g':       return p.adv_fg_att_per_game;
+        case 'fg_pct_adv':  return p.adv_fg_pct;
+        case 'fg40':        return p.adv_fg_pct_40plus;
+        case 'fg_dist':     return p.adv_avg_fg_distance;
+        case 'fg50_att':    return p.adv_fg_50plus_att;
+        case 'xp_pct':      return p.adv_xp_pct;
+        case 'dsack_g':     return p.adv_dst_sacks_per_game;
+        case 'dto_g':       return p.adv_dst_takeaways_per_game;
+        case 'dpa_g':       return p.adv_dst_points_allowed_per_game;
+
+        // Vegas (2026)
+        case 'veg_implied': return p.vegas_implied_total;
+        case 'veg_rank':    return p.vegas_implied_rank;
+        case 'veg_total':   return p.vegas_total;
+        case 'veg_spread':  return p.vegas_spread;
+        case 'veg_win':     return p.vegas_win_pct;
         default:          return null;
     }
 }
@@ -88,6 +134,9 @@ const ASCENDING_KEYS = new Set<RedraftSortKey>([
     'rank', 'pos_rank', 'avg_rank', 'best', 'worst', 'fp', 'espn', 'ktc', 'cbs',
     'yahoo', 'sleeper', 'fc', 'flock', 'underdog', 'ffpc',
     'fin25', 'fin25_ov', 'age', 'ints', 'dst_pa',
+    // lower is better here too: mistakes, pressure taken, points conceded,
+    // and a spread where negative means favoured.
+    'int_rate', 'pressure', 'sack_rate', 'dpa_g', 'veg_rank', 'veg_spread',
 ]);
 
 function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {

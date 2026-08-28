@@ -427,6 +427,52 @@ export interface RedraftPlayer {
     proj_points: number | null;
     proj_ppg: number | null;
     proj_sources: number | null;
+
+    // 2025 advanced rates (adv_ prefixed because several names also exist on
+    // nfl_season_stats). The full set lives on the player profile.
+    adv_snap_share: number | null;
+    adv_touches_per_game: number | null;
+    adv_yards_per_touch: number | null;
+    adv_epa_per_dropback: number | null;
+    adv_cpoe: number | null;
+    adv_yards_per_attempt: number | null;
+    adv_pass_td_rate: number | null;
+    adv_int_rate: number | null;
+    adv_pressure_pct: number | null;
+    adv_sack_rate: number | null;
+    adv_carries_per_game: number | null;
+    adv_yards_per_carry: number | null;
+    adv_yards_after_contact_att: number | null;
+    adv_rush_mtf_rate: number | null;
+    adv_breakaway_rush_rate: number | null;
+    adv_epa_per_rush: number | null;
+    adv_target_share: number | null;
+    adv_air_yards_share: number | null;
+    adv_wopr: number | null;
+    adv_targets_per_game: number | null;
+    adv_yards_per_snap: number | null;
+    adv_yards_per_target: number | null;
+    adv_adot: number | null;
+    adv_yards_after_catch_rec: number | null;
+    adv_catch_rate: number | null;
+    adv_epa_per_target: number | null;
+    adv_fg_att_per_game: number | null;
+    adv_fg_pct: number | null;
+    adv_fg_pct_40plus: number | null;
+    adv_avg_fg_distance: number | null;
+    adv_fg_50plus_att: number | null;
+    adv_xp_pct: number | null;
+    adv_dst_sacks_per_game: number | null;
+    adv_dst_takeaways_per_game: number | null;
+    adv_dst_points_allowed_per_game: number | null;
+
+    // 2026 Vegas market, via the player's team
+    vegas_implied_total: number | null;
+    vegas_implied_rank: number | null;
+    vegas_total: number | null;
+    vegas_spread: number | null;
+    vegas_win_pct: number | null;
+    vegas_games_lined: number | null;
 }
 
 /** One season row from nfl_season_stats. */
@@ -453,4 +499,133 @@ export interface Projection {
     proj_rank_overall: number | null;
     proj_rank_positional: number | null;
     scraped_at: string;
+}
+
+/**
+ * One season of advanced / efficiency stats. Wide and sparse on purpose:
+ * every position writes into the same row shape and only the metrics that
+ * mean something for that position are ever read back — see
+ * lib/redraftAdvanced.ts for the per-position registry.
+ */
+export interface NflAdvancedSeason {
+    player_id: number;
+    season: number;
+    team: string | null;
+    position: string | null;
+    games: number | null;
+
+    // usage
+    offense_snaps: number | null;
+    snap_share: number | null;
+    touches_per_game: number | null;
+    yards_per_touch: number | null;
+    total_epa: number | null;
+
+    // passing
+    pass_epa: number | null;
+    epa_per_dropback: number | null;
+    cpoe: number | null;
+    pacr: number | null;
+    yards_per_attempt: number | null;
+    air_yards_per_attempt: number | null;
+    completed_air_yards_per_cmp: number | null;
+    pass_yac_per_cmp: number | null;
+    bad_throw_pct: number | null;
+    on_target_pct: number | null;
+    pressure_pct: number | null;
+    blitz_pct: number | null;
+    pocket_time: number | null;
+    sack_rate: number | null;
+    scramble_rate: number | null;
+    pass_td_rate: number | null;
+    int_rate: number | null;
+    deep_pass_rate: number | null;
+
+    // rushing
+    rush_epa: number | null;
+    epa_per_rush: number | null;
+    yards_per_carry: number | null;
+    yards_before_contact_att: number | null;
+    yards_after_contact_att: number | null;
+    broken_tackles: number | null;
+    att_per_broken_tackle: number | null;
+    explosive_rush_rate: number | null;
+    breakaway_rush_rate: number | null;
+    rush_first_down_rate: number | null;
+    carries_per_game: number | null;
+    rush_mtf_rate: number | null;
+
+    // receiving
+    rec_epa: number | null;
+    epa_per_target: number | null;
+    target_share: number | null;
+    air_yards_share: number | null;
+    wopr: number | null;
+    racr: number | null;
+    targets_per_game: number | null;
+    adot: number | null;
+    yards_per_target: number | null;
+    yards_per_reception: number | null;
+    yards_per_snap: number | null;
+    catch_rate: number | null;
+    drop_rate: number | null;
+    rec_broken_tackles: number | null;
+    rec_mtf_rate: number | null;
+    yards_before_catch_rec: number | null;
+    yards_after_catch_rec: number | null;
+    passer_rating_targeted: number | null;
+    rec_first_down_rate: number | null;
+    explosive_rec_rate: number | null;
+    rec_td_per_target: number | null;
+
+    // kicking
+    fg_att_per_game: number | null;
+    fg_pct: number | null;
+    fg_pct_40plus: number | null;
+    avg_fg_distance: number | null;
+    fg_50plus_att: number | null;
+    xp_pct: number | null;
+
+    // team defense
+    dst_sacks_per_game: number | null;
+    dst_takeaways_per_game: number | null;
+    dst_points_allowed_per_game: number | null;
+    dst_td_count: number | null;
+
+    [key: string]: number | string | null;
+}
+
+/** One team's side of one scheduled game, as the betting market prices it. */
+export interface VegasGameLine {
+    season: number;
+    week: number;
+    game_id: string;
+    team: string;
+    opponent: string;
+    is_home: number;
+    gameday: string | null;
+    /** Betting convention — negative means this team is favoured. */
+    spread: number | null;
+    total_line: number | null;
+    implied_team_total: number | null;
+    implied_opp_total: number | null;
+    moneyline: number | null;
+    /** De-vigged, so the two sides of a game sum to 1. */
+    win_prob: number | null;
+}
+
+/** A team's market profile over whatever part of the slate is priced. */
+export interface VegasTeamSeason {
+    season: number;
+    team: string;
+    games_lined: number | null;
+    games_scheduled: number | null;
+    exp_wins_lined: number | null;
+    win_pct: number | null;
+    avg_total: number | null;
+    avg_spread: number | null;
+    avg_implied_total: number | null;
+    avg_implied_opp_total: number | null;
+    implied_total_rank: number | null;
+    total_rank: number | null;
 }

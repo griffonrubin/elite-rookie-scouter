@@ -8,12 +8,15 @@ has no sync function, so it never reaches production). This one owns
 SQLite-vs-Postgres row-count diff so a missing table is impossible to miss.
 
 Syncs, in dependency order:
-  1. schema      — players columns, nfl_season_stats, projections
+  1. schema      — players columns, nfl_season_stats, projections,
+                   nfl_advanced_season, the two vegas_* tables
   2. players     — the redraft pool, inserted with explicit ids
   3. nfl_season_stats
-  4. projections
-  5. rankings    — redraft sources only
-  6. consensus_rankings — format = 'REDRAFT'
+  4. nfl_advanced_season
+  5. projections
+  6. rankings    — redraft sources only
+  7. consensus_rankings — format = 'REDRAFT'
+  8. vegas_game_lines / vegas_team_season — team-keyed, no player dependency
 
 Player ids are copied verbatim because every other table references them.
 After inserting, the players id sequence is advanced past MAX(id), otherwise
@@ -93,12 +96,31 @@ CREATE TABLE IF NOT EXISTS projections (
 );
 """
 
+
+def _to_postgres(ddl):
+    return ddl.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+
+
+def advanced_ddl():
+    """Reuse the SQLite DDL so the two schemas can never drift apart."""
+    from scrapers.redraft import schema_advanced
+    return [
+        _to_postgres(schema_advanced.NFL_ADVANCED_SEASON),
+        _to_postgres(schema_advanced.VEGAS_GAME_LINES),
+        _to_postgres(schema_advanced.VEGAS_TEAM_SEASON),
+    ]
+
+
 INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_nss_player_season ON nfl_season_stats(player_id, season)",
     "CREATE INDEX IF NOT EXISTS idx_nss_season ON nfl_season_stats(season)",
     "CREATE INDEX IF NOT EXISTS idx_proj_player_source ON projections(player_id, source)",
     "CREATE INDEX IF NOT EXISTS idx_rankings_source_scraped ON rankings(source, scraped_at)",
     "CREATE INDEX IF NOT EXISTS idx_players_redraft_pool ON players(redraft_pool)",
+    "CREATE INDEX IF NOT EXISTS idx_nadv_player_season ON nfl_advanced_season(player_id, season)",
+    "CREATE INDEX IF NOT EXISTS idx_nadv_season_pos ON nfl_advanced_season(season, position)",
+    "CREATE INDEX IF NOT EXISTS idx_vgl_season_team ON vegas_game_lines(season, team)",
+    "CREATE INDEX IF NOT EXISTS idx_vts_season ON vegas_team_season(season)",
 ]
 
 PLAYER_SYNC_COLS = [
@@ -116,6 +138,25 @@ STAT_COLS = [
     "rec_tds", "fumbles_lost", "fg_made", "fg_att", "fg_pct", "fg_long",
     "fg_made_50plus", "xp_made", "xp_att", "dst_sacks", "dst_ints",
     "dst_fum_rec", "dst_tds", "dst_safeties", "dst_points_allowed", "data_source",
+]
+
+def advanced_cols():
+    """nfl_advanced_season is wide and still growing; read its shape rather
+    than restating 70 column names that would rot on the next metric."""
+    from scrapers.redraft import nflverse_advanced
+    return ["player_id", "season"] + nflverse_advanced.COLUMNS + ["data_source"]
+
+
+VEGAS_GAME_COLS = [
+    "season", "week", "game_id", "team", "opponent", "is_home", "gameday",
+    "spread", "total_line", "implied_team_total", "implied_opp_total",
+    "moneyline", "win_prob",
+]
+
+VEGAS_TEAM_COLS = [
+    "season", "team", "games_lined", "games_scheduled", "exp_wins_lined",
+    "win_pct", "avg_total", "avg_spread", "avg_implied_total",
+    "avg_implied_opp_total", "implied_total_rank", "total_rank",
 ]
 
 PROJ_COLS = [
@@ -159,6 +200,8 @@ def ensure_schema(pg):
         cur.execute(f"ALTER TABLE players ADD COLUMN IF NOT EXISTS {name} {coltype}")
     cur.execute(NFL_SEASON_STATS_DDL)
     cur.execute(PROJECTIONS_DDL)
+    for ddl in advanced_ddl():
+        cur.execute(ddl)
     # Several columns exist in the live SQLite file but predate the checked-in
     # Postgres schema, so bring the upstream tables up to date before writing.
     for stmt in (
@@ -175,7 +218,8 @@ def ensure_schema(pg):
     for stmt in INDEXES:
         cur.execute(stmt)
     pg.commit()
-    print("schema: players columns + nfl_season_stats + projections ensured")
+    print("schema: players columns + nfl_season_stats + projections "
+          "+ nfl_advanced_season + vegas_* ensured")
 
 
 def guard_id_collisions(pg, rows):
@@ -231,9 +275,18 @@ def report(pg, lite):
         ("nfl_season_stats",
          "SELECT COUNT(*) FROM nfl_season_stats",
          "SELECT COUNT(*) FROM nfl_season_stats"),
+        ("nfl_advanced_season",
+         "SELECT COUNT(*) FROM nfl_advanced_season",
+         "SELECT COUNT(*) FROM nfl_advanced_season"),
         ("projections",
          "SELECT COUNT(*) FROM projections",
          "SELECT COUNT(*) FROM projections"),
+        ("vegas_game_lines",
+         "SELECT COUNT(*) FROM vegas_game_lines",
+         "SELECT COUNT(*) FROM vegas_game_lines"),
+        ("vegas_team_season",
+         "SELECT COUNT(*) FROM vegas_team_season",
+         "SELECT COUNT(*) FROM vegas_team_season"),
         ("rankings (redraft)",
          f"SELECT COUNT(*) FROM rankings WHERE source IN ({','.join('?' * len(REDRAFT_SOURCES))})",
          "SELECT COUNT(*) FROM rankings WHERE source = ANY(%s)"),
@@ -272,6 +325,8 @@ def run():
         sync_players(pg, lite)
         sync_table(pg, lite, "nfl_season_stats", "nfl_season_stats",
                    STAT_COLS, ["player_id", "season"])
+        sync_table(pg, lite, "nfl_advanced_season", "nfl_advanced_season",
+                   advanced_cols(), ["player_id", "season"])
         sync_table(pg, lite, "projections", "projections",
                    PROJ_COLS, ["player_id", "source", "season", "scraped_at"])
         placeholders = ",".join("'" + s.replace("'", "''") + "'" for s in REDRAFT_SOURCES)
@@ -281,6 +336,10 @@ def run():
         sync_table(pg, lite, "consensus_rankings (REDRAFT)", "consensus_rankings",
                    CONSENSUS_COLS, ["player_id", "format", "calculated_at"],
                    where="WHERE format = 'REDRAFT'")
+        sync_table(pg, lite, "vegas_game_lines", "vegas_game_lines",
+                   VEGAS_GAME_COLS, ["season", "game_id", "team"])
+        sync_table(pg, lite, "vegas_team_season", "vegas_team_season",
+                   VEGAS_TEAM_COLS, ["season", "team"])
         ok = report(pg, lite)
     finally:
         lite.close()
