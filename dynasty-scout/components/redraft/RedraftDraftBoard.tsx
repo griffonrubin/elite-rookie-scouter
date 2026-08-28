@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Gavel } from 'lucide-react';
+import { Gavel, RotateCcw } from 'lucide-react';
 import { RedraftPlayer } from '@/lib/types';
 import { POSITION_COLORS, POSITION_RAW, REDRAFT_POSITIONS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -73,7 +73,8 @@ export function RedraftDraftBoard({ players }: Props) {
     const [sortBy, setSortBy] = useState<BoardSort>('consensus');
     const [myRanks, setMyRanks] = useState<Map<number, number>>(new Map());
     const [tierNames, setTierNames] = useState<Map<number, string>>(new Map());
-    const { drafted, toggle } = useDrafted(REDRAFT_DRAFTED_KEY);
+    const [confirmReset, setConfirmReset] = useState(false);
+    const { drafted, toggle, reset } = useDrafted(REDRAFT_DRAFTED_KEY);
 
     // Flatten the redraft tiers into a personal ranking: every player in tier 1
     // in their saved order, then tier 2, and so on.
@@ -102,6 +103,13 @@ export function RedraftDraftBoard({ players }: Props) {
             .catch(() => { /* tiers are optional — the board still works without them */ });
         return () => { cancelled = true; };
     }, []);
+
+    // The confirm lapses on its own so the button never gets stuck mid-draft.
+    useEffect(() => {
+        if (!confirmReset) return;
+        const t = setTimeout(() => setConfirmReset(false), 3000);
+        return () => clearTimeout(t);
+    }, [confirmReset]);
 
     const ordered = useMemo(() => {
         if (sortBy === 'consensus') return players;
@@ -195,6 +203,33 @@ export function RedraftDraftBoard({ players }: Props) {
                         ))}
                     </div>
                     </div>
+
+                    <button
+                        type="button"
+                        aria-label="Reset draft board"
+                        disabled={drafted.size === 0}
+                        onClick={() => {
+                            if (!confirmReset) { setConfirmReset(true); return; }
+                            reset();
+                            setConfirmReset(false);
+                        }}
+                        title={drafted.size === 0
+                            ? 'No players are marked drafted'
+                            : `Put all ${drafted.size} drafted players back on the board`}
+                        className={cn(
+                            'flex items-center gap-1.5 h-7 px-2.5 rounded-lg border text-[11px] font-bold transition-all',
+                            drafted.size === 0
+                                ? 'border-border/40 text-muted-foreground/30 cursor-not-allowed'
+                                : confirmReset
+                                    ? 'border-amber-500/60 bg-amber-500/15 text-amber-300'
+                                    : 'border-border/60 text-muted-foreground hover:text-foreground hover:border-white/25',
+                        )}
+                    >
+                        <RotateCcw className="w-3 h-3" />
+                        {confirmReset
+                            ? 'Click again to confirm'
+                            : `Reset board${drafted.size ? ` (${drafted.size})` : ''}`}
+                    </button>
                 </div>
             </div>
 
