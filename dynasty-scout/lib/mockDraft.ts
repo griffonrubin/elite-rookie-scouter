@@ -213,23 +213,22 @@ export interface EligibilityCtx {
 }
 
 /**
- * Whether a team may take this position right now.
+ * Whether taking this position right now would leave a legal roster.
  *
- * Two rules do the heavy lifting for realism:
- *  - K and D/ST are off the table until the last two rounds. Kickers rank from
- *    ~206 in our consensus, so without this a source would happily take one in
- *    round 6 and the mock would stop resembling a real draft.
- *  - Once the picks remaining equal the starter slots remaining, only positions
- *    that fill a starter are allowed, so no team finishes with an illegal roster.
+ * Two things can rule a position out: the team is already at its limit there,
+ * or the picks remaining have fallen to the starter slots remaining, in which
+ * case only positions that fill a starter are allowed.
+ *
+ * This is the rule the human's board is gated on, so it contains nothing but
+ * legality — reaching for a kicker in round 4 is unusual, not illegal, and the
+ * app has no business greying it out.
  */
 export function canDraft(pos: Pos, ctx: EligibilityCtx): boolean {
-    const { counts, settings, round, picksMade } = ctx;
+    const { counts, settings, picksMade } = ctx;
     const rounds = totalRounds(settings.roster);
 
     if (picksMade >= rounds) return false;
     if (counts[pos] >= (settings.positionLimits[pos] ?? 99)) return false;
-
-    if ((pos === 'K' || pos === 'DST') && round <= rounds - 2) return false;
 
     const picksLeft = rounds - picksMade;
     const mustFill = starterSlotsRemaining(counts, settings.roster);
@@ -238,6 +237,23 @@ export function canDraft(pos: Pos, ctx: EligibilityCtx): boolean {
         const need = unfilledStarters(counts, settings.roster);
         if (!need[pos]) return false;
     }
+    return true;
+}
+
+/**
+ * What a pick made *for* someone will consider — the AI teams, and the
+ * autopick when a clock runs out.
+ *
+ * Legality plus one realism rule: K and D/ST stay off the board until the last
+ * two rounds. Kickers rank from ~206 in our consensus, so without this a source
+ * would happily take one in round 6 and the mock would stop resembling a real
+ * draft. It is a heuristic about how drafts actually go, which is why it steers
+ * the computer's picks and never blocks the user's.
+ */
+export function canAutoDraft(pos: Pos, ctx: EligibilityCtx): boolean {
+    if (!canDraft(pos, ctx)) return false;
+    const rounds = totalRounds(ctx.settings.roster);
+    if ((pos === 'K' || pos === 'DST') && ctx.round <= rounds - 2) return false;
     return true;
 }
 
@@ -305,7 +321,7 @@ export function aiPick(
 ): RedraftPlayer | null {
     const need = unfilledStarters(ctx.counts, ctx.settings.roster);
     const eligible = available.filter(p =>
-        canDraft((p.position || '').toUpperCase() as Pos, ctx));
+        canAutoDraft((p.position || '').toUpperCase() as Pos, ctx));
     if (eligible.length === 0) return null;
 
     const scored = eligible

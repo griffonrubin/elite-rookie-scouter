@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RedraftPlayer } from '@/lib/types';
 import {
     EligibilityCtx, MockPick, MockSettings, MockState, Pos, RankSourceKey,
-    aiPick, canDraft, clearMock, countsFor, loadMock, makeRng, pickInRoundOf,
+    aiPick, canAutoDraft, clearMock, countsFor, loadMock, makeRng, pickInRoundOf,
     rankUnder, roundOf, saveMock, sortBySource, teamOnClock, totalPicks, totalRounds,
 } from '@/lib/mockDraft';
 import { MockSetup } from './MockSetup';
@@ -114,7 +114,7 @@ export function MockDraftClient({ players }: Props) {
         const ctx = eligibilityFor(teamIndex);
         if (!ctx) return null;
         const sorted = sortBySource(available, source, myRanks);
-        return sorted.find(p => canDraft((p.position || '').toUpperCase() as Pos, ctx)) ?? null;
+        return sorted.find(p => canAutoDraft((p.position || '').toUpperCase() as Pos, ctx)) ?? null;
     }, [available, eligibilityFor, myRanks]);
 
     // ── AI turns ─────────────────────────────────────────────────────────────
