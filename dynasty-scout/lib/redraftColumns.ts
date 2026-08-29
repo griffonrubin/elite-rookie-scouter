@@ -278,3 +278,166 @@ export const REDRAFT_TIERS: RedraftTier[] = [
 export function getRedraftTier(rank: number): RedraftTier {
     return REDRAFT_TIERS.find(t => rank <= t.max) ?? REDRAFT_TIERS[REDRAFT_TIERS.length - 1];
 }
+
+// ── Sort menu ────────────────────────────────────────────────────────────────
+// Every metric the board can order by, grouped for the sort dropdown. The board
+// can sort on a metric whether or not the current lens shows its column, so
+// this list is deliberately wider than any single column set — pick "Vegas
+// implied total" from the Production lens and the order still changes.
+//
+// Labels are written out in full here rather than reusing the terse column
+// abbreviations, because a dropdown has room and "Imp / Total" does not read
+// as anything on its own.
+
+export interface RedraftSortOption {
+    key: RedraftSortKey;
+    label: string;
+}
+
+export interface RedraftSortGroup {
+    group: string;
+    options: RedraftSortOption[];
+}
+
+export const REDRAFT_SORT_GROUPS: RedraftSortGroup[] = [
+    {
+        group: 'Consensus',
+        options: [
+            { key: 'rank', label: 'Consensus rank' },
+            { key: 'pos_rank', label: 'Positional rank' },
+            { key: 'avg_rank', label: 'Average rank' },
+            { key: 'best', label: 'Best rank' },
+            { key: 'worst', label: 'Worst rank' },
+            { key: 'sd', label: 'Source disagreement' },
+            { key: 'sources', label: 'Sources ranking him' },
+        ],
+    },
+    {
+        group: 'Individual sources',
+        options: [
+            { key: 'fp', label: 'FantasyPros ECR' },
+            { key: 'espn', label: 'ESPN' },
+            { key: 'flock', label: 'Flock Fantasy' },
+            { key: 'cbs', label: 'CBS' },
+            { key: 'sleeper', label: 'Sleeper ADP' },
+            { key: 'yahoo', label: 'Yahoo' },
+            { key: 'underdog', label: 'Underdog ADP' },
+            { key: 'ffpc', label: 'FFPC ADP' },
+            { key: 'ktc', label: 'KeepTradeCut' },
+            { key: 'fc', label: 'FantasyCalc' },
+        ],
+    },
+    {
+        group: 'Vegas · 2026',
+        options: [
+            { key: 'veg_implied', label: 'Implied team total' },
+            { key: 'veg_rank', label: 'Offence rank (1-32)' },
+            { key: 'veg_total', label: 'Game total (O/U)' },
+            { key: 'veg_spread', label: 'Point spread' },
+            { key: 'veg_win', label: 'Expected win rate' },
+        ],
+    },
+    {
+        group: 'Projections · 2026',
+        options: [
+            { key: 'proj', label: 'Projected points' },
+            { key: 'proj_ppg', label: 'Projected points / game' },
+        ],
+    },
+    {
+        group: 'Fantasy production',
+        options: [
+            { key: 'pts25', label: '2025 points' },
+            { key: 'ppg25', label: '2025 points / game' },
+            { key: 'fin25', label: '2025 positional finish' },
+            { key: 'fin25_ov', label: '2025 overall finish' },
+            { key: 'games', label: '2025 games played' },
+            { key: 'pts24', label: '2024 points' },
+            { key: 'pts23', label: '2023 points' },
+            { key: 'pts22', label: '2022 points' },
+            { key: 'pts21', label: '2021 points' },
+        ],
+    },
+    {
+        group: 'Usage & efficiency · 2025',
+        options: [
+            { key: 'snap_share', label: 'Snap share' },
+            { key: 'touches', label: 'Touches / game' },
+            { key: 'y_per_touch', label: 'Yards / touch' },
+            { key: 'tgt_share', label: 'Target share' },
+            { key: 'ay_share', label: 'Air-yards share' },
+            { key: 'wopr', label: 'Weighted opportunity (WOPR)' },
+            { key: 'tgt_g', label: 'Targets / game' },
+            { key: 'y_snap', label: 'Receiving yards / snap' },
+            { key: 'y_tgt', label: 'Yards / target' },
+            { key: 'adot', label: 'Average depth of target' },
+            { key: 'yac_rec', label: 'Yards after catch / reception' },
+            { key: 'catch_rate', label: 'Catch rate' },
+            { key: 'epa_tgt', label: 'EPA / target' },
+        ],
+    },
+    {
+        group: 'Rushing · 2025',
+        options: [
+            { key: 'att_g', label: 'Carries / game' },
+            { key: 'ypc', label: 'Yards / carry' },
+            { key: 'yaco', label: 'Yards after contact / carry' },
+            { key: 'rush_mtf', label: 'Broken tackle rate' },
+            { key: 'breakaway', label: 'Breakaway rate (20+)' },
+            { key: 'epa_rush', label: 'EPA / rush' },
+        ],
+    },
+    {
+        group: 'Passing · 2025',
+        options: [
+            { key: 'epa_db', label: 'EPA / dropback' },
+            { key: 'cpoe', label: 'Completion % over expected' },
+            { key: 'ypa', label: 'Yards / attempt' },
+            { key: 'pass_td_rate', label: 'Touchdown rate' },
+            { key: 'int_rate', label: 'Interception rate' },
+            { key: 'pressure', label: 'Pressure rate faced' },
+            { key: 'sack_rate', label: 'Sack rate' },
+        ],
+    },
+    {
+        group: 'Kicking & defence · 2025',
+        options: [
+            { key: 'fga_g', label: 'FG attempts / game' },
+            { key: 'fg_pct_adv', label: 'Field goal %' },
+            { key: 'fg40', label: 'FG % from 40+' },
+            { key: 'fg_dist', label: 'Average FG distance' },
+            { key: 'fg50_att', label: '50+ yard attempts' },
+            { key: 'xp_pct', label: 'Extra point %' },
+            { key: 'dsack_g', label: 'Team sacks / game' },
+            { key: 'dto_g', label: 'Takeaways / game' },
+            { key: 'dpa_g', label: 'Points allowed / game' },
+        ],
+    },
+    {
+        group: '2025 counting stats',
+        options: [
+            { key: 'pass_yds', label: 'Passing yards' },
+            { key: 'pass_td', label: 'Passing touchdowns' },
+            { key: 'ints', label: 'Interceptions thrown' },
+            { key: 'carries', label: 'Rushing attempts' },
+            { key: 'rush_yds', label: 'Rushing yards' },
+            { key: 'rush_td', label: 'Rushing touchdowns' },
+            { key: 'targets', label: 'Targets' },
+            { key: 'rec', label: 'Receptions' },
+            { key: 'rec_yds', label: 'Receiving yards' },
+            { key: 'rec_td', label: 'Receiving touchdowns' },
+        ],
+    },
+    {
+        group: 'Profile',
+        options: [
+            { key: 'age', label: 'Age' },
+            { key: 'exp', label: 'Years of experience' },
+        ],
+    },
+];
+
+/** Flat lookup so the trigger can name whatever is selected. */
+export const REDRAFT_SORT_LABELS: Record<string, string> = Object.fromEntries(
+    REDRAFT_SORT_GROUPS.flatMap(g => g.options.map(o => [o.key, o.label])),
+);

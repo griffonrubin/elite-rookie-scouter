@@ -19,6 +19,7 @@ const REDRAFT_NAV = [
   { href: '/redraft/mock',    label: 'Mock'    },
   { href: '/redraft/compare', label: 'Compare' },
   { href: '/redraft/tiers',   label: 'Tiers'   },
+  { href: '/redraft/dropoff', label: 'Dropoff' },
 ] as const;
 
 /** Hrefs that are section roots — these need an exact match to be "active". */
