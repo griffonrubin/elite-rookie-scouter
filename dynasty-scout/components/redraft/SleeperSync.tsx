@@ -68,26 +68,33 @@ export function SleeperSync({ sync }: { sync: SleeperSyncState }) {
 
     // ── Connected chip ──────────────────────────────────────────────────────
     if (sync.connection) {
+        const failing = sync.status === 'error';
         const picks = `${sync.pickCount} ${sync.pickCount === 1 ? 'pick' : 'picks'}`;
         const statusText =
             sync.status === 'drafting' ? `LIVE · ${picks}`
             : sync.status === 'complete' ? `done · ${picks}`
             : sync.status === 'pre_draft' ? 'waiting to start'
             : sync.status === 'paused' ? 'paused'
-            : sync.status === 'error' ? 'reconnecting…'
+            : failing ? "can't reach Sleeper"
             : 'connecting…';
+        // The mismatch a bug report needs: how many picks arrived vs how many
+        // landed on the board (a pick outside our player pool is normal; all
+        // of them missing is not).
+        const detail = `${sync.connection.label} — ${picks} received, `
+            + `${sync.takenSlugs.size} matched to board players`;
         return (
             <div className={cn(
                 'flex items-center gap-1.5 pl-2.5 pr-1 h-8 rounded-lg border text-[12px] font-semibold',
-                live
-                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
-                    : 'border-sky-500/30 bg-sky-500/5 text-sky-300',
-            )}>
+                live ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                : failing ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
+                : 'border-sky-500/30 bg-sky-500/5 text-sky-300',
+            )} title={detail}>
                 <span className="relative flex w-2 h-2" aria-hidden="true">
                     {live && <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-60 animate-ping" />}
-                    <span className={cn('relative inline-flex w-2 h-2 rounded-full', live ? 'bg-emerald-400' : 'bg-sky-400')} />
+                    <span className={cn('relative inline-flex w-2 h-2 rounded-full',
+                        live ? 'bg-emerald-400' : failing ? 'bg-amber-400' : 'bg-sky-400')} />
                 </span>
-                <span className="hidden sm:inline max-w-[130px] truncate" title={sync.connection.label}>{sync.connection.label}</span>
+                <span className="hidden sm:inline max-w-[130px] truncate">{sync.connection.label}</span>
                 <span className="text-[10px] opacity-70 whitespace-nowrap">{statusText}</span>
                 <button
                     onClick={sync.disconnect}
