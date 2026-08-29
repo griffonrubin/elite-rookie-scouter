@@ -12,7 +12,8 @@ import { DraftedButton } from '@/components/DraftedButton';
 import { REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import {
-    getRedraftColDefs, getRedraftGridTemplate, getRedraftStatMinWidth, getRedraftTier,
+    getRedraftColDefs, getRedraftGridTemplate, getRedraftPhoneColDefs,
+    getRedraftStatMinWidth, getRedraftTier, REDRAFT_PHONE_GRID,
     RedraftDataset, RedraftColDef,
 } from '@/lib/redraftColumns';
 
@@ -23,6 +24,9 @@ interface Props {
     positionFilter?: string;
     dataset?: RedraftDataset;
     isDrafted?: boolean;
+    /** Phone layout: three curated columns, no sideways scroll. Comes from the
+     *  board's one matchMedia hook rather than 1300 rows each subscribing. */
+    phone?: boolean;
     /**
      * Passed down from the board rather than each row calling useDrafted —
      * 1300+ rows each subscribing to storage events would be wasteful.
@@ -119,14 +123,16 @@ function signedVal(v: number | null | undefined, digits = 2): string | null {
 
 function RedraftMiniCardInner({
     player, index, rank, positionFilter = 'ALL',
-    dataset = 'snapshot', isDrafted = false, onToggleDrafted,
+    dataset = 'snapshot', isDrafted = false, phone = false, onToggleDrafted,
 }: Props) {
     const router = useRouter();
     const pos = (player.position || '').toUpperCase();
     const tier = getRedraftTier(rank);
-    const cols = getRedraftColDefs(dataset, positionFilter);
-    const grid = getRedraftGridTemplate(dataset, positionFilter);
-    const statMin = getRedraftStatMinWidth(dataset, positionFilter);
+    const cols = phone
+        ? getRedraftPhoneColDefs(dataset, positionFilter)
+        : getRedraftColDefs(dataset, positionFilter);
+    const grid = phone ? REDRAFT_PHONE_GRID : getRedraftGridTemplate(dataset, positionFilter);
+    const statMin = phone ? 0 : getRedraftStatMinWidth(dataset, positionFilter);
     const isRookie = player.draft_year === 2026;
 
     function renderCell(col: RedraftColDef) {
@@ -301,7 +307,10 @@ function RedraftMiniCardInner({
                 <div className="absolute inset-y-0 left-0 w-[3px]" style={{ background: tier.accent }} />
 
                 {/* Sticky identity group */}
-                <div className="sticky left-0 z-10 flex items-center self-stretch gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 w-[200px] sm:w-[260px] lg:w-[340px] max-lg:bg-[var(--bg-card)]">
+                <div className={cn(
+                    'sticky left-0 z-10 flex items-center self-stretch gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 sm:w-[260px] lg:w-[340px]',
+                    phone ? 'flex-1' : 'w-[200px] max-lg:bg-[var(--bg-card)]',
+                )}>
                     <WatchlistButton
                         playerSlug={player.slug}
                         storageKey={REDRAFT_WATCHLIST_KEY}
@@ -317,7 +326,7 @@ function RedraftMiniCardInner({
                     <button
                         type="button"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/redraft/compare?a=${player.slug}`); }}
-                        className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 rounded-md text-muted-foreground/25 hover:text-sky-400 hover:bg-sky-400/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
+                        className="max-sm:hidden flex items-center justify-center w-6 h-6 flex-shrink-0 rounded-md text-muted-foreground/25 hover:text-sky-400 hover:bg-sky-400/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
                         aria-label={`Compare ${player.full_name}`}
                     >
                         <Scale className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -326,7 +335,7 @@ function RedraftMiniCardInner({
                     <DraftedButton
                         playerSlug={player.slug}
                         storageKey={REDRAFT_DRAFTED_KEY}
-                        className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0"
+                        className="max-sm:hidden w-6 h-6 flex-shrink-0"
                     />
 
                     <HoverCard openDelay={200} closeDelay={80}>
@@ -430,7 +439,7 @@ function RedraftMiniCardInner({
 
                 {/* Scrollable stat columns */}
                 <div
-                    className="grid flex-1 items-center gap-1 sm:gap-2 min-w-0 max-lg:min-w-[var(--statmin)]"
+                    className={cn("grid items-center gap-1 sm:gap-2 min-w-0", phone ? "flex-none w-[172px]" : "flex-1 max-lg:min-w-[var(--statmin)]")}
                     style={{ gridTemplateColumns: grid, '--statmin': `${statMin}px` } as React.CSSProperties}
                 >
                     {cols.map(col => (

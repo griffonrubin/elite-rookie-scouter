@@ -217,6 +217,49 @@ export function getRedraftColDefs(dataset: RedraftDataset, pos: string): Redraft
 }
 
 /**
+ * The three columns a phone shows for each lens.
+ *
+ * A phone cannot present a dozen columns honestly, and a sideways-scrolling
+ * table on a 390px screen reads like a desktop site squeezed onto a phone.
+ * So below the sm breakpoint each lens shows only its three most decision-
+ * relevant numbers, position-aware where the positions genuinely differ,
+ * and everything fits on screen with no horizontal scrolling. The full set
+ * is one tap away in the card view or on the player page.
+ */
+export function getRedraftPhoneColDefs(dataset: RedraftDataset, pos: string): RedraftColDef[] {
+    switch (dataset) {
+        case 'sources':
+            return [MINE, FP, AVG];
+        case 'production':
+            if (pos === 'QB')  return [PASS_YDS, PASS_TD, PPG25];
+            if (pos === 'RB')  return [RUSH_YDS, REC, PPG25];
+            if (pos === 'WR' || pos === 'TE') return [REC, REC_YDS, PPG25];
+            if (pos === 'K')   return [FGM, FG50, XP];
+            if (pos === 'DST') return [DSACK, DTD, DPA];
+            return [PTS25, PPG25, GAMES];
+        case 'advanced':
+            if (pos === 'QB')  return [EPA_DB, CPOE, YPA];
+            if (pos === 'RB')  return [TOUCH, YACO, YPC];
+            if (pos === 'WR' || pos === 'TE') return [TGTSH, WOPR, YTGT];
+            if (pos === 'K')   return [FGAG, FG40, FGDIST];
+            if (pos === 'DST') return [DSACKG, DTOG, DPAG];
+            return [SNAP, TOUCH, PPG25];
+        case 'vegas':
+            return [VEG_IMP, VEG_WIN, PROJ];
+        case 'seasons':
+            return [S24, S25, PROJ];
+        case 'projections':
+            return [PROJ, PROJ_PPG, PPG25];
+        case 'snapshot':
+        default:
+            return [PPG25, PROJ, FIN25];
+    }
+}
+
+/** Fixed thirds: three columns always fit, so no minmax gymnastics needed. */
+export const REDRAFT_PHONE_GRID = 'repeat(3, minmax(0, 1fr))';
+
+/**
  * Minimum width (px) of the stat grid below the lg breakpoint. Phones cannot
  * fit a dozen fractional columns, and without a floor the numbers overprint
  * each other; this makes the table scroll sideways instead, with the identity
