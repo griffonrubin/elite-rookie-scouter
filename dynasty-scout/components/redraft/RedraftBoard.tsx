@@ -14,7 +14,7 @@ import { RedraftMiniCard } from './RedraftMiniCard';
 import { RedraftBoxView } from './RedraftBoxView';
 import { RedraftDraftBoard } from './RedraftDraftBoard';
 import {
-    getRedraftColDefs, getRedraftGridTemplate,
+    getRedraftColDefs, getRedraftGridTemplate, getRedraftStatMinWidth,
     RedraftDataset, RedraftSortKey, REDRAFT_POSITION_FILTERS,
     REDRAFT_SORT_GROUPS, REDRAFT_SORT_LABELS,
 } from '@/lib/redraftColumns';
@@ -263,6 +263,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
 
     const cols = getRedraftColDefs(dataset, positionFilter);
     const grid = getRedraftGridTemplate(dataset, positionFilter);
+    const statMin = getRedraftStatMinWidth(dataset, positionFilter);
     const draftedCount = drafted.size;
 
     return (
@@ -457,13 +458,16 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
 
             {/* ── Table ── */}
             {viewMode === 'table' ? (
-            <div className="rounded-2xl border border-white/[0.05] overflow-x-clip" style={{ background: 'var(--bg-card)' }}>
+            <div className="rounded-2xl border border-white/[0.05] overflow-x-auto lg:overflow-x-clip" style={{ background: 'var(--bg-card)' }}>
+            {/* Below lg the table is wider than the screen: this wrapper makes every
+                row take the full scroll width so the columns stay aligned. */}
+            <div className="max-lg:w-fit max-lg:min-w-full">
                 {/* Header row — mirrors RedraftMiniCard's identity + grid split */}
                 <div
-                    className="flex items-stretch px-4 py-0 border-b border-white/[0.06] min-h-[46px] sticky top-[54px] z-20"
+                    className="flex items-stretch px-4 py-0 border-b border-white/[0.06] min-h-[46px] max-lg:static sticky top-[54px] z-20"
                     style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(16px)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
                 >
-                    <div className="sticky left-0 z-10 flex items-center gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 lg:w-[340px]"
+                    <div className="sticky left-0 z-10 flex items-center gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 w-[200px] sm:w-[260px] lg:w-[340px]"
                         style={{ background: 'var(--bg-elevated)' }}>
                         <div className="w-5 flex-shrink-0" />
                         <div className="w-7 sm:w-10 flex-shrink-0 flex items-center justify-center">
@@ -486,7 +490,10 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                         </div>
                     </div>
 
-                    <div className="grid flex-1 items-center gap-1 sm:gap-2 min-w-0" style={{ gridTemplateColumns: grid }}>
+                    <div
+                        className="grid flex-1 items-center gap-1 sm:gap-2 min-w-0 max-lg:min-w-[var(--statmin)]"
+                        style={{ gridTemplateColumns: grid, '--statmin': `${statMin}px` } as React.CSSProperties}
+                    >
                         {cols.map(col => {
                             const active = col.sortKey && sortKey === col.sortKey;
                             const header = (
@@ -543,6 +550,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                         />
                     ))
                 )}
+            </div>
             </div>
             ) : viewMode === 'board' ? (
                 <RedraftDraftBoard players={visible} />

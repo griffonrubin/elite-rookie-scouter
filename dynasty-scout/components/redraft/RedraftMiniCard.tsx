@@ -12,7 +12,7 @@ import { DraftedButton } from '@/components/DraftedButton';
 import { REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import {
-    getRedraftColDefs, getRedraftGridTemplate, getRedraftTier,
+    getRedraftColDefs, getRedraftGridTemplate, getRedraftStatMinWidth, getRedraftTier,
     RedraftDataset, RedraftColDef,
 } from '@/lib/redraftColumns';
 
@@ -126,6 +126,7 @@ function RedraftMiniCardInner({
     const tier = getRedraftTier(rank);
     const cols = getRedraftColDefs(dataset, positionFilter);
     const grid = getRedraftGridTemplate(dataset, positionFilter);
+    const statMin = getRedraftStatMinWidth(dataset, positionFilter);
     const isRookie = player.draft_year === 2026;
 
     function renderCell(col: RedraftColDef) {
@@ -293,14 +294,14 @@ function RedraftMiniCardInner({
             <div className={cn(
                 'relative flex items-center px-4 py-3 transition-all duration-150 gap-3',
                 'border-b border-white/[0.04] hover:bg-white/[0.03]',
-                isEven ? 'bg-transparent' : 'bg-white/[0.015]',
+                isEven ? 'bg-transparent' : 'lg:bg-white/[0.015]',
                 isDrafted && 'opacity-45',
             )}>
                 {/* Tier accent bar */}
                 <div className="absolute inset-y-0 left-0 w-[3px]" style={{ background: tier.accent }} />
 
                 {/* Sticky identity group */}
-                <div className="sticky left-0 z-10 flex items-center self-stretch gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 lg:w-[340px]">
+                <div className="sticky left-0 z-10 flex items-center self-stretch gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 w-[200px] sm:w-[260px] lg:w-[340px] max-lg:bg-[var(--bg-card)]">
                     <WatchlistButton
                         playerSlug={player.slug}
                         storageKey={REDRAFT_WATCHLIST_KEY}
@@ -428,7 +429,10 @@ function RedraftMiniCardInner({
                 </div>
 
                 {/* Scrollable stat columns */}
-                <div className="grid flex-1 items-center gap-1 sm:gap-2 min-w-0" style={{ gridTemplateColumns: grid }}>
+                <div
+                    className="grid flex-1 items-center gap-1 sm:gap-2 min-w-0 max-lg:min-w-[var(--statmin)]"
+                    style={{ gridTemplateColumns: grid, '--statmin': `${statMin}px` } as React.CSSProperties}
+                >
                     {cols.map(col => (
                         <div key={col.key} className="flex items-center justify-center min-w-0">
                             {renderCell(col)}
