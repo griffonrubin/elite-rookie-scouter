@@ -60,9 +60,14 @@ async function getPlayer(slug: string) {
     );
 
     const projections = await query<Projection>(
-        `SELECT * FROM projections WHERE player_id = $1 AND season = $2
-         ORDER BY proj_points DESC NULLS LAST`,
-        [player.id, TARGET_SEASON]
+        `SELECT pr.* FROM projections pr
+         JOIN (
+           SELECT source, MAX(scraped_at) AS md
+           FROM projections WHERE player_id = $1 AND season = $2 GROUP BY source
+         ) lp ON lp.source = pr.source AND pr.scraped_at = lp.md
+         WHERE pr.player_id = $3 AND pr.season = $4
+         ORDER BY pr.proj_points DESC NULLS LAST`,
+        [player.id, TARGET_SEASON, player.id, TARGET_SEASON]
     );
 
     const advanced = await query<NflAdvancedSeason>(

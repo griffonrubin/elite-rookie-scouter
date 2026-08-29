@@ -62,11 +62,22 @@ export const REDRAFT_BOARD_SQL = `
   proj AS (
     -- Rounding happens in the UI: Postgres ROUND(double, int) needs a ::numeric
     -- cast that SQLite would reject, and lib/db.ts only rewrites $N and ILIKE.
-    SELECT player_id,
-           AVG(proj_points) AS proj_points,
-           AVG(proj_ppg) AS proj_ppg,
+    -- Newest scrape per source, the same shape latest_source_rank uses for
+    -- rankings. Averaging every row instead would blend today's projection
+    -- with each earlier one and inflate proj_sources a little more every
+    -- day the refresh runs.
+    SELECT pr.player_id,
+           AVG(pr.proj_points) AS proj_points,
+           AVG(pr.proj_ppg) AS proj_ppg,
            COUNT(*) AS proj_sources
-    FROM projections WHERE season = 2026 GROUP BY player_id
+    FROM projections pr
+    JOIN (
+      SELECT player_id, source, MAX(scraped_at) AS md
+      FROM projections WHERE season = 2026 GROUP BY player_id, source
+    ) lp ON lp.player_id = pr.player_id AND lp.source = pr.source
+        AND pr.scraped_at = lp.md
+    WHERE pr.season = 2026
+    GROUP BY pr.player_id
   ),
   -- One season of advanced rates per player. Aliased with an adv_ prefix
   -- because several names (fg_pct, games) also exist on nfl_season_stats.
