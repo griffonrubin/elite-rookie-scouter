@@ -1,0 +1,39 @@
+{
+ "rankings": {
+  "columns": [
+   "player_id",
+   "source",
+   "rank_overall",
+   "rank_positional",
+   "tier",
+   "source_url",
+   "value",
+   "scraped_at"
+  ],
+  "files": [
+   "rankings_00.json",
+   "rankings_01.json",
+   "rankings_02.json",
+   "rankings_03.json"
+  ],
+  "rows": 4256
+ },
+ "consensus": {
+  "columns": [
+   "player_id",
+   "format",
+   "rank_overall",
+   "rank_positional",
+   "avg_rank",
+   "best_rank",
+   "worst_rank",
+   "std_deviation",
+   "num_sources",
+   "calculated_at"
+  ],
+  "files": [
+   "consensus_00.json"
+  ],
+  "rows": 1186
+ }
+}
