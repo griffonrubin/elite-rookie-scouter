@@ -165,6 +165,46 @@ Triggers RSS feed scanning and database updates.
 }
 ```
 
+### `GET /api/cron/redraft-projections`
+Refreshes the 2026 redraft projections from Sleeper and ESPN. Runs daily at
+11:00 UTC via `vercel.json`, and is safe to hit by hand — each run writes one
+row per player per source for that date, and the app reads only each source's
+newest scrape.
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "season": 2026,
+  "scraped_at": "2026-08-29",
+  "pool": 1332,
+  "sleeper": { "seen": 3303, "saved": 601, "unmatched": 1980 },
+  "espn":    { "seen": 900,  "saved": 516, "unmatched": 71 }
+}
+```
+
+`unmatched` counts rows outside the redraft pool — Sleeper's feed includes
+every IDP, so a large number there is normal. A sudden jump in `unmatched`
+paired with a drop in `saved` is the signal that an upstream schema changed.
+
+### `GET /api/sleeper/[...path]`
+Read-only relay to Sleeper's public API, used by the live draft sync when a
+browser cannot reach `api.sleeper.app` directly. GET only, path segments
+whitelisted, nothing stored.
+
+---
+
+## ⏱️ Scheduled jobs
+
+| Path | Schedule (UTC) | What it does |
+|------|----------------|--------------|
+| `/api/cron/trades` | `0 0 * * *` | Scrapes Sleeper league trades |
+| `/api/cron/redraft-projections` | `0 11 * * *` | Refreshes Sleeper + ESPN projections |
+
+Rankings and the consensus are **not** on a cron — they come from the local
+pipeline (`py -m scrapers.redraft.daily_redraft_update`), which rebuilds the
+consensus in the same pass.
+
 ---
 
 ## 🤖 Scout Agent
