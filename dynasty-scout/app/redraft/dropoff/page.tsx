@@ -84,9 +84,9 @@ export default async function DropoffPage() {
 
                 {players.length === 0 ? (
                     <div className="p-16 text-center text-muted-foreground border border-dashed border-border rounded-xl">
-                        No {TARGET_SEASON} projections loaded yet. Run{' '}
-                        <code className="text-foreground">py -m scrapers.redraft.daily_redraft_update</code>{' '}
-                        to populate them.
+                        No {TARGET_SEASON} projections loaded yet. They refresh on their own
+                        each morning from Sleeper and ESPN; to pull them right now, hit{' '}
+                        <code className="text-foreground">/api/cron/redraft-projections</code>.
                     </div>
                 ) : (
                     <PositionalDropoffChart players={players} />
