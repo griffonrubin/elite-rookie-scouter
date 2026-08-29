@@ -14,11 +14,22 @@ export type RedraftSortKey =
     | 'pass_yds' | 'pass_td' | 'ints' | 'rush_yds' | 'rush_td' | 'carries'
     | 'targets' | 'rec' | 'rec_yds' | 'rec_td'
     | 'fgm' | 'fga' | 'fg_pct' | 'fg50' | 'xp'
-    | 'dst_sacks' | 'dst_ints' | 'dst_td' | 'dst_pa';
+    | 'dst_sacks' | 'dst_ints' | 'dst_td' | 'dst_pa'
+    // advanced rates (2025)
+    | 'snap_share' | 'touches' | 'y_per_touch' | 'epa_db' | 'cpoe' | 'ypa'
+    | 'pass_td_rate' | 'int_rate' | 'pressure' | 'sack_rate'
+    | 'att_g' | 'ypc' | 'yaco' | 'rush_mtf' | 'breakaway' | 'epa_rush'
+    | 'tgt_share' | 'ay_share' | 'wopr' | 'tgt_g' | 'y_snap' | 'y_tgt'
+    | 'adot' | 'yac_rec' | 'catch_rate' | 'epa_tgt'
+    | 'fga_g' | 'fg_pct_adv' | 'fg40' | 'fg_dist' | 'fg50_att' | 'xp_pct'
+    | 'dsack_g' | 'dto_g' | 'dpa_g'
+    // Vegas (2026)
+    | 'veg_implied' | 'veg_rank' | 'veg_total' | 'veg_spread' | 'veg_win';
 
 /** The dataset "lenses" — same player rows, different columns. */
 export type RedraftDataset =
-    | 'snapshot' | 'sources' | 'production' | 'seasons' | 'projections';
+    | 'snapshot' | 'sources' | 'production' | 'advanced' | 'vegas'
+    | 'seasons' | 'projections';
 
 export interface RedraftColDef {
     key: string;
@@ -89,6 +100,55 @@ const DINT:  RedraftColDef = { key: 'dst_ints',  label: 'Int', subLabel: "'25", 
 const DTD:   RedraftColDef = { key: 'dst_tds',   label: 'TD',  subLabel: "'25", sortKey: 'dst_td',    tooltip: '2025 defensive and special-teams touchdowns' };
 const DPA:   RedraftColDef = { key: 'dst_points_allowed', label: 'PA', subLabel: "'25", sortKey: 'dst_pa', tooltip: '2025 total points allowed — drives the scoring bracket each week' };
 
+// ── Advanced rate atoms (2025, from nfl_advanced_season) ─────────────────────
+const SNAP:   RedraftColDef = { key: 'adv_snap_share', label: 'Snp%', subLabel: "'25", sortKey: 'snap_share', tooltip: "Share of the offence's snaps in 2025 — the floor under every other rate" };
+const TOUCH:  RedraftColDef = { key: 'adv_touches_per_game', label: 'Tch', subLabel: '/G', sortKey: 'touches', tooltip: 'Carries plus receptions per game in 2025' };
+const YTOUCH: RedraftColDef = { key: 'adv_yards_per_touch', label: 'Y/Tch', subLabel: "'25", sortKey: 'y_per_touch', tooltip: 'Rushing plus receiving yards per touch' };
+
+const EPA_DB: RedraftColDef = { key: 'adv_epa_per_dropback', label: 'EPA', subLabel: '/DB', sortKey: 'epa_db', tooltip: 'Expected points added per dropback — the single best measure of QB play' };
+const CPOE:   RedraftColDef = { key: 'adv_cpoe', label: 'CPOE', subLabel: "'25", sortKey: 'cpoe', tooltip: 'Completion percentage above what the throw difficulty predicted' };
+const YPA:    RedraftColDef = { key: 'adv_yards_per_attempt', label: 'Y/A', subLabel: "'25", sortKey: 'ypa', tooltip: 'Passing yards per attempt' };
+const PTDR:   RedraftColDef = { key: 'adv_pass_td_rate', label: 'TD%', subLabel: 'Pass', sortKey: 'pass_td_rate', tooltip: 'Touchdown passes per attempt' };
+const INTR:   RedraftColDef = { key: 'adv_int_rate', label: 'Int%', subLabel: "'25", sortKey: 'int_rate', tooltip: 'Interceptions per attempt — lower is better' };
+const PRESS:  RedraftColDef = { key: 'adv_pressure_pct', label: 'Prs%', subLabel: "'25", sortKey: 'pressure', tooltip: 'Share of dropbacks under pressure — mostly an offensive-line signal' };
+const SACKR:  RedraftColDef = { key: 'adv_sack_rate', label: 'Sck%', subLabel: "'25", sortKey: 'sack_rate', tooltip: 'Sacks per dropback' };
+
+const ATTG:   RedraftColDef = { key: 'adv_carries_per_game', label: 'Att', subLabel: '/G', sortKey: 'att_g', tooltip: 'Rushing attempts per game in 2025' };
+const YPC:    RedraftColDef = { key: 'adv_yards_per_carry', label: 'YPC', subLabel: "'25", sortKey: 'ypc', tooltip: 'Rushing yards per attempt' };
+const YACO:   RedraftColDef = { key: 'adv_yards_after_contact_att', label: 'YAC', subLabel: '/Att', sortKey: 'yaco', tooltip: 'Yards after contact per carry — the part the back earns himself' };
+const RMTF:   RedraftColDef = { key: 'adv_rush_mtf_rate', label: 'MTF%', subLabel: 'Rush', sortKey: 'rush_mtf', tooltip: 'Broken tackles per 100 carries' };
+const BRK:    RedraftColDef = { key: 'adv_breakaway_rush_rate', label: 'Brk%', subLabel: "'25", sortKey: 'breakaway', tooltip: 'Carries of 20+ yards — the runs that win a week outright' };
+const EPA_RU: RedraftColDef = { key: 'adv_epa_per_rush', label: 'EPA', subLabel: '/Ru', sortKey: 'epa_rush', tooltip: 'Expected points added per carry' };
+
+const TGTSH:  RedraftColDef = { key: 'adv_target_share', label: 'Tgt%', subLabel: 'Share', sortKey: 'tgt_share', tooltip: "Share of the team's targets — the stat that travels best between seasons" };
+const AYSH:   RedraftColDef = { key: 'adv_air_yards_share', label: 'AY%', subLabel: 'Share', sortKey: 'ay_share', tooltip: "Share of the team's air yards — who the offence throws to downfield" };
+const WOPR:   RedraftColDef = { key: 'adv_wopr', label: 'WOPR', subLabel: "'25", sortKey: 'wopr', tooltip: 'Weighted opportunity rating — target share and air-yard share in one number' };
+const TGTG:   RedraftColDef = { key: 'adv_targets_per_game', label: 'Tgt', subLabel: '/G', sortKey: 'tgt_g', tooltip: 'Targets per game in 2025' };
+const YSNAP:  RedraftColDef = { key: 'adv_yards_per_snap', label: 'Y/Snp', subLabel: "'25", sortKey: 'y_snap', tooltip: 'Receiving yards per offensive snap — the closest stand-in for YPRR without route data' };
+const YTGT:   RedraftColDef = { key: 'adv_yards_per_target', label: 'Y/Tgt', subLabel: "'25", sortKey: 'y_tgt', tooltip: 'Receiving yards per target' };
+const ADOT:   RedraftColDef = { key: 'adv_adot', label: 'ADOT', subLabel: "'25", sortKey: 'adot', tooltip: 'Average depth of target — role, not quality' };
+const YACR:   RedraftColDef = { key: 'adv_yards_after_catch_rec', label: 'YAC', subLabel: '/Rec', sortKey: 'yac_rec', tooltip: 'Yards after the catch per reception' };
+const CATCH:  RedraftColDef = { key: 'adv_catch_rate', label: 'Ctc%', subLabel: "'25", sortKey: 'catch_rate', tooltip: 'Receptions per target' };
+const EPA_TG: RedraftColDef = { key: 'adv_epa_per_target', label: 'EPA', subLabel: '/Tgt', sortKey: 'epa_tgt', tooltip: 'Expected points added per target' };
+
+const FGAG:   RedraftColDef = { key: 'adv_fg_att_per_game', label: 'FGA', subLabel: '/G', sortKey: 'fga_g', tooltip: 'Field goal attempts per game — the closest thing a kicker has to target share' };
+const FGPCTA: RedraftColDef = { key: 'adv_fg_pct', label: 'FG%', subLabel: "'25", sortKey: 'fg_pct_adv', tooltip: 'Field goals made per attempt' };
+const FG40:   RedraftColDef = { key: 'adv_fg_pct_40plus', label: '40+%', subLabel: "'25", sortKey: 'fg40', tooltip: 'Accuracy from 40 yards and beyond, where the extra points live' };
+const FGDIST: RedraftColDef = { key: 'adv_avg_fg_distance', label: 'Dist', subLabel: 'Avg', sortKey: 'fg_dist', tooltip: 'Average attempt distance — leverage, not skill' };
+const FG50A:  RedraftColDef = { key: 'adv_fg_50plus_att', label: '50+', subLabel: 'Att', sortKey: 'fg50_att', tooltip: 'Attempts from 50 yards out — worth 5 points each' };
+const XPPCT:  RedraftColDef = { key: 'adv_xp_pct', label: 'XP%', subLabel: "'25", sortKey: 'xp_pct', tooltip: 'Extra points made per attempt' };
+
+const DSACKG: RedraftColDef = { key: 'adv_dst_sacks_per_game', label: 'Sck', subLabel: '/G', sortKey: 'dsack_g', tooltip: 'Team sacks per game' };
+const DTOG:   RedraftColDef = { key: 'adv_dst_takeaways_per_game', label: 'TO', subLabel: '/G', sortKey: 'dto_g', tooltip: 'Interceptions plus fumble recoveries per game' };
+const DPAG:   RedraftColDef = { key: 'adv_dst_points_allowed_per_game', label: 'PA', subLabel: '/G', sortKey: 'dpa_g', tooltip: 'Points allowed per game — drives the scoring bracket every week' };
+
+// ── Vegas atoms (2026 market) ────────────────────────────────────────────────
+const VEG_IMP:   RedraftColDef = { key: 'vegas_implied_total', label: 'Imp', subLabel: 'Total', sortKey: 'veg_implied', tooltip: "The team's average implied point total — half the game total shifted by half the spread, and the number every projection is built on" };
+const VEG_RANK:  RedraftColDef = { key: 'vegas_implied_rank', label: 'Off', subLabel: 'Rk', sortKey: 'veg_rank', tooltip: 'Where that implied total ranks among all 32 offences' };
+const VEG_TOTAL: RedraftColDef = { key: 'vegas_total', label: 'O/U', subLabel: 'Avg', sortKey: 'veg_total', tooltip: 'Average game total — how much scoring the market expects around this player' };
+const VEG_SPRD:  RedraftColDef = { key: 'vegas_spread', label: 'Sprd', subLabel: 'Avg', sortKey: 'veg_spread', tooltip: 'Average point spread — negative means favoured. Game script follows this' };
+const VEG_WIN:   RedraftColDef = { key: 'vegas_win_pct', label: 'Win%', subLabel: 'Exp', sortKey: 'veg_win', tooltip: 'De-vigged expected win rate over the games priced so far' };
+
 // ── Column sets ──────────────────────────────────────────────────────────────
 
 /** Snapshot: the everyday board — recent production plus where the market has them. */
@@ -114,6 +174,23 @@ function productionColDefs(pos: string): RedraftColDef[] {
     return [GAMES, PASS_YDS, RUSH_YDS, REC, REC_YDS, REC_TD, PTS25, PPG25];                                // 8
 }
 
+/** Advanced: the efficiency and opportunity rates behind the 2025 box score. */
+function advancedColDefs(pos: string): RedraftColDef[] {
+    if (pos === 'QB')  return [SNAP, EPA_DB, CPOE, YPA, PTDR, INTR, PRESS, SACKR, ATTG];      // 9
+    if (pos === 'RB')  return [SNAP, ATTG, TOUCH, TGTSH, YPC, YACO, RMTF, BRK, EPA_RU];       // 9
+    if (pos === 'WR' || pos === 'TE')
+        return [SNAP, TGTG, TGTSH, AYSH, WOPR, YSNAP, YTGT, ADOT, YACR, CATCH];               // 10
+    if (pos === 'K')   return [FGAG, FGPCTA, FG40, FGDIST, FG50A, XPPCT];                      // 6
+    if (pos === 'DST') return [DSACKG, DTOG, DPAG];                                            // 3
+    // ALL — the metrics that mean something whatever the position
+    return [SNAP, TOUCH, YTOUCH, TGTSH, WOPR, YSNAP, YPC, EPA_TG, PPG25];                      // 9
+}
+
+/** Vegas: the 2026 market a player's production has to come out of. */
+function vegasColDefs(): RedraftColDef[] {
+    return [VEG_IMP, VEG_RANK, VEG_TOTAL, VEG_SPRD, VEG_WIN, PROJ, PROJ_PPG, PPG25];           // 8
+}
+
 /** Column set for a given lens + position filter. */
 export function getRedraftColDefs(dataset: RedraftDataset, pos: string): RedraftColDef[] {
     switch (dataset) {
@@ -123,6 +200,10 @@ export function getRedraftColDefs(dataset: RedraftDataset, pos: string): Redraft
                     AVG, BEST, WORST, SD, NSRC]; // 15
         case 'production':
             return productionColDefs(pos);
+        case 'advanced':
+            return advancedColDefs(pos);
+        case 'vegas':
+            return vegasColDefs();
         case 'seasons':
             return [EXP, S21, S22, S23, S24, S25, PROJ];                                        // 7
         case 'projections':
@@ -145,6 +226,16 @@ export function getRedraftGridTemplate(dataset: RedraftDataset, pos: string): st
     }
     if (dataset === 'projections') {
         return '0.7fr 0.6fr 0.65fr 0.6fr 0.6fr 0.55fr 0.6fr 0.55fr';
+    }
+    if (dataset === 'advanced') {
+        if (pos === 'DST') return '0.6fr 0.6fr 0.6fr';
+        if (pos === 'K') return '0.6fr 0.6fr 0.6fr 0.6fr 0.55fr 0.6fr';
+        if (pos === 'WR' || pos === 'TE')
+            return '0.6fr 0.5fr 0.6fr 0.6fr 0.6fr 0.6fr 0.6fr 0.55fr 0.55fr 0.6fr';
+        return '0.6fr 0.6fr 0.6fr 0.6fr 0.6fr 0.6fr 0.6fr 0.6fr 0.65fr';
+    }
+    if (dataset === 'vegas') {
+        return '0.6fr 0.5fr 0.6fr 0.6fr 0.6fr 0.65fr 0.6fr 0.6fr';
     }
     if (dataset === 'production') {
         if (pos === 'DST') return '0.45fr 0.55fr 0.5fr 0.5fr 0.6fr 0.65fr 0.6fr';

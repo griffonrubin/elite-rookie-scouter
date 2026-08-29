@@ -7,9 +7,15 @@ import { AppHeader } from '@/components/AppHeader';
 import { WatchlistButton, REDRAFT_WATCHLIST_KEY } from '@/components/WatchlistButton';
 import { POSITION_COLORS, POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
-import { RedraftPlayer, NflSeasonStat, Projection } from '@/lib/types';
+import {
+    NflAdvancedSeason, NflSeasonStat, Projection, RedraftPlayer,
+    VegasGameLine, VegasTeamSeason,
+} from '@/lib/types';
+import { hasAdvancedData } from '@/lib/redraftAdvanced';
+import { RedraftAdvancedStats } from './RedraftAdvancedStats';
 import { RedraftSourceRankings } from './RedraftSourceRankings';
 import { SeasonTrendChart } from './SeasonTrendChart';
+import { VegasPanel } from './VegasPanel';
 
 interface SourceRank {
     source: string;
@@ -23,6 +29,12 @@ interface Props {
     seasons: NflSeasonStat[];
     sourceRanks: SourceRank[];
     projections: Projection[];
+    advanced: NflAdvancedSeason[];
+    peersBySeason: Record<number, NflAdvancedSeason[]>;
+    vegasTeam: VegasTeamSeason | null;
+    vegasSchedule: VegasGameLine[];
+    teamLogos: Record<string, string>;
+    season: number;
     boardRank: number | null;
     prev: { slug: string; full_name: string } | null;
     next: { slug: string; full_name: string } | null;
@@ -81,13 +93,16 @@ function heightStr(inches: number | null): string {
 
 const SECTIONS = [
     { id: 'seasons', label: 'Production' },
+    { id: 'advanced', label: 'Advanced' },
+    { id: 'vegas', label: 'Vegas' },
     { id: 'trend', label: 'Trend' },
     { id: 'rankings', label: 'Rankings' },
     { id: 'projections', label: 'Projections' },
 ];
 
 export function RedraftProfileClient({
-    player, seasons, sourceRanks, projections, boardRank, prev, next,
+    player, seasons, sourceRanks, projections, advanced, peersBySeason,
+    vegasTeam, vegasSchedule, teamLogos, season, boardRank, prev, next,
 }: Props) {
     const pos = (player.position || '').toUpperCase();
     const cols = SEASON_COLUMNS[pos] || SEASON_COLUMNS.WR;
@@ -102,6 +117,11 @@ export function RedraftProfileClient({
             null
         ),
         [seasons]
+    );
+
+    const advancedSeasons = useMemo(
+        () => advanced.filter(a => hasAdvancedData(a, pos)),
+        [advanced, pos]
     );
 
     const avgProj = projections.length
@@ -124,8 +144,10 @@ export function RedraftProfileClient({
           sub: latest?.games ? `${latest.games} games` : undefined },
         { label: 'Points / Game', value: fmt(latest?.ppg_ppr, 1),
           sub: latest?.finish_positional ? `${pos}${latest.finish_positional} finish` : undefined },
-        { label: '2026 Projection', value: avgProj != null ? fmt(avgProj) : '—',
+        { label: `${season} Projection`, value: avgProj != null ? fmt(avgProj) : '—',
           sub: projections.length ? `${projections.length} source${projections.length === 1 ? '' : 's'}` : 'pending' },
+        { label: 'Vegas Team Total', value: fmt(vegasTeam?.avg_implied_total, 1),
+          sub: vegasTeam?.implied_total_rank ? `#${vegasTeam.implied_total_rank} offence` : 'unpriced' },
     ];
 
     return (
@@ -220,7 +242,7 @@ export function RedraftProfileClient({
                     </div>
 
                     {/* KPI strip */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mt-5">
                         {kpis.map(k => (
                             <div key={k.label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
                                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground/60 font-semibold">
@@ -333,6 +355,46 @@ export function RedraftProfileClient({
                     )}
                 </section>
 
+                {/* ── Advanced production ── */}
+                <section id="advanced" className="scroll-mt-28">
+                    <div className="flex items-baseline justify-between mb-3">
+                        <h2 className="text-lg font-bold">Advanced Production</h2>
+                        <span className="text-[11px] text-muted-foreground">
+                            {pos} metrics · percentile vs position
+                        </span>
+                    </div>
+                    {advancedSeasons.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground text-sm border border-dashed border-border rounded-xl">
+                            No advanced splits on record
+                            {isRookie && ' — this is a 2026 rookie, so there is no NFL charting yet.'}
+                        </div>
+                    ) : (
+                        <RedraftAdvancedStats
+                            seasons={advancedSeasons}
+                            peersBySeason={peersBySeason}
+                            position={pos}
+                            accent={accent}
+                        />
+                    )}
+                </section>
+
+                {/* ── Vegas ── */}
+                <section id="vegas" className="scroll-mt-28">
+                    <div className="flex items-baseline justify-between mb-3">
+                        <h2 className="text-lg font-bold">What Vegas Expects</h2>
+                        <span className="text-[11px] text-muted-foreground">
+                            {season} season · {player.nfl_team ?? 'free agent'}
+                        </span>
+                    </div>
+                    <VegasPanel
+                        team={player.nfl_team ?? null}
+                        season={season}
+                        teamSeason={vegasTeam}
+                        schedule={vegasSchedule}
+                        logos={teamLogos}
+                    />
+                </section>
+
                 {/* ── Trend chart ── */}
                 {seasons.length > 1 && (
                     <section id="trend" className="scroll-mt-28">
@@ -356,7 +418,7 @@ export function RedraftProfileClient({
 
                 {/* ── Projections ── */}
                 <section id="projections" className="scroll-mt-28">
-                    <h2 className="text-lg font-bold mb-3">2026 Projections</h2>
+                    <h2 className="text-lg font-bold mb-3">{season} Projections</h2>
                     {projections.length === 0 ? (
                         <div className="p-8 text-center text-muted-foreground text-sm border border-dashed border-border rounded-xl">
                             Projection sources are still being wired up.
