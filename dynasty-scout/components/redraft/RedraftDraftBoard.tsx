@@ -12,6 +12,9 @@ import { RANK_SOURCES, RankSourceKey } from '@/lib/mockDraft';
 
 interface Props {
     players: RedraftPlayer[];
+    /** Players gone in a connected Sleeper draft — greyed like manual marks,
+     *  but read-only: Reset clears only the right-click set. */
+    extraDrafted?: Set<string>;
 }
 
 /** Redraft leagues are usually 10 or 12 teams; 14 shows up in deeper formats. */
@@ -57,7 +60,7 @@ function shortName(p: RedraftPlayer): string {
     return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
 }
 
-export function RedraftDraftBoard({ players }: Props) {
+export function RedraftDraftBoard({ players, extraDrafted }: Props) {
     const [perRound, setPerRound] = useState<number>(DEFAULT_SIZE);
     const [sortBy, setSortBy] = useState<RankSourceKey>('consensus');
     const [myRanks, setMyRanks] = useState<Map<number, number>>(new Map());
@@ -265,7 +268,8 @@ export function RedraftDraftBoard({ players }: Props) {
 
                                     const pos = (player.position || '').toUpperCase();
                                     const style = positionStyle(pos);
-                                    const isDrafted = drafted.has(player.slug);
+                                    const isDrafted = drafted.has(player.slug)
+                                        || (extraDrafted?.has(player.slug) ?? false);
 
                                     return (
                                         <Link
