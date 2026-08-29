@@ -20,12 +20,20 @@ export const metadata: Metadata = {
  * Ranking happens here rather than in SQL so the order is by the same averaged
  * projection the chart plots — ordering by consensus rank instead would draw a
  * curve that disagreed with its own y-axis.
+ *
+ * Only each source's newest scrape counts; averaging every scrape would drag
+ * the curve toward whatever the projections used to say.
  */
 const PROJECTION_SQL = `
   SELECT p.slug, p.full_name, p.position, p.nfl_team,
          AVG(pr.proj_points) AS proj_points
   FROM players p
   JOIN projections pr ON pr.player_id = p.id AND pr.season = $1
+  JOIN (
+    SELECT player_id, source, MAX(scraped_at) AS md
+    FROM projections WHERE season = $1 GROUP BY player_id, source
+  ) lp ON lp.player_id = pr.player_id AND lp.source = pr.source
+      AND pr.scraped_at = lp.md
   WHERE p.redraft_pool = 1 AND pr.proj_points IS NOT NULL
   GROUP BY p.slug, p.full_name, p.position, p.nfl_team
   ORDER BY proj_points DESC

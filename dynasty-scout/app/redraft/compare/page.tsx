@@ -40,9 +40,17 @@ async function getPlayer(slug?: string) {
         [player.id]
     );
     const proj = await queryOne<{ pts: number; n: number }>(
-        `SELECT AVG(proj_points) AS pts, COUNT(*) AS n
-         FROM projections WHERE player_id = $1 AND season = 2026`,
-        [player.id]
+        // Newest scrape per source only — see the proj CTE in redraftBoardQuery.
+        `SELECT AVG(pr.proj_points) AS pts, COUNT(*) AS n
+         FROM projections pr
+         JOIN (
+           SELECT source, MAX(scraped_at) AS md
+           FROM projections WHERE player_id = $1 AND season = 2026 GROUP BY source
+         ) lp ON lp.source = pr.source AND pr.scraped_at = lp.md
+         WHERE pr.player_id = $2 AND pr.season = 2026`,
+        // Numbered separately: lib/db.ts rewrites every $N to a positional ?
+        // for SQLite, where a reused $1 needs its own bound value.
+        [player.id, player.id]
     );
     return { ...player, seasons, proj_points: proj?.pts ?? null, proj_sources: proj?.n ?? 0 };
 }
