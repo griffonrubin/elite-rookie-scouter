@@ -9,12 +9,14 @@ import { POSITION_PILL_ACTIVE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useDrafted, REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
+import { useIsPhone } from '@/lib/useIsPhone';
 import { REDRAFT_WATCHLIST_KEY } from '@/components/WatchlistButton';
 import { RedraftMiniCard } from './RedraftMiniCard';
 import { RedraftBoxView } from './RedraftBoxView';
 import { RedraftDraftBoard } from './RedraftDraftBoard';
 import {
-    getRedraftColDefs, getRedraftGridTemplate, getRedraftStatMinWidth,
+    getRedraftColDefs, getRedraftGridTemplate, getRedraftPhoneColDefs,
+    getRedraftStatMinWidth, REDRAFT_PHONE_GRID,
     RedraftDataset, RedraftSortKey, REDRAFT_POSITION_FILTERS,
     REDRAFT_SORT_GROUPS, REDRAFT_SORT_LABELS,
 } from '@/lib/redraftColumns';
@@ -261,9 +263,12 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
         }
     }
 
-    const cols = getRedraftColDefs(dataset, positionFilter);
-    const grid = getRedraftGridTemplate(dataset, positionFilter);
-    const statMin = getRedraftStatMinWidth(dataset, positionFilter);
+    const isPhone = useIsPhone();
+    const cols = isPhone
+        ? getRedraftPhoneColDefs(dataset, positionFilter)
+        : getRedraftColDefs(dataset, positionFilter);
+    const grid = isPhone ? REDRAFT_PHONE_GRID : getRedraftGridTemplate(dataset, positionFilter);
+    const statMin = isPhone ? 0 : getRedraftStatMinWidth(dataset, positionFilter);
     const draftedCount = drafted.size;
 
     return (
@@ -390,7 +395,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                             )}
                         >
                             <Star className={cn('w-3.5 h-3.5', favoritesOnly && 'fill-yellow-400')} />
-                            Watchlist
+                            <span className="hidden sm:inline">Watchlist</span>
                         </button>
                         <button
                             onClick={() => setAvailableOnly(v => !v)}
@@ -402,7 +407,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                             )}
                         >
                             <Gavel className="w-3.5 h-3.5" />
-                            Available
+                            <span className="hidden sm:inline">Available</span>
                         </button>
                         {draftedCount > 0 && (
                             <button
@@ -459,15 +464,20 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
             {/* ── Table ── */}
             {viewMode === 'table' ? (
             <div className="rounded-2xl border border-white/[0.05] overflow-x-auto lg:overflow-x-clip" style={{ background: 'var(--bg-card)' }}>
-            {/* Below lg the table is wider than the screen: this wrapper makes every
-                row take the full scroll width so the columns stay aligned. */}
-            <div className="max-lg:w-fit max-lg:min-w-full">
+            {/* On tablets the table is wider than the screen: this wrapper makes
+                every row take the full scroll width so the columns stay aligned.
+                Phones show three curated columns that always fit, and w-fit would
+                resolve to max-content there and reintroduce the sideways scroll. */}
+            <div className="sm:max-lg:w-fit sm:max-lg:min-w-full">
                 {/* Header row — mirrors RedraftMiniCard's identity + grid split */}
                 <div
                     className="flex items-stretch px-4 py-0 border-b border-white/[0.06] min-h-[46px] max-lg:static sticky top-[54px] z-20"
                     style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(16px)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
                 >
-                    <div className="sticky left-0 z-10 flex items-center gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 w-[200px] sm:w-[260px] lg:w-[340px]"
+                    <div className={cn(
+                        'sticky left-0 z-10 flex items-center gap-1 sm:gap-2.5 pr-1 sm:pr-2 flex-shrink-0 min-w-0 sm:w-[260px] lg:w-[340px]',
+                        isPhone ? 'flex-1' : 'w-[200px]',
+                    )}
                         style={{ background: 'var(--bg-elevated)' }}>
                         <div className="w-5 flex-shrink-0" />
                         <div className="w-7 sm:w-10 flex-shrink-0 flex items-center justify-center">
@@ -483,15 +493,15 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                                 </span>
                             </button>
                         </div>
-                        <div className="w-5 sm:w-6 flex-shrink-0" />
-                        <div className="w-5 sm:w-6 flex-shrink-0" />
+                        <div className="max-sm:hidden w-6 flex-shrink-0" />
+                        <div className="max-sm:hidden w-6 flex-shrink-0" />
                         <div className="flex-1 min-w-0 lg:w-[224px] lg:min-w-[224px] lg:flex-none flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                             Player
                         </div>
                     </div>
 
                     <div
-                        className="grid flex-1 items-center gap-1 sm:gap-2 min-w-0 max-lg:min-w-[var(--statmin)]"
+                        className={cn("grid items-center gap-1 sm:gap-2 min-w-0", isPhone ? "flex-none w-[172px]" : "flex-1 max-lg:min-w-[var(--statmin)]")}
                         style={{ gridTemplateColumns: grid, '--statmin': `${statMin}px` } as React.CSSProperties}
                     >
                         {cols.map(col => {
@@ -546,6 +556,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                             positionFilter={positionFilter}
                             dataset={dataset}
                             isDrafted={drafted.has(p.slug)}
+                            phone={isPhone}
                             onToggleDrafted={toggleDrafted}
                         />
                     ))

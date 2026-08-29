@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { GraduationCap, Scale } from 'lucide-react';
+import { GraduationCap } from 'lucide-react';
 import { RedraftPlayer } from '@/lib/types';
 import { POSITION_COLORS, POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -16,51 +16,20 @@ interface Props {
     onToggleDrafted?: (slug: string) => void;
 }
 
-/** Four seasons of PPG as a tiny inline sparkline — shape over precision. */
-function Sparkline({ player, accent }: { player: RedraftPlayer; accent: string }) {
-    const pts = [player.pts22, player.pts23, player.pts24, player.pts25];
-    const known = pts.filter(p => p != null) as number[];
-    if (known.length < 2) return null;
-
-    const W = 96, H = 24;
-    const max = Math.max(...known), min = Math.min(...known);
-    const span = Math.max(max - min, 1);
-    const step = W / Math.max(pts.length - 1, 1);
-
-    // Gaps (a missed season) break the line rather than interpolating through.
-    const segments: string[] = [];
-    let current: string[] = [];
-    pts.forEach((p, i) => {
-        if (p == null) {
-            if (current.length > 1) segments.push(current.join(' '));
-            current = [];
-            return;
-        }
-        const x = i * step;
-        const y = H - ((p - min) / span) * (H - 4) - 2;
-        current.push(`${current.length === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`);
-    });
-    if (current.length > 1) segments.push(current.join(' '));
-    if (segments.length === 0) return null;
-
-    return (
-        <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="overflow-visible" aria-hidden="true">
-            {segments.map((d, i) => (
-                <path key={i} d={d} fill="none" stroke={accent} strokeWidth="1.75"
-                    strokeLinecap="round" strokeLinejoin="round" opacity={0.85} />
-            ))}
-        </svg>
-    );
-}
-
 function fmt(v: number | null | undefined, digits = 0): string {
     if (v == null) return '—';
     return digits > 0 ? Number(v).toFixed(digits) : Math.round(Number(v)).toLocaleString();
 }
 
+/**
+ * Compact card: identity on one line, then the four numbers a draft decision
+ * actually turns on — last year's per-game scoring and finish, this year's
+ * projection, and the offence Vegas expects around him. Everything else
+ * lives one tap away on the profile.
+ */
 export function RedraftBoxView({ players, drafted, onToggleDrafted }: Props) {
     return (
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {players.map((p, i) => {
                 const pos = (p.position || '').toUpperCase();
                 const accent = POSITION_RAW[pos] || '#38bdf8';
@@ -69,21 +38,23 @@ export function RedraftBoxView({ players, drafted, onToggleDrafted }: Props) {
                 const isDrafted = drafted.has(p.slug);
                 const isRookie = p.draft_year === 2026;
                 const isTop = rank <= 12;
+                const contested = p.std_deviation != null && p.std_deviation >= 15;
 
-                const sources = ([
-                    ['FP', p.fp_rank], ['ESPN', p.espn_rank], ['KTC', p.ktc_rank],
-                    ['CBS', p.cbs_rank], ['YHO', p.yahoo_rank], ['SLP', p.sleeper_rank],
-                    ['FC', p.fc_rank], ['FLK', p.flock_rank],
-                    ['UD', p.underdog_rank], ['FFPC', p.ffpc_rank],
-                ] as [string, number | null][]).filter(([, v]) => v != null);
+                const kpis = [
+                    { label: 'PPG ’25', val: fmt(p.ppg25, 1) },
+                    { label: 'Fin ’25', val: p.fin25 != null ? `${pos}${p.fin25}` : '—' },
+                    { label: 'Proj ’26', val: fmt(p.proj_points), accent: 'text-sky-300' },
+                    { label: 'Team O/U', val: fmt(p.vegas_implied_total, 1) },
+                ];
 
                 return (
                     <Link
                         key={p.id}
                         href={`/redraft/players/${p.slug}`}
                         className={cn(
-                            'group relative rounded-2xl border p-3.5 transition-all duration-200 animate-stagger-in',
+                            'group relative rounded-xl border py-2.5 pr-3 pl-4 transition-all duration-200 animate-stagger-in',
                             'border-white/[0.06] hover:border-white/20 hover:-translate-y-0.5',
+                            'flex flex-col gap-2 overflow-hidden',
                             isTop && 'ring-1 ring-sky-500/20 shadow-lg shadow-sky-500/5',
                             isDrafted && 'opacity-45',
                         )}
@@ -101,98 +72,76 @@ export function RedraftBoxView({ players, drafted, onToggleDrafted }: Props) {
                             ? 'Right-click to put back on the board'
                             : 'Right-click to mark drafted'}
                     >
-                        {/* Position accent stripe */}
-                        <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-2xl"
-                            style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }} />
+                        {/* Position accent bar down the left edge */}
+                        <div className="absolute inset-y-0 left-0 w-[3px]" style={{ background: accent }} />
 
-                        {/* Header: rank + actions */}
-                        <div className="flex items-start justify-between mb-2.5">
-                            <div className="flex items-baseline gap-1.5">
-                                <span className="text-2xl font-bold font-[var(--font-jetbrains),monospace] leading-none"
-                                    style={{ color: isTop ? accent : undefined }}>
-                                    {rank}
-                                </span>
-                                <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-bold', POSITION_COLORS[pos])}>
-                                    {pos}{p.rank_positional ?? ''}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-0.5" onClick={e => e.preventDefault()}>
-                                <WatchlistButton playerSlug={p.slug} storageKey={REDRAFT_WATCHLIST_KEY} />
-                                <DraftedButton playerSlug={p.slug} storageKey={REDRAFT_DRAFTED_KEY} className="w-5 h-5" />
-                            </div>
-                        </div>
-
-                        {/* Identity */}
-                        <div className="flex items-center gap-2.5 mb-3">
+                        {/* Identity line */}
+                        <div className="flex items-center gap-2.5">
+                            <span
+                                className="w-8 flex-shrink-0 text-right text-lg font-bold font-[var(--font-jetbrains),monospace] leading-none tabular-nums"
+                                style={{ color: isTop ? accent : undefined }}
+                            >
+                                {rank}
+                            </span>
                             {headshot && (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={headshot} alt="" loading="lazy"
-                                    className="w-11 h-11 rounded-lg object-cover bg-white/5 flex-shrink-0" />
+                                    className="w-10 h-10 rounded-lg object-cover bg-white/5 flex-shrink-0" />
                             )}
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-1">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
                                     <span className={cn(
-                                        'text-[13px] font-bold truncate group-hover:text-sky-400 transition-colors',
+                                        'text-[14px] font-bold truncate group-hover:text-sky-400 transition-colors',
                                         isDrafted && 'line-through decoration-2 decoration-emerald-400/60',
                                     )}>
                                         {p.full_name}
                                     </span>
                                     {isRookie && <GraduationCap className="w-3 h-3 text-primary/70 flex-shrink-0" />}
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5">
+                                    <span className={cn('px-1.5 py-px rounded text-[10px] font-bold', POSITION_COLORS[pos])}>
+                                        {pos}{p.rank_positional ?? ''}
+                                    </span>
                                     {p.team_logo && (
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img src={p.team_logo} alt="" className="w-3.5 h-3.5 object-contain" loading="lazy" />
                                     )}
                                     <span className="truncate">{p.nfl_team || 'FA'}</span>
-                                    {p.years_exp === 0 && <span className="text-emerald-400/80 font-semibold">R</span>}
+                                    {contested && (
+                                        <span
+                                            className="px-1 rounded bg-amber-500/15 text-amber-400 text-[9px] font-bold"
+                                            title="The sources disagree sharply on this player"
+                                        >
+                                            ±
+                                        </span>
+                                    )}
                                 </div>
+                            </div>
+                            <div
+                                className="flex flex-col items-center gap-0.5 flex-shrink-0 self-start"
+                                onClick={e => e.preventDefault()}
+                            >
+                                <WatchlistButton playerSlug={p.slug} storageKey={REDRAFT_WATCHLIST_KEY} />
+                                <DraftedButton playerSlug={p.slug} storageKey={REDRAFT_DRAFTED_KEY} className="w-5 h-5" />
                             </div>
                         </div>
 
-                        {/* KPI row */}
-                        <div className="grid grid-cols-3 gap-1 mb-2.5">
-                            {[
-                                { label: "'25 Pts", val: fmt(p.pts25, 1) },
-                                { label: 'PPG', val: fmt(p.ppg25, 1) },
-                                { label: 'Finish', val: p.fin25 != null ? `${pos}${p.fin25}` : '—' },
-                            ].map(k => (
-                                <div key={k.label} className="rounded-lg bg-white/[0.03] px-1.5 py-1.5 text-center">
-                                    <div className="text-[9px] uppercase tracking-wide text-muted-foreground/50">{k.label}</div>
-                                    <div className="text-[12px] font-bold font-[var(--font-jetbrains),monospace] leading-tight">
+                        {/* KPI strip */}
+                        <div className="grid grid-cols-4 gap-1">
+                            {kpis.map(k => (
+                                <div key={k.label} className="rounded-md bg-white/[0.03] px-1 py-1 text-center min-w-0">
+                                    <div className="text-[9px] uppercase tracking-wide text-muted-foreground/50 truncate">
+                                        {k.label}
+                                    </div>
+                                    <div className={cn(
+                                        'text-[12px] font-bold font-[var(--font-jetbrains),monospace] leading-tight tabular-nums',
+                                        k.accent,
+                                    )}>
                                         {k.val}
                                     </div>
                                 </div>
                             ))}
                         </div>
-
-                        {/* Sparkline + projection */}
-                        <div className="flex items-center justify-between gap-2 mb-2.5 min-h-[26px]">
-                            <Sparkline player={p} accent={accent} />
-                            <div className="text-right flex-shrink-0">
-                                <div className="text-[9px] uppercase tracking-wide text-muted-foreground/50">Proj '26</div>
-                                <div className="text-[12px] font-bold font-[var(--font-jetbrains),monospace] text-sky-300">
-                                    {fmt(p.proj_points)}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Source chips */}
-                        {sources.length > 0 && (
-                            <div className="flex flex-wrap gap-1 pt-2 border-t border-white/[0.05]">
-                                {sources.slice(0, 5).map(([label, v]) => (
-                                    <span key={label} className="px-1.5 py-0.5 rounded bg-white/[0.04] text-[9px]">
-                                        <span className="text-muted-foreground/60">{label}</span>{' '}
-                                        <span className="font-semibold font-[var(--font-jetbrains),monospace]">{v}</span>
-                                    </span>
-                                ))}
-                                {p.std_deviation != null && p.std_deviation >= 15 && (
-                                    <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 text-[9px] font-bold">
-                                        contested
-                                    </span>
-                                )}
-                            </div>
-                        )}
                     </Link>
                 );
             })}
