@@ -375,6 +375,7 @@ export interface RedraftPlayer {
     num_sources: number | null;
 
     // per-source ranks
+    my_rank: number | null;
     fp_rank: number | null;
     espn_rank: number | null;
     ktc_rank: number | null;

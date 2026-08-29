@@ -11,7 +11,7 @@ import { RedraftPlayer } from '@/lib/types';
 // ── Sources ──────────────────────────────────────────────────────────────────
 
 export type RankSourceKey =
-    | 'consensus' | 'mine'
+    | 'consensus' | 'mine' | 'my_rank'
     | 'fp_rank' | 'espn_rank' | 'flock_rank' | 'cbs_rank' | 'sleeper_rank'
     | 'yahoo_rank' | 'underdog_rank' | 'ffpc_rank' | 'ktc_rank' | 'fc_rank';
 
@@ -22,6 +22,7 @@ export type RankSourceKey =
 export const RANK_SOURCES: { key: RankSourceKey; label: string }[] = [
     { key: 'consensus', label: 'Consensus' },
     { key: 'mine', label: 'My Tiers' },
+    { key: 'my_rank', label: 'My Rankings' },
     { key: 'fp_rank', label: 'FantasyPros' },
     { key: 'espn_rank', label: 'ESPN' },
     { key: 'flock_rank', label: 'Flock' },
@@ -34,7 +35,11 @@ export const RANK_SOURCES: { key: RankSourceKey; label: string }[] = [
     { key: 'fc_rank', label: 'FantasyCalc' },
 ];
 
-/** Sources an AI team can be assigned (My Tiers needs the user's own data). */
+/**
+ * Sources an AI team can be assigned. My Tiers is excluded because it lives in
+ * browser storage; My Rankings is not — it is a stored source like any other,
+ * so an opponent can be set to draft your own board back at you.
+ */
 export const AI_SOURCES = RANK_SOURCES.filter(s => s.key !== 'mine');
 
 export function sourceLabel(key: RankSourceKey): string {

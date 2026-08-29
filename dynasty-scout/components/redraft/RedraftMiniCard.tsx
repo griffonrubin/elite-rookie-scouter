@@ -140,6 +140,7 @@ function RedraftMiniCardInner({
                 return <StatVal val={num(p.std_deviation, 1)}
                     highlight={p.std_deviation != null ? sdColor(p.std_deviation) : undefined} />;
 
+            case 'my_rank':      return <StatVal val={num(p.my_rank)} />;
             case 'fp_rank':      return <StatVal val={num(p.fp_rank)} />;
             case 'espn_rank':    return <StatVal val={num(p.espn_rank)} />;
             case 'ktc_rank':     return <StatVal val={num(p.ktc_rank)} />;
@@ -393,6 +394,7 @@ function RedraftMiniCardInner({
                                 </div>
                                 <div className="flex flex-wrap gap-1">
                                     {([
+                                        ['Me', player.my_rank],
                                         ['FP', player.fp_rank], ['ESPN', player.espn_rank],
                                         ['KTC', player.ktc_rank], ['CBS', player.cbs_rank],
                                         ['YHO', player.yahoo_rank], ['SLP', player.sleeper_rank],
