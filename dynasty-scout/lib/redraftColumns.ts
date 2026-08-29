@@ -216,6 +216,17 @@ export function getRedraftColDefs(dataset: RedraftDataset, pos: string): Redraft
     }
 }
 
+/**
+ * Minimum width (px) of the stat grid below the lg breakpoint. Phones cannot
+ * fit a dozen fractional columns, and without a floor the numbers overprint
+ * each other; this makes the table scroll sideways instead, with the identity
+ * column pinned. Shared by the header row and the data rows so they cannot
+ * disagree about where the columns sit.
+ */
+export function getRedraftStatMinWidth(dataset: RedraftDataset, pos: string): number {
+    return getRedraftColDefs(dataset, pos).length * 52;
+}
+
 /** CSS grid-template-columns for the scrollable (non-identity) section. */
 export function getRedraftGridTemplate(dataset: RedraftDataset, pos: string): string {
     if (dataset === 'sources') {

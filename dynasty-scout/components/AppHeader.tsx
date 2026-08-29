@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -30,6 +31,13 @@ export function AppHeader({ children }: AppHeaderProps) {
   const isRedraft = pathname.startsWith('/redraft');
 
   const navLinks = isRedraft ? REDRAFT_NAV : ROOKIE_NAV;
+
+  // On phones the nav scrolls sideways; keep the tab you are on in view so
+  // arriving at /redraft/dropoff never shows a nav with Dropoff offscreen.
+  const activeLinkRef = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    activeLinkRef.current?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.06]"
@@ -83,7 +91,7 @@ export function AppHeader({ children }: AppHeaderProps) {
             href="/"
             role="tab"
             aria-selected={!isRedraft}
-            className={`px-2.5 sm:px-3.5 py-1.5 rounded-md text-[11px] sm:text-[12px] font-bold tracking-tight transition-all duration-200 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+            className={`px-2 sm:px-3.5 py-1.5 rounded-md text-[11px] sm:text-[12px] font-bold tracking-tight transition-all duration-200 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
               !isRedraft
                 ? 'bg-primary text-white shadow-[0_0_12px_rgba(249,115,22,0.35)]'
                 : 'text-muted-foreground hover:text-foreground/80'
@@ -95,7 +103,7 @@ export function AppHeader({ children }: AppHeaderProps) {
             href="/redraft"
             role="tab"
             aria-selected={isRedraft}
-            className={`px-2.5 sm:px-3.5 py-1.5 rounded-md text-[11px] sm:text-[12px] font-bold tracking-tight transition-all duration-200 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
+            className={`px-2 sm:px-3.5 py-1.5 rounded-md text-[11px] sm:text-[12px] font-bold tracking-tight transition-all duration-200 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
               isRedraft
                 ? 'bg-sky-500 text-white shadow-[0_0_12px_rgba(56,189,248,0.35)]'
                 : 'text-muted-foreground hover:text-foreground/80'
@@ -106,7 +114,7 @@ export function AppHeader({ children }: AppHeaderProps) {
         </div>
 
         {/* Nav links */}
-        <nav className="flex items-stretch h-full gap-0.5">
+        <nav className="flex items-stretch h-full gap-0.5 flex-1 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {navLinks.map(({ href, label }) => {
             const isActive = INDEX_HREFS.has(href)
               ? pathname === href
@@ -116,7 +124,8 @@ export function AppHeader({ children }: AppHeaderProps) {
               <Link
                 key={href}
                 href={href}
-                className={`relative flex items-center px-3 sm:px-4 text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:rounded-sm ${
+                ref={isActive ? activeLinkRef : undefined}
+                className={`relative flex items-center px-2.5 sm:px-4 text-[13px] font-semibold whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:rounded-sm ${
                   isActive
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground/80'
