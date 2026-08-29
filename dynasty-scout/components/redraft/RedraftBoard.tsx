@@ -43,6 +43,7 @@ function sortValue(p: RedraftPlayer, key: RedraftSortKey): number | null {
         case 'worst':     return p.worst_rank;
         case 'sd':        return p.std_deviation;
         case 'sources':   return p.num_sources;
+        case 'my_rank':   return p.my_rank;
         case 'fp':        return p.fp_rank;
         case 'espn':      return p.espn_rank;
         case 'ktc':       return p.ktc_rank;
@@ -135,7 +136,7 @@ function sortValue(p: RedraftPlayer, key: RedraftSortKey): number | null {
 
 /** Ranks read best ascending; production reads best descending. */
 const ASCENDING_KEYS = new Set<RedraftSortKey>([
-    'rank', 'pos_rank', 'avg_rank', 'best', 'worst', 'fp', 'espn', 'ktc', 'cbs',
+    'rank', 'pos_rank', 'avg_rank', 'best', 'worst', 'my_rank', 'fp', 'espn', 'ktc', 'cbs',
     'yahoo', 'sleeper', 'fc', 'flock', 'underdog', 'ffpc',
     'fin25', 'fin25_ov', 'age', 'ints', 'dst_pa',
     // lower is better here too: mistakes, pressure taken, points conceded,

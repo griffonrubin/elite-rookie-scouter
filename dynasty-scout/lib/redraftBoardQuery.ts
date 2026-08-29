@@ -26,6 +26,7 @@ export const REDRAFT_BOARD_SQL = `
   ),
   latest_source_rank AS (
     SELECT r.player_id,
+      MAX(CASE WHEN r.source = 'My Rankings'          THEN r.rank_overall END) AS my_rank,
       MAX(CASE WHEN r.source = 'FantasyPros PPR'      THEN r.rank_overall END) AS fp_rank,
       MAX(CASE WHEN r.source = 'ESPN Redraft'         THEN r.rank_overall END) AS espn_rank,
       MAX(CASE WHEN r.source = 'KeepTradeCut Redraft' THEN r.rank_overall END) AS ktc_rank,
@@ -79,7 +80,7 @@ export const REDRAFT_BOARD_SQL = `
     t.logo_url AS team_logo, t.primary_color AS team_color,
     c.rank_overall, c.rank_positional, c.avg_rank, c.best_rank, c.worst_rank,
     c.std_deviation, c.num_sources,
-    lsr.fp_rank, lsr.espn_rank, lsr.ktc_rank, lsr.cbs_rank, lsr.yahoo_rank,
+    lsr.my_rank, lsr.fp_rank, lsr.espn_rank, lsr.ktc_rank, lsr.cbs_rank, lsr.yahoo_rank,
     lsr.sleeper_rank, lsr.fc_rank, lsr.flock_rank, lsr.underdog_rank,
     lsr.ffpc_rank, lsr.fp_tier,
     s.fantasy_points_ppr AS pts25, s.ppg_ppr AS ppg25,

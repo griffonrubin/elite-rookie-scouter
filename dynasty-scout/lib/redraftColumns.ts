@@ -5,6 +5,7 @@
 
 export type RedraftSortKey =
     | 'rank' | 'pos_rank' | 'avg_rank' | 'best' | 'worst' | 'sd' | 'sources'
+    | 'my_rank'
     | 'fp' | 'ktc' | 'fc' | 'espn' | 'yahoo' | 'cbs' | 'sleeper' | 'flock'
     | 'underdog' | 'ffpc'
     | 'proj' | 'proj_ppg'
@@ -46,6 +47,7 @@ const WORST: RedraftColDef = { key: 'worst_rank', label: 'Worst', subLabel: 'Ran
 const SD:    RedraftColDef = { key: 'std_deviation', label: 'SD', subLabel: 'Spread', sortKey: 'sd',  tooltip: 'Standard deviation of the source ranks — high = the experts disagree, which means draft-day value or risk' };
 const NSRC:  RedraftColDef = { key: 'num_sources', label: 'Src', subLabel: 'Count', sortKey: 'sources', tooltip: 'How many sources ranked this player' };
 
+const MINE:    RedraftColDef = { key: 'my_rank',      label: 'Me',    subLabel: 'Rank', sortKey: 'my_rank', tooltip: 'Your own board, imported from data/my_rankings/ — the one column here that is not an outside opinion' };
 const FP:      RedraftColDef = { key: 'fp_rank',      label: 'FP',    subLabel: 'ECR',  sortKey: 'fp',      tooltip: 'FantasyPros — expert consensus ranking (100+ experts), PPR' };
 const ESPN:    RedraftColDef = { key: 'espn_rank',    label: 'ESPN',  subLabel: 'PPR',  sortKey: 'espn',    tooltip: 'ESPN — staff PPR redraft ranking' };
 const KTC:     RedraftColDef = { key: 'ktc_rank',     label: 'KTC',   subLabel: 'S/S',  sortKey: 'ktc',     tooltip: 'KeepTradeCut — community start/sit seasonal ranking' };
@@ -196,8 +198,8 @@ export function getRedraftColDefs(dataset: RedraftDataset, pos: string): Redraft
     switch (dataset) {
         case 'sources':
             // Editorial boards first, then market ADP, then the spread summary.
-            return [FP, ESPN, FLOCK, CBS, SLEEPER, YAHOO, UNDERDOG, FFPC, KTC, FC,
-                    AVG, BEST, WORST, SD, NSRC]; // 15
+            return [MINE, FP, ESPN, FLOCK, CBS, SLEEPER, YAHOO, UNDERDOG, FFPC, KTC, FC,
+                    AVG, BEST, WORST, SD, NSRC]; // 16
         case 'production':
             return productionColDefs(pos);
         case 'advanced':
@@ -217,8 +219,9 @@ export function getRedraftColDefs(dataset: RedraftDataset, pos: string): Redraft
 /** CSS grid-template-columns for the scrollable (non-identity) section. */
 export function getRedraftGridTemplate(dataset: RedraftDataset, pos: string): string {
     if (dataset === 'sources') {
-        // 10 source ranks | avg best worst sd | src count
-        return '0.5fr 0.55fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.55fr 0.5fr 0.5fr '
+        // your board | 10 source ranks | avg best worst sd | src count
+        return '0.5fr '
+             + '0.5fr 0.55fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.55fr 0.5fr 0.5fr '
              + '0.6fr 0.55fr 0.6fr 0.55fr 0.5fr';
     }
     if (dataset === 'seasons') {
@@ -315,6 +318,7 @@ export const REDRAFT_SORT_GROUPS: RedraftSortGroup[] = [
     {
         group: 'Individual sources',
         options: [
+            { key: 'my_rank', label: 'My rankings' },
             { key: 'fp', label: 'FantasyPros ECR' },
             { key: 'espn', label: 'ESPN' },
             { key: 'flock', label: 'Flock Fantasy' },
