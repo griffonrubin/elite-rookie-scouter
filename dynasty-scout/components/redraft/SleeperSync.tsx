@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Radio, X, Unplug } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
-    draftLabel, getUserDrafts, getUserId, parseDraftId, SleeperDraft,
+    draftLabel, getConnectableDrafts, getUserId, parseDraftId, SleeperDraft,
 } from '@/lib/sleeper';
 import { SleeperSyncState } from '@/lib/useSleeperSync';
 
@@ -45,10 +45,9 @@ export function SleeperSync({ sync }: { sync: SleeperSyncState }) {
                 setError(`No Sleeper user named “${q}” — or paste the draft link instead.`);
                 return;
             }
-            const found = (await getUserDrafts(userId, SEASON))
-                .sort((a, b) => (b.start_time ?? 0) - (a.start_time ?? 0));
+            const found = await getConnectableDrafts(userId, SEASON);
             if (found.length === 0) {
-                setError(`${q} has no ${SEASON} drafts yet.`);
+                setError(`${q} has no ${SEASON} drafts or leagues yet — paste the draft URL instead.`);
                 return;
             }
             setDrafts(found);
@@ -73,15 +72,19 @@ export function SleeperSync({ sync }: { sync: SleeperSyncState }) {
         const statusText =
             sync.status === 'drafting' ? `LIVE · ${picks}`
             : sync.status === 'complete' ? `done · ${picks}`
-            : sync.status === 'pre_draft' ? 'waiting to start'
+            : sync.status === 'pre_draft' ? 'not started — no picks'
             : sync.status === 'paused' ? 'paused'
             : failing ? "can't reach Sleeper"
             : 'connecting…';
         // The mismatch a bug report needs: how many picks arrived vs how many
         // landed on the board (a pick outside our player pool is normal; all
         // of them missing is not).
-        const detail = `${sync.connection.label} — ${picks} received, `
-            + `${sync.takenSlugs.size} matched to board players`;
+        const detail = sync.status === 'pre_draft'
+            ? `${sync.connection.label} — Sleeper says this draft has not started, so there `
+              + 'are no picks yet. In a different draft right now? Disconnect and pick the '
+              + 'one marked LIVE, or paste its URL.'
+            : `${sync.connection.label} — ${picks} received, `
+              + `${sync.takenSlugs.size} matched to board players`;
         return (
             <div className={cn(
                 'flex items-center gap-1.5 pl-2.5 pr-1 h-8 rounded-lg border text-[12px] font-semibold',
@@ -132,9 +135,9 @@ export function SleeperSync({ sync }: { sync: SleeperSyncState }) {
                         <div>
                             <div className="text-[13px] font-bold">Sync a Sleeper draft</div>
                             <p className="text-[11px] text-muted-foreground mt-0.5">
-                                Players come off the board live as they are picked. Paste a draft
-                                link (mocks included) or enter your Sleeper username. Saved only
-                                in this browser.
+                                Players come off the board live as they are picked. Enter your
+                                Sleeper username, or paste a draft link. Saved only in this
+                                browser.
                             </p>
                         </div>
                         <button onClick={() => setOpen(false)} aria-label="Close"
@@ -164,6 +167,15 @@ export function SleeperSync({ sync }: { sync: SleeperSyncState }) {
                     {error && <div className="text-[11px] text-amber-400">{error}</div>}
 
                     {drafts && (
+                        <div className="text-[10px] text-muted-foreground/70">
+                            Your mocks and every league draft, live ones first. Pick the one
+                            marked <span className="text-emerald-400 font-bold">LIVE</span> — a
+                            draft that has not started reports no picks. Anything missing, paste
+                            its URL instead.
+                        </div>
+                    )}
+
+                    {drafts && (
                         <div className="max-h-56 overflow-y-auto space-y-1">
                             {drafts.map(d => (
                                 <button
@@ -171,9 +183,16 @@ export function SleeperSync({ sync }: { sync: SleeperSyncState }) {
                                     onClick={() => pick(d)}
                                     className="w-full text-left px-2.5 py-2 rounded-lg border border-white/[0.06] hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-colors"
                                 >
-                                    <div className="text-[12px] font-semibold truncate">{draftLabel(d)}</div>
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        {d.status === 'drafting' && (
+                                            <span className="px-1.5 py-px rounded bg-emerald-500/20 text-emerald-400 text-[9px] font-bold flex-shrink-0">
+                                                LIVE
+                                            </span>
+                                        )}
+                                        <span className="text-[12px] font-semibold truncate">{draftLabel(d)}</span>
+                                    </div>
                                     <div className="text-[10px] text-muted-foreground mt-0.5 capitalize">
-                                        {d.status.replace('_', ' ')} · {d.type}
+                                        {d.status === 'pre_draft' ? 'not started' : d.status.replace('_', ' ')} · {d.type}
                                         {!d.league_id && ' · mock'}
                                     </div>
                                 </button>

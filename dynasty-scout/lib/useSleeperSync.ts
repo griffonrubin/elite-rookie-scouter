@@ -15,14 +15,25 @@ import { getDraft, getDraftPicks, SleeperDraft, SleeperPick } from '@/lib/sleepe
  * right-click flow is untouched: synced picks are a second, read-only layer
  * that vanishes the moment you disconnect.
  *
- * Poll cadence follows the draft: every 3s while it is live, every 20s
- * before it starts, stopped once complete, and paused entirely while the
- * tab is hidden.
+ * Poll cadence follows the draft: once a second while it is live, every 15s
+ * before it starts, stopped once complete, and paused entirely while the tab
+ * is hidden — with an immediate poll the moment you come back to it.
  */
 
 const STORAGE_KEY = 'redraft_sleeper_draft';
-const LIVE_MS = 3_000;
-const IDLE_MS = 20_000;
+
+/**
+ * Picks are polled once a second while the draft is live. Each poll is one
+ * request (the draft's own metadata is refreshed far less often — see
+ * META_EVERY), so this costs ~60 calls a minute, comfortably inside what
+ * Sleeper's public API expects, and puts a pick on the board about as fast
+ * as Sleeper's own client shows it.
+ */
+const LIVE_MS = 1_000;
+const IDLE_MS = 15_000;
+
+/** Draft status changes a handful of times; picks change constantly. */
+const META_EVERY = 10;
 
 export interface SleeperConnection {
     draftId: string;
@@ -99,46 +110,77 @@ export function useSleeperSync(players: RedraftPlayer[]): SleeperSyncState {
 
         let cancelled = false;
         let timer: ReturnType<typeof setTimeout> | null = null;
+        let inFlight = false;
+        let polls = 0;
+        let lastStatus: SleeperDraft['status'] | null = null;
+        // A draft only ever gains picks, so the count plus the newest pick
+        // identifies the state. Re-publishing an unchanged set once a second
+        // would re-filter and re-render all 1,300 rows for nothing.
+        let lastSignature = '';
         setStatus('connecting');
 
-        const tick = async () => {
+        const schedule = (ms: number) => {
             if (cancelled) return;
-            if (document.visibilityState === 'hidden') {
-                timer = setTimeout(tick, LIVE_MS);
-                return;
-            }
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(run, ms);
+        };
+
+        const run = async () => {
+            if (cancelled || inFlight) return;
+            // Nothing is polled while the tab is hidden; coming back to it
+            // triggers an immediate poll rather than waiting out an interval.
+            if (document.visibilityState === 'hidden') return;
+
+            inFlight = true;
             let delay = LIVE_MS;
             try {
-                const [draft, picks] = await Promise.all([
-                    getDraft(connection.draftId),
+                const wantMeta = polls % META_EVERY === 0;
+                const [picks, draft] = await Promise.all([
                     getDraftPicks(connection.draftId),
+                    wantMeta ? getDraft(connection.draftId) : Promise.resolve(null),
                 ]);
                 if (cancelled) return;
-                if (!draft) {
-                    setStatus('error');
-                    delay = IDLE_MS;
-                } else {
-                    setStatus(draft.status);
+                polls++;
+
+                const signature = `${picks.length}:${picks[picks.length - 1]?.player_id ?? ''}`;
+                if (signature !== lastSignature) {
+                    lastSignature = signature;
                     setTakenSlugs(slugsForPicks(picks, playersRef.current));
                     setPickCount(picks.length);
-                    if (draft.status === 'complete') return; // final state — stop polling
-                    if (draft.status === 'pre_draft') delay = IDLE_MS;
                 }
+
+                if (draft) {
+                    lastStatus = draft.status;
+                    setStatus(draft.status);
+                } else if (wantMeta) {
+                    // Metadata was asked for and did not come back: the draft id
+                    // is bad or Sleeper is down. Picks alone cannot tell us.
+                    setStatus('error');
+                    delay = IDLE_MS;
+                }
+                if (lastStatus === 'complete') return;     // final — stop polling
+                if (lastStatus === 'pre_draft') delay = IDLE_MS;
             } catch {
                 if (cancelled) return;
                 setStatus('error');
-                delay = IDLE_MS; // transient network failure — keep trying, slower
+                delay = IDLE_MS;   // transient failure — keep trying, slower
+            } finally {
+                inFlight = false;
             }
-            timer = setTimeout(tick, delay);
+            schedule(delay);
         };
 
-        tick();
-        const onVisible = () => { if (document.visibilityState === 'visible') { /* next tick catches up */ } };
-        document.addEventListener('visibilitychange', onVisible);
+        run();
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') schedule(0);
+        };
+        document.addEventListener('visibilitychange', onVisibility);
+        window.addEventListener('focus', onVisibility);
         return () => {
             cancelled = true;
             if (timer) clearTimeout(timer);
-            document.removeEventListener('visibilitychange', onVisible);
+            document.removeEventListener('visibilitychange', onVisibility);
+            window.removeEventListener('focus', onVisibility);
         };
     }, [connection]);
 

@@ -82,6 +82,63 @@ export async function getUserDrafts(userId: string, season: string): Promise<Sle
     return drafts ?? [];
 }
 
+export interface SleeperLeague {
+    league_id: string;
+    name: string | null;
+}
+
+export async function getUserLeagues(userId: string, season: string): Promise<SleeperLeague[]> {
+    try {
+        const l = await get<SleeperLeague[] | null>(`/user/${userId}/leagues/nfl/${season}`);
+        return l ?? [];
+    } catch {
+        return [];
+    }
+}
+
+export async function getLeagueDrafts(leagueId: string): Promise<SleeperDraft[]> {
+    try {
+        const d = await get<SleeperDraft[] | null>(`/league/${leagueId}/drafts`);
+        return d ?? [];
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Every draft a username can reach: their own drafts (which is where mock
+ * drafts live) plus the drafts of every league they are in.
+ *
+ * The two sources overlap but neither is complete on its own — /user/drafts
+ * carries the mocks, and a league's own draft is not always listed there.
+ * Merged and deduped by draft_id, with each league draft carrying its
+ * league's name so the list reads as drafts rather than as leagues.
+ */
+export async function getConnectableDrafts(
+    userId: string, season: string,
+): Promise<SleeperDraft[]> {
+    const [own, leagues] = await Promise.all([
+        getUserDrafts(userId, season),
+        getUserLeagues(userId, season),
+    ]);
+
+    const leagueNames = new Map(leagues.map(l => [l.league_id, l.name ?? null]));
+    const fromLeagues = (await Promise.all(
+        leagues.map(l => getLeagueDrafts(l.league_id)),
+    )).flat();
+
+    const byId = new Map<string, SleeperDraft>();
+    for (const d of [...own, ...fromLeagues]) {
+        if (!d?.draft_id || d.season !== season) continue;
+        const named = d.league_id && !d.metadata?.name
+            ? { ...d, metadata: { ...d.metadata, name: leagueNames.get(d.league_id) ?? null } }
+            : d;
+        // Later writes win, so a league copy fills in a name the user copy lacked.
+        byId.set(d.draft_id, byId.has(d.draft_id) ? { ...byId.get(d.draft_id)!, ...named } : named);
+    }
+    return [...byId.values()].sort(byDraftRelevance);
+}
+
 export async function getDraft(draftId: string): Promise<SleeperDraft | null> {
     try {
         return await get<SleeperDraft | null>(`/draft/${draftId}`);
@@ -115,4 +172,21 @@ export function draftLabel(d: SleeperDraft): string {
     const teams = d.settings?.teams ? ` · ${d.settings.teams} tm` : '';
     const when = d.start_time ? ` · ${new Date(d.start_time).toLocaleDateString()}` : '';
     return `${name}${teams}${when}`;
+}
+
+/**
+ * Order the picker by what is worth connecting to, not by clock time.
+ *
+ * Sorting on start_time alone buries the draft you are sitting in: a league
+ * draft scheduled for next week carries a later timestamp than a mock that
+ * started five minutes ago, so the one you cannot get picks from sorts to
+ * the top. Live drafts lead, then paused, then upcoming, then finished.
+ */
+const STATUS_ORDER: Record<SleeperDraft['status'], number> = {
+    drafting: 0, paused: 1, pre_draft: 2, complete: 3,
+};
+
+export function byDraftRelevance(a: SleeperDraft, b: SleeperDraft): number {
+    const rank = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
+    return rank !== 0 ? rank : (b.start_time ?? 0) - (a.start_time ?? 0);
 }
