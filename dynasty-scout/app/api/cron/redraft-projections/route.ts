@@ -43,6 +43,7 @@ interface PoolPlayer {
     id: number;
     full_name: string;
     position: string | null;
+    nfl_team: string | null;
     sleeper_id: string | null;
     espn_nfl_id: string | null;
 }
@@ -58,6 +59,22 @@ function normalizeName(name: string): string {
         .split(' ')
         .filter(part => part && !SUFFIXES.has(part))
         .join(' ');
+}
+
+/**
+ * Key a team defense by nickname.
+ *
+ * ESPN calls one "Lions D/ST" where the pool stores "Detroit Lions D/ST",
+ * so the plain name match drops all 32 of them. Every NFL nickname is a
+ * single word, so stripping the D/ST suffix and taking the last word gives
+ * both spellings the same key.
+ */
+function dstKey(name: string): string {
+    const n = normalizeName(name)
+        .replace(/\b(d st|dst|defense|special teams)\b/g, '')
+        .trim();
+    const parts = n.split(' ').filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : '';
 }
 
 async function fetchJson(url: string, headers: Record<string, string>) {
@@ -114,22 +131,35 @@ async function refreshSleeper(pool: PoolPlayer[], today: string) {
     if (!Array.isArray(rows) || rows.length === 0) throw new Error('no projection rows');
 
     const out: { pid: number; pts: number; pos: string }[] = [];
+    let unmatched = 0;
     for (const row of rows) {
         const p = bySleeper.get(String(row?.player_id ?? ''));
-        if (!p) continue;                       // IDP and other non-pool players
+        if (!p) { unmatched++; continue; }      // IDP and other non-pool players
         const pts = Number(row?.stats?.pts_ppr);
         if (!Number.isFinite(pts) || pts <= 0) continue;
         out.push({ pid: p.id, pts: Number(pts.toFixed(2)), pos: (p.position || '').toUpperCase() });
     }
-    return { seen: rows.length, saved: await saveProjections('Sleeper', out, today) };
+    return {
+        seen: rows.length,
+        saved: await saveProjections('Sleeper', out, today),
+        unmatched,
+    };
 }
 
 async function refreshEspn(pool: PoolPlayer[], today: string) {
     const byEspn = new Map(pool.filter(p => p.espn_nfl_id).map(p => [String(p.espn_nfl_id), p]));
     const byNamePos = new Map<string, PoolPlayer>();
+    const byDst = new Map<string, PoolPlayer>();
     const ambiguous = new Set<string>();
     for (const p of pool) {
-        const key = `${normalizeName(p.full_name)}|${(p.position || '').toUpperCase()}`;
+        const pos = (p.position || '').toUpperCase();
+        if (pos === 'DST') {
+            const nick = dstKey(p.full_name);
+            if (nick) byDst.set(nick, p);
+            if (p.nfl_team) byDst.set(p.nfl_team.toUpperCase(), p);
+            continue;
+        }
+        const key = `${normalizeName(p.full_name)}|${pos}`;
         if (byNamePos.has(key)) ambiguous.add(key);
         byNamePos.set(key, p);
     }
@@ -154,14 +184,17 @@ async function refreshEspn(pool: PoolPlayer[], today: string) {
     }
 
     const out: { pid: number; pts: number; pos: string }[] = [];
+    let unmatched = 0;
     for (const entry of players) {
         const raw = entry?.player ?? {};
         const pos = ESPN_POSITIONS[raw?.defaultPositionId];
         if (!pos) continue;
 
-        const player = byEspn.get(String(raw?.id ?? ''))
-            ?? byNamePos.get(`${normalizeName(raw?.fullName ?? '')}|${pos}`);
-        if (!player) continue;
+        const name = raw?.fullName ?? '';
+        const player = pos === 'DST'
+            ? byDst.get(dstKey(name)) ?? byDst.get(String(raw?.proTeamId ?? '').toUpperCase())
+            : byEspn.get(String(raw?.id ?? '')) ?? byNamePos.get(`${normalizeName(name)}|${pos}`);
+        if (!player) { unmatched++; continue; }
 
         // The full-season projection, as opposed to a weekly or actual split.
         const stat = (raw?.stats ?? []).find(
@@ -171,7 +204,11 @@ async function refreshEspn(pool: PoolPlayer[], today: string) {
         if (!Number.isFinite(pts) || pts <= 0) continue;
         out.push({ pid: player.id, pts: Number(pts.toFixed(2)), pos });
     }
-    return { seen: players.length, saved: await saveProjections('ESPN', out, today) };
+    return {
+        seen: players.length,
+        saved: await saveProjections('ESPN', out, today),
+        unmatched,
+    };
 }
 
 export async function GET(req: NextRequest) {
@@ -182,7 +219,7 @@ export async function GET(req: NextRequest) {
 
     const today = new Date().toISOString().slice(0, 10);
     const pool = await query<PoolPlayer>(
-        `SELECT id, full_name, position, sleeper_id, espn_nfl_id
+        `SELECT id, full_name, position, nfl_team, sleeper_id, espn_nfl_id
            FROM players WHERE redraft_pool = 1`,
     );
 
@@ -191,7 +228,7 @@ export async function GET(req: NextRequest) {
         refreshSleeper(pool, today),
         refreshEspn(pool, today),
     ]);
-    const report = (r: PromiseSettledResult<{ seen: number; saved: number }>) =>
+    const report = (r: PromiseSettledResult<{ seen: number; saved: number; unmatched: number }>) =>
         r.status === 'fulfilled' ? r.value : { error: String(r.reason?.message ?? r.reason) };
 
     const ok = sleeper.status === 'fulfilled' || espn.status === 'fulfilled';
