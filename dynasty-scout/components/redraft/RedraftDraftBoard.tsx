@@ -7,6 +7,7 @@ import { RedraftPlayer } from '@/lib/types';
 import { POSITION_COLORS, POSITION_RAW, REDRAFT_POSITIONS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useDrafted, REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
+import { RANK_SOURCES, RankSourceKey } from '@/lib/mockDraft';
 
 
 interface Props {
@@ -17,27 +18,15 @@ interface Props {
 const LEAGUE_SIZES = [8, 10, 12, 14, 16] as const;
 const DEFAULT_SIZE = 12;
 
-type BoardSort = 'consensus' | 'mine' | keyof RedraftPlayer;
-
 /**
- * What the board can be ordered by. 'consensus' keeps the order it was handed
- * (the weighted consensus, or whatever the list view was sorted by); 'mine'
- * flattens the redraft tier builder into a personal 1..N ranking.
+ * What the board can be ordered by, from the shared list in lib/mockDraft —
+ * this component used to keep its own copy, which is how it ended up the one
+ * place a newly added source did not appear.
+ *
+ * 'consensus' keeps the order it was handed (the weighted consensus, or
+ * whatever the list view was sorted by); 'mine' flattens the redraft tier
+ * builder into a personal 1..N ranking.
  */
-const SORT_OPTIONS: { key: BoardSort; label: string }[] = [
-    { key: 'consensus', label: 'Consensus' },
-    { key: 'mine', label: 'My Tiers' },
-    { key: 'fp_rank', label: 'FantasyPros' },
-    { key: 'espn_rank', label: 'ESPN' },
-    { key: 'flock_rank', label: 'Flock' },
-    { key: 'cbs_rank', label: 'CBS' },
-    { key: 'sleeper_rank', label: 'Sleeper ADP' },
-    { key: 'yahoo_rank', label: 'Yahoo' },
-    { key: 'underdog_rank', label: 'Underdog' },
-    { key: 'ffpc_rank', label: 'FFPC' },
-    { key: 'ktc_rank', label: 'KeepTradeCut' },
-    { key: 'fc_rank', label: 'FantasyCalc' },
-];
 
 interface TierApiRow {
     id: number;
@@ -70,7 +59,7 @@ function shortName(p: RedraftPlayer): string {
 
 export function RedraftDraftBoard({ players }: Props) {
     const [perRound, setPerRound] = useState<number>(DEFAULT_SIZE);
-    const [sortBy, setSortBy] = useState<BoardSort>('consensus');
+    const [sortBy, setSortBy] = useState<RankSourceKey>('consensus');
     const [myRanks, setMyRanks] = useState<Map<number, number>>(new Map());
     const [tierNames, setTierNames] = useState<Map<number, string>>(new Map());
     const [confirmReset, setConfirmReset] = useState(false);
@@ -166,11 +155,11 @@ export function RedraftDraftBoard({ players }: Props) {
                         <span className="text-[10px] text-muted-foreground/60 font-semibold">Order by</span>
                         <select
                             value={String(sortBy)}
-                            onChange={e => setSortBy(e.target.value as BoardSort)}
+                            onChange={e => setSortBy(e.target.value as RankSourceKey)}
                             aria-label="Order the board by"
                             className="h-7 rounded-lg bg-card border border-border/60 px-2 text-[11px] font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-sky-400/40"
                         >
-                            {SORT_OPTIONS.map(o => (
+                            {RANK_SOURCES.map(o => (
                                 <option
                                     key={String(o.key)}
                                     value={String(o.key)}
@@ -237,7 +226,7 @@ export function RedraftDraftBoard({ players }: Props) {
                 <div className="px-2 text-[11px] text-muted-foreground/60">
                     Ordered by{' '}
                     <span className="text-sky-400 font-semibold">
-                        {SORT_OPTIONS.find(o => o.key === sortBy)?.label}
+                        {RANK_SOURCES.find(o => o.key === sortBy)?.label}
                     </span>
                     {' — '}{rankedBySort.toLocaleString()} ranked
                     {sortBy === 'mine'
