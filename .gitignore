@@ -31,3 +31,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Stray SQLite file if a script is run from the repo root by mistake
+/dynasty_scout.db

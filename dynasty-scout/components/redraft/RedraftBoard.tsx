@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Fuse from 'fuse.js';
-import { Search, X, Star, Gavel, ChevronUp, ChevronDown, ChevronsUpDown, LayoutList, LayoutGrid, LayoutPanelTop } from 'lucide-react';
+import { Search, X, Star, Gavel, ChevronUp, ChevronDown, ChevronsUpDown, ArrowUpNarrowWide, ArrowDownWideNarrow, LayoutList, LayoutGrid, LayoutPanelTop } from 'lucide-react';
 import { RedraftPlayer } from '@/lib/types';
 import { POSITION_PILL_ACTIVE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -16,8 +16,12 @@ import { RedraftDraftBoard } from './RedraftDraftBoard';
 import {
     getRedraftColDefs, getRedraftGridTemplate,
     RedraftDataset, RedraftSortKey, REDRAFT_POSITION_FILTERS,
+    REDRAFT_SORT_GROUPS, REDRAFT_SORT_LABELS,
 } from '@/lib/redraftColumns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+    Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 
 const DATASETS: { value: RedraftDataset; label: string; hint: string }[] = [
     { value: 'snapshot',    label: 'Snapshot',    hint: 'Recent production plus where the market has them' },
@@ -234,6 +238,19 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
     }, [players, fuse, debouncedQuery, positionFilter, favoritesOnly, availableOnly,
         watchlist, drafted, sortKey, sortDir]);
 
+    /**
+     * The dropdown picks the metric and always starts it best-first.
+     *
+     * 'asc' here means the metric's own natural order, not a numeric direction:
+     * the comparator above already flips ranks against rates via ASCENDING_KEYS,
+     * so rank 1 and the highest target share both lead under 'asc'. Setting the
+     * direction per metric here would flip it a second time.
+     */
+    function chooseSort(key: RedraftSortKey) {
+        setSortKey(key);
+        setSortDir('asc');
+    }
+
     function handleSort(key: RedraftSortKey) {
         if (sortKey === key) {
             setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
@@ -290,6 +307,51 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                                 </button>
                             );
                         })}
+                    </div>
+
+                    {/* Sort by any metric, whether or not the current lens shows it */}
+                    <div className="flex items-center gap-1">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/40 hidden lg:inline">
+                            Sort
+                        </span>
+                        <Select value={sortKey} onValueChange={(v) => chooseSort(v as RedraftSortKey)}>
+                            <SelectTrigger
+                                aria-label="Sort players by"
+                                className="h-8 w-[150px] sm:w-[190px] bg-card border-border/60 text-[12px]"
+                            >
+                                <SelectValue>{REDRAFT_SORT_LABELS[sortKey] ?? 'Consensus rank'}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent className="max-h-[60vh]">
+                                {REDRAFT_SORT_GROUPS.map(g => (
+                                    <SelectGroup key={g.group}>
+                                        <SelectLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/50">
+                                            {g.group}
+                                        </SelectLabel>
+                                        {g.options.map(o => (
+                                            <SelectItem key={o.key} value={o.key} className="text-[12px]">
+                                                {o.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+                                    aria-label={sortDir === 'asc' ? 'Best first — click to reverse' : 'Reversed — click for best first'}
+                                    className="h-8 w-8 grid place-items-center rounded-lg bg-card border border-border/60 text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                    {sortDir === 'asc'
+                                        ? <ArrowUpNarrowWide className="w-3.5 h-3.5" />
+                                        : <ArrowDownWideNarrow className="w-3.5 h-3.5" />}
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {sortDir === 'asc' ? 'Best first' : 'Reversed — worst first'}
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
 
                     {/* Toggles */}
