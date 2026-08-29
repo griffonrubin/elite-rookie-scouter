@@ -10,6 +10,26 @@
 
 const API = 'https://api.sleeper.app/v1';
 
+/**
+ * Once a direct call fails at the network layer (CORS stripped by an
+ * extension, a corporate proxy, an older browser), every later call goes
+ * through our stateless same-origin relay instead. HTTP errors (a 404 for
+ * a bad draft id, say) are real answers and never trigger the switch.
+ */
+let viaProxy = false;
+
+async function fetchJson<T>(url: string): Promise<T> {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new HttpError(res.status, url);
+    return res.json() as Promise<T>;
+}
+
+class HttpError extends Error {
+    constructor(public status: number, url: string) {
+        super(`Sleeper returned ${status} for ${url}`);
+    }
+}
+
 export interface SleeperDraft {
     draft_id: string;
     status: 'pre_draft' | 'drafting' | 'paused' | 'complete';
@@ -34,9 +54,17 @@ export interface SleeperPick {
 }
 
 async function get<T>(path: string): Promise<T> {
-    const res = await fetch(`${API}${path}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`Sleeper returned ${res.status} for ${path}`);
-    return res.json() as Promise<T>;
+    if (!viaProxy) {
+        try {
+            return await fetchJson<T>(`${API}${path}`);
+        } catch (e) {
+            if (e instanceof HttpError) throw e;
+            // A TypeError here means the request never got an answer —
+            // fall back to the relay and stay on it.
+            viaProxy = true;
+        }
+    }
+    return fetchJson<T>(`/api/sleeper${path}`);
 }
 
 export async function getUserId(username: string): Promise<string | null> {
@@ -74,8 +102,11 @@ export async function getDraftPicks(draftId: string): Promise<SleeperPick[]> {
 export function parseDraftId(input: string): string | null {
     const t = input.trim();
     if (/^\d{10,}$/.test(t)) return t;
-    const m = t.match(/draft\/nfl\/(\d{10,})/);
-    return m ? m[1] : null;
+    // Sleeper draft ids are long snowflakes; any URL from the draft room
+    // (league drafts, mocks, app share links) carries one. Take the first
+    // long number rather than betting on one URL shape.
+    const m = t.match(/(\d{15,20})/);
+    return m && /sleeper/i.test(t) ? m[1] : null;
 }
 
 /** Human label for a draft in the picker list. */
