@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useDrafted, REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
 import { useIsPhone } from '@/lib/useIsPhone';
+import { useSleeperSync } from '@/lib/useSleeperSync';
+import { SleeperSync } from './SleeperSync';
 import { REDRAFT_WATCHLIST_KEY } from '@/components/WatchlistButton';
 import { RedraftMiniCard } from './RedraftMiniCard';
 import { RedraftBoxView } from './RedraftBoxView';
@@ -163,6 +165,17 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
     const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
 
     const { drafted, toggle: toggleDrafted, reset: resetDrafted } = useDrafted(REDRAFT_DRAFTED_KEY);
+
+    // Players gone in the connected Sleeper draft. A separate layer from the
+    // right-click marks: unioned for display, untouched by Reset, and gone
+    // the moment the user disconnects.
+    const sleeper = useSleeperSync(players);
+    const allDrafted = useMemo(() => {
+        if (sleeper.takenSlugs.size === 0) return drafted;
+        const merged = new Set(drafted);
+        sleeper.takenSlugs.forEach(s => merged.add(s));
+        return merged;
+    }, [drafted, sleeper.takenSlugs]);
     const debouncedQuery = useDebounce(searchQuery, 300);
 
     // The stat table needs horizontal room; below `md` cards read far better.
@@ -222,7 +235,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
             list = list.filter(p => watchlist.has(p.slug));
         }
         if (availableOnly) {
-            list = list.filter(p => !drafted.has(p.slug));
+            list = list.filter(p => !allDrafted.has(p.slug));
         }
 
         if (sortKey !== 'rank' || sortDir !== 'asc') {
@@ -239,7 +252,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
         }
         return list;
     }, [players, fuse, debouncedQuery, positionFilter, favoritesOnly, availableOnly,
-        watchlist, drafted, sortKey, sortDir]);
+        watchlist, allDrafted, sortKey, sortDir]);
 
     /**
      * The dropdown picks the metric and always starts it best-first.
@@ -362,7 +375,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                     </div>
 
                     {/* Toggles */}
-                    <div className="flex items-center gap-1 ml-auto">
+                    <div className="flex flex-wrap items-center gap-1 ml-auto">
                         <div className="flex items-center gap-0.5 bg-card border border-border/60 rounded-lg p-1 mr-1">
                             {([
                                 ['table', LayoutList, 'List view'],
@@ -385,6 +398,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                                 </button>
                             ))}
                         </div>
+                        <SleeperSync sync={sleeper} />
                         <button
                             onClick={() => setFavoritesOnly(v => !v)}
                             className={cn(
@@ -555,7 +569,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                             rank={p.board_rank ?? i + 1}
                             positionFilter={positionFilter}
                             dataset={dataset}
-                            isDrafted={drafted.has(p.slug)}
+                            isDrafted={allDrafted.has(p.slug)}
                             phone={isPhone}
                             onToggleDrafted={toggleDrafted}
                         />
@@ -564,14 +578,14 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
             </div>
             </div>
             ) : viewMode === 'board' ? (
-                <RedraftDraftBoard players={visible} />
+                <RedraftDraftBoard players={visible} extraDrafted={sleeper.takenSlugs} />
             ) : (
                 visible.length === 0 ? (
                     <div className="p-16 text-center text-muted-foreground text-sm border border-dashed border-border rounded-2xl">
                         No players match these filters.
                     </div>
                 ) : (
-                    <RedraftBoxView players={visible} drafted={drafted} onToggleDrafted={toggleDrafted} />
+                    <RedraftBoxView players={visible} drafted={allDrafted} onToggleDrafted={toggleDrafted} />
                 )
             )}
         </div>

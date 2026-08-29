@@ -74,7 +74,7 @@ export const REDRAFT_BOARD_SQL = `
     SELECT * FROM nfl_advanced_season WHERE season = 2025
   )
   SELECT
-    p.id, p.slug, p.full_name, p.position, p.nfl_team, p.nfl_headshot_url,
+    p.id, p.slug, p.full_name, p.position, p.nfl_team, p.sleeper_id, p.nfl_headshot_url,
     p.headshot_url, p.dob, p.years_exp, p.nfl_draft_year, p.draft_year,
     p.height_inches, p.weight_lbs,
     t.logo_url AS team_logo, t.primary_color AS team_color,

@@ -359,6 +359,8 @@ export interface RedraftPlayer {
     draft_year: number | null;
     height_inches: number | null;
     weight_lbs: number | null;
+    /** Sleeper's player id — what a live Sleeper draft identifies picks by. */
+    sleeper_id: string | null;
     team_logo: string | null;
     team_color: string | null;
 
