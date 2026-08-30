@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { WatchlistButton, REDRAFT_WATCHLIST_KEY } from '@/components/WatchlistButton';
 import { DraftedButton } from '@/components/DraftedButton';
 import { REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
-import { formatOdds, oddsTone, PlayerOdds } from '@/lib/draftOdds';
+import { formatOdds, oddsTone, ordinal, PlayerOdds } from '@/lib/draftOdds';
 
 interface Props {
     players: RedraftPlayer[];
@@ -52,7 +52,17 @@ export function RedraftBoxView({ players, drafted, odds, onToggleDrafted }: Prop
                     { label: 'Fin ’25', val: p.fin25 != null ? `${pos}${p.fin25}` : '—' },
                     { label: 'Proj ’26', val: fmt(p.proj_points), accent: 'text-sky-300' },
                     odd
-                        ? { label: 'Back to me', val: formatOdds(odd.next), accent: oddsTone(odd.next) }
+                        ? {
+                            label: 'Back to me',
+                            val: formatOdds(odd.next),
+                            accent: oddsTone(odd.next),
+                            title: `${formatOdds(odd.next)} chance he is still there at your next pick`
+                                + ` — ${ordinal(odd.rank)} on the board`
+                                + ` with ${odd.picksBetween} `
+                                + `${odd.picksBetween === 1 ? 'pick' : 'picks'} before your turn`
+                                + (odd.following != null ? ` · ${formatOdds(odd.following)} the round after` : '')
+                                + (odd.board ? ` · weighted to ${odd.board}` : ''),
+                        }
                         : { label: 'Team O/U', val: fmt(p.vegas_implied_total, 1) },
                 ];
 
@@ -138,7 +148,8 @@ export function RedraftBoxView({ players, drafted, odds, onToggleDrafted }: Prop
                         {/* KPI strip */}
                         <div className="grid grid-cols-4 gap-1">
                             {kpis.map(k => (
-                                <div key={k.label} className="rounded-md bg-white/[0.03] px-1 py-1 text-center min-w-0">
+                                <div key={k.label} title={'title' in k ? k.title : undefined}
+                                    className="rounded-md bg-white/[0.03] px-1 py-1 text-center min-w-0">
                                     <div className="text-[9px] uppercase tracking-wide text-muted-foreground/50 truncate">
                                         {k.label}
                                     </div>

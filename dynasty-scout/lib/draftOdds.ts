@@ -308,6 +308,8 @@ export interface PlayerOdds {
     picksBetween: number;
     /** False when this rests on the consensus fallback rather than real ADP. */
     fromAdp: boolean;
+    /** The board the estimate leans on, when the caller named one. */
+    board?: string;
 }
 
 /**
@@ -351,6 +353,7 @@ export function buildOddsBoard(
             rank,
             picksBetween: between,
             fromAdp: entry.fromAdp,
+            board: ctx.weightLabel,
         });
     });
     return out;
@@ -362,6 +365,13 @@ export function oddsTone(pct: number): string {
     if (pct >= 0.45) return 'text-sky-400';
     if (pct >= 0.20) return 'text-amber-400';
     return 'text-rose-400';
+}
+
+/** 1st, 2nd, 3rd, 4th … for the "he is Nth on the board" phrasing. */
+export function ordinal(n: number): string {
+    const rem100 = n % 100;
+    if (rem100 >= 11 && rem100 <= 13) return `${n}th`;
+    return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 }
 
 export function formatOdds(pct: number): string {

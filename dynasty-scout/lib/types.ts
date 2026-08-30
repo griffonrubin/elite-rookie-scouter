@@ -361,6 +361,8 @@ export interface RedraftPlayer {
     weight_lbs: number | null;
     /** Sleeper's player id — what a live Sleeper draft identifies picks by. */
     sleeper_id: string | null;
+    /** ESPN's player id — the same job for a live ESPN draft. */
+    espn_nfl_id: string | null;
     team_logo: string | null;
     team_color: string | null;
 
