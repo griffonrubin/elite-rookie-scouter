@@ -104,10 +104,20 @@ export function SleeperSync({ sync }: { sync: SleeperSyncState }) {
                         value={sync.connection.slot ?? ''}
                         onChange={e => sync.setSlot(e.target.value ? Number(e.target.value) : undefined)}
                         aria-label="Your draft slot — needed to work out when your next pick lands"
-                        title="Your draft slot. Set it and the board shows the chance each player comes back to you."
-                        className="h-6 rounded-md bg-black/30 border border-current/25 px-1 text-[10px] font-bold text-current focus:outline-none"
+                        title={sync.connection.slot
+                            ? `Drafting from slot ${sync.connection.slot}. Every player shows the chance he comes back to you.`
+                            : 'Pick your draft slot to see the chance each player comes back to you at your next turn.'}
+                        className={cn(
+                            'h-6 rounded-md px-1 text-[10px] font-bold focus:outline-none',
+                            // Unset, the odds cannot be worked out and nothing
+                            // appears — so the control that unlocks them asks
+                            // for attention rather than sitting quiet.
+                            sync.connection.slot
+                                ? 'bg-black/30 border border-current/25 text-current'
+                                : 'bg-amber-500/20 border border-amber-400/60 text-amber-300 animate-pulse',
+                        )}
                     >
-                        <option value="">slot?</option>
+                        <option value="">set slot</option>
                         {Array.from({ length: sync.shape.teams }, (_, i) => i + 1).map(n => (
                             <option key={n} value={n}>{`slot ${n}`}</option>
                         ))}

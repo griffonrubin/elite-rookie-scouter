@@ -279,6 +279,7 @@ export function MockDraftClient({ players }: Props) {
             layout={layout}
             onLayoutChange={setLayout}
             sortSource={sortSource}
+            odds={oddsBySlug}
             onSortChange={setSortSource}
             myRanks={myRanks}
             eligibility={myTurn ? eligibilityFor(myTeamIndex) : null}
