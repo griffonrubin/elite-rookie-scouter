@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import {
+    dstKey, ESPN_POSITIONS, matchEspnIds, normalizeName, PoolPlayer, writeEspnIds,
+} from '@/lib/espnPlayers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,10 +16,11 @@ export const maxDuration = 300;
  * which also has one, so the projections stay current without anybody
  * running the local pipeline.
  *
- * Projections only. The ranking sources are deliberately left to the local
- * pipeline: the consensus is rebuilt there in the same pass, and writing
- * fresher source ranks here without recomputing it would leave the board's
- * consensus column disagreeing with the columns beside it.
+ * Projections, plus the ESPN player ids that live-draft sync matches picks
+ * on. The ranking sources are deliberately left to the local pipeline: the
+ * consensus is rebuilt there in the same pass, and writing fresher source
+ * ranks here without recomputing it would leave the board's consensus column
+ * disagreeing with the columns beside it.
  *
  * Auth mirrors /api/cron/trades — Vercel Cron sends VERCEL_CRON_SECRET as a
  * bearer token, and the check is skipped when the variable is not set.
@@ -34,48 +38,16 @@ const ESPN_URL =
     'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/'
     + `${SEASON}/segments/0/leaguedefaults/3?view=kona_player_info`;
 
-/** ESPN's internal position ids. */
-const ESPN_POSITIONS: Record<number, string> = {
-    1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K', 16: 'DST',
-};
-
-interface PoolPlayer {
-    id: number;
-    full_name: string;
-    position: string | null;
-    nfl_team: string | null;
-    sleeper_id: string | null;
-    espn_nfl_id: string | null;
-}
-
-/** Same normalisation as scrapers/redraft/names.py, for the ESPN name fallback. */
-const SUFFIXES = new Set(['jr', 'sr', 'ii', 'iii', 'iv', 'v']);
-function normalizeName(name: string): string {
-    return (name || '')
-        .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[.'`’]/g, '')
-        .replace(/[^a-z0-9]+/g, ' ')
-        .split(' ')
-        .filter(part => part && !SUFFIXES.has(part))
-        .join(' ');
-}
-
 /**
- * Key a team defense by nickname.
+ * ESPN's whole player universe — id, name, position, team and nothing else.
  *
- * ESPN calls one "Lions D/ST" where the pool stores "Detroit Lions D/ST",
- * so the plain name match drops all 32 of them. Every NFL nickname is a
- * single word, so stripping the D/ST suffix and taking the last word gives
- * both spellings the same key.
+ * The projections feed above is the top few hundred by draft rank, which is
+ * all a projection needs but leaves the tail of the pool without an id. This
+ * list is far deeper and far lighter, carrying no stats at all.
  */
-function dstKey(name: string): string {
-    const n = normalizeName(name)
-        .replace(/\b(d st|dst|defense|special teams)\b/g, '')
-        .trim();
-    const parts = n.split(' ').filter(Boolean);
-    return parts.length ? parts[parts.length - 1] : '';
-}
+const ESPN_PLAYERS_URL =
+    'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/'
+    + `${SEASON}/players?scoringPeriodId=0&view=players_wl`;
 
 async function fetchJson(url: string, headers: Record<string, string>) {
     const res = await fetch(url, {
@@ -211,6 +183,43 @@ async function refreshEspn(pool: PoolPlayer[], today: string) {
     };
 }
 
+/**
+ * Fill in the ESPN ids the pool is missing.
+ *
+ * Live-draft sync matches an ESPN pick by `espn_nfl_id`, so a player without
+ * one cannot come off the board when he is drafted. Nobody near the top of
+ * the board is missing one today, but pool membership moves through the
+ * season — a player at rank 500 in August can be rank 150 in November — so
+ * this keeps the gap from ever reaching the part of the board that is
+ * actually drafted.
+ */
+async function backfillEspnIds(pool: PoolPlayer[]) {
+    if (pool.every(p => p.espn_nfl_id)) {
+        return { missing: 0, filled: 0, skipped: 0, universe: 0 };
+    }
+    const headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+            + '(KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+        Accept: 'application/json',
+    };
+    // The filter asks for everyone rather than only the active players ESPN
+    // returns by default. If it is rejected, the unfiltered list is still
+    // worth having, so fall back to it rather than losing the whole pass.
+    let players: unknown;
+    try {
+        players = await fetchJson(ESPN_PLAYERS_URL, {
+            ...headers, 'X-Fantasy-Filter': JSON.stringify({ filterActive: null }),
+        });
+    } catch {
+        players = await fetchJson(ESPN_PLAYERS_URL, headers);
+    }
+    if (!Array.isArray(players) || players.length === 0) {
+        throw new Error('players_wl returned no players');
+    }
+    const { found, missing, skipped } = matchEspnIds(pool, players);
+    return { missing, filled: await writeEspnIds(found), skipped, universe: players.length };
+}
+
 export async function GET(req: NextRequest) {
     const secret = req.headers.get('authorization')?.replace('Bearer ', '');
     if (process.env.VERCEL_CRON_SECRET && secret !== process.env.VERCEL_CRON_SECRET) {
@@ -223,12 +232,14 @@ export async function GET(req: NextRequest) {
            FROM players WHERE redraft_pool = 1`,
     );
 
-    // One source failing must not cost the other its refresh.
-    const [sleeper, espn] = await Promise.allSettled([
+    // One of these failing must not cost the others their refresh — and the
+    // id backfill in particular must never be able to fail a projection run.
+    const [sleeper, espn, ids] = await Promise.allSettled([
         refreshSleeper(pool, today),
         refreshEspn(pool, today),
+        backfillEspnIds(pool),
     ]);
-    const report = (r: PromiseSettledResult<{ seen: number; saved: number; unmatched: number }>) =>
+    const report = (r: PromiseSettledResult<unknown>) =>
         r.status === 'fulfilled' ? r.value : { error: String(r.reason?.message ?? r.reason) };
 
     const ok = sleeper.status === 'fulfilled' || espn.status === 'fulfilled';
@@ -239,5 +250,6 @@ export async function GET(req: NextRequest) {
         pool: pool.length,
         sleeper: report(sleeper),
         espn: report(espn),
+        espn_ids: report(ids),
     }, { status: ok ? 200 : 502 });
 }
