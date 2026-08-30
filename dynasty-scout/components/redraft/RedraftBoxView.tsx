@@ -9,10 +9,13 @@ import { cn } from '@/lib/utils';
 import { WatchlistButton, REDRAFT_WATCHLIST_KEY } from '@/components/WatchlistButton';
 import { DraftedButton } from '@/components/DraftedButton';
 import { REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
+import { formatOdds, oddsTone, PlayerOdds } from '@/lib/draftOdds';
 
 interface Props {
     players: RedraftPlayer[];
     drafted: Set<string>;
+    /** Chance each player lasts to your next pick; null with no live draft. */
+    odds?: Map<string, PlayerOdds> | null;
     onToggleDrafted?: (slug: string) => void;
 }
 
@@ -27,7 +30,7 @@ function fmt(v: number | null | undefined, digits = 0): string {
  * projection, and the offence Vegas expects around him. Everything else
  * lives one tap away on the profile.
  */
-export function RedraftBoxView({ players, drafted, onToggleDrafted }: Props) {
+export function RedraftBoxView({ players, drafted, odds, onToggleDrafted }: Props) {
     return (
         <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {players.map((p, i) => {
@@ -39,12 +42,18 @@ export function RedraftBoxView({ players, drafted, onToggleDrafted }: Props) {
                 const isRookie = p.draft_year === 2026;
                 const isTop = rank <= 12;
                 const contested = p.std_deviation != null && p.std_deviation >= 15;
+                const odd = odds?.get(p.slug) ?? null;
 
+                // During a live draft the odds displace the least
+                // decision-relevant tile — you can read Vegas any time, but
+                // "does he come back to me" only matters on the clock.
                 const kpis = [
                     { label: 'PPG ’25', val: fmt(p.ppg25, 1) },
                     { label: 'Fin ’25', val: p.fin25 != null ? `${pos}${p.fin25}` : '—' },
                     { label: 'Proj ’26', val: fmt(p.proj_points), accent: 'text-sky-300' },
-                    { label: 'Team O/U', val: fmt(p.vegas_implied_total, 1) },
+                    odd
+                        ? { label: 'Back to me', val: formatOdds(odd.next), accent: oddsTone(odd.next) }
+                        : { label: 'Team O/U', val: fmt(p.vegas_implied_total, 1) },
                 ];
 
                 return (

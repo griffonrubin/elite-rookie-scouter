@@ -12,6 +12,7 @@ import { useDrafted, REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
 import { useIsPhone } from '@/lib/useIsPhone';
 import { useSleeperSync } from '@/lib/useSleeperSync';
 import { SleeperSync } from './SleeperSync';
+import { buildOddsContext, oddsFor, platformWeights, PlayerOdds } from '@/lib/draftOdds';
 import { REDRAFT_WATCHLIST_KEY } from '@/components/WatchlistButton';
 import { RedraftMiniCard } from './RedraftMiniCard';
 import { RedraftBoxView } from './RedraftBoxView';
@@ -176,6 +177,38 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
         sleeper.takenSlugs.forEach(s => merged.add(s));
         return merged;
     }, [drafted, sleeper.takenSlugs]);
+
+    /**
+     * Chance each player comes back to you at your next turn.
+     *
+     * Needs a live draft to be meaningful: how many picks have gone, how many
+     * teams, and which slot you sit in. A connected Sleeper draft supplies the
+     * first two; the slot is set on the connection chip. Without all three
+     * there is no next pick to ask about and the column stays hidden.
+     */
+    const oddsCtx = useMemo(() => {
+        const slot = sleeper.connection?.slot;
+        if (!sleeper.shape || !slot) return null;
+        // The room is drafting on Sleeper, off Sleeper's board — so that is
+        // what the estimate leans on, tempered by the other market ADPs.
+        return buildOddsContext(
+            { teams: sleeper.shape.teams, slot, snake: sleeper.shape.snake },
+            sleeper.pickCount,
+            sleeper.shape.rounds,
+            platformWeights('sleeper_rank'),
+            'Sleeper ADP',
+        );
+    }, [sleeper.shape, sleeper.connection?.slot, sleeper.pickCount]);
+
+    const oddsBySlug = useMemo(() => {
+        if (!oddsCtx) return null;
+        const map = new Map<string, PlayerOdds>();
+        for (const p of players) {
+            const o = oddsFor(p, oddsCtx, allDrafted.has(p.slug));
+            if (o) map.set(p.slug, o);
+        }
+        return map;
+    }, [players, oddsCtx, allDrafted]);
     const debouncedQuery = useDebounce(searchQuery, 300);
 
     // The stat table needs horizontal room; below `md` cards read far better.
@@ -239,6 +272,13 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
         }
 
         if (sortKey !== 'rank' || sortDir !== 'asc') {
+            if (sortKey === 'back_odds' && oddsBySlug) {
+                // Highest chance of coming back first; players with no estimate
+                // (already gone, or unranked) fall in behind.
+                list = [...list].sort((a, b) =>
+                    (oddsBySlug.get(b.slug)?.next ?? -1) - (oddsBySlug.get(a.slug)?.next ?? -1));
+                return sortDir === 'asc' ? list : [...list].reverse();
+            }
             const ascByNature = ASCENDING_KEYS.has(sortKey);
             list = [...list].sort((a, b) => {
                 const av = sortValue(a, sortKey);
@@ -252,7 +292,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
         }
         return list;
     }, [players, fuse, debouncedQuery, positionFilter, favoritesOnly, availableOnly,
-        watchlist, allDrafted, sortKey, sortDir]);
+        watchlist, allDrafted, sortKey, sortDir, oddsBySlug]);
 
     /**
      * The dropdown picks the metric and always starts it best-first.
@@ -570,6 +610,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                             positionFilter={positionFilter}
                             dataset={dataset}
                             isDrafted={allDrafted.has(p.slug)}
+                            odds={oddsBySlug?.get(p.slug) ?? null}
                             phone={isPhone}
                             onToggleDrafted={toggleDrafted}
                         />
@@ -585,7 +626,8 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                         No players match these filters.
                     </div>
                 ) : (
-                    <RedraftBoxView players={visible} drafted={allDrafted} onToggleDrafted={toggleDrafted} />
+                    <RedraftBoxView players={visible} drafted={allDrafted}
+                        odds={oddsBySlug} onToggleDrafted={toggleDrafted} />
                 )
             )}
         </div>

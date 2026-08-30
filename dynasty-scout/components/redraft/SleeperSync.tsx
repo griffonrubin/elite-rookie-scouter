@@ -99,6 +99,20 @@ export function SleeperSync({ sync }: { sync: SleeperSyncState }) {
                 </span>
                 <span className="hidden sm:inline max-w-[130px] truncate">{sync.connection.label}</span>
                 <span className="text-[10px] opacity-70 whitespace-nowrap">{statusText}</span>
+                {sync.shape && (
+                    <select
+                        value={sync.connection.slot ?? ''}
+                        onChange={e => sync.setSlot(e.target.value ? Number(e.target.value) : undefined)}
+                        aria-label="Your draft slot — needed to work out when your next pick lands"
+                        title="Your draft slot. Set it and the board shows the chance each player comes back to you."
+                        className="h-6 rounded-md bg-black/30 border border-current/25 px-1 text-[10px] font-bold text-current focus:outline-none"
+                    >
+                        <option value="">slot?</option>
+                        {Array.from({ length: sync.shape.teams }, (_, i) => i + 1).map(n => (
+                            <option key={n} value={n}>{`slot ${n}`}</option>
+                        ))}
+                    </select>
+                )}
                 <button
                     onClick={sync.disconnect}
                     aria-label="Disconnect from the Sleeper draft"

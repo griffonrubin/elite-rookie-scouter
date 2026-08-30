@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { RedraftPlayer } from '@/lib/types';
+import { formatOdds, oddsTone, PlayerOdds } from '@/lib/draftOdds';
 import { POSITION_COLORS, POSITION_PILL_ACTIVE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import {
@@ -11,6 +12,8 @@ import {
 
 interface Props {
     available: RedraftPlayer[];
+    /** Chance each player lasts to your next turn, weighted for this room. */
+    odds?: Map<string, PlayerOdds> | null;
     sortSource: RankSourceKey;
     onSortChange: (s: RankSourceKey) => void;
     myRanks?: Map<number, number>;
@@ -23,7 +26,7 @@ interface Props {
 const POS_FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K', 'DST'] as const;
 
 export function MockPlayerList({
-    available, sortSource, onSortChange, myRanks, eligibility, onDraft, myTurn,
+    available, odds, sortSource, onSortChange, myRanks, eligibility, onDraft, myTurn,
 }: Props) {
     const [query, setQuery] = useState('');
     const [pos, setPos] = useState<string>('ALL');
@@ -128,6 +131,18 @@ export function MockPlayerList({
                                     {p.nfl_team || 'FA'}
                                     {p.fin25 != null && ` · ${pp}${p.fin25} in 2025`}
                                     {p.proj_points != null && ` · ${Math.round(p.proj_points)} proj`}
+                                    {odds?.get(p.slug) && (
+                                        <>
+                                            {' · '}
+                                            <span
+                                                className={cn('font-bold tabular-nums',
+                                                    oddsTone(odds.get(p.slug)!.next))}
+                                                title="Chance he is still on the board at your next pick, weighted for the boards this room drafts off"
+                                            >
+                                                {formatOdds(odds.get(p.slug)!.next)} back
+                                            </span>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                             <button
