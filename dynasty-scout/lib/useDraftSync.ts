@@ -168,7 +168,13 @@ function matchPicks(
     const dstByTeam = new Map<string, string>();
     for (const p of players) {
         const id = platform === 'espn' ? p.espn_nfl_id : p.sleeper_id;
-        if (id) byId.set(String(id), p.slug);
+        // Every ESPN id is an integer, negative for a team defense. A source
+        // file's missing-value sentinel ("NA") looks like an id but is held
+        // by many players at once, so keying on one would take an arbitrary
+        // player off the board. Sleeper is exempt: it names a defense by its
+        // team abbreviation, which is a real id there.
+        const usable = platform === 'espn' ? /^-?\d+$/.test(String(id ?? '')) : !!id;
+        if (id && usable) byId.set(String(id), p.slug);
         if ((p.position || '').toUpperCase() === 'DST' && p.nfl_team) {
             dstByTeam.set(p.nfl_team.toUpperCase(), p.slug);
         }

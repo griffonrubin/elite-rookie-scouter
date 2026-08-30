@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import {
-    dstKey, ESPN_POSITIONS, matchEspnIds, normalizeName, PoolPlayer, writeEspnIds,
+    dstKey, ESPN_POSITIONS, isRealEspnId, matchEspnIds, normalizeName, PoolPlayer,
+    writeEspnIds,
 } from '@/lib/espnPlayers';
 
 export const runtime = 'nodejs';
@@ -119,7 +120,8 @@ async function refreshSleeper(pool: PoolPlayer[], today: string) {
 }
 
 async function refreshEspn(pool: PoolPlayer[], today: string) {
-    const byEspn = new Map(pool.filter(p => p.espn_nfl_id).map(p => [String(p.espn_nfl_id), p]));
+    const byEspn = new Map(
+        pool.filter(p => isRealEspnId(p.espn_nfl_id)).map(p => [String(p.espn_nfl_id), p]));
     const byNamePos = new Map<string, PoolPlayer>();
     const byDst = new Map<string, PoolPlayer>();
     const ambiguous = new Set<string>();
@@ -194,7 +196,7 @@ async function refreshEspn(pool: PoolPlayer[], today: string) {
  * actually drafted.
  */
 async function backfillEspnIds(pool: PoolPlayer[]) {
-    if (pool.every(p => p.espn_nfl_id)) {
+    if (pool.every(p => isRealEspnId(p.espn_nfl_id))) {
         return { missing: 0, filled: 0, skipped: 0, universe: 0 };
     }
     const headers = {
