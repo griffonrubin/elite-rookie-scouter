@@ -7,7 +7,7 @@ import { Scale, GraduationCap } from 'lucide-react';
 import { POSITION_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { RedraftPlayer } from '@/lib/types';
-import { formatOdds, oddsTone, PlayerOdds } from '@/lib/draftOdds';
+import { formatOdds, oddsTone, ordinal, PlayerOdds } from '@/lib/draftOdds';
 import { WatchlistButton, REDRAFT_WATCHLIST_KEY } from '@/components/WatchlistButton';
 import { DraftedButton } from '@/components/DraftedButton';
 import { REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
@@ -358,11 +358,13 @@ function RedraftMiniCardInner({
                                                 oddsTone(odds.next),
                                             )}
                                             title={`${formatOdds(odds.next)} chance he is still there at your next pick`
-                                                + ` — he is ${odds.rank}${odds.rank === 1 ? 'st' : ''} on the board`
-                                                + ` and ${odds.picksBetween} picks happen before your turn`
+                                                + ` — he is ${ordinal(odds.rank)} on the board`
+                                                + ` and ${odds.picksBetween} `
+                                                + `${odds.picksBetween === 1 ? 'pick happens' : 'picks happen'} before your turn`
                                                 + (odds.following != null
                                                     ? ` · ${formatOdds(odds.following)} the round after`
                                                     : '')
+                                                + (odds.board ? ` · weighted to ${odds.board}` : '')
                                                 + (odds.fromAdp ? '' : ' · from consensus rank, no ADP source has him')}
                                         >
                                             {formatOdds(odds.next)}

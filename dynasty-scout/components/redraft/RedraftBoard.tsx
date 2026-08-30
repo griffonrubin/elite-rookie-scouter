@@ -10,8 +10,8 @@ import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useDrafted, REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
 import { useIsPhone } from '@/lib/useIsPhone';
-import { useSleeperSync } from '@/lib/useSleeperSync';
-import { SleeperSync } from './SleeperSync';
+import { useDraftSync } from '@/lib/useDraftSync';
+import { DraftSync } from './DraftSync';
 import { buildOddsBoard, buildOddsContext, platformWeights, PlayerOdds } from '@/lib/draftOdds';
 import { REDRAFT_WATCHLIST_KEY } from '@/components/WatchlistButton';
 import { RedraftMiniCard } from './RedraftMiniCard';
@@ -167,38 +167,40 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
 
     const { drafted, toggle: toggleDrafted, reset: resetDrafted } = useDrafted(REDRAFT_DRAFTED_KEY);
 
-    // Players gone in the connected Sleeper draft. A separate layer from the
-    // right-click marks: unioned for display, untouched by Reset, and gone
-    // the moment the user disconnects.
-    const sleeper = useSleeperSync(players);
+    // Players gone in the connected draft, whichever platform it runs on. A
+    // separate layer from the right-click marks: unioned for display,
+    // untouched by Reset, and gone the moment the user disconnects.
+    const sync = useDraftSync(players);
     const allDrafted = useMemo(() => {
-        if (sleeper.takenSlugs.size === 0) return drafted;
+        if (sync.takenSlugs.size === 0) return drafted;
         const merged = new Set(drafted);
-        sleeper.takenSlugs.forEach(s => merged.add(s));
+        sync.takenSlugs.forEach(s => merged.add(s));
         return merged;
-    }, [drafted, sleeper.takenSlugs]);
+    }, [drafted, sync.takenSlugs]);
 
     /**
      * Chance each player comes back to you at your next turn.
      *
      * Needs a live draft to be meaningful: how many picks have gone, how many
-     * teams, and which slot you sit in. A connected Sleeper draft supplies the
-     * first two; the slot is set on the connection chip. Without all three
-     * there is no next pick to ask about and the column stays hidden.
+     * teams, and which slot you sit in. A connected draft supplies the first
+     * two; the slot is set on the connection chip. Without all three there is
+     * no next pick to ask about and the column stays hidden.
      */
+    const platform = sync.connection?.platform ?? 'sleeper';
     const oddsCtx = useMemo(() => {
-        const slot = sleeper.connection?.slot;
-        if (!sleeper.shape || !slot) return null;
-        // The room is drafting on Sleeper, off Sleeper's board — so that is
-        // what the estimate leans on, tempered by the other market ADPs.
+        const slot = sync.connection?.slot;
+        if (!sync.shape || !slot) return null;
+        // The room drafts off its own platform's board, so that is what the
+        // estimate leans on, tempered by the other market ADPs.
+        const espn = platform === 'espn';
         return buildOddsContext(
-            { teams: sleeper.shape.teams, slot, snake: sleeper.shape.snake },
-            sleeper.pickCount,
-            sleeper.shape.rounds,
-            platformWeights('sleeper_rank'),
-            'Sleeper ADP',
+            { teams: sync.shape.teams, slot, snake: sync.shape.snake },
+            sync.pickCount,
+            sync.shape.rounds,
+            platformWeights(espn ? 'espn_rank' : 'sleeper_rank'),
+            espn ? 'ESPN ADP' : 'Sleeper ADP',
         );
-    }, [sleeper.shape, sleeper.connection?.slot, sleeper.pickCount]);
+    }, [sync.shape, sync.connection?.slot, sync.pickCount, platform]);
 
     const oddsBySlug = useMemo(() => {
         if (!oddsCtx) return null;
@@ -433,7 +435,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
                                 </button>
                             ))}
                         </div>
-                        <SleeperSync sync={sleeper} />
+                        <DraftSync sync={sync} />
                         <button
                             onClick={() => setFavoritesOnly(v => !v)}
                             className={cn(
@@ -614,7 +616,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
             </div>
             </div>
             ) : viewMode === 'board' ? (
-                <RedraftDraftBoard players={visible} extraDrafted={sleeper.takenSlugs} />
+                <RedraftDraftBoard players={visible} extraDrafted={sync.takenSlugs} />
             ) : (
                 visible.length === 0 ? (
                     <div className="p-16 text-center text-muted-foreground text-sm border border-dashed border-border rounded-2xl">
