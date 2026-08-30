@@ -87,10 +87,17 @@ def blank_to_none(v):
     return v or None
 
 
+# R writes a missing value as the string "NA", and the DynastyProcess
+# crosswalk is R-generated, so these arrive looking like real ids.
+NULL_SENTINELS = {"na", "n/a", "nan", "null", "none", "-"}
+
+
 def clean_id(v):
     """CSV numeric ids arrive as '1234' or '1234.0'."""
     v = blank_to_none(v)
-    return v.split(".")[0] if v else None
+    if v is None or v.lower() in NULL_SENTINELS:
+        return None
+    return v.split(".")[0]
 
 
 def to_int(v):

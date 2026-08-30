@@ -41,6 +41,20 @@ export function dstKey(name: string): string {
     return parts.length ? parts[parts.length - 1] : '';
 }
 
+/**
+ * Does this pool player already carry a usable ESPN id?
+ *
+ * Every ESPN id is an integer — negative for a team defense. Anything else
+ * is a sentinel that leaked out of a source file (R writes a missing value
+ * as the string "NA"), and treating one as real would both leave the player
+ * unfillable here and let a junk key match a pick during a live draft.
+ */
+export function isRealEspnId(v: unknown): boolean {
+    return typeof v === 'string' || typeof v === 'number'
+        ? /^-?\d+$/.test(String(v).trim())
+        : false;
+}
+
 export interface PoolPlayer {
     id: number;
     full_name: string;
@@ -78,9 +92,10 @@ export interface BackfillResult {
 export function matchEspnIds(
     pool: PoolPlayer[], players: EspnPlayerRow[],
 ): { found: Map<number, string>; missing: number; skipped: number } {
-    const missing = pool.filter(p => !p.espn_nfl_id);
+    const missing = pool.filter(p => !isRealEspnId(p.espn_nfl_id));
     // An id already on a player is spoken for; never move it to another.
-    const taken = new Set(pool.filter(p => p.espn_nfl_id).map(p => String(p.espn_nfl_id)));
+    const taken = new Set(
+        pool.filter(p => isRealEspnId(p.espn_nfl_id)).map(p => String(p.espn_nfl_id)));
 
     const byNamePos = new Map<string, PoolPlayer>();
     const byDst = new Map<string, PoolPlayer>();
