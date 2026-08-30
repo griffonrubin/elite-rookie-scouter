@@ -12,7 +12,7 @@ import { useDrafted, REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
 import { useIsPhone } from '@/lib/useIsPhone';
 import { useSleeperSync } from '@/lib/useSleeperSync';
 import { SleeperSync } from './SleeperSync';
-import { buildOddsContext, oddsFor, platformWeights, PlayerOdds } from '@/lib/draftOdds';
+import { buildOddsBoard, buildOddsContext, platformWeights, PlayerOdds } from '@/lib/draftOdds';
 import { REDRAFT_WATCHLIST_KEY } from '@/components/WatchlistButton';
 import { RedraftMiniCard } from './RedraftMiniCard';
 import { RedraftBoxView } from './RedraftBoxView';
@@ -202,12 +202,7 @@ function RedraftBoardContent({ players }: { players: RedraftPlayer[] }) {
 
     const oddsBySlug = useMemo(() => {
         if (!oddsCtx) return null;
-        const map = new Map<string, PlayerOdds>();
-        for (const p of players) {
-            const o = oddsFor(p, oddsCtx, allDrafted.has(p.slug));
-            if (o) map.set(p.slug, o);
-        }
-        return map;
+        return buildOddsBoard(players, p => allDrafted.has(p.slug), oddsCtx);
     }, [players, oddsCtx, allDrafted]);
     const debouncedQuery = useDebounce(searchQuery, 300);
 

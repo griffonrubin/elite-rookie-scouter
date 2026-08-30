@@ -358,6 +358,8 @@ function RedraftMiniCardInner({
                                                 oddsTone(odds.next),
                                             )}
                                             title={`${formatOdds(odds.next)} chance he is still there at your next pick`
+                                                + ` — he is ${odds.rank}${odds.rank === 1 ? 'st' : ''} on the board`
+                                                + ` and ${odds.picksBetween} picks happen before your turn`
                                                 + (odds.following != null
                                                     ? ` · ${formatOdds(odds.following)} the round after`
                                                     : '')
