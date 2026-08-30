@@ -11,16 +11,23 @@
  * picks go by without him, the estimate updates.
  *
  * ── The model ───────────────────────────────────────────────────────────────
- * Treat the pick a player goes at as a normal random variable around his
- * market ADP. Then
+ * Rank him against the players still on the board, then ask whether the
+ * draft gets that far before your turn comes round.
  *
- *     P(still there at pick k | still there at pick c) = S(k) / S(c)
+ *     P(still there) = 1 - Φ((N - r) / σ)
  *
- * where S(x) = P(he lasts past pick x) = 1 - Φ((x - μ) / σ).
+ * where r is his position among the available players on the board this room
+ * drafts off, and N is how many picks happen between now and your next turn.
+ * If eight picks separate you from your turn, the man ranked third is in
+ * trouble and the man ranked fortieth is not.
  *
- * The conditioning is what makes it a live number rather than a preseason
- * one — a player who has already outlasted his ADP is, correctly, more
- * likely to keep lasting.
+ * An earlier version modelled this as a normal around his ADP conditioned on
+ * him lasting this long. That reads well but breaks in practice: every player
+ * still on the board is by definition one the draft has passed over, so the
+ * conditioning term collapses and almost everyone pins to 99%. Ranking
+ * against the live pool has no such failure — a stud who slid is simply the
+ * best available and correctly reads as about to go, while a deep bench arm
+ * is far down the list and correctly reads as safe.
  *
  * ── Where μ and σ come from ─────────────────────────────────────────────────
  * μ is a weighted average of the PPR **ADP** sources that ranked him. Every
@@ -156,27 +163,28 @@ function normalCdf(z: number): number {
     return z >= 0 ? 1 - p : p;
 }
 
-/** P(he lasts past pick x). */
-function survives(x: number, { mu, sigma }: AdpEstimate): number {
-    return 1 - normalCdf((x - mu) / Math.max(sigma, 0.5));
+/**
+ * How fuzzy the draft's frontier is, in rank positions.
+ *
+ * After N picks the players taken are not exactly the top N available —
+ * people reach and people slide — and that fuzziness grows the deeper you
+ * go, because agreement thins out. A player his sources genuinely disagree
+ * about is fuzzier still, so his own spread widens it further.
+ */
+function frontierSigma(rank: number, adpSigma: number): number {
+    return Math.max(3, 0.28 * rank, 0.6 * adpSigma);
 }
 
 /**
- * Chance he is still available at `targetPick`, given he is available now.
- *
- * `picksMade` is how many picks the draft has already used, so the next pick
- * to happen is picksMade + 1. Returns 0..1, clamped away from certainty —
- * a draft is never a sure thing in either direction.
+ * Chance a player ranked `rank` among the available pool survives the next
+ * `picksBetween` picks. Clamped either side — a draft is never a certainty.
  */
-export function availabilityAt(
-    adp: AdpEstimate, picksMade: number, targetPick: number,
+export function survivalOdds(
+    rank: number, picksBetween: number, adpSigma: number,
 ): number {
-    if (targetPick <= picksMade) return 1;      // already your turn
-    const now = survives(picksMade, adp);
-    const then = survives(targetPick, adp);
-    // He has beaten the odds to still be here; that only raises the estimate.
-    const raw = now <= 1e-9 ? 1 : then / now;
-    return Math.min(0.995, Math.max(0.005, raw));
+    if (picksBetween <= 0) return 0.995;
+    const z = (picksBetween - rank) / frontierSigma(rank, adpSigma);
+    return Math.min(0.995, Math.max(0.005, 1 - normalCdf(z)));
 }
 
 // ── Draft position maths ─────────────────────────────────────────────────────
@@ -220,33 +228,6 @@ export function pickAfterNext(
 
 // ── The shape the UI consumes ────────────────────────────────────────────────
 
-export interface DraftOddsContext {
-    shape: DraftShape;
-    picksMade: number;
-    /** Your next turn, precomputed once for the whole board. */
-    nextPick: number | null;
-    /** The turn after that. */
-    followingPick: number | null;
-    /** The board this room is drafting off; undefined means market average. */
-    weights?: SourceWeights;
-    /** Short label for the weighting, shown in tooltips. */
-    weightLabel?: string;
-}
-
-export function buildOddsContext(
-    shape: DraftShape, picksMade: number, maxRounds = 30,
-    weights?: SourceWeights, weightLabel?: string,
-): DraftOddsContext {
-    return {
-        shape,
-        picksMade,
-        nextPick: nextPickAfter(picksMade, shape, maxRounds),
-        followingPick: pickAfterNext(picksMade, shape, maxRounds),
-        weights,
-        weightLabel,
-    };
-}
-
 /**
  * Weights built from the boards the opponents between here and your next turn
  * are actually drafting off.
@@ -270,31 +251,109 @@ export function weightsFromRoom(sourcesOnClock: string[]): SourceWeights | undef
     return any ? w : undefined;
 }
 
+export interface DraftOddsContext {
+    shape: DraftShape;
+    picksMade: number;
+    /**
+     * The turn the question is about: the next time you pick *after* the one
+     * you are on the clock for.
+     *
+     * "Does he come back to me" only makes sense once you have used your
+     * current pick on somebody else. Taking the next turn at or including the
+     * pick you are making right now leaves no picks in between, which is what
+     * made every player read 99% while you were on the clock.
+     */
+    nextPick: number | null;
+    /** The turn after that. */
+    followingPick: number | null;
+    /** True when it is your pick right now. */
+    onClock: boolean;
+    /** The board this room is drafting off; undefined means market average. */
+    weights?: SourceWeights;
+    /** Short label for the weighting, shown in tooltips. */
+    weightLabel?: string;
+}
+
+export function buildOddsContext(
+    shape: DraftShape, picksMade: number, maxRounds = 30,
+    weights?: SourceWeights, weightLabel?: string,
+): DraftOddsContext {
+    const immediate = nextPickAfter(picksMade, shape, maxRounds);
+    const onClock = immediate === picksMade + 1;
+    // On the clock, your "next" pick is the one after this one.
+    const nextPick = onClock && immediate != null
+        ? nextPickAfter(immediate, shape, maxRounds)
+        : immediate;
+    return {
+        shape,
+        picksMade,
+        nextPick,
+        followingPick: nextPick == null
+            ? null
+            : nextPickAfter(nextPick, shape, maxRounds),
+        onClock,
+        weights,
+        weightLabel,
+    };
+}
+
 export interface PlayerOdds {
     /** 0..1 chance he lasts to your next turn. */
     next: number;
     /** 0..1 chance he lasts to the turn after that. */
     following: number | null;
+    /** His position among the players still on the board. */
+    rank: number;
+    /** How many picks stand between now and your next turn. */
+    picksBetween: number;
     /** False when this rests on the consensus fallback rather than real ADP. */
     fromAdp: boolean;
-    adp: AdpEstimate;
 }
 
-/** Odds for one player, or null when he is gone or has no ranking at all. */
-export function oddsFor(
-    p: RedraftPlayer, ctx: DraftOddsContext, taken: boolean,
-): PlayerOdds | null {
-    if (taken || ctx.nextPick == null) return null;
-    const adp = adpFor(p, ctx.weights);
-    if (!adp) return null;
-    return {
-        next: availabilityAt(adp, ctx.picksMade, ctx.nextPick),
-        following: ctx.followingPick == null
-            ? null
-            : availabilityAt(adp, ctx.picksMade, ctx.followingPick),
-        fromAdp: adp.sources > 0,
-        adp,
-    };
+/**
+ * Odds for every available player, ranked against each other.
+ *
+ * Has to be computed for the pool as a whole rather than per player, because
+ * the number depends on where a man sits in the queue of players still on the
+ * board — which is exactly what makes it respond to the draft as it happens.
+ */
+export function buildOddsBoard(
+    players: RedraftPlayer[],
+    isTaken: (p: RedraftPlayer) => boolean,
+    ctx: DraftOddsContext,
+): Map<string, PlayerOdds> {
+    const out = new Map<string, PlayerOdds>();
+    if (ctx.nextPick == null) return out;
+
+    const pool: { p: RedraftPlayer; mu: number; sigma: number; fromAdp: boolean }[] = [];
+    for (const p of players) {
+        if (isTaken(p)) continue;
+        const adp = adpFor(p, ctx.weights);
+        if (!adp) continue;
+        pool.push({ p, mu: adp.mu, sigma: adp.sigma, fromAdp: adp.sources > 0 });
+    }
+    pool.sort((a, b) => a.mu - b.mu);
+
+    // Picks that happen before your turn: everything from the next one up to
+    // the one before yours.
+    const between = Math.max(0, ctx.nextPick - ctx.picksMade - 1);
+    const betweenFollowing = ctx.followingPick == null
+        ? null
+        : Math.max(0, ctx.followingPick - ctx.picksMade - 1);
+
+    pool.forEach((entry, i) => {
+        const rank = i + 1;
+        out.set(entry.p.slug, {
+            next: survivalOdds(rank, between, entry.sigma),
+            following: betweenFollowing == null
+                ? null
+                : survivalOdds(rank, betweenFollowing, entry.sigma),
+            rank,
+            picksBetween: between,
+            fromAdp: entry.fromAdp,
+        });
+    });
+    return out;
 }
 
 /** Colour band for a probability, shared by every surface that shows one. */

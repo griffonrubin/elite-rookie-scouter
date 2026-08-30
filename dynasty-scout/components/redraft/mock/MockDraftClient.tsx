@@ -8,7 +8,7 @@ import {
     rankUnder, roundOf, saveMock, sortBySource, teamOnClock, totalPicks, totalRounds,
 } from '@/lib/mockDraft';
 import {
-    buildOddsContext, oddsFor, PlayerOdds, weightsFromRoom,
+    buildOddsBoard, buildOddsContext, weightsFromRoom,
 } from '@/lib/draftOdds';
 import { MockSetup } from './MockSetup';
 import { MockDraftRoom, MockLayout } from './MockDraftRoom';
@@ -98,12 +98,8 @@ export function MockDraftClient({ players }: Props) {
             weights, weights ? 'the boards this room drafts off' : undefined,
         );
 
-        const map = new Map<string, PlayerOdds>();
-        for (const p of available) {
-            const o = oddsFor(p, ctx, false);
-            if (o) map.set(p.slug, o);
-        }
-        return map;
+        // `available` already excludes everyone drafted.
+        return buildOddsBoard(available, () => false, ctx);
     }, [settings, finished, picks.length, available]);
 
     const rosterOf = useCallback((teamIndex: number) =>
