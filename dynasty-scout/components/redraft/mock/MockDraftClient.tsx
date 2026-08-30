@@ -7,6 +7,9 @@ import {
     aiPick, canAutoDraft, clearMock, countsFor, loadMock, makeRng, pickInRoundOf,
     rankUnder, roundOf, saveMock, sortBySource, teamOnClock, totalPicks, totalRounds,
 } from '@/lib/mockDraft';
+import {
+    buildOddsContext, oddsFor, PlayerOdds, weightsFromRoom,
+} from '@/lib/draftOdds';
 import { MockSetup } from './MockSetup';
 import { MockDraftRoom, MockLayout } from './MockDraftRoom';
 import { MockResults } from './MockResults';
@@ -70,6 +73,38 @@ export function MockDraftClient({ players }: Props) {
     const takenIds = useMemo(() => new Set(picks.map(p => p.playerId)), [picks]);
     const available = useMemo(
         () => players.filter(p => !takenIds.has(p.id)), [players, takenIds]);
+
+    /**
+     * Chance each available player is still there at your next turn.
+     *
+     * The room's own boards drive it: every opponent picking between now and
+     * your turn drafts off an assigned source, so the weighting is counted
+     * straight off those teams rather than assumed. Wait two rounds and the
+     * mix changes with whoever is on the clock.
+     */
+    const oddsBySlug = useMemo(() => {
+        if (!settings || finished) return null;
+        const shape = { teams: settings.teams, slot: settings.mySlot, snake: settings.snake };
+        const ctx0 = buildOddsContext(shape, picks.length, totalRounds(settings.roster));
+        if (ctx0.nextPick == null) return null;
+
+        const between: string[] = [];
+        for (let o = picks.length + 1; o < ctx0.nextPick; o++) {
+            between.push(settings.teamSources[teamOnClock(o, settings.teams, settings.snake)]);
+        }
+        const weights = weightsFromRoom(between);
+        const ctx = buildOddsContext(
+            shape, picks.length, totalRounds(settings.roster),
+            weights, weights ? 'the boards this room drafts off' : undefined,
+        );
+
+        const map = new Map<string, PlayerOdds>();
+        for (const p of available) {
+            const o = oddsFor(p, ctx, false);
+            if (o) map.set(p.slug, o);
+        }
+        return map;
+    }, [settings, finished, picks.length, available]);
 
     const rosterOf = useCallback((teamIndex: number) =>
         picks.filter(p => p.teamIndex === teamIndex).map(p => p.playerId),

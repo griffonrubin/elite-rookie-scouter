@@ -3,6 +3,7 @@
 import React from 'react';
 import { Clock, FastForward, LayoutList, LayoutPanelTop, Columns, X } from 'lucide-react';
 import { RedraftPlayer } from '@/lib/types';
+import { PlayerOdds } from '@/lib/draftOdds';
 import { POSITION_COLORS, POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import {
@@ -28,6 +29,8 @@ interface Props {
     layout: MockLayout;
     onLayoutChange: (l: MockLayout) => void;
     sortSource: RankSourceKey;
+    /** Chance each available player lasts to your next turn. */
+    odds?: Map<string, PlayerOdds> | null;
     onSortChange: (s: RankSourceKey) => void;
     myRanks?: Map<number, number>;
     eligibility: EligibilityCtx | null;
@@ -68,7 +71,7 @@ function fillSlots(roster: RosterSlots, players: RedraftPlayer[]) {
 export function MockDraftRoom(props: Props) {
     const {
         settings, picks, available, byId, currentOverall, round, pickInRound,
-        onClockTeam, myTurn, secondsLeft, layout, onLayoutChange, sortSource,
+        onClockTeam, myTurn, secondsLeft, layout, onLayoutChange, sortSource, odds,
         onSortChange, myRanks, eligibility, onDraft, onSkipToMyPick, onAbandon, myRoster,
     } = props;
 
@@ -80,6 +83,7 @@ export function MockDraftRoom(props: Props) {
     const list = (
         <MockPlayerList
             available={available}
+            odds={odds}
             sortSource={sortSource}
             onSortChange={onSortChange}
             myRanks={myRanks}

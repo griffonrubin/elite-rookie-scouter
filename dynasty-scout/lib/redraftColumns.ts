@@ -5,7 +5,7 @@
 
 export type RedraftSortKey =
     | 'rank' | 'pos_rank' | 'avg_rank' | 'best' | 'worst' | 'sd' | 'sources'
-    | 'my_rank'
+    | 'my_rank' | 'back_odds'
     | 'fp' | 'ktc' | 'fc' | 'espn' | 'yahoo' | 'cbs' | 'sleeper' | 'flock'
     | 'underdog' | 'ffpc'
     | 'proj' | 'proj_ppg'
@@ -367,6 +367,12 @@ export const REDRAFT_SORT_GROUPS: RedraftSortGroup[] = [
             { key: 'worst', label: 'Worst rank' },
             { key: 'sd', label: 'Source disagreement' },
             { key: 'sources', label: 'Sources ranking him' },
+        ],
+    },
+    {
+        group: 'Live draft',
+        options: [
+            { key: 'back_odds', label: 'Chance he comes back to me' },
         ],
     },
     {

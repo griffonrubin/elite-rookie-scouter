@@ -38,6 +38,19 @@ const META_EVERY = 10;
 export interface SleeperConnection {
     draftId: string;
     label: string;
+    /**
+     * 1-based draft slot the user picks from. Sleeper's draft_order maps
+     * accounts to slots, but a pasted mock link carries no account, so this
+     * is chosen in the UI and kept with the connection.
+     */
+    slot?: number;
+}
+
+/** Board shape needed to work out when your next turn comes round. */
+export interface SleeperDraftShape {
+    teams: number;
+    snake: boolean;
+    rounds: number;
 }
 
 export interface SleeperSyncState {
@@ -46,8 +59,11 @@ export interface SleeperSyncState {
     /** Slugs of players already taken in the Sleeper draft. */
     takenSlugs: Set<string>;
     pickCount: number;
+    /** Teams, snake and round count, read from the draft itself. */
+    shape: SleeperDraftShape | null;
     connect: (draftId: string, label: string) => void;
     disconnect: () => void;
+    setSlot: (slot: number | undefined) => void;
 }
 
 function readConnection(): SleeperConnection | null {
@@ -93,6 +109,7 @@ export function useSleeperSync(players: RedraftPlayer[]): SleeperSyncState {
     const [status, setStatus] = useState<SleeperSyncState['status']>('connecting');
     const [takenSlugs, setTakenSlugs] = useState<Set<string>>(new Set());
     const [pickCount, setPickCount] = useState(0);
+    const [shape, setShape] = useState<SleeperDraftShape | null>(null);
 
     // The poll reads players through a ref so a board re-sort or filter does
     // not tear the interval down and restart it.
@@ -101,10 +118,15 @@ export function useSleeperSync(players: RedraftPlayer[]): SleeperSyncState {
 
     useEffect(() => { setConnection(readConnection()); }, []);
 
+    // The poll keys on the draft id alone, so changing your slot re-renders
+    // the odds without tearing down and restarting the polling loop.
+    const draftId = connection?.draftId ?? null;
+
     useEffect(() => {
-        if (!connection) {
+        if (!draftId) {
             setTakenSlugs(new Set());
             setPickCount(0);
+            setShape(null);
             return;
         }
 
@@ -136,8 +158,8 @@ export function useSleeperSync(players: RedraftPlayer[]): SleeperSyncState {
             try {
                 const wantMeta = polls % META_EVERY === 0;
                 const [picks, draft] = await Promise.all([
-                    getDraftPicks(connection.draftId),
-                    wantMeta ? getDraft(connection.draftId) : Promise.resolve(null),
+                    getDraftPicks(draftId),
+                    wantMeta ? getDraft(draftId) : Promise.resolve(null),
                 ]);
                 if (cancelled) return;
                 polls++;
@@ -152,6 +174,13 @@ export function useSleeperSync(players: RedraftPlayer[]): SleeperSyncState {
                 if (draft) {
                     lastStatus = draft.status;
                     setStatus(draft.status);
+                    setShape({
+                        teams: draft.settings?.teams ?? 12,
+                        // Sleeper calls a straight order 'linear'; everything
+                        // else it offers reverses each round.
+                        snake: (draft.type ?? 'snake') !== 'linear',
+                        rounds: draft.settings?.rounds ?? 15,
+                    });
                 } else if (wantMeta) {
                     // Metadata was asked for and did not come back: the draft id
                     // is bad or Sleeper is down. Picks alone cannot tell us.
@@ -182,7 +211,7 @@ export function useSleeperSync(players: RedraftPlayer[]): SleeperSyncState {
             document.removeEventListener('visibilitychange', onVisibility);
             window.removeEventListener('focus', onVisibility);
         };
-    }, [connection]);
+    }, [draftId]);
 
     const connect = useCallback((draftId: string, label: string) => {
         const conn = { draftId, label };
@@ -195,5 +224,16 @@ export function useSleeperSync(players: RedraftPlayer[]): SleeperSyncState {
         setConnection(null);
     }, []);
 
-    return { connection, status, takenSlugs, pickCount, connect, disconnect };
+    // Changing the slot must not restart the poll, so it merges into the
+    // stored connection rather than replacing the object the effect keys on.
+    const setSlot = useCallback((slot: number | undefined) => {
+        setConnection(prev => {
+            if (!prev) return prev;
+            const next = { ...prev, slot };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+            return next;
+        });
+    }, []);
+
+    return { connection, status, takenSlugs, pickCount, shape, connect, disconnect, setSlot };
 }

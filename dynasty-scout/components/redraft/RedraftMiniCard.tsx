@@ -7,6 +7,7 @@ import { Scale, GraduationCap } from 'lucide-react';
 import { POSITION_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { RedraftPlayer } from '@/lib/types';
+import { formatOdds, oddsTone, PlayerOdds } from '@/lib/draftOdds';
 import { WatchlistButton, REDRAFT_WATCHLIST_KEY } from '@/components/WatchlistButton';
 import { DraftedButton } from '@/components/DraftedButton';
 import { REDRAFT_DRAFTED_KEY } from '@/lib/useDrafted';
@@ -24,6 +25,8 @@ interface Props {
     positionFilter?: string;
     dataset?: RedraftDataset;
     isDrafted?: boolean;
+    /** Chance he lasts to your next pick; null when no live draft is connected. */
+    odds?: PlayerOdds | null;
     /** Phone layout: three curated columns, no sideways scroll. Comes from the
      *  board's one matchMedia hook rather than 1300 rows each subscribing. */
     phone?: boolean;
@@ -123,7 +126,7 @@ function signedVal(v: number | null | undefined, digits = 2): string | null {
 
 function RedraftMiniCardInner({
     player, index, rank, positionFilter = 'ALL',
-    dataset = 'snapshot', isDrafted = false, phone = false, onToggleDrafted,
+    dataset = 'snapshot', isDrafted = false, odds = null, phone = false, onToggleDrafted,
 }: Props) {
     const router = useRouter();
     const pos = (player.position || '').toUpperCase();
@@ -348,6 +351,21 @@ function RedraftMiniCardInner({
                                     )}>
                                         {player.full_name}
                                     </span>
+                                    {odds && (
+                                        <span
+                                            className={cn(
+                                                'px-1 rounded text-[10px] font-bold tabular-nums flex-shrink-0 bg-white/[0.06]',
+                                                oddsTone(odds.next),
+                                            )}
+                                            title={`${formatOdds(odds.next)} chance he is still there at your next pick`
+                                                + (odds.following != null
+                                                    ? ` · ${formatOdds(odds.following)} the round after`
+                                                    : '')
+                                                + (odds.fromAdp ? '' : ' · from consensus rank, no ADP source has him')}
+                                        >
+                                            {formatOdds(odds.next)}
+                                        </span>
+                                    )}
                                     {isRookie && (
                                         <GraduationCap
                                             className="w-3 h-3 text-primary/70 flex-shrink-0"
