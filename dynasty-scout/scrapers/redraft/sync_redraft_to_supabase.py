@@ -43,6 +43,9 @@ REDRAFT_SOURCES = (
     "FantasyPros PPR", "ESPN Redraft", "KeepTradeCut Redraft", "CBS Redraft",
     "Yahoo Redraft", "Sleeper Redraft", "FantasyCalc Redraft", "Flock Redraft",
     "Underdog Redraft", "FFPC Redraft",
+    # Not a consensus source — run_redraft_consensus ignores it — but the
+    # board reads it as its own column, so it has to reach production too.
+    "My Rankings",
 )
 
 PLAYER_COLUMNS = [
