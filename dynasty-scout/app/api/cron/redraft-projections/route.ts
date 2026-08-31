@@ -4,6 +4,7 @@ import {
     dstKey, ESPN_POSITIONS, isRealEspnId, matchEspnIds, normalizeName, PoolPlayer,
     writeEspnIds,
 } from '@/lib/espnPlayers';
+import { refreshRankingSources } from '@/lib/redraftSources';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,11 +18,22 @@ export const maxDuration = 300;
  * which also has one, so the projections stay current without anybody
  * running the local pipeline.
  *
- * Projections, plus the ESPN player ids that live-draft sync matches picks
- * on. The ranking sources are deliberately left to the local pipeline: the
- * consensus is rebuilt there in the same pass, and writing fresher source
- * ranks here without recomputing it would leave the board's consensus column
- * disagreeing with the columns beside it.
+ * Projections, the ESPN player ids that live-draft sync matches picks on,
+ * and the three ranking sources with no other way in.
+ *
+ * The ranking sources used to be left to the local pipeline, because writing
+ * fresher source ranks without recomputing the consensus leaves the board's
+ * consensus column disagreeing with the columns beside it. The consensus is
+ * now rebuilt in the same pass (lib/redraftConsensus, held to matching the
+ * Python exactly), so that objection no longer holds.
+ *
+ * The other seven sources come from a CSV export that has to be downloaded by
+ * hand, so they stay with the local import. They are unaffected by this: the
+ * board and the consensus both read the newest scrape per source.
+ *
+ * This carries the ranking refresh rather than giving it its own schedule
+ * because the Hobby plan allows few enough scheduled jobs to make one shared
+ * daily pass the safer arrangement.
  *
  * Auth mirrors /api/cron/trades — Vercel Cron sends VERCEL_CRON_SECRET as a
  * bearer token, and the check is skipped when the variable is not set.
@@ -244,6 +256,15 @@ export async function GET(req: NextRequest) {
     const report = (r: PromiseSettledResult<unknown>) =>
         r.status === 'fulfilled' ? r.value : { error: String(r.reason?.message ?? r.reason) };
 
+    // The ranking scrapes are independent of the projections above, and must
+    // not be able to fail them.
+    let rankings: unknown;
+    try {
+        rankings = await refreshRankingSources(today);
+    } catch (e) {
+        rankings = { error: String((e as Error)?.message ?? e) };
+    }
+
     const ok = sleeper.status === 'fulfilled' || espn.status === 'fulfilled';
     return NextResponse.json({
         status: ok ? 'ok' : 'failed',
@@ -253,5 +274,6 @@ export async function GET(req: NextRequest) {
         sleeper: report(sleeper),
         espn: report(espn),
         espn_ids: report(ids),
+        rankings,
     }, { status: ok ? 200 : 502 });
 }
