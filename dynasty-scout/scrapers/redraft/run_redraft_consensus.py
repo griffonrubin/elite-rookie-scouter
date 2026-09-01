@@ -93,11 +93,22 @@ def latest_ranks(cur):
 
 
 def to_percentiles(ranks):
-    """Rank -> 0..1 within a source, so sources of different depth compare."""
+    """
+    Rank -> 0..1 within a source, so sources of different depth compare.
+
+    Two players can hold the same rank in one source: `latest_ranks` takes
+    each player's newest scrape, and a source that ranked 389 players last
+    week but 193 today leaves the other 196 sitting on last week's numbers,
+    which overlap. Ties are broken on player id so the percentile a player
+    gets does not depend on the order rows come back from the database —
+    without it the same data produces different output on SQLite and
+    PostgreSQL, and the server-side twin of this file could never agree
+    with it.
+    """
     n = len(ranks)
     if n <= 1:
         return {pid: 1.0 for pid in ranks}
-    ordered = sorted(ranks, key=lambda p: ranks[p])
+    ordered = sorted(ranks, key=lambda p: (ranks[p], p))
     return {pid: 1.0 - i / (n - 1) for i, pid in enumerate(ordered)}
 
 
@@ -149,7 +160,9 @@ def run():
             "num_sources": len(ranks),
         }
 
-    ordered = sorted(scores, key=lambda p: scores[p]["score"], reverse=True)
+    # Same reasoning as to_percentiles: a deterministic tiebreak, so the
+    # board order is reproducible rather than an artefact of row order.
+    ordered = sorted(scores, key=lambda p: (-scores[p]["score"], p))
 
     pos_counter = {}
     for overall, pid in enumerate(ordered, 1):
