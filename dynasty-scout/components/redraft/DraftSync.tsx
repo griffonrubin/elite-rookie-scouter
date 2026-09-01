@@ -157,12 +157,22 @@ export function DraftSync({ sync }: { sync: DraftSyncState }) {
                             : 'Pick your draft slot to see the chance each player comes back to you at your next turn.'}
                         className={cn(
                             'h-6 rounded-md px-1 text-[10px] font-bold focus:outline-none',
+                            // Same surface and ink as every other select in
+                            // the app. It used to inherit the chip's status
+                            // tint, which is a colour chosen to read against
+                            // the chip's own translucent wash, not against a
+                            // form control: emerald on the live chip's pale
+                            // green, amber on amber when the slot was unset.
+                            // Both were near-invisible.
+                            'bg-card border-border/60 text-foreground font-semibold',
+                            '[&>option]:bg-card [&>option]:text-foreground',
                             // Unset, the odds cannot be worked out and nothing
                             // appears — so the control that unlocks them asks
-                            // for attention rather than sitting quiet.
+                            // for attention. The cue is the border, so the
+                            // text stays readable in either state.
                             sync.connection.slot
-                                ? 'bg-black/30 border border-current/25 text-current'
-                                : 'bg-amber-500/20 border border-amber-400/60 text-amber-300 animate-pulse',
+                                ? 'border'
+                                : 'border border-amber-400/70 ring-1 ring-amber-400/30 animate-pulse',
                         )}
                     >
                         <option value="">set slot</option>
