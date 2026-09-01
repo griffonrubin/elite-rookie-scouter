@@ -107,20 +107,35 @@ export function pstdev(values: number[]): number {
     return Math.sqrt(Math.max(0, variance));
 }
 
+/** One player's newest rank from a source, and the scrape it came from. */
+export interface DatedRank { rank: number; day: string }
+
+/** How deep each individual scrape was, keyed `${source}|${scraped_at}`. */
+export type ScrapeSizes = Map<string, number>;
+
 /**
- * Rank -> 0..1 within a source, so sources of different depth compare.
+ * Rank -> 0..1, measured against the scrape the rank came from.
  *
- * Ties broken on player id: a source that ranked 389 players last week but
- * 193 today leaves the rest on last week's numbers, which overlap, and
- * without a tiebreak the percentile would depend on database row order.
+ * A source's players do not all come from the same scrape. Each player keeps
+ * their newest one, so a source that ranked 998 players last week and 751
+ * today contributes both: 751 players on a 1..751 scale and 283 left on a
+ * 1..998 scale. Ranking those together puts a stale 400-of-998 ahead of a
+ * current 500-of-751, even though 400/998 is the weaker standing of the two.
+ *
+ * So each rank is converted against its own scrape's depth rather than
+ * against the merged pile. Ranks within a scrape are a dense 1..N, so this is
+ * exact and free of ties, and it keeps the deep tail older scrapes provide
+ * instead of discarding it.
  */
-export function toPercentiles(ranks: Map<number, number>): Map<number, number> {
-    const n = ranks.size;
-    if (n <= 1) return new Map([...ranks.keys()].map(pid => [pid, 1.0]));
-    const ordered = [...ranks.entries()].sort(
-        (a, b) => (a[1] - b[1]) || (a[0] - b[0]));
+export function toPercentiles(
+    ranks: Map<number, DatedRank>, sizes: ScrapeSizes, source: string,
+): Map<number, number> {
     const out = new Map<number, number>();
-    ordered.forEach(([pid], i) => out.set(pid, 1.0 - i / (n - 1)));
+    for (const [pid, { rank, day }] of ranks) {
+        const n = sizes.get(`${source}|${day}`) ?? 0;
+        // A one-player scrape has no spread to place anyone within.
+        out.set(pid, n <= 1 ? 1.0 : 1.0 - (rank - 1) / (n - 1));
+    }
     return out;
 }
 
@@ -133,15 +148,17 @@ export function toPercentiles(ranks: Map<number, number>): Map<number, number> {
  * breaking it. Only players ranked by at least one source get a row.
  */
 export function buildConsensus(
-    sourceRanks: Map<string, Map<number, number>>,
+    sourceRanks: Map<string, Map<number, DatedRank>>,
     pool: Map<number, string>,
+    sizes: ScrapeSizes,
 ): ConsensusRow[] {
     const active = Object.keys(SOURCE_WEIGHTS).filter(s => sourceRanks.has(s));
     if (active.length === 0) return [];
 
     const total = active.reduce((t, s) => t + SOURCE_WEIGHTS[s], 0);
     const weights = active.map(s => [s, SOURCE_WEIGHTS[s] / total] as const);
-    const pcts = new Map(active.map(s => [s, toPercentiles(sourceRanks.get(s)!)]));
+    const pcts = new Map(active.map(
+        s => [s, toPercentiles(sourceRanks.get(s)!, sizes, s)]));
 
     interface Score { pid: number; score: number; row: Omit<ConsensusRow, 'rank_overall' | 'rank_positional'> }
     const scores: Score[] = [];
@@ -154,7 +171,7 @@ export function buildConsensus(
                 weighted += w * ABSENT_PERCENTILE;
             } else {
                 weighted += w * pct;
-                ranks.push(sourceRanks.get(src)!.get(pid)!);
+                ranks.push(sourceRanks.get(src)!.get(pid)!.rank);
             }
         }
         if (ranks.length === 0) continue;      // unranked everywhere

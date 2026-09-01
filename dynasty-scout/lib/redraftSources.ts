@@ -1,6 +1,6 @@
 import { query, getDb } from '@/lib/db';
 import { dstKey, normalizeName } from '@/lib/espnPlayers';
-import { buildConsensus, SOURCE_WEIGHTS } from '@/lib/redraftConsensus';
+import { buildConsensus, DatedRank, SOURCE_WEIGHTS } from '@/lib/redraftConsensus';
 
 /**
  * Refresh the three ranking sources the CSV export does not carry, and
@@ -276,8 +276,9 @@ async function save(source: string, sourceUrl: string, entries: Entry[], today: 
 export async function rebuildConsensus(today: string): Promise<number> {
     const sources = Object.keys(SOURCE_WEIGHTS);
     const ph = sources.map((_, i) => `$${i + 1}`).join(',');
-    const rows = await query<{ player_id: number; source: string; rank_overall: number }>(
-        `SELECT r.player_id, r.source, r.rank_overall
+    const rows = await query<{ player_id: number; source: string;
+                              rank_overall: number; scraped_at: string }>(
+        `SELECT r.player_id, r.source, r.rank_overall, r.scraped_at
            FROM rankings r
            JOIN (SELECT player_id, source, MAX(scraped_at) AS max_date
                    FROM rankings GROUP BY player_id, source) latest
@@ -286,17 +287,24 @@ export async function rebuildConsensus(today: string): Promise<number> {
           WHERE r.rank_overall IS NOT NULL AND r.rank_overall < 999
             AND r.source IN (${ph})`, sources);
 
-    const sourceRanks = new Map<string, Map<number, number>>();
+    // A rank means nothing without the length of the list it came from.
+    const sizeRows = await query<{ source: string; scraped_at: string; n: number }>(
+        `SELECT source, scraped_at, COUNT(*) AS n FROM rankings
+          WHERE rank_overall IS NOT NULL AND rank_overall < 999
+          GROUP BY source, scraped_at`);
+    const sizes = new Map(sizeRows.map(r => [`${r.source}|${r.scraped_at}`, Number(r.n)]));
+
+    const sourceRanks = new Map<string, Map<number, DatedRank>>();
     for (const r of rows) {
         let m = sourceRanks.get(r.source);
         if (!m) { m = new Map(); sourceRanks.set(r.source, m); }
-        m.set(r.player_id, r.rank_overall);
+        m.set(r.player_id, { rank: r.rank_overall, day: r.scraped_at });
     }
     const pool = new Map((await query<{ id: number; position: string | null }>(
         `SELECT id, position FROM players WHERE redraft_pool = 1`))
         .map(p => [p.id, (p.position || '').toUpperCase()] as const));
 
-    const out = buildConsensus(sourceRanks, pool);
+    const out = buildConsensus(sourceRanks, pool, sizes);
     for (let i = 0; i < out.length; i += 200) {
         const chunk = out.slice(i, i + 200);
         const params: (number | string)[] = [];

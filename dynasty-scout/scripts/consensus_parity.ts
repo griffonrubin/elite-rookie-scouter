@@ -9,13 +9,14 @@
  * Run the Python first, then:  npx tsx scripts/consensus_parity.ts
  */
 import { query } from '@/lib/db';
-import { buildConsensus, SOURCE_WEIGHTS, ConsensusRow } from '@/lib/redraftConsensus';
+import { buildConsensus, DatedRank, SOURCE_WEIGHTS, ConsensusRow } from '@/lib/redraftConsensus';
 
 async function main() {
     const sources = Object.keys(SOURCE_WEIGHTS);
     const ph = sources.map((_, i) => `$${i + 1}`).join(',');
-    const rows = await query<{ player_id: number; source: string; rank_overall: number }>(
-        `SELECT r.player_id, r.source, r.rank_overall
+    const rows = await query<{ player_id: number; source: string;
+                              rank_overall: number; scraped_at: string }>(
+        `SELECT r.player_id, r.source, r.rank_overall, r.scraped_at
            FROM rankings r
            JOIN (SELECT player_id, source, MAX(scraped_at) AS max_date
                    FROM rankings GROUP BY player_id, source) latest
@@ -24,16 +25,24 @@ async function main() {
           WHERE r.rank_overall IS NOT NULL AND r.rank_overall < 999
             AND r.source IN (${ph})`, sources);
 
-    const sourceRanks = new Map<string, Map<number, number>>();
+    // A rank means nothing without the length of the list it came from.
+    const sizeRows = await query<{ source: string; scraped_at: string; n: number }>(
+        `SELECT source, scraped_at, COUNT(*) AS n FROM rankings
+          WHERE rank_overall IS NOT NULL AND rank_overall < 999
+          GROUP BY source, scraped_at`);
+    const sizes = new Map(sizeRows.map(r => [`${r.source}|${r.scraped_at}`, Number(r.n)]));
+
+    const sourceRanks = new Map<string, Map<number, DatedRank>>();
     for (const r of rows) {
         if (!sourceRanks.has(r.source)) sourceRanks.set(r.source, new Map());
-        sourceRanks.get(r.source)!.set(r.player_id, r.rank_overall);
+        sourceRanks.get(r.source)!.set(r.player_id,
+            { rank: r.rank_overall, day: r.scraped_at });
     }
     const pool = new Map((await query<{ id: number; position: string | null }>(
         `SELECT id, position FROM players WHERE redraft_pool = 1`))
         .map(p => [p.id, (p.position || '').toUpperCase()] as const));
 
-    const mine = buildConsensus(sourceRanks, pool);
+    const mine = buildConsensus(sourceRanks, pool, sizes);
 
     const day = (await query<{ d: string }>(
         `SELECT MAX(calculated_at) AS d FROM consensus_rankings WHERE format = 'REDRAFT'`))[0].d;

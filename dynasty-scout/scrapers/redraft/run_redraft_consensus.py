@@ -70,9 +70,15 @@ ON CONFLICT(player_id, format, calculated_at) DO UPDATE SET
 
 
 def latest_ranks(cur):
-    """{source: {player_id: rank}} using each source's most recent scrape."""
+    """
+    Each player's newest rank per source, and the scrape it came from.
+
+    Returns {source: {player_id: (rank, scraped_at)}}. The scrape date is not
+    incidental — see to_percentiles for why a rank means nothing without the
+    list it came from.
+    """
     cur.execute("""
-        SELECT r.player_id, r.source, r.rank_overall
+        SELECT r.player_id, r.source, r.rank_overall, r.scraped_at
         FROM rankings r
         JOIN (
             SELECT player_id, source, MAX(scraped_at) AS max_date
@@ -88,28 +94,49 @@ def latest_ranks(cur):
 
     out = {}
     for row in cur.fetchall():
-        out.setdefault(row["source"], {})[row["player_id"]] = row["rank_overall"]
+        out.setdefault(row["source"], {})[row["player_id"]] = (
+            row["rank_overall"], row["scraped_at"])
     return out
 
 
-def to_percentiles(ranks):
+def scrape_sizes(cur):
     """
-    Rank -> 0..1 within a source, so sources of different depth compare.
+    How deep each individual scrape was: {(source, scraped_at): count}.
 
-    Two players can hold the same rank in one source: `latest_ranks` takes
-    each player's newest scrape, and a source that ranked 389 players last
-    week but 193 today leaves the other 196 sitting on last week's numbers,
-    which overlap. Ties are broken on player id so the percentile a player
-    gets does not depend on the order rows come back from the database —
-    without it the same data produces different output on SQLite and
-    PostgreSQL, and the server-side twin of this file could never agree
-    with it.
+    A rank is only meaningful against the length of the list it came from,
+    and each scrape is stored as a dense 1..N of its own.
     """
-    n = len(ranks)
-    if n <= 1:
-        return {pid: 1.0 for pid in ranks}
-    ordered = sorted(ranks, key=lambda p: (ranks[p], p))
-    return {pid: 1.0 - i / (n - 1) for i, pid in enumerate(ordered)}
+    cur.execute("""
+        SELECT source, scraped_at, COUNT(*) AS n
+        FROM rankings
+        WHERE rank_overall IS NOT NULL AND rank_overall < 999
+        GROUP BY source, scraped_at
+    """)
+    return {(r["source"], r["scraped_at"]): r["n"] for r in cur.fetchall()}
+
+
+def to_percentiles(ranks, sizes, source):
+    """
+    Rank -> 0..1, measured against the scrape the rank came from.
+
+    A source's players do not all come from the same scrape. Each player
+    keeps their newest one, so a source that ranked 998 players last week and
+    751 today contributes both: 751 players on a 1..751 scale and 283 left on
+    a 1..998 scale. Ranking those together puts a stale 400-of-998 ahead of a
+    current 500-of-751, even though 400/998 is the weaker standing of the
+    two — Sleeper alone had 283 players mis-sorted that way.
+
+    So each rank is converted against its own scrape's depth rather than
+    against the merged pile. Ranks within a scrape are a dense 1..N, so this
+    is exact and free of ties, and it keeps the deep tail that older scrapes
+    provide instead of discarding it.
+    """
+    out = {}
+    for pid, (rank, day) in ranks.items():
+        n = sizes.get((source, day), 0)
+        # A one-player scrape has no spread to place anyone within.
+        out[pid] = 1.0 if n <= 1 else 1.0 - (rank - 1) / (n - 1)
+    return out
 
 
 def run():
@@ -133,7 +160,8 @@ def run():
     if missing:
         print(f"Missing (weights redistributed): {', '.join(missing)}")
 
-    source_pct = {s: to_percentiles(source_ranks[s]) for s in active}
+    sizes = scrape_sizes(cur)
+    source_pct = {s: to_percentiles(source_ranks[s], sizes, s) for s in active}
 
     cur.execute("SELECT id, position FROM players WHERE redraft_pool = 1")
     pool = {r["id"]: (r["position"] or "").upper() for r in cur.fetchall()}
@@ -148,7 +176,7 @@ def run():
                 weighted += w * ABSENT_PERCENTILE
             else:
                 weighted += w * pct
-                ranks.append(source_ranks[src][pid])
+                ranks.append(source_ranks[src][pid][0])
         if not ranks:
             continue  # unranked everywhere — no consensus row
         scores[pid] = {
