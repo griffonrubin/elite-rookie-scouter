@@ -290,10 +290,31 @@ export function MockSetup({ onStart }: Props) {
                         className="flex items-center gap-1.5 px-2.5 h-7 rounded-lg border border-border/60 text-[11px] font-bold text-muted-foreground hover:text-foreground">
                         <Shuffle className="w-3.5 h-3.5" /> Randomize
                     </button>
-                    <button type="button" onClick={() => allSame('consensus')}
-                        className="px-2.5 h-7 rounded-lg border border-border/60 text-[11px] font-bold text-muted-foreground hover:text-foreground">
-                        All consensus
-                    </button>
+                    {/* Setting the whole room to one platform is the common
+                        case — it answers "what would this draft look like on
+                        Sleeper" — so it is a source picker rather than a
+                        button hard-wired to consensus. Any team can still be
+                        changed individually afterwards. */}
+                    <label className="flex items-center gap-1.5 pl-2.5 pr-1 h-7 rounded-lg border border-border/60 text-[11px] font-bold text-muted-foreground focus-within:text-foreground hover:text-foreground">
+                        Set all to
+                        <select
+                            aria-label="Set every team to one ranking source"
+                            value=""
+                            onChange={e => {
+                                if (e.target.value) allSame(e.target.value as RankSourceKey);
+                                // Snap back to the prompt: this is an action,
+                                // not a setting, and the room may not be all
+                                // one source a moment later.
+                                e.target.value = '';
+                            }}
+                            className="h-6 rounded-md bg-card border border-border/60 px-1 text-[11px] font-bold text-foreground"
+                        >
+                            <option value="">choose…</option>
+                            {AI_SOURCES.map(src => (
+                                <option key={src.key} value={src.key}>{src.label}</option>
+                            ))}
+                        </select>
+                    </label>
                 </div>
 
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

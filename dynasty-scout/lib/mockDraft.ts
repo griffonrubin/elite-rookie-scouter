@@ -64,9 +64,16 @@ export const DEFAULT_ROSTER: RosterSlots = {
     QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, DST: 1, K: 1, BN: 5,
 };
 
-/** Caps stop a source's quirks producing a team with five quarterbacks. */
+/**
+ * Caps stop a source's quirks producing a team with five quarterbacks.
+ *
+ * The one-slot positions are held to what a real room drafts: nobody carries
+ * a third quarterback or tight end, and a second kicker or defense is dead
+ * weight. RB and WR stay loose because that is where depth is genuinely
+ * worth hoarding.
+ */
 export const DEFAULT_POSITION_LIMITS: Record<Pos, number> = {
-    QB: 3, RB: 8, WR: 8, TE: 3, DST: 2, K: 2,
+    QB: 2, RB: 8, WR: 8, TE: 2, DST: 1, K: 1,
 };
 
 export interface MockSettings {
