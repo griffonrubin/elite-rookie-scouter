@@ -1,5 +1,5 @@
 import { query, getDb } from '@/lib/db';
-import { dstKey, normalizeName } from '@/lib/espnPlayers';
+import { dstKey, ESPN_POSITIONS, normalizeName } from '@/lib/espnPlayers';
 import { buildConsensus, DatedRank, SOURCE_WEIGHTS } from '@/lib/redraftConsensus';
 
 /**
@@ -35,6 +35,23 @@ const SOURCES = {
         source: 'FantasyCalc Redraft',
         url: 'https://fantasycalc.com',
         api: 'https://api.fantasycalc.com/values/current?isDynasty=false&numQbs=1&ppr=1',
+    },
+    sleeper: {
+        source: 'Sleeper Redraft',
+        url: 'https://sleeper.com',
+        api: 'https://api.sleeper.com/projections/nfl/2026?season_type=regular'
+            + ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'].map(p => `&position[]=${p}`).join('')
+            + '&order_by=pts_ppr',
+    },
+    espn: {
+        source: 'ESPN Redraft',
+        url: 'https://www.espn.com/fantasy/football/',
+        api: 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/'
+            + '2026/segments/0/leaguedefaults/3?view=kona_player_info',
+    },
+    cbs: {
+        source: 'CBS Redraft',
+        url: 'https://www.cbssports.com/fantasy/football/rankings/ppr/top200/',
     },
     ktc: {
         source: 'KeepTradeCut Redraft',
@@ -72,6 +89,8 @@ class Matcher {
     private byNamePos = new Map<string, number>();
     private byDstTeam = new Map<string, number>();
     private byDstName = new Map<string, number>();
+    /** Pool position per player, for sources that do not report one. */
+    private pos = new Map<number, string>();
 
     constructor(pool: PoolPlayer[]) {
         for (const key of ['sleeper_id', 'espn_nfl_id', 'fantasypros_id']) {
@@ -79,15 +98,19 @@ class Matcher {
         }
         for (const p of pool) {
             const pos = normPos(p.position);
+            this.pos.set(p.id, pos);
+            // Team defenses are indexed by id as well as by team and
+            // nickname: Sleeper identifies one only by its id, so leaving
+            // them out of the id map dropped all 32 from that source.
+            for (const key of ['sleeper_id', 'espn_nfl_id', 'fantasypros_id'] as const) {
+                const v = p[key];
+                if (v) this.byId.get(key)!.set(String(v), p.id);
+            }
             if (pos === 'DST') {
                 if (p.nfl_team) this.byDstTeam.set(p.nfl_team.toUpperCase(), p.id);
                 const nick = dstKey(p.full_name);
                 if (nick) this.byDstName.set(nick, p.id);
                 continue;
-            }
-            for (const key of ['sleeper_id', 'espn_nfl_id', 'fantasypros_id'] as const) {
-                const v = p[key];
-                if (v) this.byId.get(key)!.set(String(v), p.id);
             }
             this.byNamePos.set(`${normalizeName(p.full_name)}|${pos}`, p.id);
         }
@@ -100,7 +123,9 @@ class Matcher {
         if (pos === 'DST') {
             const byTeam = team ? this.byDstTeam.get(team.toUpperCase()) : undefined;
             if (byTeam) return byTeam;
-            return this.byDstName.get(dstKey(name)) ?? null;
+            const byNick = this.byDstName.get(dstKey(name));
+            if (byNick) return byNick;
+            // fall through to the id lookup below
         }
         for (const key of ['sleeper_id', 'espn_nfl_id', 'fantasypros_id'] as const) {
             const v = ids[key];
@@ -109,7 +134,13 @@ class Matcher {
                 if (hit) return hit;
             }
         }
+        if (!name) return null;
         return this.byNamePos.get(`${normalizeName(name)}|${pos}`) ?? null;
+    }
+
+    /** The position we hold for a matched player. */
+    positionOf(pid: number): string {
+        return this.pos.get(pid) ?? '';
     }
 }
 
@@ -194,6 +225,109 @@ async function fetchKtc(m: Matcher): Promise<Entry[]> {
     }), m);
 }
 
+/**
+ * Sleeper, ranked by PPR average draft position.
+ *
+ * A market signal rather than an editorial board — where players actually
+ * go — which is why it is worth carrying alongside the expert lists. Rows
+ * key on the player id already stored on every pooled player, so matching
+ * is exact. Projections come from the same payload but are left to the
+ * projections cron, which owns that table.
+ */
+async function fetchSleeper(m: Matcher): Promise<Entry[]> {
+    const res = await fetch(SOURCES.sleeper.api, {
+        headers: { 'User-Agent': UA, Accept: 'application/json' },
+        cache: 'no-store', signal: AbortSignal.timeout(45_000),
+    });
+    if (!res.ok) throw new Error(`${res.status} from api.sleeper.com`);
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+        throw new Error('Sleeper returned no projection rows');
+    }
+    const out = collect(rows, (row: any) => ({
+        name: '', pos: '', team: null,
+        raw: Number(row?.stats?.adp_ppr),
+        tier: null,
+        ids: { sleeper_id: row?.player_id },
+    }), m);
+    if (out.length === 0) throw new Error('no adp_ppr values — Sleeper changed their schema');
+    return out;
+}
+
+/**
+ * ESPN's PPR draft ranks, out of the same kona payload the projections cron
+ * reads. Fetched separately rather than shared with it so neither pass can
+ * fail the other; it is one request a day.
+ */
+async function fetchEspn(m: Matcher): Promise<Entry[]> {
+    const res = await fetch(SOURCES.espn.api, {
+        headers: {
+            'User-Agent': UA,
+            Accept: 'application/json',
+            'X-Fantasy-Filter': JSON.stringify({
+                players: {
+                    limit: 900,
+                    sortDraftRanks: { sortPriority: 100, sortAsc: true, value: 'PPR' },
+                },
+            }),
+            'X-Fantasy-Source': 'kona',
+            'X-Fantasy-Platform': 'kona-PROD',
+        },
+        cache: 'no-store', signal: AbortSignal.timeout(60_000),
+    });
+    if (!res.ok) throw new Error(`${res.status} from lm-api-reads.fantasy.espn.com`);
+    const players = (await res.json())?.players ?? [];
+    if (!Array.isArray(players) || players.length === 0) {
+        throw new Error('kona_player_info returned no players');
+    }
+    const out = collect(players, (entry: any) => {
+        const p = entry?.player ?? {};
+        return {
+            name: p.fullName, pos: ESPN_POSITIONS[p.defaultPositionId] ?? '',
+            team: null,
+            // ESPN ranks against its whole player universe — values reach
+            // 1972 for ~830 ranked players — so the dense position is what
+            // gets stored, and this raw number only orders them.
+            raw: Number(p?.draftRanksByRankType?.PPR?.rank),
+            tier: null,
+            ids: { espn_nfl_id: p.id },
+        };
+    }, m);
+    if (out.length === 0) throw new Error('no PPR draft ranks found — ESPN changed their schema');
+    return out;
+}
+
+/**
+ * CBS's PPR top 200.
+ *
+ * The only one of these that is genuinely scraped rather than read from a
+ * data endpoint, so it is also the most likely to break. Rows are split on
+ * the row marker rather than matched whole, because CBS nests its divs
+ * differently for players and for team defenses.
+ */
+async function fetchCbs(m: Matcher): Promise<Entry[]> {
+    const html = await getText(SOURCES.cbs.url);
+    const chunks = html.split('<div class="player-row');
+    if (chunks.length < 20) throw new Error('no player rows found — CBS changed their layout');
+
+    const seen = new Set<number>();
+    const rows: { name: string; pos: string; raw: number }[] = [];
+    for (const chunk of chunks.slice(1)) {
+        const rank = Number(chunk.match(/<div class="rank">(\d+)<\/div>/)?.[1]);
+        const slug = chunk.match(/href="\/nfl\/(?:players|teams)\/[^/]+\/([a-z0-9-]+)\//)?.[1];
+        if (!rank || !slug || seen.has(rank)) continue;
+        seen.add(rank);
+        const pos = (chunk.match(/<span class="team position">\s*([A-Z/]+)/)?.[1] ?? '').toUpperCase();
+        // CBS slugs are the full hyphenated name, which maps onto our own.
+        rows.push({ name: slug.replace(/-/g, ' '), pos, raw: rank });
+    }
+    const out = collect(rows, r => ({
+        name: r.name, pos: r.pos, team: null, raw: r.raw, tier: null, ids: {},
+    }), m);
+    if (out.length === 0) throw new Error('parsed rows but matched nothing — check the slug pattern');
+    return out;
+}
+
 function numOrNull(v: unknown): number | null {
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
@@ -208,10 +342,15 @@ function collect<T>(
     const out: Entry[] = [];
     for (const row of rows) {
         const r = read(row);
-        if (!r.name || !Number.isFinite(r.raw)) continue;
+        // Sleeper names nobody — it reports an id and an ADP — so a row is
+        // usable with either a name or an id, not only with a name.
+        const hasId = Object.values(r.ids).some(v => v != null && v !== '');
+        if ((!r.name && !hasId) || !Number.isFinite(r.raw)) continue;
         const pid = m.find(r.name, r.pos, r.team, r.ids);
         if (!pid) continue;
-        out.push({ pid, raw: r.raw, pos: normPos(r.pos), tier: r.tier });
+        // rank_positional counts within a position, so a source that does
+        // not report one has to borrow ours or every row lands in one bucket.
+        out.push({ pid, raw: r.raw, pos: normPos(r.pos) || m.positionOf(pid), tier: r.tier });
     }
     return out;
 }
@@ -358,6 +497,9 @@ export async function refreshRankingSources(
         ['fantasypros', SOURCES.fantasypros.source, SOURCES.fantasypros.url, () => fetchFantasyPros(m)],
         ['fantasycalc', SOURCES.fantasycalc.source, SOURCES.fantasycalc.url, () => fetchFantasyCalc(m)],
         ['ktc', SOURCES.ktc.source, SOURCES.ktc.url, () => fetchKtc(m)],
+        ['sleeper', SOURCES.sleeper.source, SOURCES.sleeper.url, () => fetchSleeper(m)],
+        ['espn', SOURCES.espn.source, SOURCES.espn.url, () => fetchEspn(m)],
+        ['cbs', SOURCES.cbs.source, SOURCES.cbs.url, () => fetchCbs(m)],
     ];
 
     // One source failing must not cost the others their refresh.

@@ -33,7 +33,9 @@ from scrapers.redraft.names import norm_team, normalize_name
 
 PLAYER_URL = "https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_reg_{season}.csv"
 TEAM_URL = "https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_reg_{season}.csv"
-GAMES_URL = "https://github.com/nflverse/nfldata/raw/master/data/games.csv"
+# raw.githubusercontent rather than github.com/.../raw/, which is a
+# redirect some egress proxies refuse while allowing the raw host.
+GAMES_URL = "https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv"
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; DyCharts/1.0)"}
 
 DEFAULT_SEASONS = [2021, 2022, 2023, 2024, 2025]
