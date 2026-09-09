@@ -200,18 +200,37 @@ async function fetchFantasyCalc(m: Matcher): Promise<Entry[]> {
  * KeepTradeCut.
  *
  * The local scraper drives a headless browser and reads the `playersArray`
- * global, which no serverless function can do. The array is defined by an
- * inline <script> in the page itself, so the same data is reachable by
- * reading the HTML — if that ever stops being true, this says so plainly
- * rather than writing a half-empty source.
+ * global, which no serverless function can do. The same data is in the HTML,
+ * so it is read from there instead — but not always in the same place.
+ *
+ * KTC used to write the array straight into a script tag. It now parses it
+ * out of a JSON island:
+ *
+ *     var playersArray = JSON.parse(
+ *         document.getElementById('ktc-players').textContent);
+ *
+ * so the island is tried first and the old literal kept as a fallback, since
+ * either could be what a given page is serving. If neither is there the page
+ * has changed in some third way and this says so rather than writing a
+ * half-empty source.
  */
+function ktcPlayersJson(html: string): string | null {
+    const island = html.match(
+        /<(script|div|template)[^>]*\bid=["']ktc-players["'][^>]*>([\s\S]*?)<\/\1>/i);
+    if (island?.[2]?.trim()) return island[2].trim();
+    const literal = html.match(/var\s+playersArray\s*=\s*(\[[\s\S]*?\]);/);
+    return literal?.[1] ?? null;
+}
+
 async function fetchKtc(m: Matcher): Promise<Entry[]> {
     const html = await getText(SOURCES.ktc.url);
-    const blob = html.match(/var\s+playersArray\s*=\s*(\[[\s\S]*?\]);/);
-    if (!blob) {
-        throw new Error('playersArray is not inline in the HTML — KTC now needs a browser');
+    const raw = ktcPlayersJson(html);
+    if (!raw) {
+        throw new Error(
+            'neither the #ktc-players island nor an inline playersArray literal '
+            + 'is in the HTML — KTC changed their page again');
     }
-    const players = JSON.parse(blob[1]);
+    const players = JSON.parse(raw);
     if (!Array.isArray(players) || players.length === 0) {
         throw new Error('playersArray was empty');
     }
