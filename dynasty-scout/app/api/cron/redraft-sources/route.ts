@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { refreshRankingSources } from '@/lib/redraftSources';
+import { diagnoseSource, refreshRankingSources } from '@/lib/redraftSources';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,6 +28,19 @@ export async function GET(req: NextRequest) {
         ?? new Date().toISOString().slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) {
         return NextResponse.json({ error: 'bad date' }, { status: 400 });
+    }
+
+    // ?diagnose=ktc|cbs reports what those two pages are serving, for when
+    // a parser breaks and the page cannot be fetched from where the fix is
+    // being written.
+    const diagnose = req.nextUrl.searchParams.get('diagnose');
+    if (diagnose === 'ktc' || diagnose === 'cbs') {
+        try {
+            return NextResponse.json(await diagnoseSource(diagnose));
+        } catch (e) {
+            return NextResponse.json(
+                { error: String((e as Error)?.message ?? e) }, { status: 502 });
+        }
     }
 
     const out = await refreshRankingSources(
