@@ -544,3 +544,50 @@ export async function refreshRankingSources(
         ...(withRows ? { rows } : {}),
     };
 }
+
+/**
+ * Look at what KTC and CBS are actually serving.
+ *
+ * Both parse HTML, so both break when the page changes, and neither host is
+ * reachable from the machine this repo is usually worked on — leaving the
+ * only options as guessing at a fix or shipping one blind. This reports the
+ * shape of the page instead: which markers are present and what surrounds
+ * them. It fetches nothing but the two source URLs above, so it cannot be
+ * pointed at anything else.
+ */
+export async function diagnoseSource(which: 'ktc' | 'cbs') {
+    const url = which === 'ktc' ? SOURCES.ktc.url : SOURCES.cbs.url;
+    const res = await fetch(url, {
+        headers: { 'User-Agent': UA, 'Accept-Language': 'en-US,en;q=0.9' },
+        cache: 'no-store', signal: AbortSignal.timeout(45_000),
+    });
+    const html = await res.text();
+    const near = (needle: string, before = 80, after = 220) => {
+        const i = html.indexOf(needle);
+        return i < 0 ? null : html.slice(Math.max(0, i - before), i + after);
+    };
+
+    if (which === 'ktc') {
+        return {
+            status: res.status, bytes: html.length,
+            hasPlayersArray: html.includes('playersArray'),
+            varForm: near('playersArray', 40, 160),
+            // The array may have moved into a JSON island or a fetch.
+            hasNextData: html.includes('__NEXT_DATA__'),
+            hasJsonLd: html.includes('application/json'),
+            scriptSrcs: (html.match(/<script[^>]+src="([^"]+)"/g) || []).slice(0, 12),
+        };
+    }
+    const chunks = html.split('<div class="player-row');
+    let withRank = 0, withLink = 0;
+    for (const c of chunks.slice(1)) {
+        if (/<div class="rank">(\d+)<\/div>/.test(c)) withRank++;
+        if (/href="\/nfl\/(?:players|teams)\/[^/]+\/([a-z0-9-]+)\//.test(c)) withLink++;
+    }
+    return {
+        status: res.status, bytes: html.length,
+        chunks: chunks.length - 1, withRank, withLink,
+        firstChunk: chunks[1]?.slice(0, 500) ?? null,
+        lastChunk: chunks[chunks.length - 1]?.slice(0, 300) ?? null,
+    };
+}
