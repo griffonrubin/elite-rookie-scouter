@@ -33,6 +33,7 @@ Usage:
 """
 import argparse
 import csv
+import datetime
 import glob
 import io
 import os
@@ -68,6 +69,29 @@ SOURCE_URLS = {
     "ESPN Redraft": "https://www.espn.com/fantasy/football/",
     "CBS Redraft": "https://www.cbssports.com/fantasy/football/rankings/ppr/top200/",
 }
+
+
+# Exports are named ppr_overall_<window>_MMDDYYYY.csv.
+FILENAME_DATE_RE = re.compile(r"_(\d{2})(\d{2})(\d{4})\.csv$", re.I)
+
+
+def date_from_filename(path):
+    """
+    The day an export represents, which is not always the day it is imported.
+
+    Everything downstream keys on scraped_at — the board reads the newest
+    scrape per source, and the consensus measures each rank against the
+    depth of the scrape it came from — so stamping yesterday's export with
+    today's date quietly overstates how fresh those four sources are.
+    """
+    m = FILENAME_DATE_RE.search(os.path.basename(path))
+    if not m:
+        return None
+    month, day, year = (int(g) for g in m.groups())
+    try:
+        return datetime.date(year, month, day).isoformat()
+    except ValueError:
+        return None
 
 
 def newest_export():
@@ -110,12 +134,17 @@ class FlockCsvImport(BaseRedraftScraper):
     SOURCE = "Flock CSV"          # only used for log lines
     SOURCE_URL = "https://flockfantasy.com"
 
-    def __init__(self, path=None, include_platform_adp=False):
+    def __init__(self, path=None, include_platform_adp=False, as_of=None):
         super().__init__()
         self.path = path or newest_export()
         self.columns = dict(COLUMN_SOURCES)
         if include_platform_adp:
             self.columns.update(PLATFORM_ADP_SOURCES)
+        stamped = as_of or date_from_filename(self.path)
+        if stamped and stamped != self.today:
+            print(f"[{self.SOURCE}] stamping rows {stamped} "
+                  f"(the export's own date), not today {self.today}")
+            self.today = stamped
 
     def fetch(self):
         with io.open(self.path, encoding="utf-8-sig") as f:
@@ -194,5 +223,8 @@ if __name__ == "__main__":
     ap.add_argument("--include-platform-adp", action="store_true",
                     help="also import the Sleeper/ESPN/CBS columns, for when "
                          "the live scrapers for those sites cannot run")
+    ap.add_argument("--as-of", metavar="YYYY-MM-DD",
+                    help="date to stamp the rows with; defaults to the date in "
+                         "the filename, then to today")
     args = ap.parse_args()
-    sys.exit(FlockCsvImport(args.file, args.include_platform_adp).run())
+    sys.exit(FlockCsvImport(args.file, args.include_platform_adp, args.as_of).run())
