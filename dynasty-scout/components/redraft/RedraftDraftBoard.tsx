@@ -17,8 +17,12 @@ interface Props {
     extraDrafted?: Set<string>;
 }
 
-/** Redraft leagues are usually 10 or 12 teams; 14 shows up in deeper formats. */
-const LEAGUE_SIZES = [8, 10, 12, 14, 16] as const;
+/**
+ * Redraft leagues are usually 10 or 12 teams; 14 and 16 show up in deeper
+ * formats, and 6 in small ones, where a round is short enough that the whole
+ * first two rounds fit on a phone.
+ */
+const LEAGUE_SIZES = [6, 8, 10, 12, 14, 16] as const;
 const DEFAULT_SIZE = 12;
 
 /**
@@ -153,7 +157,11 @@ export function RedraftDraftBoard({ players, extraDrafted }: Props) {
                     </span>
                 ))}
 
-                <div className="ml-auto flex items-center gap-3">
+                {/* Sort, league size and reset. One right-aligned row when
+                    there is room; on a phone it wraps instead of pushing the
+                    page sideways — the grid below has its own scroller and
+                    the page should not need one too. */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:ml-auto">
                     <div className="flex items-center gap-1.5">
                         <span className="text-[10px] text-muted-foreground/60 font-semibold">Order by</span>
                         <select
