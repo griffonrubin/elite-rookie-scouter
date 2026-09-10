@@ -329,13 +329,19 @@ async function fetchCbs(m: Matcher): Promise<Entry[]> {
     const chunks = html.split('<div class="player-row');
     if (chunks.length < 20) throw new Error('no player rows found — CBS changed their layout');
 
-    const seen = new Set<number>();
+    // The page carries the same list several times over — 600 rows numbered
+    // 1..150 — so read the first copy and stop where the numbering restarts.
+    // This used to fall out of de-duplicating on rank, which happened to keep
+    // the first copy but would have quietly interleaved them if CBS ever
+    // emitted the copies in a different order.
+    let lastRank = 0;
     const rows: { name: string; pos: string; raw: number }[] = [];
     for (const chunk of chunks.slice(1)) {
         const rank = Number(chunk.match(/<div class="rank">(\d+)<\/div>/)?.[1]);
         const slug = chunk.match(/href="\/nfl\/(?:players|teams)\/[^/]+\/([a-z0-9-]+)\//)?.[1];
-        if (!rank || !slug || seen.has(rank)) continue;
-        seen.add(rank);
+        if (!rank || !slug) continue;
+        if (rank <= lastRank) break;
+        lastRank = rank;
         const pos = (chunk.match(/<span class="team position">\s*([A-Z/]+)/)?.[1] ?? '').toUpperCase();
         // CBS slugs are the full hyphenated name, which maps onto our own.
         rows.push({ name: slug.replace(/-/g, ' '), pos, raw: rank });
