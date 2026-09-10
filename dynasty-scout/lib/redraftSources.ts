@@ -574,6 +574,15 @@ export async function refreshRankingSources(
  * them. It fetches nothing but the two source URLs above, so it cannot be
  * pointed at anything else.
  */
+function nthIndex(hay: string, needle: string, n: number): number {
+    let i = -1;
+    for (let k = 0; k < n; k++) {
+        i = hay.indexOf(needle, i + 1);
+        if (i < 0) return 0;
+    }
+    return i;
+}
+
 export async function diagnoseSource(which: 'ktc' | 'cbs') {
     const url = which === 'ktc' ? SOURCES.ktc.url : SOURCES.cbs.url;
     const res = await fetch(url, {
@@ -599,14 +608,31 @@ export async function diagnoseSource(which: 'ktc' | 'cbs') {
     }
     const chunks = html.split('<div class="player-row');
     let withRank = 0, withLink = 0;
+    const ranks: number[] = [];
     for (const c of chunks.slice(1)) {
-        if (/<div class="rank">(\d+)<\/div>/.test(c)) withRank++;
+        const r = c.match(/<div class="rank">(\d+)<\/div>/);
+        if (r) { withRank++; ranks.push(Number(r[1])); } else ranks.push(-1);
         if (/href="\/nfl\/(?:players|teams)\/[^/]+\/([a-z0-9-]+)\//.test(c)) withLink++;
     }
+    // The page repeats the list several times. Find where the numbering
+    // restarts and show what sits just before each restart, which is where
+    // a heading or a data attribute would name the list.
+    const resets: number[] = [];
+    for (let i = 1; i < ranks.length; i++) if (ranks[i] <= ranks[i - 1]) resets.push(i);
+    const boundaries = [0, ...resets].map(i => {
+        const idx = html.indexOf('<div class="player-row',
+            i === 0 ? 0 : nthIndex(html, '<div class="player-row', i));
+        return html.slice(Math.max(0, idx - 700), idx + 60)
+            .replace(/\s+/g, ' ')
+            .match(/(?:<h\d[^>]*>[^<]*<\/h\d>|data-[a-z-]+="[^"]*"|id="[^"]*"|aria-label="[^"]*"|<option[^>]*>[^<]*<\/option>)/g)
+            ?.slice(-8) ?? null;
+    });
     return {
         status: res.status, bytes: html.length,
         chunks: chunks.length - 1, withRank, withLink,
-        firstChunk: chunks[1]?.slice(0, 500) ?? null,
-        lastChunk: chunks[chunks.length - 1]?.slice(0, 300) ?? null,
+        listCount: resets.length + 1,
+        resetAt: resets.slice(0, 6),
+        rankHead: ranks.slice(0, 4), rankTail: ranks.slice(-4),
+        boundaries: boundaries.slice(0, 5),
     };
 }
