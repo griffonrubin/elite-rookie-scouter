@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { RedraftPlayer } from '@/lib/types';
 import { useLeagueSync } from '@/lib/useLeagueSync';
 import {
-    buildOutcome, Outcome, rankSwaps, simulateMatchup, SimPlayer,
+    buildOutcome, Outcome, rankSwaps, simulateMatchup, SimPlayer, usableSample,
 } from '@/lib/startSit';
 import { POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -105,7 +105,11 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                 .slice(0, SAMPLE_GAMES)
                 .map(l => ({ points: l.points, week: l.week, season: l.season, opponent: l.opponent }))
                 .reverse();
-            const v = { outcome, sample };
+            // A sample that cannot stand in for the player is not shown either.
+            // nflverse scores no kicking, so a kicker's games are seventeen
+            // zeroes — plotted as evidence they would say a nine-point kicker
+            // has never scored.
+            const v = { outcome, sample: usableSample(sample.map(g => g.points)) ? sample : [] };
             cache.set(p.id, v);
             return v;
         };

@@ -343,13 +343,31 @@ export function makeRng(seed: number): () => number {
     };
 }
 
+/**
+ * Whether a player's games can stand in for their week.
+ *
+ * They cannot when they are all zero, which is not a hypothetical: nflverse's
+ * weekly points cover passing, rushing and receiving, so every kicker-week in
+ * the table reads 0.0. Resampled at face value that put a kicker at zero in
+ * all twenty thousand simulated weeks while their stated mean said nine — the
+ * lineup was scored without them.
+ *
+ * A mean at or below a point is the signal. It means the sample is measuring
+ * something other than what this player is projected to do, and the model is
+ * better off with the distribution it built from the projection.
+ */
+export function usableSample(sample?: number[]): boolean {
+    if (!sample || sample.length < 4) return false;
+    return sample.reduce((a, b) => a + b, 0) / sample.length > 1;
+}
+
 function drawLineup(players: SimPlayer[], rng: () => number): number {
     let total = 0;
     for (const p of players) {
         if (p.outcome.onBye) continue;
-        if (p.sample && p.sample.length >= 4) {
-            const m = p.sample.reduce((a, b) => a + b, 0) / p.sample.length;
-            total += drawFrom(p.sample, m > 1 ? p.outcome.mean / m : 1, rng);
+        if (usableSample(p.sample)) {
+            const m = p.sample!.reduce((a, b) => a + b, 0) / p.sample!.length;
+            total += drawFrom(p.sample!, p.outcome.mean / m, rng);
         } else {
             total += drawNormal(p.outcome.mean, p.outcome.sd, rng);
         }
