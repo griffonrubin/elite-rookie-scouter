@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users, Unplug, RefreshCw } from 'lucide-react';
+import { Users, Unplug, RefreshCw, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getUserId, getUserLeagues } from '@/lib/sleeper';
 import { parseLeagueId, readEspnCreds, saveEspnCreds } from '@/lib/espn';
-import { LeaguePlatform, LeagueSyncState } from '@/lib/useLeagueSync';
+import { connectionKey, LeaguePlatform, LeagueSyncState } from '@/lib/useLeagueSync';
 
 const SEASON = '2026';
 
@@ -59,9 +59,39 @@ export function LeagueConnect({ league, compact = false }: {
         return (
             <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/[0.07] px-3 py-2"
                 style={{ background: 'var(--bg-card)' }}>
-                <span className="text-[11px] font-bold text-foreground truncate max-w-[220px]">
-                    {league.snapshot?.leagueName ?? league.connection.label}
-                </span>
+                {/* The league picker, not a label.
+                    Managing several teams is the normal case, and making
+                    someone disconnect and retype a username to look at their
+                    other league is the kind of friction that stops a tool
+                    being opened. Every team this browser has connected stays
+                    one select away. */}
+                {league.saved.length > 1 ? (
+                    <select
+                        aria-label="Which league"
+                        value={connectionKey(league.connection)}
+                        onChange={e => {
+                            const next = league.saved.find(c => connectionKey(c) === e.target.value);
+                            if (next) league.switchTo(next);
+                        }}
+                        className="h-7 max-w-[240px] rounded-lg bg-card border border-border/60 px-2 text-[11px]
+                                   font-bold text-foreground [&>option]:bg-card [&>option]:text-foreground">
+                        {league.saved.map(c => (
+                            <option key={connectionKey(c)} value={connectionKey(c)}>{c.label}</option>
+                        ))}
+                    </select>
+                ) : (
+                    <span className="text-[11px] font-bold text-foreground truncate max-w-[220px]">
+                        {league.snapshot?.leagueName ?? league.connection.label}
+                    </span>
+                )}
+                <button
+                    onClick={league.disconnect}
+                    title="Connect another league"
+                    aria-label="Connect another league"
+                    className="grid place-items-center w-7 h-7 rounded-lg hover:bg-white/10
+                               text-muted-foreground hover:text-foreground">
+                    <Plus className="w-3.5 h-3.5" />
+                </button>
                 <select
                     aria-label="Which team is yours"
                     value={league.connection.teamKey ?? ''}
@@ -108,6 +138,9 @@ export function LeagueConnect({ league, compact = false }: {
     }
 
     // ── not connected, or connected without a team chosen ──
+    const savedOthers = league.saved.filter(
+        c => !league.connection || connectionKey(c) !== connectionKey(league.connection));
+
     const teams = league.snapshot?.teams ?? [];
     return (
         <div className="max-w-lg mx-auto mt-10 rounded-xl border border-white/[0.07] p-5 space-y-3"
@@ -120,6 +153,36 @@ export function LeagueConnect({ league, compact = false }: {
                 Start/sit advice needs your actual roster and the team you are playing this
                 week. Saved in this browser only, so anyone can connect their own league.
             </p>
+
+            {/* Teams already connected in this browser, so clearing one to add
+                another is recoverable in a click rather than a re-entered
+                username. */}
+            {savedOthers.length > 0 && (
+                <div className="space-y-1.5">
+                    <p className="text-[11px] font-semibold text-muted-foreground/70">
+                        Your teams
+                    </p>
+                    <div className="grid gap-1">
+                        {savedOthers.map(c => (
+                            <div key={connectionKey(c)} className="flex items-center gap-1">
+                                <button onClick={() => league.switchTo(c)}
+                                    className="flex-1 text-left px-3 py-2 rounded-lg border border-white/[0.06]
+                                               hover:border-sky-500/40 hover:bg-sky-500/5 text-[12px] font-semibold">
+                                    {c.label}
+                                    <span className="ml-1.5 text-[10px] font-normal uppercase
+                                                     text-muted-foreground/45">{c.platform}</span>
+                                </button>
+                                <button onClick={() => league.forget(c)}
+                                    title={`Forget ${c.label}`} aria-label={`Forget ${c.label}`}
+                                    className="grid place-items-center w-7 h-7 rounded-lg shrink-0
+                                               hover:bg-white/10 text-muted-foreground/50 hover:text-foreground">
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {league.connection && teams.length > 0 ? (
                 <div className="space-y-2">

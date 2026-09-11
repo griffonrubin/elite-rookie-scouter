@@ -22,6 +22,11 @@ import { readEspnCreds } from '@/lib/espn';
  */
 
 const STORAGE_KEY = 'redraft_league_sync';
+/** Every league this browser has connected, not just the current one. */
+const SAVED_KEY = 'redraft_league_saved';
+
+/** Slots that are not part of the lineup being set. */
+const BENCH_SLOTS = new Set(['BN', 'IR', 'TAXI']);
 
 export type LeaguePlatform = 'sleeper' | 'espn';
 
@@ -48,6 +53,8 @@ export interface LeagueTeam {
     key: string;
     name: string;
     slots: LeagueSlot[];
+    /** The starting lineup in slot order, empty spots included. */
+    lineupSlots?: { slot: string; playerId: string | null }[];
 }
 
 export interface LeagueSnapshot {
@@ -58,6 +65,9 @@ export interface LeagueSnapshot {
     opponentKeyFor: Record<string, string | null>;
     /** Slot names in lineup order, where the platform reports them. */
     rosterPositions?: string[] | null;
+    /** True in a best-ball league: the platform scores the optimal lineup
+        itself, so there is no start/sit call to make. */
+    bestBall?: boolean;
 }
 
 export interface MatchedSide {
@@ -79,6 +89,11 @@ export interface LeagueSyncState {
     connect: (c: LeagueConnection) => void;
     disconnect: () => void;
     setTeam: (key: string) => void;
+    /** Every team this browser knows, for the switcher. */
+    saved: LeagueConnection[];
+    /** Switch to a saved team without reconnecting. */
+    switchTo: (c: LeagueConnection) => void;
+    forget: (c: LeagueConnection) => void;
     setWeek: (w: number) => void;
     refresh: () => void;
 }
@@ -91,6 +106,57 @@ function readConnection(): LeagueConnection | null {
     } catch {
         return null;
     }
+}
+
+/** A league and team together identify one of someone's teams. */
+export function connectionKey(c: LeagueConnection): string {
+    return `${c.platform}:${c.id}:${c.teamKey ?? ''}`;
+}
+
+/**
+ * Every team this browser has connected.
+ *
+ * Managing several teams is the normal case, and making someone disconnect
+ * and re-enter a username to look at their other league is the kind of
+ * friction that stops a tool being opened at all. The list is kept beside the
+ * current connection rather than replacing it, so an existing single
+ * connection survives the upgrade and simply becomes the first entry.
+ */
+export function readSaved(): LeagueConnection[] {
+    if (typeof window === 'undefined') return [];
+    let saved: LeagueConnection[] = [];
+    try {
+        const v = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]');
+        if (Array.isArray(v)) saved = v.filter(c => c && typeof c.id === 'string');
+    } catch { /* a corrupt list is the same as no list */ }
+    // Fold in whatever the single-connection key holds, so nothing a user
+    // already set up disappears the first time they load the new build.
+    const current = readConnection();
+    if (current && !saved.some(c => connectionKey(c) === connectionKey(current))) {
+        saved = [current, ...saved];
+    }
+    return saved;
+}
+
+function writeSaved(list: LeagueConnection[]) {
+    try {
+        localStorage.setItem(SAVED_KEY, JSON.stringify(list.slice(0, 12)));
+    } catch { /* storage full or blocked: the session still works */ }
+}
+
+/** Add or replace one team in the saved list, newest first. */
+export function rememberConnection(c: LeagueConnection): LeagueConnection[] {
+    const key = connectionKey(c);
+    const next = [c, ...readSaved().filter(x => connectionKey(x) !== key)];
+    writeSaved(next);
+    return next;
+}
+
+export function forgetConnection(c: LeagueConnection): LeagueConnection[] {
+    const key = connectionKey(c);
+    const next = readSaved().filter(x => connectionKey(x) !== key);
+    writeSaved(next);
+    return next;
 }
 
 const EMPTY: MatchedSide = { team: null, starters: [], bench: [], unmatched: 0 };
@@ -144,15 +210,42 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
     const startersByRoster = new Map(matchups.map(m => [m.roster_id, m.starters ?? []]));
     const matchupOf = new Map(matchups.map(m => [m.roster_id, m.matchup_id]));
 
+    // Sleeper's starters array is in roster_positions order with the bench
+    // removed, so the two zip: position i of the lineup is position i of the
+    // startable slots. That pairing is what makes a slot view possible at all
+    // — without it a lineup is just a set of players who happen to be active.
+    const startableSlots = (league?.roster_positions ?? [])
+        .filter(s => !BENCH_SLOTS.has(s.toUpperCase()));
+
     const teams: LeagueTeam[] = rosters.map(r => {
         // Before a week is scored Sleeper reports no matchup, so the roster's
         // own starters stand in — which is exactly the lineup being set.
-        const starting = new Set(startersByRoster.get(r.roster_id) ?? r.starters ?? []);
-        const all = r.players ?? [];
+        const startingOrder = startersByRoster.get(r.roster_id) ?? r.starters ?? [];
+        const slotOf = new Map<string, string>();
+        startingOrder.forEach((pid, i) => {
+            if (pid && pid !== '0') slotOf.set(pid, startableSlots[i] ?? 'FLEX');
+        });
+        const starting = new Set(startingOrder.filter(p => p && p !== '0'));
+        // Injured reserve and the taxi squad are on the roster and cannot be
+        // started. Offering them as candidates for a slot would be offering a
+        // move the platform will refuse.
+        const unavailable = new Set([...(r.reserve ?? []), ...(r.taxi ?? [])]);
+        const all = (r.players ?? []).filter(p => !unavailable.has(p) || starting.has(p));
         return {
             key: String(r.roster_id),
             name: teamName(userById.get(r.owner_id ?? '')),
-            slots: all.map(pid => ({ playerId: pid, starting: starting.has(pid) })),
+            slots: all.map(pid => ({
+                playerId: pid,
+                starting: starting.has(pid),
+                slot: slotOf.get(pid) ?? null,
+            })),
+            // The shape of the lineup, kept even where a slot is empty or
+            // holds a player we could not match, so the view can show a hole
+            // rather than quietly closing the gap.
+            lineupSlots: startingOrder.map((pid, i) => ({
+                slot: startableSlots[i] ?? 'FLEX',
+                playerId: pid && pid !== '0' ? pid : null,
+            })),
         };
     });
 
@@ -170,6 +263,7 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         teams,
         opponentKeyFor,
         rosterPositions: league?.roster_positions ?? null,
+        bestBall: league?.settings?.best_ball === 1,
     };
 }
 
@@ -248,9 +342,33 @@ export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {
     const oppTeam = oppKey ? snapshot?.teams.find(t => t.key === oppKey) ?? null : null;
     const platform = connection?.platform ?? 'sleeper';
 
+    const [saved, setSaved] = useState<LeagueConnection[]>([]);
+    // Read once on mount: localStorage is not available during render on the
+    // server, and the migration in readSaved has to run in the browser.
+    useEffect(() => { setSaved(readSaved()); }, []);
+
     const connect = useCallback((c: LeagueConnection) => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(c));
+        // Only remember a team once it is actually a team. Connecting a
+        // league and then picking a side are two steps, and half of one is
+        // not worth a row in the switcher.
+        if (c.teamKey) setSaved(rememberConnection(c));
         setConnection(c);
+    }, []);
+
+    const switchTo = useCallback((c: LeagueConnection) => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(c));
+        // Set the connection and nothing else. The fetch effect is keyed on
+        // platform, league and season, so moving to another league refetches
+        // and moving to another team in the same league reuses the snapshot
+        // already loaded — which is the whole point of the switcher. Clearing
+        // the snapshot here left the second case with no data and no refetch
+        // to replace it.
+        setConnection(c);
+    }, []);
+
+    const forget = useCallback((c: LeagueConnection) => {
+        setSaved(forgetConnection(c));
     }, []);
     const disconnect = useCallback(() => {
         localStorage.removeItem(STORAGE_KEY);
@@ -263,6 +381,7 @@ export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {
             if (!prev) return prev;
             const next = { ...prev, teamKey };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+            setSaved(rememberConnection(next));
             return next;
         });
     }, []);
@@ -271,7 +390,7 @@ export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {
         connection, status, snapshot, week,
         me: matchSide(myTeam, playersRef.current, platform),
         opponent: matchSide(oppTeam, playersRef.current, platform),
-        connect, disconnect, setTeam,
+        connect, disconnect, setTeam, saved, switchTo, forget,
         setWeek: (w: number) => setWeekState(w),
         refresh: () => setNonce(n => n + 1),
     };

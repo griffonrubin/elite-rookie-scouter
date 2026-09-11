@@ -203,6 +203,10 @@ export interface SleeperRoster {
     /** Sleeper player ids; D/ST appear as the team abbreviation. */
     players: string[] | null;
     starters: string[] | null;
+    /** Injured reserve. On the roster, but not startable this week. */
+    reserve?: string[] | null;
+    /** Taxi squad, in dynasty leagues. Also not startable. */
+    taxi?: string[] | null;
 }
 
 export interface SleeperLeagueUser {
@@ -225,7 +229,12 @@ export interface SleeperLeagueDetail {
     season: string | null;
     /** Slot names in lineup order — QB, RB, WR, FLEX, BN, and so on. */
     roster_positions: string[] | null;
-    settings?: { playoff_week_start?: number } | null;
+    settings?: {
+        playoff_week_start?: number;
+        /** 1 in a best-ball league, where the platform scores your optimal
+            lineup and there is no lineup to set. */
+        best_ball?: number;
+    } | null;
 }
 
 export async function getLeague(leagueId: string): Promise<SleeperLeagueDetail | null> {

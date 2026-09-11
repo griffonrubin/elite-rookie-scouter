@@ -10,6 +10,10 @@ import { POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
 import { SwapBars, SwapRow } from './SwapBars';
+import { findProblems, LineupAlerts } from './LineupAlerts';
+import { SlotBoard } from './SlotBoard';
+import { MatchupChart } from './MatchupChart';
+import { optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
 import { LeagueConnect } from './LeagueConnect';
 import { HeadToHead } from './HeadToHead';
 import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
@@ -129,7 +133,8 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     const matchup = useMemo(() => {
         if (league.me.starters.length === 0 || league.opponent.starters.length === 0) return null;
         return simulateMatchup(
-            league.me.starters.map(sim), league.opponent.starters.map(sim), 20000, 11);
+            league.me.starters.map(sim), league.opponent.starters.map(sim), 20000, 11,
+            { bins: 40 });
     }, [league.me.starters, league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     const swaps: SwapRow[] = useMemo(() => {
@@ -147,6 +152,91 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         }));
     }, [matchup, league.me.starters, league.me.bench, league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
 
+    /**
+     * The lineup as slots, which is how it is actually set.
+     *
+     * Where the platform reports its slot order we use it. Where it does not
+     * — an older ESPN payload, a league shape we have not seen — the
+     * starters' own positions stand in, with the last one treated as a flex,
+     * which is wrong less often than refusing to show anything.
+     */
+    const slotLineup = useMemo(() => {
+        const reported = league.me.team?.lineupSlots;
+        const byPlatformId = new Map(league.me.starters.map(p => [
+            String(league.connection?.platform === 'espn' ? p.espn_nfl_id : p.sleeper_id), p]));
+        if (reported?.length) {
+            return reported.map(r => ({
+                slot: r.slot,
+                playerId: r.playerId ? byPlatformId.get(String(r.playerId))?.id ?? null : null,
+            }));
+        }
+        return league.me.starters.map((p, i) => ({
+            slot: i === league.me.starters.length - 1 ? 'FLEX' : (p.position ?? 'FLEX').toUpperCase(),
+            playerId: p.id,
+        }));
+    }, [league.me.team, league.me.starters, league.connection?.platform]);
+
+    /**
+     * Best ball has no start/sit decision in it.
+     *
+     * Sleeper scores whichever of your players did best in each slot, so
+     * there is no lineup to set and no move to make. A board offering
+     * "start Kincaid over Bowers" there is offering a move the platform will
+     * not let you make — and does not need you to. What is still worth
+     * showing is every player's distribution and the week's odds, so the
+     * board stays and the calls come off it.
+     */
+    const bestBall = league.snapshot?.bestBall === true;
+
+    const decisions: SlotDecision[] = useMemo(() => {
+        if (!matchup || slotLineup.length === 0) return [];
+        const all = [...league.me.starters, ...league.me.bench];
+        const posOf = (id: number) =>
+            (all.find(p => p.id === id)?.position ?? '').toUpperCase();
+        const byId = new Map(all.map(p => [p.id, p]));
+        // Resolved, not raw: scored on its own every running back slot asks
+        // for the best back on the bench, and being told to start the same
+        // man twice is how a tool tells you it cannot count.
+        const ranked = resolveConflicts(rankSlots(
+            slotLineup, posOf, id => sim(byId.get(id)!),
+            league.me.bench.map(p => p.id),
+            league.opponent.starters.map(sim), 6000));
+        // The candidates stay — comparing your flex against your bench is
+        // still worth seeing — but nothing is a "change" you could make.
+        return bestBall ? ranked.map(d => ({ ...d, verdict: 'set' as const })) : ranked;
+    }, [matchup, slotLineup, league.me.bench, league.opponent.starters, data, bestBall]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+    /**
+     * The lineup the simulation would set, and what it is worth.
+     *
+     * The single most useful number on the page is not your win probability —
+     * it is the gap between yours and the best one available, because that is
+     * the part you can still do something about. Most weeks it is zero, and
+     * saying so is worth as much as naming a change.
+     */
+    const best = useMemo(() => {
+        if (!matchup || decisions.length === 0) return null;
+        const all = [...league.me.starters, ...league.me.bench];
+        const byId = new Map(all.map(p => [p.id, p]));
+        const chosen = optimalLineup(decisions);
+        const ids = decisions.map(d => chosen.get(d.index) ?? d.currentId);
+        const lineup = ids.filter((id): id is number => id != null)
+            .map(id => sim(byId.get(id)!));
+        if (lineup.length === 0) return null;
+        const prob = simulateMatchup(lineup, league.opponent.starters.map(sim), 20000, 11).winProb;
+        const changes = decisions
+            .map(d => ({ d, to: chosen.get(d.index) ?? null }))
+            .filter(c => c.to != null && c.to !== c.d.currentId)
+            .map(c => ({
+                slot: c.d.slot,
+                out: c.d.currentId != null ? byId.get(c.d.currentId)?.full_name ?? null : null,
+                in: byId.get(c.to!)?.full_name ?? '',
+                inId: c.to!,
+                outId: c.d.currentId,
+            }));
+        return { prob, changes, gain: Math.round((prob - matchup.winProb) * 1000) / 10 };
+    }, [matchup, decisions, league.me.starters, league.me.bench, league.opponent.starters]);   // eslint-disable-line react-hooks/exhaustive-deps
+
     const axisMax = useMemo(() => {
         const all = [...league.me.starters, ...league.me.bench].map(p => outcomeFor(p).outcome.ceiling);
         return Math.max(24, Math.ceil(Math.max(0, ...all) / 5) * 5);
@@ -161,6 +251,13 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     return (
         <div className="space-y-4">
             <LeagueConnect league={league} compact />
+
+            {/* Before anything that needs weighing: anyone who cannot play.
+                Silent in best ball, where every problem it would name is one
+                the platform resolves for you. */}
+            {!bestBall && <LineupAlerts
+                problems={findProblems(league.me.starters, p => outcomeFor(p).outcome, swaps)}
+                onPick={r => setCompare([r.inId, r.outId])} />}
 
             {/* ── the headline: one number, no chart ── */}
             <div className="grid gap-3 lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -200,6 +297,71 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                     </dd>
                                 </div>
                             </dl>
+                            {matchup?.hist && (
+                                <div className="mt-3">
+                                    <MatchupChart hist={matchup.hist} winProb={matchup.winProb}
+                                        mineLabel={league.me.team?.name ?? 'You'}
+                                        theirsLabel={league.opponent.team?.name ?? 'Them'} />
+                                </div>
+                            )}
+                            {best && !bestBall && (
+                                <div className="mt-3 pt-3 border-t border-white/[0.07]">
+                                    {best.changes.length === 0 ? (
+                                        <p className="text-[12px]">
+                                            <span className="font-bold" style={{ color: '#86EFAC' }}>
+                                                This is the best lineup available.
+                                            </span>
+                                            <span className="text-muted-foreground/60"> Nothing on your
+                                                bench raises your chances.</span>
+                                        </p>
+                                    ) : (
+                                        <>
+                                            <p className="text-[12px] mb-1.5">
+                                                <span className="text-muted-foreground/60">Best available </span>
+                                                <span className="font-bold tabular-nums"
+                                                    style={{ color: '#93C5FD' }}>
+                                                    {Math.round(best.prob * 1000) / 10}%
+                                                </span>
+                                                <span className="text-muted-foreground/60">
+                                                    {' '}— {best.gain > 0 ? `+${best.gain}` : best.gain} from
+                                                    {best.changes.length === 1 ? ' one change' : ` ${best.changes.length} changes`}
+                                                </span>
+                                            </p>
+                                            <ul className="space-y-0.5">
+                                                {best.changes.map(c => (
+                                                    <li key={`${c.slot}-${c.inId}`}>
+                                                        <button type="button"
+                                                            onClick={() => c.outId != null && setCompare([c.inId, c.outId])}
+                                                            className="text-left text-[11px] hover:underline">
+                                                            <span className="text-muted-foreground/50 font-bold mr-1">
+                                                                {c.slot}
+                                                            </span>
+                                                            <span className="font-semibold">{c.in}</span>
+                                                            {c.out && (
+                                                                <span className="text-muted-foreground/50"> for {c.out}</span>
+                                                            )}
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                            {bestBall && (
+                                <div className="mt-3 pt-3 border-t border-white/[0.07]">
+                                    <p className="text-[12px]">
+                                        <span className="font-bold" style={{ color: '#86EFAC' }}>
+                                            Best ball — there is nothing to set.
+                                        </span>
+                                        <span className="text-muted-foreground/60"> The platform
+                                            scores your best lineup after the games, and picking
+                                            with hindsight can only beat picking in advance — so
+                                            the {winPct}% above is a floor on your real chance,
+                                            not the figure.</span>
+                                    </p>
+                                </div>
+                            )}
                             <p className="text-[10px] text-muted-foreground/40 mt-3 leading-snug">
                                 From 20,000 simulated weeks, both lineups drawn from each player&rsquo;s
                                 own distribution rather than their average.
@@ -222,10 +384,40 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                 {/* ── swaps, scored in win probability ── */}
                 <section className="rounded-xl border border-white/[0.07] p-4"
                     style={{ background: 'var(--bg-card)' }}>
-                    <h2 className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground/45 mb-2">
-                        Every swap you could make
-                    </h2>
-                    <SwapBars rows={swaps} onPick={r => setCompare([r.inId, r.outId])} />
+                    <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+                        <h2 className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground/45">
+                            Your lineup, slot by slot
+                        </h2>
+                        {(() => {
+                            if (bestBall) return (
+                                <span className="text-[10px] text-muted-foreground/50">
+                                    Best ball — the platform fills these slots for you
+                                </span>
+                            );
+                            const changes = decisions.filter(d => d.verdict !== 'set');
+                            return (
+                                <span className="text-[10px] text-muted-foreground/50">
+                                    {changes.length === 0
+                                        ? 'Every slot is already the one the simulation would pick.'
+                                        : `${changes.length} slot${changes.length > 1 ? 's' : ''} worth a second look`}
+                                </span>
+                            );
+                        })()}
+                    </div>
+                    <SlotBoard
+                        decisions={decisions}
+                        max={axisMax}
+                        playerOf={id => [...league.me.starters, ...league.me.bench]
+                            .find(p => p.id === id)}
+                        outcomeOf={id => {
+                            const p = [...league.me.starters, ...league.me.bench]
+                                .find(x => x.id === id);
+                            return p ? outcomeFor(p)
+                                : { outcome: buildOutcome({ playerId: id, position: '', logs: [] }, SEASON),
+                                    sample: [] };
+                        }}
+                        showCall={!bestBall}
+                        onCompare={(a, b) => setCompare([a, b])} />
                 </section>
             </div>
 
@@ -236,10 +428,11 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                 boom-bust flex is the right start against a lineup that can hang
                 140 and the wrong one against a lineup that reliably scores 95.
                 On the same axis as yours, that comparison is one glance. */}
-            <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-                <Roster title="Your starters" players={league.me.starters}
-                    outcomeFor={outcomeFor} max={axisMax} series="a"
-                    onCompare={id => setCompare(c => c && c[0] !== id ? [c[0], id] : [id, c?.[1] ?? id])} />
+            <div className="grid gap-3 lg:grid-cols-2">
+                {/* No starters panel: the slot board above is the starting
+                    lineup, with the same strips and the decision attached.
+                    Printing it twice made the page longer and said nothing
+                    the first one had not. */}
                 <Roster title="Your bench" players={league.me.bench}
                     outcomeFor={outcomeFor} max={axisMax} series="b"
                     onCompare={id => setCompare(c => c && c[0] !== id ? [c[0], id] : [id, c?.[1] ?? id])} />

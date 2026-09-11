@@ -497,6 +497,45 @@ export interface MatchupOdds {
     pointsAgainst: number;
     /** Middle 80% of this lineup's outcomes. */
     range: [number, number];
+    /**
+     * Both simulated score distributions, binned, when asked for.
+     *
+     * The simulation already draws twenty thousand of each and then throws
+     * them away to report two averages. The shapes are the interesting part:
+     * where they overlap is precisely how a favourite loses, and no pair of
+     * means can show that.
+     */
+    hist?: ScoreHistogram;
+}
+
+export interface ScoreHistogram {
+    /** Left edge of each bin; bins are of equal width. */
+    edges: number[];
+    width: number;
+    /** Share of trials in each bin, so the two are comparable. */
+    mine: number[];
+    theirs: number[];
+    /** Share of trials in which their score beats yours. */
+    lossShare: number;
+}
+
+function histogram(mine: number[], theirs: number[], bins: number): ScoreHistogram {
+    const all = [...mine, ...theirs];
+    const lo = Math.max(0, Math.min(...all));
+    const hi = Math.max(...all);
+    const width = (hi - lo) / bins || 1;
+    const edges = Array.from({ length: bins }, (_, i) => lo + i * width);
+    const put = (xs: number[]) => {
+        const out = new Array(bins).fill(0);
+        for (const x of xs) {
+            const i = Math.min(bins - 1, Math.max(0, Math.floor((x - lo) / width)));
+            out[i]++;
+        }
+        return out.map(n => n / xs.length);
+    };
+    let losses = 0;
+    for (let i = 0; i < mine.length; i++) if (theirs[i] >= mine[i]) losses++;
+    return { edges, width, mine: put(mine), theirs: put(theirs), lossShare: losses / mine.length };
 }
 
 const DEFAULT_TRIALS = 20000;
@@ -512,18 +551,22 @@ const DEFAULT_TRIALS = 20000;
 export function simulateMatchup(
     mine: SimPlayer[], theirs: SimPlayer[],
     trials = DEFAULT_TRIALS, seed = 1,
+    opts: { bins?: number } = {},
 ): MatchupOdds {
     const rng = makeRng(seed);
     let wins = 0, sumFor = 0, sumAgainst = 0;
     const totals: number[] = new Array(trials);
+    const oppTotals: number[] | null = opts.bins ? new Array(trials) : null;
     for (let i = 0; i < trials; i++) {
         const f = drawLineup(mine, rng);
         const a = drawLineup(theirs, rng);
         totals[i] = f;
+        if (oppTotals) oppTotals[i] = a;
         sumFor += f; sumAgainst += a;
         if (f > a) wins++;
     }
     return {
+        ...(oppTotals ? { hist: histogram(totals, oppTotals, opts.bins!) } : {}),
         winProb: wins / trials,
         pointsFor: Math.round((sumFor / trials) * 10) / 10,
         pointsAgainst: Math.round((sumAgainst / trials) * 10) / 10,
@@ -550,6 +593,34 @@ export interface SwapVerdict {
  * of the industry shows, and seeing it disagree with the win-probability
  * delta is the moment the tool earns its keep.
  */
+/**
+ * How often one player outscores another, head to head.
+ *
+ * A slot's win-probability delta says what a change is worth to the lineup,
+ * which is the right thing to rank on and a hard thing to feel. This is the
+ * same comparison in the units of the argument people actually have: start
+ * him and you have the better player in 58% of weeks, not in all of them, and
+ * the 42% is why it was ever a question.
+ *
+ * Drawn from the same distributions the simulation uses, so it cannot
+ * disagree with the ranking above it.
+ */
+export function beatsProbability(
+    a: SimPlayer, b: SimPlayer, trials = 4000, seed = 13,
+): number {
+    const rng = makeRng(seed);
+    let wins = 0, ties = 0;
+    for (let i = 0; i < trials; i++) {
+        const x = drawLineup([a], rng);
+        const y = drawLineup([b], rng);
+        if (x > y) wins++;
+        else if (x === y) ties++;
+    }
+    // Two players who both post zero — a pair of ruled-out starters — are not
+    // a 100% answer in either direction, so ties split.
+    return (wins + ties / 2) / trials;
+}
+
 export function rankSwaps(
     starters: SimPlayer[], bench: SimPlayer[], opponent: SimPlayer[],
     eligible: (benchIdx: number, starterIdx: number) => boolean,
