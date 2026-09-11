@@ -81,6 +81,20 @@ console.log('  ', [...opt.entries()].map(([i, p]) => `slot${i}=${p}`).join(' '))
 check('nobody is started twice', new Set(opt.values()).size, opt.size);
 check('the strong WR is started', [...opt.values()].includes(8), true);
 
+console.log('\n== the two summaries cannot disagree ==');
+// A slot the board calls settled must not show up as a change in the
+// optimal lineup, or the page contradicts itself in two adjacent panels.
+const settled = rankSlots(
+    [{ slot: 'RB', playerId: 1 }, { slot: 'WR', playerId: 3 }],
+    id => pos.get(id)!, id => sims.get(id)!, [9], opp, 4000);
+const settledFixed = resolveConflicts(settled);
+const optSettled = optimalLineup(settledFixed);
+const proposed = settledFixed.filter(
+    d => (optSettled.get(d.index) ?? d.currentId) !== d.currentId).length;
+const flagged = settledFixed.filter(d => d.verdict !== 'set').length;
+console.log(`   board flags ${flagged} slots; optimal proposes ${proposed} changes`);
+check('a settled board proposes no changes', proposed <= flagged, true);
+
 console.log();
 if (fails.length) { console.log(`${fails.length} FAILED: ${fails.join(', ')}`); process.exit(1); }
 console.log('all lineup checks passed');

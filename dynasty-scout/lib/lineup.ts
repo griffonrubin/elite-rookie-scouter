@@ -200,7 +200,16 @@ export function optimalLineup(decisions: SlotDecision[]): Map<number, number> {
     const chosen = new Map<number, number>();
     const order = [...decisions].sort((a, b) => b.gain - a.gain);
     for (const d of order) {
-        const pick = d.candidates.find(c => !taken.has(c.playerId));
+        // A slot the board calls settled must not be quietly changed here.
+        // Taking the nominal best candidate regardless produced a lineup that
+        // claimed two changes worth a tenth of a point while the board beside
+        // it said every slot was already right — both were true of their own
+        // rule, and a reader seeing them disagree simply stops believing
+        // either. One threshold, applied in both places.
+        const pick = d.verdict === 'set'
+            ? d.candidates.find(c => c.current && !taken.has(c.playerId))
+                ?? d.candidates.find(c => !taken.has(c.playerId))
+            : d.candidates.find(c => !taken.has(c.playerId));
         if (!pick) continue;
         taken.add(pick.playerId);
         chosen.set(d.index, pick.playerId);

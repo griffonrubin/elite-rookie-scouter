@@ -20,7 +20,6 @@ export const metadata: Metadata = {
   description: "AI-powered dynasty fantasy football rookie scouting agent with real-time news scanning and sentiment analysis",
 };
 
-import { DataRefresher } from '@/components/DataRefresher';
 
 export default function RootLayout({
   children,
@@ -30,7 +29,6 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${dmSans.variable} ${jetBrainsMono.variable} ${dmSans.className}`}>
-        <DataRefresher />
         <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>
