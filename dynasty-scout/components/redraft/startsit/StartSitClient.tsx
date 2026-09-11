@@ -176,6 +176,18 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         }));
     }, [league.me.team, league.me.starters, league.connection?.platform]);
 
+    /**
+     * Best ball has no start/sit decision in it.
+     *
+     * Sleeper scores whichever of your players did best in each slot, so
+     * there is no lineup to set and no move to make. A board offering
+     * "start Kincaid over Bowers" there is offering a move the platform will
+     * not let you make — and does not need you to. What is still worth
+     * showing is every player's distribution and the week's odds, so the
+     * board stays and the calls come off it.
+     */
+    const bestBall = league.snapshot?.bestBall === true;
+
     const decisions: SlotDecision[] = useMemo(() => {
         if (!matchup || slotLineup.length === 0) return [];
         const all = [...league.me.starters, ...league.me.bench];
@@ -185,11 +197,14 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         // Resolved, not raw: scored on its own every running back slot asks
         // for the best back on the bench, and being told to start the same
         // man twice is how a tool tells you it cannot count.
-        return resolveConflicts(rankSlots(
+        const ranked = resolveConflicts(rankSlots(
             slotLineup, posOf, id => sim(byId.get(id)!),
             league.me.bench.map(p => p.id),
             league.opponent.starters.map(sim), 6000));
-    }, [matchup, slotLineup, league.me.bench, league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
+        // The candidates stay — comparing your flex against your bench is
+        // still worth seeing — but nothing is a "change" you could make.
+        return bestBall ? ranked.map(d => ({ ...d, verdict: 'set' as const })) : ranked;
+    }, [matchup, slotLineup, league.me.bench, league.opponent.starters, data, bestBall]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     /**
      * The lineup the simulation would set, and what it is worth.
@@ -237,10 +252,12 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         <div className="space-y-4">
             <LeagueConnect league={league} compact />
 
-            {/* Before anything that needs weighing: anyone who cannot play. */}
-            <LineupAlerts
+            {/* Before anything that needs weighing: anyone who cannot play.
+                Silent in best ball, where every problem it would name is one
+                the platform resolves for you. */}
+            {!bestBall && <LineupAlerts
                 problems={findProblems(league.me.starters, p => outcomeFor(p).outcome, swaps)}
-                onPick={r => setCompare([r.inId, r.outId])} />
+                onPick={r => setCompare([r.inId, r.outId])} />}
 
             {/* ── the headline: one number, no chart ── */}
             <div className="grid gap-3 lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -287,7 +304,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                         theirsLabel={league.opponent.team?.name ?? 'Them'} />
                                 </div>
                             )}
-                            {best && (
+                            {best && !bestBall && (
                                 <div className="mt-3 pt-3 border-t border-white/[0.07]">
                                     {best.changes.length === 0 ? (
                                         <p className="text-[12px]">
@@ -331,6 +348,20 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                     )}
                                 </div>
                             )}
+                            {bestBall && (
+                                <div className="mt-3 pt-3 border-t border-white/[0.07]">
+                                    <p className="text-[12px]">
+                                        <span className="font-bold" style={{ color: '#86EFAC' }}>
+                                            Best ball — there is nothing to set.
+                                        </span>
+                                        <span className="text-muted-foreground/60"> The platform
+                                            scores your best lineup after the games, and picking
+                                            with hindsight can only beat picking in advance — so
+                                            the {winPct}% above is a floor on your real chance,
+                                            not the figure.</span>
+                                    </p>
+                                </div>
+                            )}
                             <p className="text-[10px] text-muted-foreground/40 mt-3 leading-snug">
                                 From 20,000 simulated weeks, both lineups drawn from each player&rsquo;s
                                 own distribution rather than their average.
@@ -358,6 +389,11 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                             Your lineup, slot by slot
                         </h2>
                         {(() => {
+                            if (bestBall) return (
+                                <span className="text-[10px] text-muted-foreground/50">
+                                    Best ball — the platform fills these slots for you
+                                </span>
+                            );
                             const changes = decisions.filter(d => d.verdict !== 'set');
                             return (
                                 <span className="text-[10px] text-muted-foreground/50">
@@ -380,6 +416,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                 : { outcome: buildOutcome({ playerId: id, position: '', logs: [] }, SEASON),
                                     sample: [] };
                         }}
+                        showCall={!bestBall}
                         onCompare={(a, b) => setCompare([a, b])} />
                 </section>
             </div>

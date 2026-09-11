@@ -44,9 +44,13 @@ export interface SlotBoardProps {
     outcomeOf: (id: number) => { outcome: Outcome; sample: SampleGame[] };
     max: number;
     onCompare?: (a: number, b: number) => void;
+    /** False in best ball, where the platform sets the lineup and a verdict
+        on each slot would be a call nobody gets to make. */
+    showCall?: boolean;
 }
 
-export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare }: SlotBoardProps) {
+export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
+    showCall = true }: SlotBoardProps) {
     const [open, setOpen] = useState<number | null>(null);
 
     return (
@@ -58,13 +62,17 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare }: Sl
                 <span className="hidden sm:block" />
                 <OutcomeAxis max={max} />
                 <span className="hidden sm:block text-[10px] text-right uppercase tracking-widest
-                                 font-bold text-muted-foreground/45">Call</span>
+                                 font-bold text-muted-foreground/45">{showCall ? 'Call' : ''}</span>
             </div>
 
             {decisions.map(d => {
                 const cur = d.currentId != null ? playerOf(d.currentId) : undefined;
                 const best = d.candidates[0];
-                const alt = best && !best.current ? playerOf(best.playerId) : undefined;
+                // Only where the verdict is that a change is worth making: a
+                // settled slot that still prints somebody else's name beside
+                // the tick is the board arguing with itself.
+                const alt = best && !best.current && d.verdict !== 'set'
+                    ? playerOf(best.playerId) : undefined;
                 const v = VERDICT[d.verdict];
                 const isOpen = open === d.index;
                 const o = d.currentId != null ? outcomeOf(d.currentId) : null;
@@ -118,13 +126,15 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare }: Sl
                                         {alt.full_name.split(' ').slice(-1)[0]}
                                     </span>
                                 )}
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded
-                                                 text-[10px] font-bold tracking-wide shrink-0"
-                                    style={{ color: v.colour, background: v.bg }}>
-                                    <v.Icon className="w-3 h-3" aria-hidden="true" />
-                                    {d.verdict === 'set' ? '' : `+${d.gain}`}
-                                    {d.verdict === 'set' && <span className="sr-only">{v.label}</span>}
-                                </span>
+                                {showCall && (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded
+                                                     text-[10px] font-bold tracking-wide shrink-0"
+                                        style={{ color: v.colour, background: v.bg }}>
+                                        <v.Icon className="w-3 h-3" aria-hidden="true" />
+                                        {d.verdict === 'set' ? '' : `+${d.gain}`}
+                                        {d.verdict === 'set' && <span className="sr-only">{v.label}</span>}
+                                    </span>
+                                )}
                                 <ChevronDown className={cn(
                                     'w-3 h-3 shrink-0 text-muted-foreground/30 transition-transform',
                                     isOpen && 'rotate-180')} aria-hidden="true" />

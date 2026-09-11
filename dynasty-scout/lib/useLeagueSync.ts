@@ -65,6 +65,9 @@ export interface LeagueSnapshot {
     opponentKeyFor: Record<string, string | null>;
     /** Slot names in lineup order, where the platform reports them. */
     rosterPositions?: string[] | null;
+    /** True in a best-ball league: the platform scores the optimal lineup
+        itself, so there is no start/sit call to make. */
+    bestBall?: boolean;
 }
 
 export interface MatchedSide {
@@ -223,7 +226,11 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
             if (pid && pid !== '0') slotOf.set(pid, startableSlots[i] ?? 'FLEX');
         });
         const starting = new Set(startingOrder.filter(p => p && p !== '0'));
-        const all = r.players ?? [];
+        // Injured reserve and the taxi squad are on the roster and cannot be
+        // started. Offering them as candidates for a slot would be offering a
+        // move the platform will refuse.
+        const unavailable = new Set([...(r.reserve ?? []), ...(r.taxi ?? [])]);
+        const all = (r.players ?? []).filter(p => !unavailable.has(p) || starting.has(p));
         return {
             key: String(r.roster_id),
             name: teamName(userById.get(r.owner_id ?? '')),
@@ -256,6 +263,7 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         teams,
         opponentKeyFor,
         rosterPositions: league?.roster_positions ?? null,
+        bestBall: league?.settings?.best_ball === 1,
     };
 }
 
