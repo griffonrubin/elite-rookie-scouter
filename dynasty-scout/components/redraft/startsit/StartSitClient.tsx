@@ -10,6 +10,7 @@ import { POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
 import { SwapBars, SwapRow } from './SwapBars';
+import { findProblems, LineupAlerts } from './LineupAlerts';
 import { LeagueConnect } from './LeagueConnect';
 import { HeadToHead } from './HeadToHead';
 import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
@@ -161,6 +162,11 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     return (
         <div className="space-y-4">
             <LeagueConnect league={league} compact />
+
+            {/* Before anything that needs weighing: anyone who cannot play. */}
+            <LineupAlerts
+                problems={findProblems(league.me.starters, p => outcomeFor(p).outcome, swaps)}
+                onPick={r => setCompare([r.inId, r.outId])} />
 
             {/* ── the headline: one number, no chart ── */}
             <div className="grid gap-3 lg:grid-cols-[320px_minmax(0,1fr)]">
