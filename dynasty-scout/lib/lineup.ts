@@ -13,7 +13,7 @@
  * property worth having: a player is judged by what he does to your chances,
  * not by his projection.
  */
-import { SimPlayer, simulateMatchup } from '@/lib/startSit';
+import { beatsProbability, SimPlayer, simulateMatchup } from '@/lib/startSit';
 
 /** Positions that can fill a FLEX in every common league shape. */
 const FLEX_ELIGIBLE: Record<string, Set<string>> = {
@@ -53,6 +53,8 @@ export interface SlotCandidate {
     deltaWinProb: number;
     deltaPoints: number;
     current: boolean;
+    /** Share of weeks this player outscores whoever is in the slot now. */
+    beats: number;
 }
 
 export interface SlotDecision {
@@ -125,7 +127,7 @@ export function rankSlots(
             const w = simulateMatchup(simLineup(ids), opponent, trials, 7).winProb;
             scored.push({
                 playerId: id, winProb: w, deltaWinProb: 0, current: id === currentId,
-                deltaPoints: 0,
+                deltaPoints: 0, beats: 0.5,
             });
         }
 
@@ -135,6 +137,9 @@ export function rankSlots(
         for (const c of scored) {
             c.deltaWinProb = Math.round((c.winProb - currentProb) * 1000) / 10;
             c.deltaPoints = Math.round((simOf(c.playerId).outcome.mean - currentMean) * 10) / 10;
+            c.beats = currentId != null && c.playerId !== currentId
+                ? beatsProbability(simOf(c.playerId), simOf(currentId))
+                : 0.5;
         }
         scored.sort((a, b) => b.winProb - a.winProb);
 

@@ -187,19 +187,43 @@ function Candidates({ d, playerOf, outcomeOf, max, onCompare }: {
                             <OutcomeStrip outcome={outcome} sample={sample} max={max}
                                 series={c.current ? 'a' : 'b'} label={p?.full_name} compact />
                         </span>
-                        <span className="text-right text-[11px] tabular-nums font-bold"
-                            style={{
-                                color: c.current ? 'rgba(255,255,255,0.4)'
-                                    : delta > 0 ? DIVERGING.positive : DIVERGING.negative,
-                            }}>
-                            {c.current ? '—' : `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}`}
+                        <span className="flex flex-col items-end gap-0.5">
+                            <span className="text-[11px] tabular-nums font-bold"
+                                style={{
+                                    color: c.current ? 'rgba(255,255,255,0.4)'
+                                        : delta > 0 ? DIVERGING.positive : DIVERGING.negative,
+                                }}>
+                                {c.current ? '—' : `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}`}
+                            </span>
+                            {/* The same comparison in the units people argue in.
+                                A win-probability delta is the right thing to
+                                rank on and a hard thing to feel; "better in 58%
+                                of weeks" says how close the call is, and the
+                                other 42% is why it was a question at all. */}
+                            {!c.current && (
+                                <span className="flex items-center gap-1 w-full"
+                                    title={`Outscores the current starter in `
+                                        + `${Math.round(c.beats * 100)}% of simulated weeks`}>
+                                    <span className="relative h-1 flex-1 rounded-full overflow-hidden"
+                                        style={{ background: 'rgba(255,255,255,0.10)' }}>
+                                        <span className="absolute inset-y-0 left-0 rounded-full"
+                                            style={{
+                                                width: `${c.beats * 100}%`,
+                                                background: c.beats >= 0.5 ? SERIES.b : CHART_INK.context,
+                                            }} />
+                                    </span>
+                                    <span className="text-[9px] tabular-nums text-muted-foreground/55 w-7 text-right">
+                                        {Math.round(c.beats * 100)}%
+                                    </span>
+                                </span>
+                            )}
                         </span>
                     </button>
                 );
             })}
             <p className="text-[10px] text-muted-foreground/40 pt-0.5">
-                Percentage points of win probability against whoever is in the slot now.
-                Click a name to compare head to head.
+                Win probability against whoever is in the slot now, and the share of
+                weeks this player outscores them. Click a name for the full comparison.
             </p>
         </div>
     );

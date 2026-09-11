@@ -593,6 +593,34 @@ export interface SwapVerdict {
  * of the industry shows, and seeing it disagree with the win-probability
  * delta is the moment the tool earns its keep.
  */
+/**
+ * How often one player outscores another, head to head.
+ *
+ * A slot's win-probability delta says what a change is worth to the lineup,
+ * which is the right thing to rank on and a hard thing to feel. This is the
+ * same comparison in the units of the argument people actually have: start
+ * him and you have the better player in 58% of weeks, not in all of them, and
+ * the 42% is why it was ever a question.
+ *
+ * Drawn from the same distributions the simulation uses, so it cannot
+ * disagree with the ranking above it.
+ */
+export function beatsProbability(
+    a: SimPlayer, b: SimPlayer, trials = 4000, seed = 13,
+): number {
+    const rng = makeRng(seed);
+    let wins = 0, ties = 0;
+    for (let i = 0; i < trials; i++) {
+        const x = drawLineup([a], rng);
+        const y = drawLineup([b], rng);
+        if (x > y) wins++;
+        else if (x === y) ties++;
+    }
+    // Two players who both post zero — a pair of ruled-out starters — are not
+    // a 100% answer in either direction, so ties split.
+    return (wins + ties / 2) / trials;
+}
+
 export function rankSwaps(
     starters: SimPlayer[], bench: SimPlayer[], opponent: SimPlayer[],
     eligible: (benchIdx: number, starterIdx: number) => boolean,
