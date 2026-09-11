@@ -133,7 +133,7 @@ export function HeadToHead({ a, b, data, outcomeFor, onClose }: {
                         Head to head
                     </h2>
                     <p className="text-[11px] text-muted-foreground/50 mt-0.5">
-                        Each dot is one game last season. The bar is floor to ceiling, the line
+                        Each dot is one recent game — hover for the week. The bar is floor to ceiling, the line
                         is the expected week.
                     </p>
                 </div>

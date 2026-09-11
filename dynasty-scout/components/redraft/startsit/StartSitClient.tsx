@@ -16,6 +16,15 @@ import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
 
 const SEASON = 2026;
 
+/**
+ * How many recent games form a player's shape.
+ *
+ * One NFL season. Long enough that the floor and ceiling are not decided by
+ * three games, short enough that it drops out of a role the player no longer
+ * has.
+ */
+const SAMPLE_GAMES = 17;
+
 /** Slots a bench player may legally fill, so a kicker is never offered at RB. */
 const FLEX_OK = new Set(['RB', 'WR', 'TE']);
 function canFill(benchPos: string, starterPos: string, slotIsFlex: boolean): boolean {
@@ -78,11 +87,21 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                     onBye: d?.on_bye ?? false,
                 },
             }, SEASON);
-            // Last season is the shape sample; this season's games are too few
-            // to resample from in September and would collapse the draw.
+            // A rolling window of the most recent games, not "last season".
+            //
+            // Filtering to last season is right in September and quietly wrong
+            // by November: a player would be nine games into a new role with
+            // all nine excluded from the shape, resampled instead from a season
+            // that no longer describes them. Taking the last SAMPLE_GAMES
+            // regardless of season slides on its own — 16 of last year in week
+            // 1, mostly this year by midseason — and every dot names its own
+            // season, so a mixed window still reads honestly.
             const sample: SampleGame[] = logs
-                .filter(l => l.season === SEASON - 1)
-                .map(l => ({ points: l.points, week: l.week, season: l.season, opponent: l.opponent }));
+                .slice()
+                .sort((x, y) => y.season - x.season || y.week - x.week)
+                .slice(0, SAMPLE_GAMES)
+                .map(l => ({ points: l.points, week: l.week, season: l.season, opponent: l.opponent }))
+                .reverse();
             const v = { outcome, sample };
             cache.set(p.id, v);
             return v;
@@ -237,7 +256,7 @@ function Roster({ title, players, outcomeFor, max, series, onCompare }: {
                     {title}
                 </h2>
                 <span className="text-[10px] text-muted-foreground/45">
-                    floor · expected · ceiling, with last season&rsquo;s games
+                    floor · expected · ceiling, with recent games
                 </span>
             </div>
             {/* The axis has to sit over the plot column, not over the whole
