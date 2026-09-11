@@ -17,10 +17,18 @@ import { Outcome } from '@/lib/startSit';
  * with the expected week marked. That is the summary; the dots are evidence.
  */
 
+/** One real game: the point, and enough to say which game it was. */
+export interface SampleGame {
+    points: number;
+    week?: number;
+    season?: number;
+    opponent?: string | null;
+}
+
 export interface OutcomeStripProps {
     outcome: Outcome;
     /** The player's actual weekly points, drawn as evidence behind the summary. */
-    sample?: number[];
+    sample?: SampleGame[];
     /** Shared across every strip in a view, so bars are comparable. */
     max: number;
     /** 'context' draws the opponent, who is not a choice you get to make. */
@@ -61,13 +69,17 @@ export function OutcomeStrip({
                     opacity: 0.22,
                     borderRadius: MARK.barRadius,
                 }} />
-            {/* the games themselves */}
-            {sample.map((v, i) => (
+            {/* the games themselves.
+                Each dot names its own game on hover. A dot at 28 is worth far
+                more to a reader who can see it was week 4 against a defence
+                they are about to play again than it is as an anonymous point
+                in a cloud. */}
+            {sample.map((g, i) => (
                 <span key={i}
                     className="absolute top-1/2 rounded-full"
-                    title={`${v.toFixed(1)} pts`}
+                    title={gameLabel(g)}
                     style={{
-                        left: pct(v),
+                        left: pct(g.points),
                         width: MARK.dotRadius * 2,
                         height: MARK.dotRadius * 2,
                         marginLeft: -MARK.dotRadius,
@@ -92,6 +104,14 @@ export function OutcomeStrip({
                 }} />
         </div>
     );
+}
+
+function gameLabel(g: SampleGame): string {
+    const when = g.week != null
+        ? `${g.season != null ? `${g.season} ` : ''}week ${g.week}`
+        : null;
+    const who = g.opponent ? `vs ${g.opponent.toUpperCase()}` : null;
+    return [`${g.points.toFixed(1)} pts`, when, who].filter(Boolean).join(' · ');
 }
 
 /** Shared x-axis for a column of strips, so the scale is legible once. */

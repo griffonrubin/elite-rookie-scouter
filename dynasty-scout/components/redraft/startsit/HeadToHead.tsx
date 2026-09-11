@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { RedraftPlayer } from '@/lib/types';
 import { Outcome } from '@/lib/startSit';
 import { SERIES } from '@/lib/vizTokens';
-import { OutcomeAxis, OutcomeStrip } from './OutcomeStrip';
+import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
 import { Metric, UsageDumbbell } from './UsageDumbbell';
 import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
 
@@ -40,7 +40,7 @@ export function HeadToHead({ a, b, data, outcomeFor, onClose }: {
     a: RedraftPlayer | null;
     b: RedraftPlayer | null;
     data: Map<number, StartSitPlayer>;
-    outcomeFor: (p: RedraftPlayer) => { outcome: Outcome; sample: number[] };
+    outcomeFor: (p: RedraftPlayer) => { outcome: Outcome; sample: SampleGame[] };
     onClose: () => void;
 }) {
     const metrics: Metric[] = useMemo(() => {
@@ -98,10 +98,10 @@ export function HeadToHead({ a, b, data, outcomeFor, onClose }: {
     if (!a || !b) return null;
     const oa = outcomeFor(a), ob = outcomeFor(b);
     const max = Math.max(24, Math.ceil(Math.max(oa.outcome.ceiling, ob.outcome.ceiling,
-        ...oa.sample, ...ob.sample) / 5) * 5);
+        ...oa.sample.map(g => g.points), ...ob.sample.map(g => g.points)) / 5) * 5);
 
     const Row = ({ p, o, series }: {
-        p: RedraftPlayer; o: { outcome: Outcome; sample: number[] }; series: 'a' | 'b';
+        p: RedraftPlayer; o: { outcome: Outcome; sample: SampleGame[] }; series: 'a' | 'b';
     }) => (
         <div className="space-y-1">
             <div className="flex items-baseline justify-between gap-2">

@@ -28,7 +28,7 @@ export interface StartSitPlayer {
     spread: number | null;
     opponent: string | null;
     on_bye: boolean;
-    logs: { season: number; week: number; points: number }[];
+    logs: { season: number; week: number; points: number; opponent: string | null }[];
     /** Last full season's usage and efficiency, for the head-to-head. */
     usage: {
         games: number;
@@ -70,8 +70,11 @@ export async function GET(req: NextRequest) {
 
     // Weekly logs, most recent two seasons — the shape estimate never reaches
     // further back than that and the rows add up quickly.
-    const logs = await query<{ player_id: number; season: number; week: number; points: number }>(
-        `SELECT player_id, season, week, fantasy_points_ppr AS points
+    const logs = await query<{
+        player_id: number; season: number; week: number;
+        points: number; opponent: string | null;
+    }>(
+        `SELECT player_id, season, week, fantasy_points_ppr AS points, opponent
            FROM nfl_player_week
           WHERE player_id IN (${ph}) AND season_type = 'REG'
             AND season >= ${SEASON - 2}
@@ -111,11 +114,13 @@ export async function GET(req: NextRequest) {
           GROUP BY player_id`, ids);
     const usageByPlayer = new Map(usageRows.map(u => [u.player_id, u]));
 
-    const logsByPlayer = new Map<number, { season: number; week: number; points: number }[]>();
+    const logsByPlayer = new Map<number,
+        { season: number; week: number; points: number; opponent: string | null }[]>();
     for (const l of logs) {
         const arr = logsByPlayer.get(l.player_id);
-        if (arr) arr.push({ season: l.season, week: l.week, points: l.points });
-        else logsByPlayer.set(l.player_id, [{ season: l.season, week: l.week, points: l.points }]);
+        if (arr) arr.push({ season: l.season, week: l.week, points: l.points, opponent: l.opponent });
+        else logsByPlayer.set(l.player_id,
+            [{ season: l.season, week: l.week, points: l.points, opponent: l.opponent }]);
     }
 
     const players: StartSitPlayer[] = base.map(p => {

@@ -8,7 +8,7 @@ import {
 } from '@/lib/startSit';
 import { POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
-import { OutcomeAxis, OutcomeStrip } from './OutcomeStrip';
+import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
 import { SwapBars, SwapRow } from './SwapBars';
 import { LeagueConnect } from './LeagueConnect';
 import { HeadToHead } from './HeadToHead';
@@ -60,7 +60,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     }, [needed.join(','), league.week]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     const outcomeFor = useMemo(() => {
-        const cache = new Map<number, { outcome: Outcome; sample: number[] }>();
+        const cache = new Map<number, { outcome: Outcome; sample: SampleGame[] }>();
         return (p: RedraftPlayer) => {
             const hit = cache.get(p.id);
             if (hit) return hit;
@@ -80,16 +80,20 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
             }, SEASON);
             // Last season is the shape sample; this season's games are too few
             // to resample from in September and would collapse the draw.
-            const sample = logs.filter(l => l.season === SEASON - 1).map(l => l.points);
+            const sample: SampleGame[] = logs
+                .filter(l => l.season === SEASON - 1)
+                .map(l => ({ points: l.points, week: l.week, season: l.season, opponent: l.opponent }));
             const v = { outcome, sample };
             cache.set(p.id, v);
             return v;
         };
     }, [data]);
 
+    // The simulator resamples points and has no use for which game each came
+    // from; the strip is the other way round. Same games, two shapes.
     const sim = (p: RedraftPlayer): SimPlayer => {
         const { outcome, sample } = outcomeFor(p);
-        return { outcome, sample };
+        return { outcome, sample: sample.map(g => g.points) };
     };
 
     const matchup = useMemo(() => {
@@ -220,7 +224,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
 function Roster({ title, players, outcomeFor, max, series, onCompare }: {
     title: string;
     players: RedraftPlayer[];
-    outcomeFor: (p: RedraftPlayer) => { outcome: Outcome; sample: number[] };
+    outcomeFor: (p: RedraftPlayer) => { outcome: Outcome; sample: SampleGame[] };
     max: number;
     series: 'a' | 'b' | 'context';
     onCompare: (id: number) => void;
