@@ -55,6 +55,13 @@ export interface GameContext {
     defenseSample?: number | null;
     /** No game this week. */
     onBye?: boolean;
+    /**
+     * The official game designation — Out, Doubtful, Questionable — and the
+     * practice participation behind it. Both, because practice is reported
+     * for players who never get a game status and is often the sharper read.
+     */
+    reportStatus?: string | null;
+    practiceStatus?: string | null;
 }
 
 export interface PlayerInputs {
@@ -66,6 +73,15 @@ export interface PlayerInputs {
     projectedGames?: number;
     /** Weekly logs, most recent season first is not required — season is on each. */
     logs: GameLog[];
+    /**
+     * PPR points implied by this week's player prop market, when the books
+     * have priced them. Sharper than anything else here and already inclusive
+     * of the matchup, the game script and the injury news, which is why it
+     * replaces those adjustments rather than joining them.
+     */
+    marketProjection?: number | null;
+    /** How much of the player's game the market actually priced. */
+    marketMarkets?: number | null;
     context?: GameContext;
 }
 
@@ -87,6 +103,74 @@ export interface Outcome {
     /** Why the centre moved off the projection, for the UI to explain itself. */
     contextAdjustment: number;
     onBye: boolean;
+    /**
+     * Chance this player is active, from the injury report. Everything above
+     * — mean, floor, ceiling — is conditional on them playing, so a hurt
+     * starter reads as the player they are plus the risk they are not there,
+     * rather than as a quietly smaller player.
+     */
+    playProbability: number;
+    /** What the report said, for the UI to name rather than imply. */
+    availability: string | null;
+    /**
+     * Where the centre came from. 'market' means the betting line priced this
+     * player directly; 'model' means it was built from the projection and the
+     * player's own history.
+     */
+    centreSource: 'market' | 'model';
+}
+
+/**
+ * How likely a player on the injury report is to be active.
+ *
+ * The designations are coarse and their meanings are well known: Out is a
+ * decision already made, Doubtful almost always means inactive, and
+ * Questionable is close to a coin flip that lands on "plays" more often than
+ * not. The numbers below are the conventional readings of those tags, not a
+ * fitted model, and they are deliberately round — pretending to a second
+ * decimal here would claim precision the source does not carry.
+ *
+ * Practice participation is the fallback, and it is not a weak one. Most
+ * players on a report never receive a game status at all; for them, a week of
+ * not practising is the only signal there is, and it is a real one.
+ */
+const REPORT_PLAY_RATE: Record<string, number> = {
+    OUT: 0,
+    DOUBTFUL: 0.1,
+    QUESTIONABLE: 0.65,
+};
+
+const PRACTICE_PLAY_RATE: Array<[RegExp, number]> = [
+    [/did not participate/i, 0.55],
+    [/limited/i, 0.9],
+    [/full/i, 1],
+];
+
+/**
+ * The chance a player suits up, from whatever the report says.
+ *
+ * A game status wins when there is one, because it is the team telling you
+ * directly. Silence is not evidence of injury: a player with no row at all is
+ * simply healthy as far as anyone has said, and gets 1.
+ */
+export function playProbability(ctx: GameContext): number {
+    const report = (ctx.reportStatus ?? '').trim().toUpperCase();
+    if (report && report in REPORT_PLAY_RATE) return REPORT_PLAY_RATE[report];
+    const practice = (ctx.practiceStatus ?? '').trim();
+    if (practice) {
+        for (const [re, rate] of PRACTICE_PLAY_RATE) if (re.test(practice)) return rate;
+    }
+    return 1;
+}
+
+/** The short label the UI shows, or null when there is nothing to say. */
+export function availabilityLabel(ctx: GameContext): string | null {
+    const report = (ctx.reportStatus ?? '').trim();
+    if (report) return report;
+    const practice = (ctx.practiceStatus ?? '').trim();
+    if (/did not participate/i.test(practice)) return 'No practice';
+    if (/limited/i.test(practice)) return 'Limited';
+    return null;
 }
 
 /** Typical week-to-week spread by position, used when a player has no history. */
@@ -237,9 +321,27 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
         ? Math.max(MIN_SD, cv * Math.max(centre, 1))
         : Math.max(MIN_SD, priorSd * (centre / 12 || 1));
 
+    // ── the market, when it has priced this player ──────────────────────
+    //
+    // A prop line already contains everything the adjustments below are
+    // trying to estimate: the books know the total, the spread, the defence
+    // and who is hurt, and they have moved the number accordingly. Adding the
+    // model's own tilt on top would count the same information twice, so when
+    // the market is present it replaces those adjustments rather than joining
+    // them, and the outcome says which it used.
+    //
+    // A thinly priced player — a yards line and nothing else — is not a full
+    // projection, so the market only takes over once at least two of their
+    // markets were priced. Below that the model keeps its own centre.
+    const market = p.marketProjection;
+    const marketUsable = market != null && market > 0 && (p.marketMarkets ?? 0) >= 2;
+    if (marketUsable) {
+        centre = market;
+    }
+
     // ── game environment ────────────────────────────────────────────────
     let adjustment = 0;
-    if (!ctx.onBye) {
+    if (!ctx.onBye && !marketUsable) {
         if (ctx.impliedTeamTotal != null) {
             const elasticity = TEAM_TOTAL_ELASTICITY[pos] ?? 0.45;
             const relative = (ctx.impliedTeamTotal - NEUTRAL_TEAM_TOTAL) / NEUTRAL_TEAM_TOTAL;
@@ -257,6 +359,8 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
             playerId: p.playerId, mean: 0, sd: 0, floor: 0, ceiling: 0,
             sample: shapeSample.length, formWeight: w,
             contextAdjustment: 0, onBye: true,
+            playProbability: 0, availability: null,
+            centreSource: 'model',
         };
     }
 
@@ -286,6 +390,11 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
         formWeight: Math.round(w * 100) / 100,
         contextAdjustment: Math.round(adjustment * 10) / 10,
         onBye: false,
+        // Conditional on playing: everything above describes the week this
+        // player has when active, and this is the chance they are.
+        playProbability: playProbability(ctx),
+        availability: availabilityLabel(ctx),
+        centreSource: marketUsable ? 'market' : 'model',
     };
 }
 
@@ -343,13 +452,36 @@ export function makeRng(seed: number): () => number {
     };
 }
 
+/**
+ * Whether a player's games can stand in for their week.
+ *
+ * They cannot when they are all zero, which is not a hypothetical: nflverse's
+ * weekly points cover passing, rushing and receiving, so every kicker-week in
+ * the table reads 0.0. Resampled at face value that put a kicker at zero in
+ * all twenty thousand simulated weeks while their stated mean said nine — the
+ * lineup was scored without them.
+ *
+ * A mean at or below a point is the signal. It means the sample is measuring
+ * something other than what this player is projected to do, and the model is
+ * better off with the distribution it built from the projection.
+ */
+export function usableSample(sample?: number[]): boolean {
+    if (!sample || sample.length < 4) return false;
+    return sample.reduce((a, b) => a + b, 0) / sample.length > 1;
+}
+
 function drawLineup(players: SimPlayer[], rng: () => number): number {
     let total = 0;
     for (const p of players) {
         if (p.outcome.onBye) continue;
-        if (p.sample && p.sample.length >= 4) {
-            const m = p.sample.reduce((a, b) => a + b, 0) / p.sample.length;
-            total += drawFrom(p.sample, m > 1 ? p.outcome.mean / m : 1, rng);
+        // Injury risk enters as the thing it actually is: a chance of zero,
+        // not a smaller number every week. A questionable starter is not
+        // two-thirds of a player — he is the whole player most weeks and an
+        // empty slot the rest, and those two lineups win differently.
+        if (p.outcome.playProbability < 1 && rng() >= p.outcome.playProbability) continue;
+        if (usableSample(p.sample)) {
+            const m = p.sample!.reduce((a, b) => a + b, 0) / p.sample!.length;
+            total += drawFrom(p.sample!, p.outcome.mean / m, rng);
         } else {
             total += drawNormal(p.outcome.mean, p.outcome.sd, rng);
         }

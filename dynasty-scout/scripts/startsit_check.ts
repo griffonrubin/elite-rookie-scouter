@@ -15,7 +15,8 @@
  * Run:  npx tsx scripts/startsit_check.ts
  */
 import { buildOutcome, simulateMatchup, rankSwaps, makeRng, formWeight,
-         percentile, SimPlayer, GameLog } from '@/lib/startSit';
+         percentile, usableSample, playProbability,
+         SimPlayer, GameLog } from '@/lib/startSit';
 import { query } from '@/lib/db';
 
 const CUR = 2026;
@@ -102,16 +103,82 @@ async function main() {
 
     console.log('\n== 4. determinism ==');
     const mk = (o: any, s?: number[]): SimPlayer => ({ outcome: o, sample: s });
+    const filler = (n: number, m: number) => Array.from({ length: n }, (_, i) =>
+        mk({ playerId: 100 + i, mean: m, sd: 6, floor: m - 5, ceiling: m + 5, sample: 17, formWeight: 0, contextAdjustment: 0, onBye: false }));
     const a1 = simulateMatchup([mk(gO)], [mk(nO)], 8000, 3).winProb;
     const a2 = simulateMatchup([mk(gO)], [mk(nO)], 8000, 3).winProb;
     console.log(`   same seed twice: ${a1} vs ${a2} -> ${a1 === a2 ? 'stable' : 'UNSTABLE'}`);
+
+    console.log('\n== 4b. a sample that does not describe the player ==');
+    // nflverse scores no kicking, so every kicker-week in the table reads 0.0.
+    // Resampled at face value that scored a lineup as if its kicker were not
+    // in it. The lineup below is one kicker; its simulated total must land on
+    // the kicker's mean, not on zero.
+    const kicker = { playerId: 9, mean: 9.9, sd: 2.8, floor: 7.5, ceiling: 12.2,
+        sample: 17, formWeight: 0, contextAdjustment: 0, onBye: false };
+    const zeroes = Array.from({ length: 17 }, () => 0);
+    const nobody = [mk({ ...kicker, playerId: 10, mean: 0.01, sd: 0.01 })];
+    for (const [lbl, smp] of [['all-zero games', zeroes], ['no games', undefined]] as const) {
+        const odds = simulateMatchup([mk(kicker, smp as number[] | undefined)], nobody, 8000, 5);
+        console.log(`   ${lbl.padEnd(16)} simulated points for ${odds.pointsFor} (must be ~9.9, never 0)`);
+    }
+    console.log('   usableSample: zeroes ->', usableSample(zeroes),
+        '| real games ->', usableSample([4, 12, 9, 21, 7]));
+
+    console.log('\n== 3d. the market replaces the adjustments, never joins them ==');
+    // A prop line already prices the total, the spread and the defence. The
+    // trap is adding the model's tilt on top and counting the same thing
+    // twice, so the market centre must be the market number exactly — the
+    // same under a great environment and an awful one.
+    const loud = { impliedTeamTotal: 30, spread: -10, defenseAllowed: 9.5,
+        defenseLeagueAvg: 6.8, defenseSample: 80 };
+    const grim = { impliedTeamTotal: 15, spread: 9, defenseAllowed: 5.2,
+        defenseLeagueAvg: 6.8, defenseSample: 80 };
+    for (const [lbl, ctx] of [['great spot', loud], ['awful spot', grim]] as const) {
+        const withMarket = buildOutcome({ playerId: nacua.id, position: 'WR',
+            seasonProjection: 340, projectedGames: 17, logs: nacua.logs,
+            marketProjection: 18.4, marketMarkets: 3, context: ctx }, CUR);
+        const without = buildOutcome({ playerId: nacua.id, position: 'WR',
+            seasonProjection: 340, projectedGames: 17, logs: nacua.logs,
+            context: ctx }, CUR);
+        console.log(`   ${lbl.padEnd(11)} market ${withMarket.mean} (${withMarket.centreSource})`
+            + `   model ${without.mean} (${without.centreSource})`);
+    }
+    // Thinly priced is not priced: one market alone leaves the model in charge.
+    const thin = buildOutcome({ playerId: nacua.id, position: 'WR',
+        seasonProjection: 340, projectedGames: 17, logs: nacua.logs,
+        marketProjection: 18.4, marketMarkets: 1, context: loud }, CUR);
+    console.log(`   one market only -> ${thin.mean} (${thin.centreSource})`);
+    console.log('   (both market rows must read 18.4; the model rows must differ)');
+
+    console.log('\n== 4c. injury risk is variance, not a haircut ==');
+    // The same expected points, arrived at two ways: a player who always
+    // plays and scores 13, and a player who scores 20 in the 65% of weeks he
+    // suits up. Both average 13. They are not the same start, and a model
+    // that only scaled the mean could never say which.
+    const healthy = { playerId: 20, mean: 13, sd: 4, floor: 9, ceiling: 17,
+        sample: 17, formWeight: 0, contextAdjustment: 0, onBye: false,
+        playProbability: 1, availability: null };
+    const doubtful = { ...healthy, playerId: 21, mean: 20, sd: 4, floor: 16,
+        ceiling: 24, playProbability: 0.65, availability: 'Questionable' };
+    for (const [lbl, oppTotal] of [['trailing badly', 150], ['level', 110]] as const) {
+        const opp = filler(8, oppTotal / 8);
+        const a = simulateMatchup([mk(healthy), ...filler(7, 13)], opp, 12000, 7);
+        const b = simulateMatchup([mk(doubtful), ...filler(7, 13)], opp, 12000, 7);
+        console.log(`   ${lbl.padEnd(15)} certain 13.0 -> ${(a.winProb * 100).toFixed(1)}% | `
+            + `65% of 20.0 -> ${(b.winProb * 100).toFixed(1)}%`);
+    }
+    console.log('   (same expected points; the gamble should win more when behind)');
+    console.log('   play rates:',
+        ['Out', 'Doubtful', 'Questionable'].map(r =>
+            `${r}=${playProbability({ reportStatus: r })}`).join(' '),
+        '| DNP-no-status =', playProbability({ practiceStatus: 'Did Not Participate In Practice' }),
+        '| nothing reported =', playProbability({}));
 
     console.log('\n== 5. the case that justifies the whole model ==');
     // A safe starter vs a volatile bench player worth slightly fewer points.
     const safe  = { playerId: 1, mean: 14.0, sd: 3.0,  floor: 11, ceiling: 17, sample: 17, formWeight: 0, contextAdjustment: 0, onBye: false };
     const spiky = { playerId: 2, mean: 13.0, sd: 11.0, floor: 2,  ceiling: 28, sample: 17, formWeight: 0, contextAdjustment: 0, onBye: false };
-    const filler = (n: number, m: number) => Array.from({ length: n }, (_, i) =>
-        mk({ playerId: 100 + i, mean: m, sd: 6, floor: m - 5, ceiling: m + 5, sample: 17, formWeight: 0, contextAdjustment: 0, onBye: false }));
     for (const [lbl, oppMean] of [['heavy favourite', 95], ['even', 118], ['heavy underdog', 145]] as const) {
         const opp = filler(8, oppMean / 8);
         const starters = [mk(safe), ...filler(7, 13)];

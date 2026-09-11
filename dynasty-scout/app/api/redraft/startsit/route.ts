@@ -29,6 +29,14 @@ export interface StartSitPlayer {
     opponent: string | null;
     on_bye: boolean;
     logs: { season: number; week: number; points: number; opponent: string | null }[];
+    /** PPR implied by this week's prop market, when the books priced them. */
+    market_points: number | null;
+    market_markets: number | null;
+    market_books: number | null;
+    /** The injury report, when this player is on it this week. */
+    report_status: string | null;
+    practice_status: string | null;
+    injury: string | null;
     /** What this week's opponent allowed to this position last season. */
     def_allowed: number | null;
     def_league_avg: number | null;
@@ -40,6 +48,7 @@ export interface StartSitPlayer {
         carries_per_game: number | null;
         target_share: number | null;
         wopr: number | null;
+        snap_share: number | null;
         yards_per_touch: number | null;
         epa_per_play: number | null;
     } | null;
@@ -58,6 +67,8 @@ export async function GET(req: NextRequest) {
     }
 
     const ph = ids.map((_, i) => `$${i + 1}`).join(',');
+    // The same id list shifted by one, for queries that bind the week first.
+    const ph2 = ids.map((_, i) => `$${i + 2}`).join(',');
     const base = await query<{
         id: number; slug: string; full_name: string;
         position: string | null; nfl_team: string | null; proj_points: number | null;
@@ -93,6 +104,35 @@ export async function GET(req: NextRequest) {
            FROM vegas_game_lines
           WHERE season = ${SEASON} AND week = $1`, [week]);
     const lineByTeam = new Map(lines.map(l => [l.team.toUpperCase(), l]));
+
+    // This week's prop market, newest scrape only. A player priced twice in a
+    // week has moved, and the older number is history rather than an opinion
+    // to average in.
+    const mkt = await query<{
+        player_id: number; ppr_points: number | null;
+        markets_priced: number | null; books_priced: number | null;
+    }>(
+        `SELECT m.player_id, m.ppr_points, m.markets_priced, m.books_priced
+           FROM nfl_player_market_projection m
+          WHERE m.season = ${SEASON} AND m.week = $1 AND m.player_id IN (${ph2})
+            AND m.scraped_at = (SELECT MAX(scraped_at)
+                                  FROM nfl_player_market_projection
+                                 WHERE player_id = m.player_id
+                                   AND season = m.season AND week = m.week)`,
+        [week, ...ids]);
+    const mktByPlayer = new Map(mkt.map(m => [m.player_id, m]));
+
+    // This week's injury report. Most players are not on it at all, which is
+    // the answer for them: silence means nobody has said otherwise.
+    const inj = await query<{
+        player_id: number; report_status: string | null;
+        practice_status: string | null; report_primary_injury: string | null;
+    }>(
+        `SELECT player_id, report_status, practice_status, report_primary_injury
+           FROM nfl_player_injury
+          WHERE season = ${SEASON} AND week = $1 AND player_id IN (${ph2})`,
+        [week, ...ids]);
+    const injByPlayer = new Map(inj.map(i => [i.player_id, i]));
 
     // What each defence allowed per player-game at each position last season.
     //
@@ -133,6 +173,7 @@ export async function GET(req: NextRequest) {
     const usageRows = await query<{
         player_id: number; games: number;
         tpg: number | null; cpg: number | null; tshare: number | null; wopr: number | null;
+        snap: number | null;
         ypt: number | null; epa: number | null;
     }>(
         `SELECT player_id,
@@ -141,6 +182,7 @@ export async function GET(req: NextRequest) {
                 AVG(carries) AS cpg,
                 AVG(target_share) AS tshare,
                 AVG(wopr) AS wopr,
+                AVG(offense_pct) AS snap,
                 CASE WHEN SUM(carries + receptions) > 0
                      THEN SUM(rush_yards + rec_yards) * 1.0 / SUM(carries + receptions)
                      END AS ypt,
@@ -173,6 +215,12 @@ export async function GET(req: NextRequest) {
             // No line for this team this week means no game — a bye, which the
             // model has to treat as a zero rather than an unknown.
             on_bye: !!p.nfl_team && !line,
+            market_points: mktByPlayer.get(p.id)?.ppr_points ?? null,
+            market_markets: mktByPlayer.get(p.id)?.markets_priced ?? null,
+            market_books: mktByPlayer.get(p.id)?.books_priced ?? null,
+            report_status: injByPlayer.get(p.id)?.report_status ?? null,
+            practice_status: injByPlayer.get(p.id)?.practice_status ?? null,
+            injury: injByPlayer.get(p.id)?.report_primary_injury ?? null,
             ...(() => {
                 const pos = (p.position ?? '').toUpperCase();
                 const d = line?.opponent
@@ -194,6 +242,7 @@ export async function GET(req: NextRequest) {
                     games: Number(u.games),
                     targets_per_game: n(u.tpg), carries_per_game: n(u.cpg),
                     target_share: n(u.tshare), wopr: n(u.wopr),
+                    snap_share: n(u.snap),
                     yards_per_touch: n(u.ypt), epa_per_play: n(u.epa),
                 };
             })(),

@@ -54,12 +54,31 @@ export function OutcomeStrip({
         );
     }
 
+    // A player who has been ruled out is a decision already made, not a
+    // distribution to weigh. Saying "Out · ankle" is the whole answer; drawing
+    // a floor and ceiling underneath it would invite reading a number that
+    // cannot happen.
+    if (outcome.playProbability === 0) {
+        return (
+            <div className="flex items-center text-[11px] text-muted-foreground/55"
+                style={{ height: h }}
+                role="img"
+                aria-label={`${label ?? 'Player'} is ruled out and will not play`}>
+                ruled out &mdash; no distribution to weigh
+            </div>
+        );
+    }
+
     return (
         <div className="relative w-full" style={{ height: h }}
             role="img"
             aria-label={`${label ?? 'Player'}: expected ${outcome.mean} points, `
                 + `floor ${outcome.floor}, ceiling ${outcome.ceiling}`
-                + (sample.length ? `, from ${sample.length} games` : '')}>
+                + (sample.length ? `, from ${sample.length} games` : '')
+                + (outcome.playProbability < 1
+                    ? `, ${Math.round(outcome.playProbability * 100)}% chance of playing`
+                    + (outcome.availability ? ` (${outcome.availability})` : '')
+                    : '')}>
             {/* floor–ceiling span */}
             <div className="absolute top-1/2 -translate-y-1/2 h-2"
                 style={{
@@ -91,6 +110,23 @@ export function OutcomeStrip({
                         boxShadow: `0 0 0 ${MARK.gap}px ${CHART_INK.surface}`,
                     }} />
             ))}
+            {/* Doubt drawn as doubt.
+                A questionable starter is not a smaller player — he is this
+                player most weeks and an empty slot the rest. The bar is
+                hatched across the share of weeks he does not suit up, so the
+                risk reads as the coin flip it is rather than as a quietly
+                lower projection. */}
+            {outcome.playProbability < 1 && outcome.playProbability > 0 && (
+                <div className="absolute top-1/2 -translate-y-1/2 h-2 pointer-events-none"
+                    style={{
+                        left: pct(outcome.floor),
+                        width: pct(Math.max(0, outcome.ceiling - outcome.floor)),
+                        borderRadius: MARK.barRadius,
+                        opacity: 1 - outcome.playProbability,
+                        backgroundImage: 'repeating-linear-gradient(135deg,'
+                            + 'rgba(255,255,255,0.55) 0 1.5px, transparent 1.5px 4px)',
+                    }} />
+            )}
             {/* the expected week */}
             <div className="absolute top-1/2 -translate-y-1/2"
                 style={{
