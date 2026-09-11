@@ -23,7 +23,8 @@ export interface OutcomeStripProps {
     sample?: number[];
     /** Shared across every strip in a view, so bars are comparable. */
     max: number;
-    series?: 'a' | 'b';
+    /** 'context' draws the opponent, who is not a choice you get to make. */
+    series?: 'a' | 'b' | 'context';
     label?: string;
     compact?: boolean;
 }
@@ -31,7 +32,7 @@ export interface OutcomeStripProps {
 export function OutcomeStrip({
     outcome, sample = [], max, series = 'a', label, compact = false,
 }: OutcomeStripProps) {
-    const colour = SERIES[series];
+    const colour = series === 'context' ? CHART_INK.context : SERIES[series];
     const pct = (v: number) => `${Math.max(0, Math.min(100, (v / max) * 100))}%`;
     const h = compact ? 26 : 34;
 
@@ -100,7 +101,7 @@ export function OutcomeAxis({ max, className }: { max: number; className?: strin
         <div className={cn('relative w-full h-4', className)} aria-hidden="true">
             {ticks.map((t, i) => (
                 <span key={i}
-                    className="absolute text-[9px] text-muted-foreground/40 font-semibold tabular-nums"
+                    className="absolute text-[10px] text-muted-foreground/55 font-semibold tabular-nums"
                     style={{
                         left: `${(t / max) * 100}%`,
                         transform: i === 0 ? 'none'

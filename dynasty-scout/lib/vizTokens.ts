@@ -39,6 +39,16 @@ export const CHART_INK = {
     axis: 'rgba(255,255,255,0.14)',
     /** Ring drawn around overlapping marks so they stay countable. */
     surface: '#0c1520',
+    /**
+     * The opponent's lineup: context, not a third series.
+     *
+     * Deliberately gray. It fails the categorical lightness and chroma checks
+     * — which is the point, and why it must not be "fixed" into a hue: a third
+     * colour would say the opponent's players are a third option you might
+     * pick, and they are not. It clears contrast against the surface at over
+     * 3:1, which is the bar that applies to a non-categorical mark.
+     */
+    context: '#94A3B8',
 } as const;
 
 /** Mark geometry, from the shared spec: thin marks, rounded data ends. */

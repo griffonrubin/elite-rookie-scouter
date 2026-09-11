@@ -67,10 +67,22 @@ export function SwapBars({ rows, onPick }: {
                         title={`Start ${r.inName} over ${r.outName}: `
                             + `${r.deltaWinProb >= 0 ? '+' : ''}${r.deltaWinProb} points of win probability, `
                             + `${r.deltaPoints >= 0 ? '+' : ''}${r.deltaPoints} projected points`}
-                        className="w-full grid grid-cols-[minmax(0,1fr)_150px_104px] items-center gap-2
+                        // Both the label and the track are capped, and the row is
+                        // left-aligned, so spare width collects to the right of the
+                        // numbers instead of between a name and its own bar. An
+                        // elastic label column pushes the zero line most of a screen
+                        // away from the name it belongs to, and a track that absorbs
+                        // the slack does the same thing by moving its own midpoint.
+                        className="w-full grid items-center gap-3 justify-start
+                                   grid-cols-[minmax(0,1fr)_120px_96px]
+                                   sm:grid-cols-[minmax(0,300px)_260px_104px]
                                    px-2 py-1.5 rounded-lg hover:bg-white/[0.04] text-left transition-colors"
                     >
-                        <span className="min-w-0 text-[12px]">
+                        {/* Right-aligned at width, the way a population pyramid
+                            labels its axis: every name then ends flush against
+                            the track, so no row's label is further from its own
+                            bar than any other's. */}
+                        <span className="min-w-0 text-[12px] sm:text-right">
                             <span className="font-semibold text-foreground truncate">{r.inName}</span>
                             <span className="text-muted-foreground/50"> over </span>
                             <span className="text-muted-foreground truncate">{r.outName}</span>

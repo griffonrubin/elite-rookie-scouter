@@ -30,6 +30,13 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     const [loading, setLoading] = useState(false);
     const [compare, setCompare] = useState<[number, number] | null>(null);
 
+    // Head-to-head can name anyone on screen, the opponent's starters
+    // included — "how does my flex compare to the guy across from him" is a
+    // real question, and every one of those rows is clickable.
+    const comparePool = useMemo(
+        () => [...league.me.starters, ...league.me.bench, ...league.opponent.starters],
+        [league.me.starters, league.me.bench, league.opponent.starters]);
+
     // Everyone on either roster, in one request.
     const needed = useMemo(() => {
         const ids = new Set<number>();
@@ -177,20 +184,30 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                 </section>
             </div>
 
-            {/* ── the lineup itself ── */}
-            <div className="grid gap-3 lg:grid-cols-2">
+            {/* ── the lineup itself ──
+                The opponent sits beside your own two panels rather than behind
+                a single "Theirs 110.6". How much variance you want is a
+                function of their shape, not just their total: the same
+                boom-bust flex is the right start against a lineup that can hang
+                140 and the wrong one against a lineup that reliably scores 95.
+                On the same axis as yours, that comparison is one glance. */}
+            <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
                 <Roster title="Your starters" players={league.me.starters}
                     outcomeFor={outcomeFor} max={axisMax} series="a"
                     onCompare={id => setCompare(c => c && c[0] !== id ? [c[0], id] : [id, c?.[1] ?? id])} />
                 <Roster title="Your bench" players={league.me.bench}
                     outcomeFor={outcomeFor} max={axisMax} series="b"
                     onCompare={id => setCompare(c => c && c[0] !== id ? [c[0], id] : [id, c?.[1] ?? id])} />
+                <Roster title={`${league.opponent.team?.name ?? 'Opponent'} starts`}
+                    players={league.opponent.starters}
+                    outcomeFor={outcomeFor} max={axisMax} series="context"
+                    onCompare={id => setCompare(c => c && c[0] !== id ? [c[0], id] : [id, c?.[1] ?? id])} />
             </div>
 
             {compare && (
                 <HeadToHead
-                    a={[...league.me.starters, ...league.me.bench].find(p => p.id === compare[0]) ?? null}
-                    b={[...league.me.starters, ...league.me.bench].find(p => p.id === compare[1]) ?? null}
+                    a={comparePool.find(p => p.id === compare[0]) ?? null}
+                    b={comparePool.find(p => p.id === compare[1]) ?? null}
                     data={data}
                     outcomeFor={outcomeFor}
                     onClose={() => setCompare(null)}
@@ -205,21 +222,29 @@ function Roster({ title, players, outcomeFor, max, series, onCompare }: {
     players: RedraftPlayer[];
     outcomeFor: (p: RedraftPlayer) => { outcome: Outcome; sample: number[] };
     max: number;
-    series: 'a' | 'b';
+    series: 'a' | 'b' | 'context';
     onCompare: (id: number) => void;
 }) {
     return (
         <section className="rounded-xl border border-white/[0.07] p-4"
             style={{ background: 'var(--bg-card)' }}>
-            <div className="flex items-baseline justify-between mb-1">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 mb-1">
                 <h2 className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground/45">
                     {title}
                 </h2>
-                <span className="text-[10px] text-muted-foreground/35">
+                <span className="text-[10px] text-muted-foreground/45">
                     floor · expected · ceiling, with last season&rsquo;s games
                 </span>
             </div>
-            <OutcomeAxis max={max} className="mb-1" />
+            {/* The axis has to sit over the plot column, not over the whole
+                panel: ticks spanning the name and number columns would put
+                "0" under a player's name and make every dot read low. */}
+            <div className="grid grid-cols-1 sm:grid-cols-[128px_minmax(0,1fr)_96px]
+                            gap-2 px-1.5 mb-1">
+                <span className="hidden sm:block" aria-hidden="true" />
+                <OutcomeAxis max={max} />
+                <span className="hidden sm:block" aria-hidden="true" />
+            </div>
             <div className="space-y-0.5">
                 {players.length === 0 && (
                     <p className="text-[12px] text-muted-foreground/50 py-3">Nothing here.</p>
@@ -228,19 +253,29 @@ function Roster({ title, players, outcomeFor, max, series, onCompare }: {
                     const { outcome, sample } = outcomeFor(p);
                     return (
                         <button key={p.id} type="button" onClick={() => onCompare(p.id)}
-                            className="w-full grid grid-cols-[128px_minmax(0,1fr)_96px] items-center gap-2
-                                       px-1.5 py-0.5 rounded-lg hover:bg-white/[0.04] text-left transition-colors">
-                            <span className="flex items-center gap-1.5 min-w-0">
+                            className="w-full grid items-center gap-x-2 gap-y-1
+                                       grid-cols-[minmax(0,1fr)_auto]
+                                       sm:grid-cols-[128px_minmax(0,1fr)_96px]
+                                       px-1.5 py-1 sm:py-0.5 rounded-lg hover:bg-white/[0.04]
+                                       text-left transition-colors">
+                            <span className="col-start-1 row-start-1 flex items-center gap-1.5 min-w-0">
                                 <span className="w-1.5 h-1.5 rounded-full shrink-0"
                                     style={{ background: POSITION_RAW[(p.position ?? '').toUpperCase()] ?? '#64748b' }} />
                                 <span className="text-[12px] font-semibold truncate">{p.full_name}</span>
                             </span>
-                            <OutcomeStrip outcome={outcome} sample={sample} max={max}
-                                series={series} label={p.full_name} compact />
-                            <span className="text-[11px] tabular-nums text-right text-muted-foreground/70">
-                                <span className="text-muted-foreground/40">{outcome.floor}</span>
+                            {/* On a phone the strip drops to its own full-width row:
+                                squeezed between the name and the numbers it gets
+                                ~65px, which turns seventeen games into one blob. */}
+                            <span className="col-span-2 row-start-2 sm:col-span-1
+                                             sm:col-start-2 sm:row-start-1">
+                                <OutcomeStrip outcome={outcome} sample={sample} max={max}
+                                    series={series} label={p.full_name} compact />
+                            </span>
+                            <span className="col-start-2 row-start-1 sm:col-start-3 sm:row-start-1
+                                             text-[11px] tabular-nums text-right text-muted-foreground/70">
+                                <span className="text-muted-foreground/60">{outcome.floor}</span>
                                 <span className="text-foreground font-bold mx-1">{outcome.mean}</span>
-                                <span className="text-muted-foreground/40">{outcome.ceiling}</span>
+                                <span className="text-muted-foreground/60">{outcome.ceiling}</span>
                             </span>
                         </button>
                     );
