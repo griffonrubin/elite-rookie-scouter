@@ -125,6 +125,32 @@ async function main() {
     console.log('   usableSample: zeroes ->', usableSample(zeroes),
         '| real games ->', usableSample([4, 12, 9, 21, 7]));
 
+    console.log('\n== 3d. the market replaces the adjustments, never joins them ==');
+    // A prop line already prices the total, the spread and the defence. The
+    // trap is adding the model's tilt on top and counting the same thing
+    // twice, so the market centre must be the market number exactly — the
+    // same under a great environment and an awful one.
+    const loud = { impliedTeamTotal: 30, spread: -10, defenseAllowed: 9.5,
+        defenseLeagueAvg: 6.8, defenseSample: 80 };
+    const grim = { impliedTeamTotal: 15, spread: 9, defenseAllowed: 5.2,
+        defenseLeagueAvg: 6.8, defenseSample: 80 };
+    for (const [lbl, ctx] of [['great spot', loud], ['awful spot', grim]] as const) {
+        const withMarket = buildOutcome({ playerId: nacua.id, position: 'WR',
+            seasonProjection: 340, projectedGames: 17, logs: nacua.logs,
+            marketProjection: 18.4, marketMarkets: 3, context: ctx }, CUR);
+        const without = buildOutcome({ playerId: nacua.id, position: 'WR',
+            seasonProjection: 340, projectedGames: 17, logs: nacua.logs,
+            context: ctx }, CUR);
+        console.log(`   ${lbl.padEnd(11)} market ${withMarket.mean} (${withMarket.centreSource})`
+            + `   model ${without.mean} (${without.centreSource})`);
+    }
+    // Thinly priced is not priced: one market alone leaves the model in charge.
+    const thin = buildOutcome({ playerId: nacua.id, position: 'WR',
+        seasonProjection: 340, projectedGames: 17, logs: nacua.logs,
+        marketProjection: 18.4, marketMarkets: 1, context: loud }, CUR);
+    console.log(`   one market only -> ${thin.mean} (${thin.centreSource})`);
+    console.log('   (both market rows must read 18.4; the model rows must differ)');
+
     console.log('\n== 4c. injury risk is variance, not a haircut ==');
     // The same expected points, arrived at two ways: a player who always
     // plays and scores 13, and a player who scores 20 in the 65% of weeks he

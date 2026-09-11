@@ -81,6 +81,8 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                 seasonProjection: d?.proj_points ?? null,
                 projectedGames: 17,
                 logs,
+                marketProjection: d?.market_points ?? null,
+                marketMarkets: d?.market_markets ?? null,
                 context: {
                     impliedTeamTotal: d?.implied_team_total ?? null,
                     spread: d?.spread ?? null,
@@ -314,6 +316,16 @@ function Roster({ title, players, outcomeFor, max, series, onCompare }: {
                                 {/* Named, not just hatched: a texture on a bar is
                                     not something a screen reader or a colour-blind
                                     reader can be asked to carry alone. */}
+                                {/* A number from the betting market is a different
+                                    kind of claim from a number we modelled, and
+                                    worth saying so on the row that shows it. */}
+                                {outcome.centreSource === 'market' && (
+                                    <span className="shrink-0 px-1 rounded text-[9px] font-bold tracking-wide"
+                                        style={{ background: 'rgba(2,132,199,0.18)', color: '#7DD3FC' }}
+                                        title="Expected points come from this week's prop market, which already prices the matchup, the game script and the injury news">
+                                        MKT
+                                    </span>
+                                )}
                                 {outcome.availability && (
                                     <span className="shrink-0 px-1 rounded text-[9px] font-bold tracking-wide"
                                         style={outcome.playProbability === 0

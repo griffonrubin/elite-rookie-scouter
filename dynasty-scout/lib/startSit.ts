@@ -73,6 +73,15 @@ export interface PlayerInputs {
     projectedGames?: number;
     /** Weekly logs, most recent season first is not required — season is on each. */
     logs: GameLog[];
+    /**
+     * PPR points implied by this week's player prop market, when the books
+     * have priced them. Sharper than anything else here and already inclusive
+     * of the matchup, the game script and the injury news, which is why it
+     * replaces those adjustments rather than joining them.
+     */
+    marketProjection?: number | null;
+    /** How much of the player's game the market actually priced. */
+    marketMarkets?: number | null;
     context?: GameContext;
 }
 
@@ -103,6 +112,12 @@ export interface Outcome {
     playProbability: number;
     /** What the report said, for the UI to name rather than imply. */
     availability: string | null;
+    /**
+     * Where the centre came from. 'market' means the betting line priced this
+     * player directly; 'model' means it was built from the projection and the
+     * player's own history.
+     */
+    centreSource: 'market' | 'model';
 }
 
 /**
@@ -306,9 +321,27 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
         ? Math.max(MIN_SD, cv * Math.max(centre, 1))
         : Math.max(MIN_SD, priorSd * (centre / 12 || 1));
 
+    // ── the market, when it has priced this player ──────────────────────
+    //
+    // A prop line already contains everything the adjustments below are
+    // trying to estimate: the books know the total, the spread, the defence
+    // and who is hurt, and they have moved the number accordingly. Adding the
+    // model's own tilt on top would count the same information twice, so when
+    // the market is present it replaces those adjustments rather than joining
+    // them, and the outcome says which it used.
+    //
+    // A thinly priced player — a yards line and nothing else — is not a full
+    // projection, so the market only takes over once at least two of their
+    // markets were priced. Below that the model keeps its own centre.
+    const market = p.marketProjection;
+    const marketUsable = market != null && market > 0 && (p.marketMarkets ?? 0) >= 2;
+    if (marketUsable) {
+        centre = market;
+    }
+
     // ── game environment ────────────────────────────────────────────────
     let adjustment = 0;
-    if (!ctx.onBye) {
+    if (!ctx.onBye && !marketUsable) {
         if (ctx.impliedTeamTotal != null) {
             const elasticity = TEAM_TOTAL_ELASTICITY[pos] ?? 0.45;
             const relative = (ctx.impliedTeamTotal - NEUTRAL_TEAM_TOTAL) / NEUTRAL_TEAM_TOTAL;
@@ -327,6 +360,7 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
             sample: shapeSample.length, formWeight: w,
             contextAdjustment: 0, onBye: true,
             playProbability: 0, availability: null,
+            centreSource: 'model',
         };
     }
 
@@ -360,6 +394,7 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
         // player has when active, and this is the chance they are.
         playProbability: playProbability(ctx),
         availability: availabilityLabel(ctx),
+        centreSource: marketUsable ? 'market' : 'model',
     };
 }
 

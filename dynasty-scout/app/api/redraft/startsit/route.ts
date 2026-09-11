@@ -29,6 +29,10 @@ export interface StartSitPlayer {
     opponent: string | null;
     on_bye: boolean;
     logs: { season: number; week: number; points: number; opponent: string | null }[];
+    /** PPR implied by this week's prop market, when the books priced them. */
+    market_points: number | null;
+    market_markets: number | null;
+    market_books: number | null;
     /** The injury report, when this player is on it this week. */
     report_status: string | null;
     practice_status: string | null;
@@ -99,6 +103,23 @@ export async function GET(req: NextRequest) {
            FROM vegas_game_lines
           WHERE season = ${SEASON} AND week = $1`, [week]);
     const lineByTeam = new Map(lines.map(l => [l.team.toUpperCase(), l]));
+
+    // This week's prop market, newest scrape only. A player priced twice in a
+    // week has moved, and the older number is history rather than an opinion
+    // to average in.
+    const mkt = await query<{
+        player_id: number; ppr_points: number | null;
+        markets_priced: number | null; books_priced: number | null;
+    }>(
+        `SELECT m.player_id, m.ppr_points, m.markets_priced, m.books_priced
+           FROM nfl_player_market_projection m
+          WHERE m.season = ${SEASON} AND m.week = $1 AND m.player_id IN (${ph2})
+            AND m.scraped_at = (SELECT MAX(scraped_at)
+                                  FROM nfl_player_market_projection
+                                 WHERE player_id = m.player_id
+                                   AND season = m.season AND week = m.week)`,
+        [week, ...ids]);
+    const mktByPlayer = new Map(mkt.map(m => [m.player_id, m]));
 
     // This week's injury report. Most players are not on it at all, which is
     // the answer for them: silence means nobody has said otherwise.
@@ -191,6 +212,9 @@ export async function GET(req: NextRequest) {
             // No line for this team this week means no game — a bye, which the
             // model has to treat as a zero rather than an unknown.
             on_bye: !!p.nfl_team && !line,
+            market_points: mktByPlayer.get(p.id)?.ppr_points ?? null,
+            market_markets: mktByPlayer.get(p.id)?.markets_priced ?? null,
+            market_books: mktByPlayer.get(p.id)?.books_priced ?? null,
             report_status: injByPlayer.get(p.id)?.report_status ?? null,
             practice_status: injByPlayer.get(p.id)?.practice_status ?? null,
             injury: injByPlayer.get(p.id)?.report_primary_injury ?? null,
