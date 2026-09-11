@@ -52,7 +52,7 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare }: Sl
     return (
         <div className="space-y-1">
             <div className="grid items-end gap-2 px-2 pb-1
-                            grid-cols-[40px_minmax(0,1fr)] sm:grid-cols-[40px_150px_minmax(0,1fr)_128px]">
+                            grid-cols-[40px_minmax(0,1fr)] sm:grid-cols-[40px_150px_minmax(0,560px)_128px]">
                 <span className="text-[10px] uppercase tracking-widest font-bold
                                  text-muted-foreground/45">Slot</span>
                 <span className="hidden sm:block" />
@@ -77,7 +77,7 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare }: Sl
                             aria-expanded={isOpen}
                             className="w-full grid items-center gap-x-2 gap-y-1 px-2 py-1.5 rounded-lg
                                        grid-cols-[40px_minmax(0,1fr)_auto]
-                                       sm:grid-cols-[40px_150px_minmax(0,1fr)_128px]
+                                       sm:grid-cols-[40px_150px_minmax(0,560px)_128px]
                                        hover:bg-white/[0.05] text-left transition-colors">
                             <span className="text-[11px] font-bold text-muted-foreground/60
                                              col-start-1 row-start-1">

@@ -12,6 +12,7 @@ import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
 import { SwapBars, SwapRow } from './SwapBars';
 import { findProblems, LineupAlerts } from './LineupAlerts';
 import { SlotBoard } from './SlotBoard';
+import { MatchupChart } from './MatchupChart';
 import { optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
 import { LeagueConnect } from './LeagueConnect';
 import { HeadToHead } from './HeadToHead';
@@ -132,7 +133,8 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     const matchup = useMemo(() => {
         if (league.me.starters.length === 0 || league.opponent.starters.length === 0) return null;
         return simulateMatchup(
-            league.me.starters.map(sim), league.opponent.starters.map(sim), 20000, 11);
+            league.me.starters.map(sim), league.opponent.starters.map(sim), 20000, 11,
+            { bins: 40 });
     }, [league.me.starters, league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     const swaps: SwapRow[] = useMemo(() => {
@@ -278,6 +280,13 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                     </dd>
                                 </div>
                             </dl>
+                            {matchup?.hist && (
+                                <div className="mt-3">
+                                    <MatchupChart hist={matchup.hist} winProb={matchup.winProb}
+                                        mineLabel={league.me.team?.name ?? 'You'}
+                                        theirsLabel={league.opponent.team?.name ?? 'Them'} />
+                                </div>
+                            )}
                             {best && (
                                 <div className="mt-3 pt-3 border-t border-white/[0.07]">
                                     {best.changes.length === 0 ? (
