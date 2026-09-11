@@ -196,6 +196,16 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                 From 20,000 simulated weeks, both lineups drawn from each player&rsquo;s
                                 own distribution rather than their average.
                             </p>
+                            {/* Said plainly rather than left to be assumed. Byes are
+                                known — a team with no line this week has no game — but
+                                nothing here knows who is hurt, and a reader who thinks
+                                it does would trust a number about a player who will not
+                                play. That is the one way this page can be actively
+                                wrong rather than merely incomplete. */}
+                            <p className="text-[10px] text-muted-foreground/40 mt-1.5 leading-snug">
+                                Byes are accounted for. Injuries are not — check status
+                                before you set the lineup.
+                            </p>
                         </>
                     )}
                 </section>
