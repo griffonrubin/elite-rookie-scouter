@@ -190,3 +190,93 @@ export function byDraftRelevance(a: SleeperDraft, b: SleeperDraft): number {
     const rank = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
     return rank !== 0 ? rank : (b.start_time ?? 0) - (a.start_time ?? 0);
 }
+
+// ── Rosters and matchups ────────────────────────────────────────────────────
+//
+// Draft sync answers "who is gone". Lineup sync answers "who do I have, who
+// am I playing, and what did they start" — a different set of endpoints on
+// the same keyless API.
+
+export interface SleeperRoster {
+    roster_id: number;
+    owner_id: string | null;
+    /** Sleeper player ids; D/ST appear as the team abbreviation. */
+    players: string[] | null;
+    starters: string[] | null;
+}
+
+export interface SleeperLeagueUser {
+    user_id: string;
+    display_name: string | null;
+    metadata?: { team_name?: string | null } | null;
+}
+
+export interface SleeperMatchup {
+    roster_id: number;
+    /** Two rosters share one matchup_id; null before the schedule is set. */
+    matchup_id: number | null;
+    starters: string[] | null;
+    players: string[] | null;
+}
+
+export interface SleeperLeagueDetail {
+    league_id: string;
+    name: string | null;
+    season: string | null;
+    /** Slot names in lineup order — QB, RB, WR, FLEX, BN, and so on. */
+    roster_positions: string[] | null;
+    settings?: { playoff_week_start?: number } | null;
+}
+
+export async function getLeague(leagueId: string): Promise<SleeperLeagueDetail | null> {
+    try {
+        return await get<SleeperLeagueDetail | null>(`/league/${leagueId}`);
+    } catch {
+        return null;
+    }
+}
+
+export async function getLeagueRosters(leagueId: string): Promise<SleeperRoster[]> {
+    try {
+        return (await get<SleeperRoster[] | null>(`/league/${leagueId}/rosters`)) ?? [];
+    } catch {
+        return [];
+    }
+}
+
+export async function getLeagueUsers(leagueId: string): Promise<SleeperLeagueUser[]> {
+    try {
+        return (await get<SleeperLeagueUser[] | null>(`/league/${leagueId}/users`)) ?? [];
+    } catch {
+        return [];
+    }
+}
+
+export async function getMatchups(leagueId: string, week: number): Promise<SleeperMatchup[]> {
+    try {
+        return (await get<SleeperMatchup[] | null>(`/league/${leagueId}/matchups/${week}`)) ?? [];
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * The week the NFL is currently on.
+ *
+ * Asked of Sleeper rather than worked out from a calendar, because the answer
+ * has to agree with whichever week the league is scoring — and a Tuesday is
+ * ambiguous on a calendar and unambiguous here.
+ */
+export async function getCurrentWeek(): Promise<number | null> {
+    try {
+        const s = await get<{ week?: number; display_week?: number } | null>('/state/nfl');
+        return s?.display_week ?? s?.week ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/** A manager's name for their team, falling back to their username. */
+export function teamName(u: SleeperLeagueUser | undefined): string {
+    return u?.metadata?.team_name?.trim() || u?.display_name || 'Unknown team';
+}

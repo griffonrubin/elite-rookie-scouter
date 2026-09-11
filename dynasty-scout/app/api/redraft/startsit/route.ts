@@ -1,0 +1,204 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { query } from '@/lib/db';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+/**
+ * Everything the start/sit model needs about a set of players.
+ *
+ * One round trip rather than three, because the page asks about a whole
+ * lineup at once and the three pieces are useless apart: the weekly logs
+ * give the shape, the projection gives the level, and the week's game line
+ * gives the tilt.
+ */
+
+const SEASON = 2026;
+
+export interface StartSitPlayer {
+    id: number;
+    slug: string;
+    full_name: string;
+    position: string | null;
+    nfl_team: string | null;
+    /** Season projection, averaged across whichever sources have one. */
+    proj_points: number | null;
+    /** This week's environment for the player's team. */
+    implied_team_total: number | null;
+    spread: number | null;
+    opponent: string | null;
+    on_bye: boolean;
+    logs: { season: number; week: number; points: number; opponent: string | null }[];
+    /** What this week's opponent allowed to this position last season. */
+    def_allowed: number | null;
+    def_league_avg: number | null;
+    def_sample: number | null;
+    /** Last full season's usage and efficiency, for the head-to-head. */
+    usage: {
+        games: number;
+        targets_per_game: number | null;
+        carries_per_game: number | null;
+        target_share: number | null;
+        wopr: number | null;
+        yards_per_touch: number | null;
+        epa_per_play: number | null;
+    } | null;
+}
+
+export async function GET(req: NextRequest) {
+    const idsParam = req.nextUrl.searchParams.get('ids') ?? '';
+    const week = Number(req.nextUrl.searchParams.get('week') ?? '1');
+    const ids = idsParam.split(',').map(Number).filter(n => Number.isInteger(n) && n > 0);
+    if (ids.length === 0) return NextResponse.json({ players: [] });
+    if (ids.length > 80) {
+        return NextResponse.json({ error: 'too many players' }, { status: 400 });
+    }
+    if (!Number.isInteger(week) || week < 1 || week > 22) {
+        return NextResponse.json({ error: 'bad week' }, { status: 400 });
+    }
+
+    const ph = ids.map((_, i) => `$${i + 1}`).join(',');
+    const base = await query<{
+        id: number; slug: string; full_name: string;
+        position: string | null; nfl_team: string | null; proj_points: number | null;
+    }>(
+        `SELECT p.id, p.slug, p.full_name, p.position, p.nfl_team,
+                (SELECT AVG(pr.proj_points) FROM projections pr
+                  WHERE pr.player_id = p.id AND pr.season = ${SEASON}
+                    AND pr.scraped_at = (SELECT MAX(scraped_at) FROM projections
+                                          WHERE player_id = p.id AND season = ${SEASON}
+                                            AND source = pr.source)
+                ) AS proj_points
+           FROM players p
+          WHERE p.id IN (${ph})`, ids);
+
+    // Weekly logs, most recent two seasons — the shape estimate never reaches
+    // further back than that and the rows add up quickly.
+    const logs = await query<{
+        player_id: number; season: number; week: number;
+        points: number; opponent: string | null;
+    }>(
+        `SELECT player_id, season, week, fantasy_points_ppr AS points, opponent
+           FROM nfl_player_week
+          WHERE player_id IN (${ph}) AND season_type = 'REG'
+            AND season >= ${SEASON - 2}
+          ORDER BY season, week`, ids);
+
+    // This week's line for every team, so a player's own row is a lookup.
+    const lines = await query<{
+        team: string; opponent: string; spread: number | null;
+        implied_team_total: number | null;
+    }>(
+        `SELECT team, opponent, spread, implied_team_total
+           FROM vegas_game_lines
+          WHERE season = ${SEASON} AND week = $1`, [week]);
+    const lineByTeam = new Map(lines.map(l => [l.team.toUpperCase(), l]));
+
+    // What each defence allowed per player-game at each position last season.
+    //
+    // Computed here rather than scraped: the weekly table already carries the
+    // opponent on every row, so this is the same games read from the other
+    // side. Last season only — a defence two games into a new year has told
+    // us almost nothing, and the model shrinks by sample size anyway.
+    const def = await query<{
+        defense: string; position: string; allowed: number; n: number;
+    }>(
+        `SELECT opponent AS defense, position,
+                AVG(fantasy_points_ppr) AS allowed, COUNT(*) AS n
+           FROM nfl_player_week
+          WHERE season = ${SEASON - 1} AND season_type = 'REG'
+            AND opponent IS NOT NULL AND fantasy_points_ppr IS NOT NULL
+          GROUP BY opponent, position`, []);
+
+    const defByKey = new Map(def.map(d =>
+        [`${d.defense.toUpperCase()}|${d.position}`, d]));
+    // The league average for a position, so a rate has something to be
+    // relative to. Weighted by player-games, which is what the cells are.
+    const leagueAvg = new Map<string, number>();
+    for (const d of def) {
+        const prev = leagueAvg.get(d.position);
+        const n = Number(d.n), a = Number(d.allowed);
+        leagueAvg.set(d.position, prev == null ? a * n : prev + a * n);
+    }
+    const leagueN = new Map<string, number>();
+    for (const d of def) {
+        leagueN.set(d.position, (leagueN.get(d.position) ?? 0) + Number(d.n));
+    }
+    for (const [pos, total] of leagueAvg) {
+        leagueAvg.set(pos, total / (leagueN.get(pos) || 1));
+    }
+
+    // Usage is averaged over the last full season rather than a career:
+    // a role from two years ago is a different player's role.
+    const usageRows = await query<{
+        player_id: number; games: number;
+        tpg: number | null; cpg: number | null; tshare: number | null; wopr: number | null;
+        ypt: number | null; epa: number | null;
+    }>(
+        `SELECT player_id,
+                COUNT(*) AS games,
+                AVG(targets) AS tpg,
+                AVG(carries) AS cpg,
+                AVG(target_share) AS tshare,
+                AVG(wopr) AS wopr,
+                CASE WHEN SUM(carries + receptions) > 0
+                     THEN SUM(rush_yards + rec_yards) * 1.0 / SUM(carries + receptions)
+                     END AS ypt,
+                CASE WHEN COUNT(*) > 0
+                     THEN AVG(COALESCE(rush_epa,0) + COALESCE(rec_epa,0) + COALESCE(pass_epa,0))
+                     END AS epa
+           FROM nfl_player_week
+          WHERE player_id IN (${ph}) AND season_type = 'REG' AND season = ${SEASON - 1}
+          GROUP BY player_id`, ids);
+    const usageByPlayer = new Map(usageRows.map(u => [u.player_id, u]));
+
+    const logsByPlayer = new Map<number,
+        { season: number; week: number; points: number; opponent: string | null }[]>();
+    for (const l of logs) {
+        const arr = logsByPlayer.get(l.player_id);
+        if (arr) arr.push({ season: l.season, week: l.week, points: l.points, opponent: l.opponent });
+        else logsByPlayer.set(l.player_id,
+            [{ season: l.season, week: l.week, points: l.points, opponent: l.opponent }]);
+    }
+
+    const players: StartSitPlayer[] = base.map(p => {
+        const line = p.nfl_team ? lineByTeam.get(p.nfl_team.toUpperCase()) : undefined;
+        return {
+            id: p.id, slug: p.slug, full_name: p.full_name,
+            position: p.position, nfl_team: p.nfl_team,
+            proj_points: p.proj_points != null ? Number(p.proj_points) : null,
+            implied_team_total: line?.implied_team_total ?? null,
+            spread: line?.spread ?? null,
+            opponent: line?.opponent ?? null,
+            // No line for this team this week means no game — a bye, which the
+            // model has to treat as a zero rather than an unknown.
+            on_bye: !!p.nfl_team && !line,
+            ...(() => {
+                const pos = (p.position ?? '').toUpperCase();
+                const d = line?.opponent
+                    ? defByKey.get(`${line.opponent.toUpperCase()}|${pos}`)
+                    : undefined;
+                const avg = leagueAvg.get(pos);
+                return {
+                    def_allowed: d ? Number(d.allowed) : null,
+                    def_league_avg: avg ?? null,
+                    def_sample: d ? Number(d.n) : null,
+                };
+            })(),
+            logs: logsByPlayer.get(p.id) ?? [],
+            usage: (() => {
+                const u = usageByPlayer.get(p.id);
+                if (!u) return null;
+                const n = (v: number | null) => (v == null ? null : Number(v));
+                return {
+                    games: Number(u.games),
+                    targets_per_game: n(u.tpg), carries_per_game: n(u.cpg),
+                    target_share: n(u.tshare), wopr: n(u.wopr),
+                    yards_per_touch: n(u.ypt), epa_per_play: n(u.epa),
+                };
+            })(),
+        };
+    });
+
+    return NextResponse.json({ week, season: SEASON, players });
+}
