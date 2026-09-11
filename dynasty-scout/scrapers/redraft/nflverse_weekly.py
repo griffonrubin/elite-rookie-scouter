@@ -26,6 +26,21 @@ from datetime import datetime
 
 from scrapers import config
 from scrapers.redraft import nflverse_stats as base
+from scrapers.redraft.names import TEAM_ALIASES
+
+
+def canon_team(abbr):
+    """One spelling per franchise, so joins against our other tables land.
+
+    nflverse calls the Rams LA; the Vegas lines call them LAR. Stored raw, a
+    player facing them matches nothing and silently loses their matchup
+    adjustment — no error, just a quietly neutral number. TEAM_ALIASES is
+    already the canonical map the rest of the pipeline matches on.
+    """
+    if not abbr:
+        return None
+    a = str(abbr).strip().upper()
+    return TEAM_ALIASES.get(a, a)
 
 WEEK_URL = ("https://github.com/nflverse/nflverse-data/releases/download/"
             "stats_player/stats_player_week_{season}.csv")
@@ -83,8 +98,8 @@ def build_rows(season, csv_rows, by_gsis, by_name_pos, unmatched):
         out.append((
             pid, season, int(num(r.get("week"), int)),
             (r.get("season_type") or "REG").upper(),
-            r.get("game_id") or None, r.get("team") or None,
-            r.get("opponent_team") or None, pos,
+            r.get("game_id") or None, canon_team(r.get("team")),
+            canon_team(r.get("opponent_team")), pos,
             num(r.get("fantasy_points_ppr")), num(r.get("fantasy_points")),
             num(r.get("carries"), int), num(r.get("rushing_yards")),
             num(r.get("rushing_tds"), int), num(r.get("targets"), int),
