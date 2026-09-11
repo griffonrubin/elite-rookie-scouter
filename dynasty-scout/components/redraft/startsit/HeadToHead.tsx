@@ -54,6 +54,12 @@ export function HeadToHead({ a, b, data, outcomeFor, onClose }: {
         const m: Metric[] = [
             { key: 'ppg', label: 'Points / game', group: 'opportunity', a: ra.ppg, b: rb.ppg },
             { key: 'games', label: 'Games played', group: 'opportunity', a: ra.games, b: rb.games },
+            // Snap share leads the volume metrics because it is the one that
+            // says whether a player is on the field at all. Targets and
+            // carries are what he did with the snaps; this is whether he got
+            // them, and a change here moves before the others do.
+            { key: 'snap', label: 'Snap share', group: 'opportunity', format: 'percent',
+              a: ua?.snap_share ?? null, b: ub?.snap_share ?? null },
         ];
         // Volume is position-shaped: asking a quarterback for a target share
         // is noise, and so is asking a receiver for carries.

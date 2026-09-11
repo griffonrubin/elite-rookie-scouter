@@ -48,6 +48,7 @@ export interface StartSitPlayer {
         carries_per_game: number | null;
         target_share: number | null;
         wopr: number | null;
+        snap_share: number | null;
         yards_per_touch: number | null;
         epa_per_play: number | null;
     } | null;
@@ -172,6 +173,7 @@ export async function GET(req: NextRequest) {
     const usageRows = await query<{
         player_id: number; games: number;
         tpg: number | null; cpg: number | null; tshare: number | null; wopr: number | null;
+        snap: number | null;
         ypt: number | null; epa: number | null;
     }>(
         `SELECT player_id,
@@ -180,6 +182,7 @@ export async function GET(req: NextRequest) {
                 AVG(carries) AS cpg,
                 AVG(target_share) AS tshare,
                 AVG(wopr) AS wopr,
+                AVG(offense_pct) AS snap,
                 CASE WHEN SUM(carries + receptions) > 0
                      THEN SUM(rush_yards + rec_yards) * 1.0 / SUM(carries + receptions)
                      END AS ypt,
@@ -239,6 +242,7 @@ export async function GET(req: NextRequest) {
                     games: Number(u.games),
                     targets_per_game: n(u.tpg), carries_per_game: n(u.cpg),
                     target_share: n(u.tshare), wopr: n(u.wopr),
+                    snap_share: n(u.snap),
                     yards_per_touch: n(u.ypt), epa_per_play: n(u.epa),
                 };
             })(),
