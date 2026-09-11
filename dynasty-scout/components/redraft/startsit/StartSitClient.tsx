@@ -84,6 +84,9 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                 context: {
                     impliedTeamTotal: d?.implied_team_total ?? null,
                     spread: d?.spread ?? null,
+                    defenseAllowed: d?.def_allowed ?? null,
+                    defenseLeagueAvg: d?.def_league_avg ?? null,
+                    defenseSample: d?.def_sample ?? null,
                     onBye: d?.on_bye ?? false,
                 },
             }, SEASON);

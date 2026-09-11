@@ -29,6 +29,10 @@ export interface StartSitPlayer {
     opponent: string | null;
     on_bye: boolean;
     logs: { season: number; week: number; points: number; opponent: string | null }[];
+    /** What this week's opponent allowed to this position last season. */
+    def_allowed: number | null;
+    def_league_avg: number | null;
+    def_sample: number | null;
     /** Last full season's usage and efficiency, for the head-to-head. */
     usage: {
         games: number;
@@ -90,6 +94,40 @@ export async function GET(req: NextRequest) {
           WHERE season = ${SEASON} AND week = $1`, [week]);
     const lineByTeam = new Map(lines.map(l => [l.team.toUpperCase(), l]));
 
+    // What each defence allowed per player-game at each position last season.
+    //
+    // Computed here rather than scraped: the weekly table already carries the
+    // opponent on every row, so this is the same games read from the other
+    // side. Last season only — a defence two games into a new year has told
+    // us almost nothing, and the model shrinks by sample size anyway.
+    const def = await query<{
+        defense: string; position: string; allowed: number; n: number;
+    }>(
+        `SELECT opponent AS defense, position,
+                AVG(fantasy_points_ppr) AS allowed, COUNT(*) AS n
+           FROM nfl_player_week
+          WHERE season = ${SEASON - 1} AND season_type = 'REG'
+            AND opponent IS NOT NULL AND fantasy_points_ppr IS NOT NULL
+          GROUP BY opponent, position`, []);
+
+    const defByKey = new Map(def.map(d =>
+        [`${d.defense.toUpperCase()}|${d.position}`, d]));
+    // The league average for a position, so a rate has something to be
+    // relative to. Weighted by player-games, which is what the cells are.
+    const leagueAvg = new Map<string, number>();
+    for (const d of def) {
+        const prev = leagueAvg.get(d.position);
+        const n = Number(d.n), a = Number(d.allowed);
+        leagueAvg.set(d.position, prev == null ? a * n : prev + a * n);
+    }
+    const leagueN = new Map<string, number>();
+    for (const d of def) {
+        leagueN.set(d.position, (leagueN.get(d.position) ?? 0) + Number(d.n));
+    }
+    for (const [pos, total] of leagueAvg) {
+        leagueAvg.set(pos, total / (leagueN.get(pos) || 1));
+    }
+
     // Usage is averaged over the last full season rather than a career:
     // a role from two years ago is a different player's role.
     const usageRows = await query<{
@@ -135,6 +173,18 @@ export async function GET(req: NextRequest) {
             // No line for this team this week means no game — a bye, which the
             // model has to treat as a zero rather than an unknown.
             on_bye: !!p.nfl_team && !line,
+            ...(() => {
+                const pos = (p.position ?? '').toUpperCase();
+                const d = line?.opponent
+                    ? defByKey.get(`${line.opponent.toUpperCase()}|${pos}`)
+                    : undefined;
+                const avg = leagueAvg.get(pos);
+                return {
+                    def_allowed: d ? Number(d.allowed) : null,
+                    def_league_avg: avg ?? null,
+                    def_sample: d ? Number(d.n) : null,
+                };
+            })(),
             logs: logsByPlayer.get(p.id) ?? [],
             usage: (() => {
                 const u = usageByPlayer.get(p.id);

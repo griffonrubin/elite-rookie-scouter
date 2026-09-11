@@ -39,6 +39,12 @@ export interface Metric {
     domain?: [number, number];
     /** True when a lower number is the better one. */
     lowerIsBetter?: boolean;
+    /**
+     * A caveat belonging to this row rather than its group — say, a number
+     * that is standard in fantasy and confounded in a way the reader should
+     * know about before leaning on it.
+     */
+    note?: string;
 }
 
 const GROUP_NOTE: Record<MetricGroup, string> = {
@@ -99,9 +105,14 @@ export function UsageDumbbell({ metrics, nameA, nameB }: {
                                     <div key={m.key}
                                         className="grid grid-cols-[104px_minmax(0,1fr)_112px] items-center gap-2"
                                         title={`${m.label}: ${nameA} ${fmt(m.a, m.format)}, `
-                                            + `${nameB} ${fmt(m.b, m.format)}`}>
+                                            + `${nameB} ${fmt(m.b, m.format)}`
+                                            + (m.note ? `\n\n${m.note}` : '')}>
                                         <span className="text-[11px] text-muted-foreground/70 truncate">
                                             {m.label}
+                                            {m.note && (
+                                                <span className="ml-1 text-muted-foreground/35 cursor-help"
+                                                    aria-hidden="true">*</span>
+                                            )}
                                         </span>
                                         <span className="relative h-5 block">
                                             <span className="absolute inset-x-0 top-1/2 h-px"

@@ -92,6 +92,37 @@ export function HeadToHead({ a, b, data, outcomeFor, onClose }: {
                 ],
             },
         );
+        // Matchup last in the group: it is the weakest of the three signals
+        // and reading it after the line is the right order to think in.
+        //
+        // Indexed to the positional average, never shown as raw points
+        // allowed. A defence gives up about 6.8 a game to receivers and 5.7
+        // to tight ends, so putting a WR's 9.0 beside a TE's 7.6 on one axis
+        // says the receiver has the better matchup when both are in fact
+        // exactly a third above average for their own position. Two scales on
+        // one axis is the same mistake as a second y-axis.
+        const idx = (p: RedraftPlayer, d: StartSitPlayer | undefined) => {
+            const allowed = usage(p, d, 'def_allowed');
+            const avg = usage(p, d, 'def_league_avg');
+            return allowed != null && avg != null && avg > 0 ? allowed / avg : null;
+        };
+        const defA = idx(a, da), defB = idx(b, db);
+        if (defA != null || defB != null) {
+            const far = Math.max(0.15, ...[defA, defB]
+                .filter((v): v is number => v != null).map(v => Math.abs(v - 1)));
+            m.push({
+                key: 'def', label: 'Matchup', group: 'environment',
+                a: defA, b: defB, format: 'percent',
+                // Framed symmetrically around 100% so above and below average
+                // are visibly different things rather than two positions.
+                domain: [1 - far, 1 + far],
+                note: 'PPR the opposing defence allowed per game at this position '
+                    + 'last season, against the league average for that position — '
+                    + '100% is an average matchup, higher is softer. Confounded by '
+                    + 'schedule, so the model shrinks it by sample size and halves '
+                    + 'what is left.',
+            });
+        }
         return m;
     }, [a, b, data]);
 

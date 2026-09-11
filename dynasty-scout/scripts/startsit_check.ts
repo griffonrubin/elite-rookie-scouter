@@ -72,6 +72,34 @@ async function main() {
         seasonProjection: 340, projectedGames: 17, logs: gibbs.logs,
         context: { onBye: true } }, CUR));
 
+    console.log('\n== 3c. matchup, isolated ==');
+    // Total and spread held neutral so only the defence moves. The league
+    // average is fixed at 7.0 and the sample is large, so the shrinkage term
+    // is near 1 and the elasticity is what is being read here.
+    for (const [lbl, allowed] of [
+        ['toughest (5.7)', 5.7], ['average (7.0)', 7.0], ['softest (8.8)', 8.8],
+    ] as const) {
+        show(`WR vs ${lbl}`, buildOutcome({ playerId: nacua.id, position: 'WR',
+            seasonProjection: 340, projectedGames: 17, logs: nacua.logs,
+            context: {
+                impliedTeamTotal: 22.5, spread: 0,
+                defenseAllowed: allowed, defenseLeagueAvg: 7.0, defenseSample: 76,
+            } }, CUR));
+    }
+    // A thin sample must barely move, whatever it claims.
+    show('WR vs softest, 8 games only', buildOutcome({ playerId: nacua.id, position: 'WR',
+        seasonProjection: 340, projectedGames: 17, logs: nacua.logs,
+        context: {
+            impliedTeamTotal: 22.5, spread: 0,
+            defenseAllowed: 8.8, defenseLeagueAvg: 7.0, defenseSample: 8,
+        } }, CUR));
+    // No matchup data must leave the projection untouched.
+    show('WR, no matchup data', buildOutcome({ playerId: nacua.id, position: 'WR',
+        seasonProjection: 340, projectedGames: 17, logs: nacua.logs,
+        context: { impliedTeamTotal: 22.5, spread: 0 } }, CUR));
+    console.log('   (mean should rise with points allowed; the 8-game cell should sit');
+    console.log('    close to average; no data should equal the average row exactly)');
+
     console.log('\n== 4. determinism ==');
     const mk = (o: any, s?: number[]): SimPlayer => ({ outcome: o, sample: s });
     const a1 = simulateMatchup([mk(gO)], [mk(nO)], 8000, 3).winProb;

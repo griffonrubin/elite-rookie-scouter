@@ -44,6 +44,15 @@ export interface GameContext {
     impliedTeamTotal?: number | null;
     /** Negative when this team is favoured, as a spread is quoted. */
     spread?: number | null;
+    /**
+     * PPR the opposing defence allowed per player-game at this position last
+     * season, alongside the league average at that position and the number of
+     * player-games behind it. Raw rates, not a rating: the model does its own
+     * shrinking, so the caller never has to know the smoothing rule.
+     */
+    defenseAllowed?: number | null;
+    defenseLeagueAvg?: number | null;
+    defenseSample?: number | null;
     /** No game this week. */
     onBye?: boolean;
 }
@@ -119,6 +128,28 @@ const SCRIPT_PER_POINT: Record<string, number> = {
     RB: -0.13, WR: 0.10, TE: 0.05, QB: 0.08, K: -0.04, DST: -0.10, FB: -0.10,
 };
 
+/**
+ * How hard the matchup pulls, and why it is not pulled at face value.
+ *
+ * Points allowed to a position is the standard matchup number and it is a
+ * confounded one. A defence's rate reflects who it happened to play, how many
+ * receivers those teams fielded, and how often it was ahead — not only how
+ * hard it is to score on. Two separate discounts follow from that, doing two
+ * different jobs.
+ *
+ * DEFENSE_PRIOR_GAMES shrinks the rate toward the positional average by
+ * sample size, so a cell built on twenty player-games moves the projection
+ * far less than one built on eighty. That handles noise.
+ *
+ * DEFENSE_ELASTICITY handles bias: even a perfectly measured rate is last
+ * year's defence, with this year's personnel and scheme, so only part of it
+ * carries forward. Half is a deliberately conservative read — enough for a
+ * genuinely soft matchup to show up next to the Vegas line, not enough for it
+ * to outvote the line.
+ */
+const DEFENSE_PRIOR_GAMES = 60;
+const DEFENSE_ELASTICITY = 0.5;
+
 function mean(xs: number[]): number {
     return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
 }
@@ -153,6 +184,23 @@ export function formWeight(gamesThisSeason: number): number {
 /**
  * Build the distribution for one player's week.
  */
+/**
+ * How much the opposing defence moves a player's week, as a fraction of it.
+ *
+ * Returns 0 whenever the answer would be guesswork — no rate, no league
+ * average to compare it to, or a league average of zero — so a missing
+ * matchup leaves the projection exactly where the rest of the model put it
+ * rather than nudging it toward an invented neutral.
+ */
+export function matchupEdge(ctx: GameContext): number {
+    const { defenseAllowed: allowed, defenseLeagueAvg: avg } = ctx;
+    if (allowed == null || avg == null || avg <= 0) return 0;
+    const n = ctx.defenseSample ?? 0;
+    const weight = n / (n + DEFENSE_PRIOR_GAMES);
+    const raw = allowed / avg - 1;
+    return weight * raw * DEFENSE_ELASTICITY;
+}
+
 export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
     const pos = (p.position || '').toUpperCase();
     const ctx = p.context ?? {};
@@ -200,6 +248,7 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
         if (ctx.spread != null) {
             adjustment += (SCRIPT_PER_POINT[pos] ?? 0) * ctx.spread;
         }
+        adjustment += centre * matchupEdge(ctx);
     }
     centre = Math.max(0, centre + adjustment);
 
