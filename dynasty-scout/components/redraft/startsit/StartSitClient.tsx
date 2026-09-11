@@ -87,6 +87,8 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                     defenseAllowed: d?.def_allowed ?? null,
                     defenseLeagueAvg: d?.def_league_avg ?? null,
                     defenseSample: d?.def_sample ?? null,
+                    reportStatus: d?.report_status ?? null,
+                    practiceStatus: d?.practice_status ?? null,
                     onBye: d?.on_bye ?? false,
                 },
             }, SEASON);
@@ -200,15 +202,16 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                 From 20,000 simulated weeks, both lineups drawn from each player&rsquo;s
                                 own distribution rather than their average.
                             </p>
-                            {/* Said plainly rather than left to be assumed. Byes are
-                                known — a team with no line this week has no game — but
-                                nothing here knows who is hurt, and a reader who thinks
-                                it does would trust a number about a player who will not
-                                play. That is the one way this page can be actively
-                                wrong rather than merely incomplete. */}
+                            {/* What the availability numbers rest on, stated rather
+                                than left to be assumed. The report is real and the
+                                play rates on it are conventional readings, not a
+                                fitted model — and a report that has not been filed
+                                yet reads as healthy, which is the honest default and
+                                still worth knowing. */}
                             <p className="text-[10px] text-muted-foreground/40 mt-1.5 leading-snug">
-                                Byes are accounted for. Injuries are not — check status
-                                before you set the lineup.
+                                Byes and the official injury report are both accounted
+                                for. A player with no report is treated as healthy, and
+                                reports land mid-week — so late news will not be here yet.
                             </p>
                         </>
                     )}
@@ -257,6 +260,12 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     );
 }
 
+/** Short enough to sit beside a name without pushing it out of its column. */
+const AVAILABILITY_TOKEN: Record<string, string> = {
+    Out: 'OUT', Doubtful: 'D', Questionable: 'Q',
+    'No practice': 'DNP', Limited: 'LTD',
+};
+
 function Roster({ title, players, outcomeFor, max, series, onCompare }: {
     title: string;
     players: RedraftPlayer[];
@@ -302,6 +311,20 @@ function Roster({ title, players, outcomeFor, max, series, onCompare }: {
                                 <span className="w-1.5 h-1.5 rounded-full shrink-0"
                                     style={{ background: POSITION_RAW[(p.position ?? '').toUpperCase()] ?? '#64748b' }} />
                                 <span className="text-[12px] font-semibold truncate">{p.full_name}</span>
+                                {/* Named, not just hatched: a texture on a bar is
+                                    not something a screen reader or a colour-blind
+                                    reader can be asked to carry alone. */}
+                                {outcome.availability && (
+                                    <span className="shrink-0 px-1 rounded text-[9px] font-bold tracking-wide"
+                                        style={outcome.playProbability === 0
+                                            ? { background: 'rgba(220,38,38,0.16)', color: '#FCA5A5' }
+                                            : { background: 'rgba(234,88,12,0.16)', color: '#FDBA74' }}
+                                        title={`${outcome.availability} — `
+                                            + `${Math.round(outcome.playProbability * 100)}% chance of playing`}>
+                                        {AVAILABILITY_TOKEN[outcome.availability]
+                                            ?? outcome.availability.toUpperCase()}
+                                    </span>
+                                )}
                             </span>
                             {/* On a phone the strip drops to its own full-width row:
                                 squeezed between the name and the numbers it gets
@@ -313,9 +336,16 @@ function Roster({ title, players, outcomeFor, max, series, onCompare }: {
                             </span>
                             <span className="col-start-2 row-start-1 sm:col-start-3 sm:row-start-1
                                              text-[11px] tabular-nums text-right text-muted-foreground/70">
-                                <span className="text-muted-foreground/60">{outcome.floor}</span>
-                                <span className="text-foreground font-bold mx-1">{outcome.mean}</span>
-                                <span className="text-muted-foreground/60">{outcome.ceiling}</span>
+                                {/* A ruled-out player has no floor, expected or
+                                    ceiling. Printing them invites reading a number
+                                    that cannot happen. */}
+                                {outcome.playProbability === 0 ? (
+                                    <span className="text-muted-foreground/35">&mdash;</span>
+                                ) : (<>
+                                    <span className="text-muted-foreground/60">{outcome.floor}</span>
+                                    <span className="text-foreground font-bold mx-1">{outcome.mean}</span>
+                                    <span className="text-muted-foreground/60">{outcome.ceiling}</span>
+                                </>)}
                             </span>
                         </button>
                     );

@@ -29,6 +29,10 @@ export interface StartSitPlayer {
     opponent: string | null;
     on_bye: boolean;
     logs: { season: number; week: number; points: number; opponent: string | null }[];
+    /** The injury report, when this player is on it this week. */
+    report_status: string | null;
+    practice_status: string | null;
+    injury: string | null;
     /** What this week's opponent allowed to this position last season. */
     def_allowed: number | null;
     def_league_avg: number | null;
@@ -58,6 +62,8 @@ export async function GET(req: NextRequest) {
     }
 
     const ph = ids.map((_, i) => `$${i + 1}`).join(',');
+    // The same id list shifted by one, for queries that bind the week first.
+    const ph2 = ids.map((_, i) => `$${i + 2}`).join(',');
     const base = await query<{
         id: number; slug: string; full_name: string;
         position: string | null; nfl_team: string | null; proj_points: number | null;
@@ -93,6 +99,18 @@ export async function GET(req: NextRequest) {
            FROM vegas_game_lines
           WHERE season = ${SEASON} AND week = $1`, [week]);
     const lineByTeam = new Map(lines.map(l => [l.team.toUpperCase(), l]));
+
+    // This week's injury report. Most players are not on it at all, which is
+    // the answer for them: silence means nobody has said otherwise.
+    const inj = await query<{
+        player_id: number; report_status: string | null;
+        practice_status: string | null; report_primary_injury: string | null;
+    }>(
+        `SELECT player_id, report_status, practice_status, report_primary_injury
+           FROM nfl_player_injury
+          WHERE season = ${SEASON} AND week = $1 AND player_id IN (${ph2})`,
+        [week, ...ids]);
+    const injByPlayer = new Map(inj.map(i => [i.player_id, i]));
 
     // What each defence allowed per player-game at each position last season.
     //
@@ -173,6 +191,9 @@ export async function GET(req: NextRequest) {
             // No line for this team this week means no game — a bye, which the
             // model has to treat as a zero rather than an unknown.
             on_bye: !!p.nfl_team && !line,
+            report_status: injByPlayer.get(p.id)?.report_status ?? null,
+            practice_status: injByPlayer.get(p.id)?.practice_status ?? null,
+            injury: injByPlayer.get(p.id)?.report_primary_injury ?? null,
             ...(() => {
                 const pos = (p.position ?? '').toUpperCase();
                 const d = line?.opponent
