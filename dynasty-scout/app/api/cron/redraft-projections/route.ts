@@ -5,6 +5,8 @@ import {
     writeEspnIds,
 } from '@/lib/espnPlayers';
 import { refreshRankingSources } from '@/lib/redraftSources';
+import { refreshAvailability } from '@/lib/availability';
+import { refreshPlayerProps } from '@/lib/playerProps';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,6 +43,22 @@ export const maxDuration = 300;
 
 const SEASON = 2026;
 const GAMES = 17;
+
+/**
+ * The week the props job should ask for.
+ *
+ * Read from the schedule we already hold rather than counted off a calendar:
+ * the earliest week with a game still ahead of it is the one books are
+ * pricing, and that stays right through a Tuesday, a bye-heavy week and a
+ * flexed Sunday night. Falls back to week 1 only if the schedule is empty,
+ * which would mean the Vegas loader has never run.
+ */
+async function currentNflWeek(today: string): Promise<number> {
+    const rows = await query<{ week: number }>(
+        `SELECT MIN(week) AS week FROM vegas_game_lines
+          WHERE season = $1 AND gameday >= $2`, [SEASON, today]);
+    return rows[0]?.week ?? 1;
+}
 
 const SLEEPER_URL =
     `https://api.sleeper.com/projections/nfl/${SEASON}?season_type=regular&`
@@ -265,6 +283,27 @@ export async function GET(req: NextRequest) {
         rankings = { error: String((e as Error)?.message ?? e) };
     }
 
+    // The injury report is the reason this job matters mid-week: reports land
+    // Wednesday through Friday afternoon, which is exactly when lineups are
+    // set. Isolated like the rankings above — a bad week of nflverse must not
+    // take the projections down with it.
+    let availability: unknown;
+    try {
+        availability = await refreshAvailability(SEASON);
+    } catch (e) {
+        availability = { error: String((e as Error)?.message ?? e) };
+    }
+
+    // Props, when a key is configured. Lines move all week, so like the
+    // injury report this is only worth anything if it is re-read; without a
+    // key it reports skipped and nothing downstream changes.
+    let props: unknown;
+    try {
+        props = await refreshPlayerProps(SEASON, await currentNflWeek(today), today);
+    } catch (e) {
+        props = { status: 'failed', reason: String((e as Error)?.message ?? e) };
+    }
+
     const ok = sleeper.status === 'fulfilled' || espn.status === 'fulfilled';
     return NextResponse.json({
         status: ok ? 'ok' : 'failed',
@@ -275,5 +314,7 @@ export async function GET(req: NextRequest) {
         espn: report(espn),
         espn_ids: report(ids),
         rankings,
+        availability,
+        props,
     }, { status: ok ? 200 : 502 });
 }
