@@ -12,7 +12,7 @@ import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
 import { SwapBars, SwapRow } from './SwapBars';
 import { findProblems, LineupAlerts } from './LineupAlerts';
 import { SlotBoard } from './SlotBoard';
-import { rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
+import { optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
 import { LeagueConnect } from './LeagueConnect';
 import { HeadToHead } from './HeadToHead';
 import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
@@ -189,6 +189,37 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
             league.opponent.starters.map(sim), 6000));
     }, [matchup, slotLineup, league.me.bench, league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
 
+    /**
+     * The lineup the simulation would set, and what it is worth.
+     *
+     * The single most useful number on the page is not your win probability —
+     * it is the gap between yours and the best one available, because that is
+     * the part you can still do something about. Most weeks it is zero, and
+     * saying so is worth as much as naming a change.
+     */
+    const best = useMemo(() => {
+        if (!matchup || decisions.length === 0) return null;
+        const all = [...league.me.starters, ...league.me.bench];
+        const byId = new Map(all.map(p => [p.id, p]));
+        const chosen = optimalLineup(decisions);
+        const ids = decisions.map(d => chosen.get(d.index) ?? d.currentId);
+        const lineup = ids.filter((id): id is number => id != null)
+            .map(id => sim(byId.get(id)!));
+        if (lineup.length === 0) return null;
+        const prob = simulateMatchup(lineup, league.opponent.starters.map(sim), 20000, 11).winProb;
+        const changes = decisions
+            .map(d => ({ d, to: chosen.get(d.index) ?? null }))
+            .filter(c => c.to != null && c.to !== c.d.currentId)
+            .map(c => ({
+                slot: c.d.slot,
+                out: c.d.currentId != null ? byId.get(c.d.currentId)?.full_name ?? null : null,
+                in: byId.get(c.to!)?.full_name ?? '',
+                inId: c.to!,
+                outId: c.d.currentId,
+            }));
+        return { prob, changes, gain: Math.round((prob - matchup.winProb) * 1000) / 10 };
+    }, [matchup, decisions, league.me.starters, league.me.bench, league.opponent.starters]);   // eslint-disable-line react-hooks/exhaustive-deps
+
     const axisMax = useMemo(() => {
         const all = [...league.me.starters, ...league.me.bench].map(p => outcomeFor(p).outcome.ceiling);
         return Math.max(24, Math.ceil(Math.max(0, ...all) / 5) * 5);
@@ -247,6 +278,50 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                     </dd>
                                 </div>
                             </dl>
+                            {best && (
+                                <div className="mt-3 pt-3 border-t border-white/[0.07]">
+                                    {best.changes.length === 0 ? (
+                                        <p className="text-[12px]">
+                                            <span className="font-bold" style={{ color: '#86EFAC' }}>
+                                                This is the best lineup available.
+                                            </span>
+                                            <span className="text-muted-foreground/60"> Nothing on your
+                                                bench raises your chances.</span>
+                                        </p>
+                                    ) : (
+                                        <>
+                                            <p className="text-[12px] mb-1.5">
+                                                <span className="text-muted-foreground/60">Best available </span>
+                                                <span className="font-bold tabular-nums"
+                                                    style={{ color: '#93C5FD' }}>
+                                                    {Math.round(best.prob * 1000) / 10}%
+                                                </span>
+                                                <span className="text-muted-foreground/60">
+                                                    {' '}— {best.gain > 0 ? `+${best.gain}` : best.gain} from
+                                                    {best.changes.length === 1 ? ' one change' : ` ${best.changes.length} changes`}
+                                                </span>
+                                            </p>
+                                            <ul className="space-y-0.5">
+                                                {best.changes.map(c => (
+                                                    <li key={`${c.slot}-${c.inId}`}>
+                                                        <button type="button"
+                                                            onClick={() => c.outId != null && setCompare([c.inId, c.outId])}
+                                                            className="text-left text-[11px] hover:underline">
+                                                            <span className="text-muted-foreground/50 font-bold mr-1">
+                                                                {c.slot}
+                                                            </span>
+                                                            <span className="font-semibold">{c.in}</span>
+                                                            {c.out && (
+                                                                <span className="text-muted-foreground/50"> for {c.out}</span>
+                                                            )}
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                             <p className="text-[10px] text-muted-foreground/40 mt-3 leading-snug">
                                 From 20,000 simulated weeks, both lineups drawn from each player&rsquo;s
                                 own distribution rather than their average.
