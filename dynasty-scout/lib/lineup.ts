@@ -13,7 +13,7 @@
  * property worth having: a player is judged by what he does to your chances,
  * not by his projection.
  */
-import { beatsProbability, SimPlayer, simulateMatchup } from '@/lib/startSit';
+import { beatsProbability, SimPlayer, simulateMatchup, slotWinProbs } from '@/lib/startSit';
 
 /** Positions that can fill a FLEX in every common league shape. */
 const FLEX_ELIGIBLE: Record<string, Set<string>> = {
@@ -116,13 +116,30 @@ export function rankSlots(
             continue;
         }
 
+        // The starters who are not in this slot, drawn once for the whole
+        // pool rather than once per candidate.
+        const othersIds = base.filter((id, j) => j !== i && id != null) as number[];
+
+        // A player already starting elsewhere cannot also fill this slot:
+        // putting them here empties the slot they came from rather than
+        // cloning them into two places. That candidate has a different set
+        // of "others", so it cannot share the pooled draws and is scored on
+        // its own — rare enough that the shared path still does the work.
+        const shared = pool.filter(id => !othersIds.includes(id));
+        const moved = pool.filter(id => othersIds.includes(id));
+
         const scored: SlotCandidate[] = [];
-        for (const id of pool) {
+        if (shared.length > 0) {
+            const probs = slotWinProbs(othersIds.map(simOf), shared.map(simOf),
+                opponent, trials, 7);
+            shared.forEach((id, k) => scored.push({
+                playerId: id, winProb: probs[k], deltaWinProb: 0,
+                current: id === currentId, deltaPoints: 0, beats: 0.5,
+            }));
+        }
+        for (const id of moved) {
             const ids = [...base];
             ids[i] = id;
-            // A player already starting elsewhere cannot also fill this slot,
-            // so putting them here empties the slot they came from rather
-            // than cloning them into two places at once.
             for (let j = 0; j < ids.length; j++) if (j !== i && ids[j] === id) ids[j] = null;
             const w = simulateMatchup(simLineup(ids), opponent, trials, 7).winProb;
             scored.push({
@@ -130,6 +147,9 @@ export function rankSlots(
                 deltaPoints: 0, beats: 0.5,
             });
         }
+        // Pool order decides which slot gets first refusal in
+        // resolveConflicts, so restore it after splitting the two paths.
+        scored.sort((a, b) => pool.indexOf(a.playerId) - pool.indexOf(b.playerId));
 
         const currentProb = scored.find(c => c.current)?.winProb
             ?? Math.min(...scored.map(c => c.winProb));

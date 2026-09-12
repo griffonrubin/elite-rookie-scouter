@@ -4,7 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { RedraftPlayer } from '@/lib/types';
 import { useLeagueSync } from '@/lib/useLeagueSync';
 import {
-    buildOutcome, Outcome, rankSwaps, simulateMatchup, SimPlayer, usableSample,
+    beatsProbability, buildOutcome, Outcome, rankSwaps, simulateMatchup, SimPlayer,
+    usableSample,
 } from '@/lib/startSit';
 import { POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,7 @@ import { optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/
 import { LeagueConnect } from './LeagueConnect';
 import { SwapPreview } from './SwapPreview';
 import { PlayerDetail } from './PlayerDetail';
+import { MatchupBySlot, SlotPair } from './MatchupBySlot';
 import { HeadToHead } from './HeadToHead';
 import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
 
@@ -127,10 +129,25 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
 
     // The simulator resamples points and has no use for which game each came
     // from; the strip is the other way round. Same games, two shapes.
-    const sim = (p: RedraftPlayer): SimPlayer => {
-        const { outcome, sample } = outcomeFor(p);
-        return { outcome, sample: sample.map(g => g.points) };
-    };
+    /**
+     * A player's simulation input, built once.
+     *
+     * This was a plain function, so every call allocated a fresh points
+     * array — and it is called for each of nine players for each candidate
+     * for each slot, on top of every `.map(sim)` across five other memos.
+     * The outcome behind it was already cached; the array was not.
+     */
+    const sim = useMemo(() => {
+        const cache = new Map<number, SimPlayer>();
+        return (p: RedraftPlayer): SimPlayer => {
+            const hit = cache.get(p.id);
+            if (hit) return hit;
+            const { outcome, sample } = outcomeFor(p);
+            const made = { outcome, sample: sample.map(g => g.points) };
+            cache.set(p.id, made);
+            return made;
+        };
+    }, [outcomeFor]);
 
     const matchup = useMemo(() => {
         if (league.me.starters.length === 0 || league.opponent.starters.length === 0) return null;
@@ -162,6 +179,32 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
      * starters' own positions stand in, with the last one treated as a flex,
      * which is wrong less often than refusing to show anything.
      */
+    /**
+     * A side's lineup as slots, from whatever the platform reported.
+     *
+     * Both sides need this now: the opponent's lineup pairs with yours slot
+     * for slot — same league, same roster_positions — and that pairing is
+     * what turns one aggregate matchup into the nine small contests it
+     * actually is.
+     */
+    const resolveSlots = React.useCallback((
+        team: typeof league.me.team, roster: RedraftPlayer[],
+    ) => {
+        const byPlatformId = new Map(roster.map(p => [
+            String(league.connection?.platform === 'espn' ? p.espn_nfl_id : p.sleeper_id), p]));
+        const reported = team?.lineupSlots;
+        if (reported?.length) {
+            return reported.map(r => ({
+                slot: r.slot,
+                playerId: r.playerId ? byPlatformId.get(String(r.playerId))?.id ?? null : null,
+            }));
+        }
+        return roster.map((p, i) => ({
+            slot: i === roster.length - 1 ? 'FLEX' : (p.position ?? 'FLEX').toUpperCase(),
+            playerId: p.id,
+        }));
+    }, [league.connection?.platform]);
+
     const slotLineup = useMemo(() => {
         const reported = league.me.team?.lineupSlots;
         const byPlatformId = new Map(league.me.starters.map(p => [
@@ -243,7 +286,15 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         const lineup = ids.filter((id): id is number => id != null)
             .map(id => sim(byId.get(id)!));
         if (lineup.length === 0) return null;
-        const prob = simulateMatchup(lineup, league.opponent.starters.map(sim), 20000, 11).winProb;
+        // Most weeks the best lineup is the one already set, and simulating
+        // it again is twenty thousand trials to re-derive a number that is
+        // already on screen — same players, same opponent, same seed, so
+        // necessarily the same answer.
+        const unchanged = ids.length === decisions.length
+            && ids.every((id, i) => id === decisions[i].currentId);
+        const prob = unchanged
+            ? matchup.winProb
+            : simulateMatchup(lineup, league.opponent.starters.map(sim), 20000, 11).winProb;
         const changes = decisions
             .map(d => ({ d, to: chosen.get(d.index) ?? null }))
             .filter(c => c.to != null && c.to !== c.d.currentId)
@@ -277,6 +328,36 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
             { bins: 40 });
     }, [preview, matchup, slotLineup, league.me.starters, league.me.bench,
         league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+    /**
+     * Your lineup against theirs, one slot at a time.
+     *
+     * `beatsProbability` per pair rather than a points gap alone: a
+     * four-point edge between two steady players is nearly settled and the
+     * same edge between two spiky ones is not, and the gap cannot tell them
+     * apart.
+     */
+    const slotPairs: SlotPair[] = useMemo(() => {
+        const oppSlots = resolveSlots(league.opponent.team, league.opponent.starters);
+        if (slotLineup.length === 0 || oppSlots.length === 0) return [];
+        const all = [...league.me.starters, ...league.me.bench, ...league.opponent.starters];
+        const byId = new Map(all.map(p => [p.id, p]));
+        const look = (id: number | null) => (id != null ? byId.get(id) ?? null : null);
+        return slotLineup.map((s, i) => {
+            const mineP = look(s.playerId);
+            const theirsP = look(oppSlots[i]?.playerId ?? null);
+            const mineO = mineP ? outcomeFor(mineP).outcome : null;
+            const theirsO = theirsP ? outcomeFor(theirsP).outcome : null;
+            return {
+                slot: s.slot,
+                mine: { player: mineP, outcome: mineO },
+                theirs: { player: theirsP, outcome: theirsO },
+                beats: mineP && theirsP
+                    ? beatsProbability(sim(mineP), sim(theirsP), 3000, 17) : null,
+            };
+        });
+    }, [slotLineup, league.opponent.team, league.opponent.starters, league.me.starters,
+        league.me.bench, resolveSlots, data]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     const axisMax = useMemo(() => {
         const all = [...league.me.starters, ...league.me.bench].map(p => outcomeFor(p).outcome.ceiling);
@@ -491,6 +572,10 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                         onCompare={(a, b) => setCompare([a, b])} />
                 </section>
             </div>
+
+            {/* Where the week is won, before the rosters that might change it. */}
+            <MatchupBySlot pairs={slotPairs}
+                onPick={(a, b) => setCompare([a, b])} />
 
             {/* ── the lineup itself ──
                 The opponent sits beside your own two panels rather than behind

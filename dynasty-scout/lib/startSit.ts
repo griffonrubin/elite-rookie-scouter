@@ -678,6 +678,38 @@ export function simulateMatchup(
     };
 }
 
+/**
+ * Every candidate for one slot, off one set of draws.
+ *
+ * Scoring a slot used to re-simulate the entire lineup for each candidate:
+ * nine players plus nine opponents, six times over, when five of those six
+ * runs differ by exactly one player. Same answer for four or five times the
+ * work, and it was seventy per cent of what the page computed on a load.
+ *
+ * Here the unchanged starters and the opponent are drawn once per trial and
+ * each candidate is drawn against that same week. Fewer draws, and better
+ * numbers: the candidates now share their randomness exactly, so the
+ * differences between them — which is the only thing the board displays —
+ * stop carrying two independent lots of Monte Carlo noise.
+ *
+ * `others` must already exclude whoever is being replaced.
+ */
+export function slotWinProbs(
+    others: SimPlayer[], candidates: SimPlayer[], opponent: SimPlayer[],
+    trials = 6000, seed = 7,
+): number[] {
+    const rng = makeRng(seed);
+    const wins = new Array(candidates.length).fill(0);
+    for (let i = 0; i < trials; i++) {
+        const rest = drawLineup(others, rng);
+        const them = drawLineup(opponent, rng);
+        for (let c = 0; c < candidates.length; c++) {
+            if (rest + drawLineup([candidates[c]], rng) > them) wins[c]++;
+        }
+    }
+    return wins.map(w => w / trials);
+}
+
 export interface SwapVerdict {
     inId: number;
     outId: number;
