@@ -89,6 +89,18 @@ export interface PlayerInputs {
 export interface OutcomeDrivers {
     /** The player's own level: the projection and their form, blended. */
     base: number;
+    /**
+     * The two halves of that blend, and nulls where one was missing.
+     *
+     * This is the most contestable choice in the model and the one a reader
+     * is most likely to have an opinion about: how much of a player is what
+     * somebody projected in August, and how much is what he has actually
+     * done since. `formWeight` on the outcome says how the two were mixed.
+     * Shown, it is a judgement the reader can overrule; hidden, it is the
+     * model quietly deciding for them.
+     */
+    projectionPerGame: number | null;
+    formMean: number | null;
     /** Points from how many the books expect this offence to score. */
     teamTotal: number;
     /** Points from the game script the spread implies. */
@@ -374,7 +386,10 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
 
     // ── game environment ────────────────────────────────────────────────
     const drivers: OutcomeDrivers = {
-        base, teamTotal: 0, script: 0, matchup: 0,
+        base,
+        projectionPerGame: perGameProjection,
+        formMean,
+        teamTotal: 0, script: 0, matchup: 0,
         market: marketUsable ? market! - base : 0,
     };
     if (!ctx.onBye && !marketUsable) {
@@ -396,7 +411,10 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
             playerId: p.playerId, mean: 0, sd: 0, floor: 0, ceiling: 0,
             sample: shapeSample.length, formWeight: w,
             contextAdjustment: 0, onBye: true,
-            drivers: { base, teamTotal: 0, script: 0, matchup: 0, market: 0 },
+            drivers: {
+                base, projectionPerGame: perGameProjection, formMean,
+                teamTotal: 0, script: 0, matchup: 0, market: 0,
+            },
             playProbability: 0, availability: null,
             centreSource: 'model',
         };
@@ -434,7 +452,11 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
      * is the figure the simulation actually used.
      */
     const shown = {
-        base: r1(drivers.base), teamTotal: r1(drivers.teamTotal),
+        base: r1(drivers.base),
+        projectionPerGame: drivers.projectionPerGame != null
+            ? r1(drivers.projectionPerGame) : null,
+        formMean: drivers.formMean != null ? r1(drivers.formMean) : null,
+        teamTotal: r1(drivers.teamTotal),
         script: r1(drivers.script), matchup: r1(drivers.matchup),
         market: r1(drivers.market),
     };

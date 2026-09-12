@@ -158,6 +158,8 @@ export function WhyBars(props: WhyBarsProps) {
                 </span>
             </div>
 
+            <BaseSplit outcome={o} />
+
             {trivial ? (
                 <p className="text-[11px] text-muted-foreground/55 leading-snug">
                     Barely anything this week: the total, the spread and the defence
@@ -241,5 +243,51 @@ export function WhyBars(props: WhyBarsProps) {
                 </p>
             )}
         </div>
+    );
+}
+
+/**
+ * Where the base itself came from.
+ *
+ * Everything else here is context applied to a level, and the level is not a
+ * fact either — it is a blend of what somebody projected in August and what
+ * the player has actually done since, mixed by games played. That mixing is
+ * the most contestable choice in the model and the one a reader is most
+ * likely to have a view on: four good games into a season, is he a 17-point
+ * back now, or a 13-point back who has had four good games?
+ *
+ * Stated, it is a judgement anyone can overrule. Hidden, it is the model
+ * deciding quietly and presenting the result as arithmetic.
+ */
+function BaseSplit({ outcome: o }: { outcome: Outcome }) {
+    const { projectionPerGame: proj, formMean: form } = o.drivers;
+    const w = o.formWeight;
+
+    // Only one of the two, or neither, means there is no blend to explain.
+    if (proj == null || form == null) {
+        const only = proj ?? form;
+        if (only == null) return null;
+        return (
+            <p className="text-[10px] text-muted-foreground/45 leading-snug">
+                {proj != null
+                    ? `${only.toFixed(1)} a game from the preseason projection — `
+                      + 'no games logged this season yet to weigh against it.'
+                    : `${only.toFixed(1)} a game from his own logs; no preseason `
+                      + 'projection to blend with.'}
+            </p>
+        );
+    }
+
+    const pct = Math.round(w * 100);
+    return (
+        <p className="text-[10px] text-muted-foreground/45 leading-snug">
+            <span className="font-semibold text-muted-foreground/65">Base:</span>{' '}
+            <span className="tabular-nums">{pct}%</span> what he has done this
+            season (<span className="tabular-nums">{form.toFixed(1)}</span> a game),{' '}
+            <span className="tabular-nums">{100 - pct}%</span> the preseason
+            projection (<span className="tabular-nums">{proj.toFixed(1)}</span>).
+            {' '}The weight moves with games played, so early in a year the
+            projection still carries most of it.
+        </p>
     );
 }
