@@ -6,6 +6,7 @@ import type { GameLog } from '@/app/api/redraft/startsit/route';
 import { WhyBars, WhyBarsProps } from './WhyBars';
 import { UsageStrip } from './UsageStrip';
 import { GameLogTable } from './GameLogTable';
+import { SplitsPanel } from './SplitsPanel';
 
 /**
  * One player's week, at one depth, wherever they appear.
@@ -18,6 +19,10 @@ import { GameLogTable } from './GameLogTable';
  */
 export interface PlayerDetailProps {
     outcome: Outcome;
+    /** This week's opponent, for the head-to-head split. */
+    opponent?: string | null;
+    /** Which season counts as "this" one. */
+    season?: number;
     context?: WhyBarsProps['context'];
     logs?: GameLog[];
     position?: string | null;
@@ -27,6 +32,7 @@ export interface PlayerDetailProps {
 
 export function PlayerDetail({
     outcome, context, logs = [], position, stacked = false,
+    opponent, season,
 }: PlayerDetailProps) {
     return (
         <div className={stacked
@@ -37,6 +43,14 @@ export function PlayerDetail({
                 and "his carries are down six" are two halves of one
                 question. */}
             <UsageStrip logs={logs} position={position} />
+            {/* The arithmetic between the summary and the log: what he has
+                done lately, what he did last year, and what happened the last
+                time he played these people. */}
+            <div className={stacked ? '' : 'lg:col-span-2'}>
+                <SplitsPanel logs={logs}
+                    opponent={opponent ?? context?.opponent ?? null}
+                    season={season ?? new Date().getFullYear()} />
+            </div>
             {/* The rows every summary above is a compression of. Folded away,
                 because most weeks the summary is enough and the moment it is
                 not is the moment you want all of them. */}

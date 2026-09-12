@@ -30,7 +30,12 @@ for (const f of files) {
     let text;
     try { text = readFileSync(f, 'utf8'); } catch { continue; }
     for (const [re, why] of BAD) {
-        const line = text.split('\n').findIndex(l => re.test(l));
+        // A path in prose is documentation — this file's own comment quotes
+        // the import that broke the build — while a path in code is the bug.
+        // Comment and markdown lines are described, not executed.
+        const isProse = (l) => /^\s*(\*|\/\/|#|--|>)/.test(l);
+        const line = text.split('\n')
+            .findIndex(l => re.test(l) && !isProse(l));
         if (line >= 0) {
             console.log(`  FAIL ${f}:${line + 1}  ${why}`);
             console.log(`       ${text.split('\n')[line].trim().slice(0, 100)}`);

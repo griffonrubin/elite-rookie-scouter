@@ -120,7 +120,25 @@ const rowCount = await panel.locator('table tbody tr').count();
 console.log('      box score rows:', rowCount);
 assert('several games listed', rowCount >= 5, String(rowCount));
 
-step(5, 'data points name themselves on hover');
+step(5, 'the splits do the arithmetic off the log');
+// Two panels by design — the starter's and the candidate's — so take the
+// first and assert separately that the candidate got one of its own.
+const splitPanels = panel.locator('h4:text-is("Splits")');
+assert('the candidate gets its own splits, not just the starter',
+    await splitPanels.count() >= 2, `${await splitPanels.count()} panels`);
+const sp = await splitPanels.first().locator('xpath=../..').innerText();
+console.log('      ' + sp.replace(/\n+/g, ' | ').slice(0, 200));
+assert('recent form is averaged', /Last 3[\s\S]*Last 5/.test(sp));
+assert('both seasons are named', /2026[\s\S]*2025|2025[\s\S]*2026/.test(sp));
+assert('the baseline is stated', /across all \d+/.test(sp), (sp.match(/across all \d+/)||[])[0]);
+// An average over one game is not a rate, and a season with no games yet is
+// not a zero — the panel has to say so rather than print a number.
+assert('a season with no games shows no number', /2026\s*—/.test(sp));
+assert('the head-to-head is named or absent honestly',
+    /vs [A-Z]{2,3}/.test(sp) && /(never faced them|in 20\d\d week \d+)/.test(sp),
+    (sp.match(/vs [A-Z]{2,3}[\s\S]{0,60}/)||[])[0]?.replace(/\n/g,' '));
+
+step(6, 'data points name themselves on hover');
 // The dots are SVG circles now, not positioned spans, so the game name is a
 // <title> child rather than a title attribute — one strip used to be twenty
 // elements each carrying a box-shadow, and there are thirty of them.
@@ -133,7 +151,7 @@ const tip = await panel.innerText();
 assert('hovering names it on the page too', /pts ·/.test(tip),
     (tip.match(/[\d.]+ pts · [^\n]*/) || [])[0] ?? '(no tooltip rendered)');
 
-step(6, 'nothing blew up');
+step(7, 'nothing blew up');
 assert('no page errors', errs.length === 0, errs.slice(0,2).join(' | '));
 const o = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
 assert('no overflow', o.sw <= o.cw, JSON.stringify(o));

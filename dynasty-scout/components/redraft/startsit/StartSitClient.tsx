@@ -563,6 +563,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                         }}
                         showCall={!bestBall}
                         contextOf={contextFor}
+                        season={SEASON}
                         logsOf={id => data.get(id)?.logs ?? []}
                         selected={preview}
                         onSelect={(index, playerId) =>
@@ -588,7 +589,8 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                         outcome={outcomeFor(p).outcome}
                                         context={contextFor(p.id)}
                                         logs={data.get(p.id)?.logs ?? []}
-                                        position={p.position ?? null} />
+                                        position={p.position ?? null}
+                                        season={SEASON} />
                                 </SwapPreview>
                             );
                         }}
@@ -617,7 +619,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                     openId={openBench} onOpen={setOpenBench}
                     detailFor={p => <PlayerDetail outcome={outcomeFor(p).outcome}
                         context={contextFor(p.id)} logs={data.get(p.id)?.logs ?? []}
-                        position={p.position ?? null} stacked />}
+                        position={p.position ?? null} season={SEASON} stacked />}
                     onCompare={id => setCompare(c => c && c[0] !== id ? [c[0], id] : [id, c?.[1] ?? id])} />
                 <Roster title={`${league.opponent.team?.name ?? 'Opponent'} starts`}
                     players={league.opponent.starters}
@@ -625,7 +627,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                     openId={openOpp} onOpen={setOpenOpp}
                     detailFor={p => <PlayerDetail outcome={outcomeFor(p).outcome}
                         context={contextFor(p.id)} logs={data.get(p.id)?.logs ?? []}
-                        position={p.position ?? null} stacked />}
+                        position={p.position ?? null} season={SEASON} stacked />}
                     onCompare={id => setCompare(c => c && c[0] !== id ? [c[0], id] : [id, c?.[1] ?? id])} />
             </div>
 

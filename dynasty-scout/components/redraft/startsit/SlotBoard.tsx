@@ -54,6 +54,8 @@ export interface SlotBoardProps {
     contextOf?: (id: number) => WhyBarsProps['context'];
     /** Per-game usage, which leads the points the projection is built on. */
     logsOf?: (id: number) => import('@/app/api/redraft/startsit/route').GameLog[];
+    /** The season "this year" means, rather than whatever the clock says. */
+    season?: number;
     /** Which candidate is being looked at, and how to change that. */
     selected?: { index: number; playerId: number } | null;
     onSelect?: (index: number, playerId: number | null) => void;
@@ -66,7 +68,7 @@ export interface SlotBoardProps {
 
 export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
     showCall = true, contextOf, logsOf, selected, onSelect,
-    renderPreview }: SlotBoardProps) {
+    renderPreview, season }: SlotBoardProps) {
     const [open, setOpen] = useState<number | null>(null);
 
     return (
@@ -170,7 +172,8 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
                                         <PlayerDetail outcome={o.outcome}
                                             context={contextOf?.(d.currentId)}
                                             logs={logsOf?.(d.currentId) ?? []}
-                                            position={cur?.position ?? null} />
+                                            position={cur?.position ?? null}
+                                            season={season} />
                                     </div>
                                 )}
                                 <Candidates d={d} playerOf={playerOf} outcomeOf={outcomeOf}
