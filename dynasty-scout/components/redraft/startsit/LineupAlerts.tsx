@@ -2,9 +2,25 @@
 
 import React from 'react';
 import { AlertTriangle, ArrowRight } from 'lucide-react';
+import { formatDelta } from '@/lib/lineup';
 import { Outcome } from '@/lib/startSit';
 import { RedraftPlayer } from '@/lib/types';
-import { SwapRow } from './SwapBars';
+/**
+ * A replacement, in the two currencies the page argues in.
+ *
+ * This lived in SwapBars, which was the old ranked-swap list. The list was
+ * replaced by the slot board and the component stopped being rendered, but
+ * the file survived as a place to keep this type. It belongs with the alert
+ * that is now its only consumer.
+ */
+export interface SwapRow {
+    inId: number;
+    outId: number;
+    inName: string;
+    outName: string;
+    deltaWinProb: number;
+    deltaPoints: number;
+}
 
 /**
  * The question someone opens this page to answer on a Sunday morning.
@@ -27,23 +43,29 @@ export interface LineupProblem {
     fix?: SwapRow;
 }
 
+/**
+ * Takes the replacement rather than working it out.
+ *
+ * This used to be handed every legal swap in the lineup, which meant a full
+ * simulation of nine starters against nine opponents for each of roughly
+ * twenty-five bench-and-starter pairs — 445ms, the single most expensive
+ * thing the page did — to answer one question about at most two players.
+ * The slot board already ranks each slot's candidates, so the caller can
+ * hand over the answer for a tenth of the work.
+ */
 export function findProblems(
     starters: RedraftPlayer[],
     outcomeOf: (p: RedraftPlayer) => Outcome,
-    swaps: SwapRow[],
+    fixFor: (playerId: number) => SwapRow | undefined,
 ): LineupProblem[] {
     const out: LineupProblem[] = [];
     for (const p of starters) {
         const o = outcomeOf(p);
         const reason = o.onBye ? 'on bye'
-            : o.playProbability === 0 ? `ruled out${o.availability ? '' : ''}`
+            : o.playProbability === 0 ? 'ruled out'
             : null;
         if (!reason) continue;
-        // The best swap that replaces this exact player, which is already
-        // ranked by what it does to the win probability.
-        const fix = swaps.filter(s => s.outId === p.id)
-            .sort((a, b) => b.deltaWinProb - a.deltaWinProb)[0];
-        out.push({ player: p, reason, fix });
+        out.push({ player: p, reason, fix: fixFor(p.id) });
     }
     return out;
 }
@@ -78,14 +100,14 @@ export function LineupAlerts({ problems, onPick }: {
                             <button type="button" onClick={() => onPick?.(fix)}
                                 className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded
                                            bg-white/[0.06] hover:bg-white/[0.12] transition-colors"
-                                title={`Start ${fix.inName} instead — `
-                                    + `${fix.deltaWinProb >= 0 ? '+' : ''}${fix.deltaWinProb} `
-                                    + `points of win probability`}>
+                                title={`Start ${fix.inName} instead — worth `
+                                    + `${formatDelta(fix.deltaWinProb)} points of win `
+                                    + `probability`}>
                                 <ArrowRight className="w-3 h-3 text-muted-foreground/60"
                                     aria-hidden="true" />
                                 <span className="font-semibold">{fix.inName}</span>
                                 <span className="tabular-nums text-muted-foreground/70">
-                                    {fix.deltaWinProb >= 0 ? '+' : ''}{fix.deltaWinProb.toFixed(1)}
+                                    {formatDelta(fix.deltaWinProb)}
                                 </span>
                             </button>
                         ) : (

@@ -6,7 +6,7 @@
  * both are pinned here rather than eyeballed in the UI.
  */
 import { eligibleForSlot, normaliseSlot, optimalLineup, rankSlots, resolveConflicts } from '../lib/lineup';
-import { SimPlayer } from '../lib/startSit';
+import { simulateMatchup, SimPlayer, slotWinProbs } from '../lib/startSit';
 
 const fails: string[] = [];
 const check = (label: string, got: unknown, want: unknown) => {
@@ -76,6 +76,31 @@ console.log(`   after resolving,     ${wantSame} of 2 do`);
 check('only one slot is told to start him', wantSame <= 1, true);
 check('the other slot re-reads without him',
     fixed.every(x => x.candidates.filter(c => c.playerId === 7).length <= 1), true);
+
+console.log('\n== pooled draws agree with simulating each candidate ==');
+{
+    // The optimisation has to be a speed change and nothing else: the same
+    // ranking, and win probabilities inside Monte Carlo noise of the old
+    // per-candidate runs. Pooling shares the randomness across candidates,
+    // so the differences should be tighter, never different in sign.
+    const others = [mk(101, 14, 6), mk(102, 11, 5), mk(103, 9, 4)];
+    const opp = [mk(201, 13, 6), mk(202, 12, 5), mk(203, 10, 4)];
+    const cands = [mk(301, 15, 7), mk(302, 12, 5), mk(303, 6, 3)];
+
+    const pooled = slotWinProbs(others, cands, opp, 20000, 7);
+    const apiece = cands.map(c =>
+        simulateMatchup([...others, c], opp, 20000, 7).winProb);
+
+    const worst = Math.max(...pooled.map((p, i) => Math.abs(p - apiece[i])));
+    console.log('   pooled  ', pooled.map(p => p.toFixed(3)).join('  '));
+    console.log('   apiece  ', apiece.map(p => p.toFixed(3)).join('  '));
+    check('within Monte Carlo noise of each other', worst < 0.02, true);
+    // Order is what the board actually shows, so it has to be identical.
+    const rank = (xs: number[]) => xs.map((_, i) => i)
+        .sort((a, b) => xs[b] - xs[a]).join(',');
+    check('the ranking is the same', rank(pooled) === rank(apiece), true);
+    check('the best candidate still wins most', pooled[0] === Math.max(...pooled), true);
+}
 
 console.log('\n== optimal lineup ==');
 const opt = optimalLineup(d);

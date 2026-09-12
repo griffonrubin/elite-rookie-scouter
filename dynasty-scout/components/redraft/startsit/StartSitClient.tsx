@@ -4,17 +4,20 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { RedraftPlayer } from '@/lib/types';
 import { useLeagueSync } from '@/lib/useLeagueSync';
 import {
-    buildOutcome, Outcome, rankSwaps, simulateMatchup, SimPlayer, usableSample,
+    beatsProbability, buildOutcome, Outcome, simulateMatchup, SimPlayer,
+    usableSample,
 } from '@/lib/startSit';
 import { POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
-import { SwapBars, SwapRow } from './SwapBars';
-import { findProblems, LineupAlerts } from './LineupAlerts';
+import { findProblems, LineupAlerts, SwapRow } from './LineupAlerts';
 import { SlotBoard } from './SlotBoard';
 import { MatchupChart } from './MatchupChart';
-import { optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
+import { formatDelta, optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
 import { LeagueConnect } from './LeagueConnect';
+import { SwapPreview } from './SwapPreview';
+import { PlayerDetail } from './PlayerDetail';
+import { MatchupBySlot, SlotPair } from './MatchupBySlot';
 import { HeadToHead } from './HeadToHead';
 import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
 
@@ -72,6 +75,18 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         return () => { cancelled = true; };
     }, [needed.join(','), league.week]);   // eslint-disable-line react-hooks/exhaustive-deps
 
+    /**
+     * Whether the week's data has arrived.
+     *
+     * `data` starts empty, so every simulation on this page used to run once
+     * against nothing — no logs, no lines, no injury report — produce a set
+     * of meaningless outcomes, render the whole board from them, and then do
+     * it all again when the fetch landed. A third of the wait was spent
+     * computing an answer that was always going to be thrown away, and for a
+     * moment the board showed it.
+     */
+    const ready = needed.length === 0 || data.size > 0;
+
     const outcomeFor = useMemo(() => {
         const cache = new Map<number, { outcome: Outcome; sample: SampleGame[] }>();
         return (p: RedraftPlayer) => {
@@ -125,32 +140,33 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
 
     // The simulator resamples points and has no use for which game each came
     // from; the strip is the other way round. Same games, two shapes.
-    const sim = (p: RedraftPlayer): SimPlayer => {
-        const { outcome, sample } = outcomeFor(p);
-        return { outcome, sample: sample.map(g => g.points) };
-    };
+    /**
+     * A player's simulation input, built once.
+     *
+     * This was a plain function, so every call allocated a fresh points
+     * array — and it is called for each of nine players for each candidate
+     * for each slot, on top of every `.map(sim)` across five other memos.
+     * The outcome behind it was already cached; the array was not.
+     */
+    const sim = useMemo(() => {
+        const cache = new Map<number, SimPlayer>();
+        return (p: RedraftPlayer): SimPlayer => {
+            const hit = cache.get(p.id);
+            if (hit) return hit;
+            const { outcome, sample } = outcomeFor(p);
+            const made = { outcome, sample: sample.map(g => g.points) };
+            cache.set(p.id, made);
+            return made;
+        };
+    }, [outcomeFor]);
 
     const matchup = useMemo(() => {
+        if (!ready) return null;
         if (league.me.starters.length === 0 || league.opponent.starters.length === 0) return null;
         return simulateMatchup(
             league.me.starters.map(sim), league.opponent.starters.map(sim), 20000, 11,
             { bins: 40 });
-    }, [league.me.starters, league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
-
-    const swaps: SwapRow[] = useMemo(() => {
-        if (!matchup || league.me.bench.length === 0) return [];
-        const starters = league.me.starters;
-        const bench = league.me.bench;
-        const verdicts = rankSwaps(
-            starters.map(sim), bench.map(sim), league.opponent.starters.map(sim),
-            (b, s) => canFill(bench[b].position ?? '', starters[s].position ?? '', true),
-            6000);
-        const name = (id: number) =>
-            [...starters, ...bench].find(p => p.id === id)?.full_name ?? String(id);
-        return verdicts.slice(0, 12).map(v => ({
-            ...v, inName: name(v.inId), outName: name(v.outId),
-        }));
-    }, [matchup, league.me.starters, league.me.bench, league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
+    }, [ready, league.me.starters, league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     /**
      * The lineup as slots, which is how it is actually set.
@@ -160,6 +176,32 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
      * starters' own positions stand in, with the last one treated as a flex,
      * which is wrong less often than refusing to show anything.
      */
+    /**
+     * A side's lineup as slots, from whatever the platform reported.
+     *
+     * Both sides need this now: the opponent's lineup pairs with yours slot
+     * for slot — same league, same roster_positions — and that pairing is
+     * what turns one aggregate matchup into the nine small contests it
+     * actually is.
+     */
+    const resolveSlots = React.useCallback((
+        team: typeof league.me.team, roster: RedraftPlayer[],
+    ) => {
+        const byPlatformId = new Map(roster.map(p => [
+            String(league.connection?.platform === 'espn' ? p.espn_nfl_id : p.sleeper_id), p]));
+        const reported = team?.lineupSlots;
+        if (reported?.length) {
+            return reported.map(r => ({
+                slot: r.slot,
+                playerId: r.playerId ? byPlatformId.get(String(r.playerId))?.id ?? null : null,
+            }));
+        }
+        return roster.map((p, i) => ({
+            slot: i === roster.length - 1 ? 'FLEX' : (p.position ?? 'FLEX').toUpperCase(),
+            playerId: p.id,
+        }));
+    }, [league.connection?.platform]);
+
     const slotLineup = useMemo(() => {
         const reported = league.me.team?.lineupSlots;
         const byPlatformId = new Map(league.me.starters.map(p => [
@@ -188,6 +230,24 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
      */
     const bestBall = league.snapshot?.bestBall === true;
 
+    /** Which candidate is open for inspection, and in which slot. */
+    const [preview, setPreview] = useState<{ index: number; playerId: number } | null>(null);
+    const [openBench, setOpenBench] = useState<number | null>(null);
+    const [openOpp, setOpenOpp] = useState<number | null>(null);
+
+    /** The week's evidence for one player, in one place rather than four. */
+    const contextFor = (id: number) => {
+        const d = data.get(id);
+        return {
+            opponent: d?.opponent ?? null,
+            impliedTeamTotal: d?.implied_team_total ?? null,
+            spread: d?.spread ?? null,
+            defenseAllowed: d?.def_allowed ?? null,
+            defenseLeagueAvg: d?.def_league_avg ?? null,
+            defenseSample: d?.def_sample ?? null,
+        };
+    };
+
     const decisions: SlotDecision[] = useMemo(() => {
         if (!matchup || slotLineup.length === 0) return [];
         const all = [...league.me.starters, ...league.me.bench];
@@ -207,6 +267,30 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     }, [matchup, slotLineup, league.me.bench, league.opponent.starters, data, bestBall]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     /**
+     * The replacement for a starter who cannot play, from the slot board.
+     *
+     * This was its own engine — rankSwaps over every bench-and-starter pair,
+     * a full lineup simulation each, 445ms of the page's compute — feeding
+     * one alert about at most two players. The board already ranks every
+     * slot's candidates by the same measure, so the answer was being
+     * computed twice and the expensive copy thrown away.
+     */
+    const fixFor = React.useCallback((playerId: number): SwapRow | undefined => {
+        const d = decisions.find(x => x.currentId === playerId);
+        const best = d?.candidates.find(c => !c.current);
+        if (!d || !best) return undefined;
+        const all = [...league.me.starters, ...league.me.bench];
+        const inP = all.find(p => p.id === best.playerId);
+        const outP = all.find(p => p.id === playerId);
+        if (!inP || !outP) return undefined;
+        return {
+            inId: inP.id, outId: outP.id,
+            inName: inP.full_name, outName: outP.full_name,
+            deltaWinProb: best.deltaWinProb, deltaPoints: best.deltaPoints,
+        };
+    }, [decisions, league.me.starters, league.me.bench]);
+
+    /**
      * The lineup the simulation would set, and what it is worth.
      *
      * The single most useful number on the page is not your win probability —
@@ -223,7 +307,15 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         const lineup = ids.filter((id): id is number => id != null)
             .map(id => sim(byId.get(id)!));
         if (lineup.length === 0) return null;
-        const prob = simulateMatchup(lineup, league.opponent.starters.map(sim), 20000, 11).winProb;
+        // Most weeks the best lineup is the one already set, and simulating
+        // it again is twenty thousand trials to re-derive a number that is
+        // already on screen — same players, same opponent, same seed, so
+        // necessarily the same answer.
+        const unchanged = ids.length === decisions.length
+            && ids.every((id, i) => id === decisions[i].currentId);
+        const prob = unchanged
+            ? matchup.winProb
+            : simulateMatchup(lineup, league.opponent.starters.map(sim), 20000, 11).winProb;
         const changes = decisions
             .map(d => ({ d, to: chosen.get(d.index) ?? null }))
             .filter(c => c.to != null && c.to !== c.d.currentId)
@@ -236,6 +328,58 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
             }));
         return { prob, changes, gain: Math.round((prob - matchup.winProb) * 1000) / 10 };
     }, [matchup, decisions, league.me.starters, league.me.bench, league.opponent.starters]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+    /**
+     * The matchup with one slot's occupant replaced.
+     *
+     * Same opponent, same trial count, same seed as the headline, so the
+     * difference between the two numbers is the swap rather than the dice.
+     */
+    const previewSim = useMemo(() => {
+        if (!preview || !matchup || slotLineup.length === 0) return null;
+        const all = [...league.me.starters, ...league.me.bench];
+        const byId = new Map(all.map(p => [p.id, p]));
+        const ids = slotLineup.map((s, i) =>
+            i === preview.index ? preview.playerId : s.playerId);
+        const lineup = ids
+            .filter((id): id is number => id != null && byId.has(id))
+            .map(id => sim(byId.get(id)!));
+        if (lineup.length === 0) return null;
+        return simulateMatchup(lineup, league.opponent.starters.map(sim), 20000, 11,
+            { bins: 40 });
+    }, [preview, matchup, slotLineup, league.me.starters, league.me.bench,
+        league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+    /**
+     * Your lineup against theirs, one slot at a time.
+     *
+     * `beatsProbability` per pair rather than a points gap alone: a
+     * four-point edge between two steady players is nearly settled and the
+     * same edge between two spiky ones is not, and the gap cannot tell them
+     * apart.
+     */
+    const slotPairs: SlotPair[] = useMemo(() => {
+        if (!ready) return [];
+        const oppSlots = resolveSlots(league.opponent.team, league.opponent.starters);
+        if (slotLineup.length === 0 || oppSlots.length === 0) return [];
+        const all = [...league.me.starters, ...league.me.bench, ...league.opponent.starters];
+        const byId = new Map(all.map(p => [p.id, p]));
+        const look = (id: number | null) => (id != null ? byId.get(id) ?? null : null);
+        return slotLineup.map((s, i) => {
+            const mineP = look(s.playerId);
+            const theirsP = look(oppSlots[i]?.playerId ?? null);
+            const mineO = mineP ? outcomeFor(mineP).outcome : null;
+            const theirsO = theirsP ? outcomeFor(theirsP).outcome : null;
+            return {
+                slot: s.slot,
+                mine: { player: mineP, outcome: mineO },
+                theirs: { player: theirsP, outcome: theirsO },
+                beats: mineP && theirsP
+                    ? beatsProbability(sim(mineP), sim(theirsP), 3000, 17) : null,
+            };
+        });
+    }, [ready, slotLineup, league.opponent.team, league.opponent.starters,
+        league.me.starters, league.me.bench, resolveSlots, data]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     const axisMax = useMemo(() => {
         const all = [...league.me.starters, ...league.me.bench].map(p => outcomeFor(p).outcome.ceiling);
@@ -256,7 +400,8 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                 Silent in best ball, where every problem it would name is one
                 the platform resolves for you. */}
             {!bestBall && <LineupAlerts
-                problems={findProblems(league.me.starters, p => outcomeFor(p).outcome, swaps)}
+                problems={findProblems(league.me.starters,
+                    p => outcomeFor(p).outcome, fixFor)}
                 onPick={r => setCompare([r.inId, r.outId])} />}
 
             {/* ── the headline: one number, no chart ── */}
@@ -323,7 +468,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                                     {Math.round(best.prob * 1000) / 10}%
                                                 </span>
                                                 <span className="text-muted-foreground/60">
-                                                    {' '}— {best.gain > 0 ? `+${best.gain}` : best.gain} from
+                                                    {' '}— {formatDelta(best.gain)} from
                                                     {best.changes.length === 1 ? ' one change' : ` ${best.changes.length} changes`}
                                                 </span>
                                             </p>
@@ -417,21 +562,45 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                     sample: [] };
                         }}
                         showCall={!bestBall}
-                        contextOf={id => {
-                            const d = data.get(id);
-                            return {
-                                opponent: d?.opponent ?? null,
-                                impliedTeamTotal: d?.implied_team_total ?? null,
-                                spread: d?.spread ?? null,
-                                defenseAllowed: d?.def_allowed ?? null,
-                                defenseLeagueAvg: d?.def_league_avg ?? null,
-                                defenseSample: d?.def_sample ?? null,
-                            };
-                        }}
+                        contextOf={contextFor}
+                        season={SEASON}
                         logsOf={id => data.get(id)?.logs ?? []}
+                        selected={preview}
+                        onSelect={(index, playerId) =>
+                            setPreview(playerId == null ? null : { index, playerId })}
+                        renderPreview={(index, playerId) => {
+                            const all = [...league.me.starters, ...league.me.bench];
+                            const p = all.find(x => x.id === playerId);
+                            const d = decisions.find(x => x.index === index);
+                            const outId = d?.currentId ?? null;
+                            const out = outId != null
+                                ? all.find(x => x.id === outId) : undefined;
+                            if (!p || !matchup || !previewSim) return null;
+                            return (
+                                <SwapPreview
+                                    inName={p.full_name}
+                                    outName={out?.full_name ?? null}
+                                    before={matchup} after={previewSim}
+                                    mineLabel={league.me.team?.name ?? 'You'}
+                                    theirsLabel={league.opponent.team?.name ?? 'Them'}
+                                    onFullCompare={outId != null
+                                        ? () => setCompare([playerId, outId]) : undefined}>
+                                    <PlayerDetail
+                                        outcome={outcomeFor(p).outcome}
+                                        context={contextFor(p.id)}
+                                        logs={data.get(p.id)?.logs ?? []}
+                                        position={p.position ?? null}
+                                        season={SEASON} />
+                                </SwapPreview>
+                            );
+                        }}
                         onCompare={(a, b) => setCompare([a, b])} />
                 </section>
             </div>
+
+            {/* Where the week is won, before the rosters that might change it. */}
+            <MatchupBySlot pairs={slotPairs}
+                onPick={(a, b) => setCompare([a, b])} />
 
             {/* ── the lineup itself ──
                 The opponent sits beside your own two panels rather than behind
@@ -447,10 +616,18 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                     the first one had not. */}
                 <Roster title="Your bench" players={league.me.bench}
                     outcomeFor={outcomeFor} max={axisMax} series="b"
+                    openId={openBench} onOpen={setOpenBench}
+                    detailFor={p => <PlayerDetail outcome={outcomeFor(p).outcome}
+                        context={contextFor(p.id)} logs={data.get(p.id)?.logs ?? []}
+                        position={p.position ?? null} season={SEASON} stacked />}
                     onCompare={id => setCompare(c => c && c[0] !== id ? [c[0], id] : [id, c?.[1] ?? id])} />
                 <Roster title={`${league.opponent.team?.name ?? 'Opponent'} starts`}
                     players={league.opponent.starters}
                     outcomeFor={outcomeFor} max={axisMax} series="context"
+                    openId={openOpp} onOpen={setOpenOpp}
+                    detailFor={p => <PlayerDetail outcome={outcomeFor(p).outcome}
+                        context={contextFor(p.id)} logs={data.get(p.id)?.logs ?? []}
+                        position={p.position ?? null} season={SEASON} stacked />}
                     onCompare={id => setCompare(c => c && c[0] !== id ? [c[0], id] : [id, c?.[1] ?? id])} />
             </div>
 
@@ -473,13 +650,26 @@ const AVAILABILITY_TOKEN: Record<string, string> = {
     'No practice': 'DNP', Limited: 'LTD',
 };
 
-function Roster({ title, players, outcomeFor, max, series, onCompare }: {
+/**
+ * A panel of players, each of which opens.
+ *
+ * Rows here looked clickable and were: clicking jumped straight into a
+ * two-player comparison, which is a different question from "what is this
+ * guy's week?". The receiver on the other side of the matchup decides your
+ * week as much as anyone on your own bench, and until now the page had a
+ * full account of him nowhere.
+ */
+function Roster({ title, players, outcomeFor, max, series, onCompare,
+    detailFor, openId, onOpen }: {
     title: string;
     players: RedraftPlayer[];
     outcomeFor: (p: RedraftPlayer) => { outcome: Outcome; sample: SampleGame[] };
     max: number;
     series: 'a' | 'b' | 'context';
     onCompare: (id: number) => void;
+    detailFor?: (p: RedraftPlayer) => React.ReactNode;
+    openId?: number | null;
+    onOpen?: (id: number | null) => void;
 }) {
     return (
         <section className="rounded-xl border border-white/[0.07] p-4"
@@ -508,7 +698,10 @@ function Roster({ title, players, outcomeFor, max, series, onCompare }: {
                 {players.map(p => {
                     const { outcome, sample } = outcomeFor(p);
                     return (
-                        <button key={p.id} type="button" onClick={() => onCompare(p.id)}
+                        <React.Fragment key={p.id}>
+                        <button type="button"
+                            aria-expanded={openId === p.id}
+                            onClick={() => onOpen?.(openId === p.id ? null : p.id)}
                             className="w-full grid items-center gap-x-2 gap-y-1
                                        grid-cols-[minmax(0,1fr)_auto]
                                        sm:grid-cols-[128px_minmax(0,1fr)_96px]
@@ -565,6 +758,18 @@ function Roster({ title, players, outcomeFor, max, series, onCompare }: {
                                 </>)}
                             </span>
                         </button>
+                        {openId === p.id && detailFor && (
+                            <div className="px-1.5 pb-2 pt-1">
+                                {detailFor(p)}
+                                <button type="button" onClick={() => onCompare(p.id)}
+                                    className="mt-2 text-[10px] text-muted-foreground/50
+                                               hover:text-foreground/80 underline
+                                               underline-offset-2">
+                                    Compare with someone
+                                </button>
+                            </div>
+                        )}
+                        </React.Fragment>
                     );
                 })}
             </div>

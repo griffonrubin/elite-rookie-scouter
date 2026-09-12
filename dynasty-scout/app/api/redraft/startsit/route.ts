@@ -42,6 +42,14 @@ export interface GameLog {
     wopr: number | null;
     receptions: number | null;
     pass_attempts: number | null;
+    /** The box score itself, so the points can be taken apart. */
+    rush_yards: number | null;
+    rush_tds: number | null;
+    rec_yards: number | null;
+    rec_tds: number | null;
+    pass_yards: number | null;
+    pass_tds: number | null;
+    interceptions: number | null;
 }
 
 export interface StartSitPlayer {
@@ -83,6 +91,44 @@ export interface StartSitPlayer {
     } | null;
 }
 
+
+/** One row per defence per position: what they give up, and over how many. */
+interface DefRow { defense: string; position: string; allowed: number; n: number }
+
+/**
+ * The defence-vs-position table, computed once rather than per request.
+ *
+ * What each defence allowed per player-game at each position, computed here
+ * rather than scraped: the weekly table already carries the opponent on
+ * every row, so this is the same games read from the other side. Last season
+ * only — a defence two games into a new year has told us almost nothing, and
+ * the model shrinks by sample size anyway.
+ *
+ * This one has no player filter — it aggregates the whole weekly table and
+ * comes back identical for every user, every roster and every slot, and it
+ * was being recomputed on each load. It only changes when the daily pass
+ * loads new weekly stats, so an hour is a conservative life for it: the
+ * numbers behind it are a season's worth of games, and the model shrinks
+ * them by sample size anyway.
+ */
+let defCache: { at: number; rows: DefRow[] } | null = null;
+const DEF_TTL_MS = 60 * 60 * 1000;
+
+async function defenceVsPosition(): Promise<DefRow[]> {
+    if (defCache && Date.now() - defCache.at < DEF_TTL_MS) return defCache.rows;
+    const rows = await query<{
+        defense: string; position: string; allowed: number; n: number;
+    }>(
+        `SELECT opponent AS defense, position,
+                AVG(fantasy_points_ppr) AS allowed, COUNT(*) AS n
+           FROM nfl_player_week
+          WHERE season = ${SEASON - 1} AND season_type = 'REG'
+            AND opponent IS NOT NULL AND fantasy_points_ppr IS NOT NULL
+          GROUP BY opponent, position`, []);
+    defCache = { at: Date.now(), rows };
+    return rows;
+}
+
 export async function GET(req: NextRequest) {
     const idsParam = req.nextUrl.searchParams.get('ids') ?? '';
     const week = Number(req.nextUrl.searchParams.get('week') ?? '1');
@@ -98,7 +144,7 @@ export async function GET(req: NextRequest) {
     const ph = ids.map((_, i) => `$${i + 1}`).join(',');
     // The same id list shifted by one, for queries that bind the week first.
     const ph2 = ids.map((_, i) => `$${i + 2}`).join(',');
-    const base = await query<{
+    const baseP = query<{
         id: number; slug: string; full_name: string;
         position: string | null; nfl_team: string | null; proj_points: number | null;
     }>(
@@ -118,36 +164,39 @@ export async function GET(req: NextRequest) {
     // Usage rides along, on the same rolling window rather than a season of
     // its own: usage is the leading indicator of a projection built on past
     // points, and one pinned to last season cannot lead anything by November.
-    const logs = await query<{
+    const logsP = query<{
         player_id: number; season: number; week: number;
         points: number; opponent: string | null;
         targets: number | null; carries: number | null;
         target_share: number | null; snap_share: number | null;
         wopr: number | null; receptions: number | null;
-        pass_attempts: number | null;
+        pass_attempts: number | null; rush_yards: number | null;
+        rush_tds: number | null; rec_yards: number | null; rec_tds: number | null;
+        pass_yards: number | null; pass_tds: number | null;
+        interceptions: number | null;
     }>(
         `SELECT player_id, season, week, fantasy_points_ppr AS points, opponent,
                 targets, carries, target_share, offense_pct AS snap_share, wopr,
-                receptions, pass_attempts
+                receptions, pass_attempts, rush_yards, rush_tds, rec_yards,
+                rec_tds, pass_yards, pass_tds, interceptions
            FROM nfl_player_week
           WHERE player_id IN (${ph}) AND season_type = 'REG'
             AND season >= ${SEASON - 2}
           ORDER BY season, week`, ids);
 
     // This week's line for every team, so a player's own row is a lookup.
-    const lines = await query<{
+    const linesP = query<{
         team: string; opponent: string; spread: number | null;
         implied_team_total: number | null;
     }>(
         `SELECT team, opponent, spread, implied_team_total
            FROM vegas_game_lines
           WHERE season = ${SEASON} AND week = $1`, [week]);
-    const lineByTeam = new Map(lines.map(l => [l.team.toUpperCase(), l]));
 
     // This week's prop market, newest scrape only. A player priced twice in a
     // week has moved, and the older number is history rather than an opinion
     // to average in.
-    const mkt = await query<{
+    const mktP = query<{
         player_id: number; ppr_points: number | null;
         markets_priced: number | null; books_priced: number | null;
     }>(
@@ -159,11 +208,10 @@ export async function GET(req: NextRequest) {
                                  WHERE player_id = m.player_id
                                    AND season = m.season AND week = m.week)`,
         [week, ...ids]);
-    const mktByPlayer = new Map(mkt.map(m => [m.player_id, m]));
 
     // This week's injury report. Most players are not on it at all, which is
     // the answer for them: silence means nobody has said otherwise.
-    const inj = await query<{
+    const injP = query<{
         player_id: number; report_status: string | null;
         practice_status: string | null; report_primary_injury: string | null;
     }>(
@@ -171,45 +219,12 @@ export async function GET(req: NextRequest) {
            FROM nfl_player_injury
           WHERE season = ${SEASON} AND week = $1 AND player_id IN (${ph2})`,
         [week, ...ids]);
-    const injByPlayer = new Map(inj.map(i => [i.player_id, i]));
 
-    // What each defence allowed per player-game at each position last season.
-    //
-    // Computed here rather than scraped: the weekly table already carries the
-    // opponent on every row, so this is the same games read from the other
-    // side. Last season only — a defence two games into a new year has told
-    // us almost nothing, and the model shrinks by sample size anyway.
-    const def = await query<{
-        defense: string; position: string; allowed: number; n: number;
-    }>(
-        `SELECT opponent AS defense, position,
-                AVG(fantasy_points_ppr) AS allowed, COUNT(*) AS n
-           FROM nfl_player_week
-          WHERE season = ${SEASON - 1} AND season_type = 'REG'
-            AND opponent IS NOT NULL AND fantasy_points_ppr IS NOT NULL
-          GROUP BY opponent, position`, []);
+    const defP = defenceVsPosition();
 
-    const defByKey = new Map(def.map(d =>
-        [`${d.defense.toUpperCase()}|${d.position}`, d]));
-    // The league average for a position, so a rate has something to be
-    // relative to. Weighted by player-games, which is what the cells are.
-    const leagueAvg = new Map<string, number>();
-    for (const d of def) {
-        const prev = leagueAvg.get(d.position);
-        const n = Number(d.n), a = Number(d.allowed);
-        leagueAvg.set(d.position, prev == null ? a * n : prev + a * n);
-    }
-    const leagueN = new Map<string, number>();
-    for (const d of def) {
-        leagueN.set(d.position, (leagueN.get(d.position) ?? 0) + Number(d.n));
-    }
-    for (const [pos, total] of leagueAvg) {
-        leagueAvg.set(pos, total / (leagueN.get(pos) || 1));
-    }
-
-    // Usage is averaged over the last full season rather than a career:
+    // Usage over the same rolling window as the logs rather than a career:
     // a role from two years ago is a different player's role.
-    const usageRows = await query<{
+    const usageRowsP = query<{
         player_id: number; games: number;
         tpg: number | null; cpg: number | null; tshare: number | null; wopr: number | null;
         snap: number | null;
@@ -232,6 +247,40 @@ export async function GET(req: NextRequest) {
           WHERE player_id IN (${ph}) AND season_type = 'REG'
             AND season >= ${SEASON - 2}
           GROUP BY player_id`, ids);
+    /**
+     * One round trip instead of seven.
+     *
+     * These were awaited one after another, which is free against local
+     * SQLite and the whole cost of the page against Postgres over a network:
+     * none of them depends on another's result — every one is keyed off the
+     * ids in the request — so the page was paying seven times the latency
+     * for no reason at all.
+     */
+    const [base, logs, lines, mkt, inj, def, usageRows] = await Promise.all(
+        [baseP, logsP, linesP, mktP, injP, defP, usageRowsP]);
+
+    const lineByTeam = new Map(lines.map(l => [l.team.toUpperCase(), l]));
+    const mktByPlayer = new Map(mkt.map(m => [m.player_id, m]));
+    const injByPlayer = new Map(inj.map(i => [i.player_id, i]));
+    const defByKey = new Map(def.map(d =>
+        [`${d.defense.toUpperCase()}|${d.position}`, d]));
+    // The league average for a position, so a rate has something to be
+    // relative to. Weighted by player-games, which is what the cells are.
+    const leagueAvg = new Map<string, number>();
+    for (const d of def) {
+        const prev = leagueAvg.get(d.position);
+        const n = Number(d.n), a = Number(d.allowed);
+        leagueAvg.set(d.position, prev == null ? a * n : prev + a * n);
+    }
+    const leagueN = new Map<string, number>();
+    for (const d of def) {
+        leagueN.set(d.position, (leagueN.get(d.position) ?? 0) + Number(d.n));
+    }
+    for (const [pos, total] of leagueAvg) {
+        leagueAvg.set(pos, total / (leagueN.get(pos) || 1));
+    }
+
+    // Usage is averaged over the last full season rather than a career:
     const usageByPlayer = new Map(usageRows.map(u => [u.player_id, u]));
 
     const logsByPlayer = new Map<number, GameLog[]>();
@@ -242,7 +291,10 @@ export async function GET(req: NextRequest) {
             targets: n(l.targets), carries: n(l.carries),
             target_share: n(l.target_share), snap_share: n(l.snap_share),
             wopr: n(l.wopr), receptions: n(l.receptions),
-            pass_attempts: n(l.pass_attempts),
+            pass_attempts: n(l.pass_attempts), rush_yards: n(l.rush_yards),
+            rush_tds: n(l.rush_tds), rec_yards: n(l.rec_yards),
+            rec_tds: n(l.rec_tds), pass_yards: n(l.pass_yards),
+            pass_tds: n(l.pass_tds), interceptions: n(l.interceptions),
         };
         const arr = logsByPlayer.get(l.player_id);
         if (arr) arr.push(row);

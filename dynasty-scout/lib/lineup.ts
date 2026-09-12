@@ -13,7 +13,7 @@
  * property worth having: a player is judged by what he does to your chances,
  * not by his projection.
  */
-import { beatsProbability, SimPlayer, simulateMatchup } from '@/lib/startSit';
+import { beatsProbability, SimPlayer, simulateMatchup, slotWinProbs } from '@/lib/startSit';
 
 /** Positions that can fill a FLEX in every common league shape. */
 const FLEX_ELIGIBLE: Record<string, Set<string>> = {
@@ -69,17 +69,47 @@ export interface SlotDecision {
      */
     gain: number;
     /**
-     * Whether the call is worth making. A tenth of a point of win probability
-     * is noise in a twelve-thousand-trial simulation, and telling someone to
-     * change their lineup over it would be worse than saying nothing.
+     * Whether the call is worth making. Anything inside the simulation's own
+     * noise — measured, not assumed; see NOISE_FLOOR — is not a difference,
+     * and telling someone to change their lineup over it would be worse than
+     * saying nothing.
      */
     verdict: 'set' | 'close' | 'change';
 }
 
-/** Below this the two lineups are the same lineup as far as anyone can tell. */
-export const NOISE_FLOOR = 0.3;
+/**
+ * How big a gap has to be before it means anything.
+ *
+ * These were guessed at 0.3 and 1.5, with a comment asserting that a tenth
+ * of a point was noise. Measured — scripts/noise_check.mts re-runs the same
+ * slot across eight seeds — the swing at 6000 trials is about 1.4 points of
+ * win probability. So the old floor sat nearly five times below the noise
+ * and the old "clear" margin sat right on it: slots were being flagged as
+ * worth changing on randomness, which is worse than saying nothing, and
+ * that is the one thing this board exists not to do.
+ *
+ * Raising them means fewer calls. That is the point. And it is why the
+ * trial count cannot simply be cut for speed: at 3000 the ranking itself
+ * stops being stable between seeds, so 6000 is a floor, not a luxury.
+ */
+export const NOISE_FLOOR = 1.4;
 /** Above this the choice is clear enough to state as one. */
-export const CLEAR_MARGIN = 1.5;
+export const CLEAR_MARGIN = 3;
+
+/**
+ * A win-probability delta, at the precision it actually has.
+ *
+ * The board used to print these to a tenth — "+2.1" — when re-running the
+ * same slot on a different seed moves it by more than a full point. The
+ * tenth was noise rendered as detail, and it is the same mistake as a
+ * decomposition that does not add up: every digit individually defensible,
+ * the whole thing overstating what is known. Whole points, and anything
+ * inside the floor says so in words instead of pretending to a number.
+ */
+export function formatDelta(pp: number): string {
+    if (Math.abs(pp) < NOISE_FLOOR) return 'about the same';
+    return `${pp > 0 ? '+' : '−'}${Math.abs(pp).toFixed(0)}`;
+}
 
 /**
  * Rank every eligible player for every slot.
@@ -116,13 +146,30 @@ export function rankSlots(
             continue;
         }
 
+        // The starters who are not in this slot, drawn once for the whole
+        // pool rather than once per candidate.
+        const othersIds = base.filter((id, j) => j !== i && id != null) as number[];
+
+        // A player already starting elsewhere cannot also fill this slot:
+        // putting them here empties the slot they came from rather than
+        // cloning them into two places. That candidate has a different set
+        // of "others", so it cannot share the pooled draws and is scored on
+        // its own — rare enough that the shared path still does the work.
+        const shared = pool.filter(id => !othersIds.includes(id));
+        const moved = pool.filter(id => othersIds.includes(id));
+
         const scored: SlotCandidate[] = [];
-        for (const id of pool) {
+        if (shared.length > 0) {
+            const probs = slotWinProbs(othersIds.map(simOf), shared.map(simOf),
+                opponent, trials, 7);
+            shared.forEach((id, k) => scored.push({
+                playerId: id, winProb: probs[k], deltaWinProb: 0,
+                current: id === currentId, deltaPoints: 0, beats: 0.5,
+            }));
+        }
+        for (const id of moved) {
             const ids = [...base];
             ids[i] = id;
-            // A player already starting elsewhere cannot also fill this slot,
-            // so putting them here empties the slot they came from rather
-            // than cloning them into two places at once.
             for (let j = 0; j < ids.length; j++) if (j !== i && ids[j] === id) ids[j] = null;
             const w = simulateMatchup(simLineup(ids), opponent, trials, 7).winProb;
             scored.push({
@@ -130,6 +177,9 @@ export function rankSlots(
                 deltaPoints: 0, beats: 0.5,
             });
         }
+        // Pool order decides which slot gets first refusal in
+        // resolveConflicts, so restore it after splitting the two paths.
+        scored.sort((a, b) => pool.indexOf(a.playerId) - pool.indexOf(b.playerId));
 
         const currentProb = scored.find(c => c.current)?.winProb
             ?? Math.min(...scored.map(c => c.winProb));
