@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { GameLog } from '@/app/api/redraft/startsit/route';
 import { CHART_INK, DIVERGING, MARK, SERIES } from '@/lib/vizTokens';
 
@@ -92,6 +92,7 @@ export function UsageStrip({ logs, position }: UsageStripProps) {
     // worse than showing nothing.
     if (!metrics) return null;
 
+    const [hover, setHover] = useState<string | null>(null);
     const window = logs.slice(-WINDOW);
     if (window.length < 3) {
         return (
@@ -115,6 +116,8 @@ export function UsageStrip({ logs, position }: UsageStripProps) {
     const rows = metrics.map(m => {
         const series = window.map(l => l[m.key]).filter((v): v is number => v != null);
         if (series.length < 3) return null;
+        // Keep the games beside their values, so a bar can name itself.
+        const games = window.filter(l => l[m.key] != null);
         const recent = series.slice(-RECENT);
         const before = series.slice(0, -RECENT);
         const now = mean(recent);
@@ -125,7 +128,7 @@ export function UsageStrip({ logs, position }: UsageStripProps) {
         const floor = m.kind === 'share' ? 0.04 : 0.8;
         const dir = delta == null || Math.abs(delta) < floor
             ? 0 : delta > 0 ? 1 : -1;
-        return { m, series, now, prior, delta, dir };
+        return { m, series, games, now, prior, delta, dir };
     }).filter((r): r is NonNullable<typeof r> => r !== null);
 
     if (rows.length === 0) return null;
@@ -143,7 +146,7 @@ export function UsageStrip({ logs, position }: UsageStripProps) {
             </div>
 
             <ul className="space-y-0.5">
-                {rows.map(({ m, series, now, prior, delta, dir }) => {
+                {rows.map(({ m, series, games, now, prior, delta, dir }) => {
                     const top = Math.max(...series, m.kind === 'share' ? 0.5 : 1);
                     return (
                         <li key={m.key}
@@ -163,20 +166,55 @@ export function UsageStrip({ logs, position }: UsageStripProps) {
                                 counts and shares for discrete games, and a
                                 line between them implies a value in between
                                 that never existed. */}
-                            <span className="flex items-end gap-px h-[14px]">
+                            <span className="relative flex items-end gap-px h-[14px]">
                                 {series.map((v, i) => {
                                     const recent = i >= series.length - RECENT;
+                                    const g = games[i];
+                                    const key = `${m.key}-${i}`;
                                     return (
-                                        <span key={i} className="flex-1 rounded-t-[1px]"
+                                        <span key={i}
+                                            className="flex-1 rounded-t-[1px] cursor-help"
+                                            onMouseEnter={() => setHover(key)}
+                                            onMouseLeave={() =>
+                                                setHover(h => (h === key ? null : h))}
+                                            title={`${g ? `Week ${g.week} ` : ''}`
+                                                + `${g?.opponent ? `vs ${g.opponent.toUpperCase()} ` : ''}`
+                                                + `— ${fmt(v, m.kind)}`}
                                             style={{
                                                 height: `${Math.max(8, (v / top) * 100)}%`,
                                                 background: recent
                                                     ? SERIES.a : CHART_INK.context,
+                                                opacity: hover === key ? 1 : 0.85,
                                                 marginRight: i === series.length - RECENT - 1
                                                     ? MARK.gap : undefined,
                                             }} />
                                     );
                                 })}
+                                {/* Which game, and what it was — a sparkline
+                                    that cannot name its own points is a
+                                    texture rather than data. */}
+                                {hover?.startsWith(`${m.key}-`) && (() => {
+                                    const i = Number(hover.split('-').pop());
+                                    const g = games[i];
+                                    if (series[i] == null) return null;
+                                    return (
+                                        <span className="absolute z-10 px-1.5 py-1 rounded-md
+                                                         text-[10px] whitespace-nowrap
+                                                         pointer-events-none font-semibold"
+                                            style={{
+                                                left: `${((i + 0.5) / series.length) * 100}%`,
+                                                bottom: '100%', marginBottom: 4,
+                                                transform: 'translateX(-50%)',
+                                                background: 'rgba(8,14,22,0.96)',
+                                                border: '1px solid rgba(255,255,255,0.12)',
+                                                color: 'rgba(255,255,255,0.86)',
+                                            }}>
+                                            {g ? `Wk ${g.week}` : `Game ${i + 1}`}
+                                            {g?.opponent ? ` vs ${g.opponent.toUpperCase()}` : ''}
+                                            {' · '}{fmt(series[i], m.kind)}
+                                        </span>
+                                    );
+                                })()}
                             </span>
 
                             <span className="text-[11px] font-semibold tabular-nums text-right">

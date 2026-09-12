@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { CHART_INK, MARK, SERIES } from '@/lib/vizTokens';
 import { Outcome } from '@/lib/startSit';
@@ -40,6 +40,11 @@ export interface OutcomeStripProps {
 export function OutcomeStrip({
     outcome, sample = [], max, series = 'a', label, compact = false,
 }: OutcomeStripProps) {
+    // A native title takes about a second to appear and arrives in the OS's
+    // own styling, which on a cloud of twenty dots means nobody ever reads
+    // one. The dots are the evidence behind every number on the page, so
+    // they get a real tooltip that shows up when the pointer does.
+    const [hover, setHover] = useState<number | null>(null);
     const colour = series === 'context' ? CHART_INK.context : SERIES[series];
     const pct = (v: number) => `${Math.max(0, Math.min(100, (v / max) * 100))}%`;
     const h = compact ? 26 : 34;
@@ -95,8 +100,10 @@ export function OutcomeStrip({
                 in a cloud. */}
             {sample.map((g, i) => (
                 <span key={i}
-                    className="absolute top-1/2 rounded-full"
+                    className="absolute top-1/2 rounded-full cursor-help"
                     title={gameLabel(g)}
+                    onMouseEnter={() => setHover(i)}
+                    onMouseLeave={() => setHover(h => (h === i ? null : h))}
                     style={{
                         left: pct(g.points),
                         width: MARK.dotRadius * 2,
@@ -104,12 +111,30 @@ export function OutcomeStrip({
                         marginLeft: -MARK.dotRadius,
                         marginTop: -MARK.dotRadius,
                         background: colour,
-                        opacity: 0.55,
                         // A ring in the surface colour keeps overlapping dots
                         // countable instead of merging into one blob.
                         boxShadow: `0 0 0 ${MARK.gap}px ${CHART_INK.surface}`,
+                        // The hovered dot lifts out of the cloud so it is
+                        // obvious which game the tooltip belongs to.
+                        opacity: hover === i ? 1 : 0.55,
+                        zIndex: hover === i ? 2 : undefined,
                     }} />
             ))}
+            {hover != null && sample[hover] && (
+                <span className="absolute z-10 px-1.5 py-1 rounded-md text-[10px]
+                                 whitespace-nowrap pointer-events-none font-semibold"
+                    style={{
+                        left: pct(sample[hover].points),
+                        bottom: '100%',
+                        transform: 'translateX(-50%)',
+                        marginBottom: 4,
+                        background: 'rgba(8,14,22,0.96)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        color: 'rgba(255,255,255,0.86)',
+                    }}>
+                    {gameLabel(sample[hover])}
+                </span>
+            )}
             {/* Doubt drawn as doubt.
                 A questionable starter is not a smaller player — he is this
                 player most weeks and an empty slot the rest. The bar is

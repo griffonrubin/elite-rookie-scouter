@@ -96,6 +96,10 @@ const SECTIONS: readonly Section[] = [
       { href: '/in-season/power',   label: 'Power Rankings', soon: true },
       { href: '/in-season/team',    label: 'Team Analysis',  soon: true },
       { href: '/in-season/trades',  label: 'Trade Analyzer', soon: true },
+      // Not a fantasy tool at all, but the same data answers it: the spread,
+      // the total and the de-vigged moneyline are already loaded for every
+      // game of every week.
+      { href: '/in-season/pickems',  label: "Pick'ems", soon: true },
     ],
   },
 ];

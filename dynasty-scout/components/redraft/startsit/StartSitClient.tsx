@@ -9,12 +9,14 @@ import {
 import { POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
-import { SwapBars, SwapRow } from './SwapBars';
+import { SwapRow } from './SwapBars';
 import { findProblems, LineupAlerts } from './LineupAlerts';
 import { SlotBoard } from './SlotBoard';
 import { MatchupChart } from './MatchupChart';
 import { optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
 import { LeagueConnect } from './LeagueConnect';
+import { SwapPreview } from './SwapPreview';
+import { PlayerDetail } from './PlayerDetail';
 import { HeadToHead } from './HeadToHead';
 import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
 
@@ -188,6 +190,24 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
      */
     const bestBall = league.snapshot?.bestBall === true;
 
+    /** Which candidate is open for inspection, and in which slot. */
+    const [preview, setPreview] = useState<{ index: number; playerId: number } | null>(null);
+    const [openBench, setOpenBench] = useState<number | null>(null);
+    const [openOpp, setOpenOpp] = useState<number | null>(null);
+
+    /** The week's evidence for one player, in one place rather than four. */
+    const contextFor = (id: number) => {
+        const d = data.get(id);
+        return {
+            opponent: d?.opponent ?? null,
+            impliedTeamTotal: d?.implied_team_total ?? null,
+            spread: d?.spread ?? null,
+            defenseAllowed: d?.def_allowed ?? null,
+            defenseLeagueAvg: d?.def_league_avg ?? null,
+            defenseSample: d?.def_sample ?? null,
+        };
+    };
+
     const decisions: SlotDecision[] = useMemo(() => {
         if (!matchup || slotLineup.length === 0) return [];
         const all = [...league.me.starters, ...league.me.bench];
@@ -236,6 +256,27 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
             }));
         return { prob, changes, gain: Math.round((prob - matchup.winProb) * 1000) / 10 };
     }, [matchup, decisions, league.me.starters, league.me.bench, league.opponent.starters]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+    /**
+     * The matchup with one slot's occupant replaced.
+     *
+     * Same opponent, same trial count, same seed as the headline, so the
+     * difference between the two numbers is the swap rather than the dice.
+     */
+    const previewSim = useMemo(() => {
+        if (!preview || !matchup || slotLineup.length === 0) return null;
+        const all = [...league.me.starters, ...league.me.bench];
+        const byId = new Map(all.map(p => [p.id, p]));
+        const ids = slotLineup.map((s, i) =>
+            i === preview.index ? preview.playerId : s.playerId);
+        const lineup = ids
+            .filter((id): id is number => id != null && byId.has(id))
+            .map(id => sim(byId.get(id)!));
+        if (lineup.length === 0) return null;
+        return simulateMatchup(lineup, league.opponent.starters.map(sim), 20000, 11,
+            { bins: 40 });
+    }, [preview, matchup, slotLineup, league.me.starters, league.me.bench,
+        league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     const axisMax = useMemo(() => {
         const all = [...league.me.starters, ...league.me.bench].map(p => outcomeFor(p).outcome.ceiling);
@@ -417,18 +458,36 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                     sample: [] };
                         }}
                         showCall={!bestBall}
-                        contextOf={id => {
-                            const d = data.get(id);
-                            return {
-                                opponent: d?.opponent ?? null,
-                                impliedTeamTotal: d?.implied_team_total ?? null,
-                                spread: d?.spread ?? null,
-                                defenseAllowed: d?.def_allowed ?? null,
-                                defenseLeagueAvg: d?.def_league_avg ?? null,
-                                defenseSample: d?.def_sample ?? null,
-                            };
-                        }}
+                        contextOf={contextFor}
                         logsOf={id => data.get(id)?.logs ?? []}
+                        selected={preview}
+                        onSelect={(index, playerId) =>
+                            setPreview(playerId == null ? null : { index, playerId })}
+                        renderPreview={(index, playerId) => {
+                            const all = [...league.me.starters, ...league.me.bench];
+                            const p = all.find(x => x.id === playerId);
+                            const d = decisions.find(x => x.index === index);
+                            const outId = d?.currentId ?? null;
+                            const out = outId != null
+                                ? all.find(x => x.id === outId) : undefined;
+                            if (!p || !matchup || !previewSim) return null;
+                            return (
+                                <SwapPreview
+                                    inName={p.full_name}
+                                    outName={out?.full_name ?? null}
+                                    before={matchup} after={previewSim}
+                                    mineLabel={league.me.team?.name ?? 'You'}
+                                    theirsLabel={league.opponent.team?.name ?? 'Them'}
+                                    onFullCompare={outId != null
+                                        ? () => setCompare([playerId, outId]) : undefined}>
+                                    <PlayerDetail
+                                        outcome={outcomeFor(p).outcome}
+                                        context={contextFor(p.id)}
+                                        logs={data.get(p.id)?.logs ?? []}
+                                        position={p.position ?? null} />
+                                </SwapPreview>
+                            );
+                        }}
                         onCompare={(a, b) => setCompare([a, b])} />
                 </section>
             </div>
@@ -447,10 +506,18 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                     the first one had not. */}
                 <Roster title="Your bench" players={league.me.bench}
                     outcomeFor={outcomeFor} max={axisMax} series="b"
+                    openId={openBench} onOpen={setOpenBench}
+                    detailFor={p => <PlayerDetail outcome={outcomeFor(p).outcome}
+                        context={contextFor(p.id)} logs={data.get(p.id)?.logs ?? []}
+                        position={p.position ?? null} stacked />}
                     onCompare={id => setCompare(c => c && c[0] !== id ? [c[0], id] : [id, c?.[1] ?? id])} />
                 <Roster title={`${league.opponent.team?.name ?? 'Opponent'} starts`}
                     players={league.opponent.starters}
                     outcomeFor={outcomeFor} max={axisMax} series="context"
+                    openId={openOpp} onOpen={setOpenOpp}
+                    detailFor={p => <PlayerDetail outcome={outcomeFor(p).outcome}
+                        context={contextFor(p.id)} logs={data.get(p.id)?.logs ?? []}
+                        position={p.position ?? null} stacked />}
                     onCompare={id => setCompare(c => c && c[0] !== id ? [c[0], id] : [id, c?.[1] ?? id])} />
             </div>
 
@@ -473,13 +540,26 @@ const AVAILABILITY_TOKEN: Record<string, string> = {
     'No practice': 'DNP', Limited: 'LTD',
 };
 
-function Roster({ title, players, outcomeFor, max, series, onCompare }: {
+/**
+ * A panel of players, each of which opens.
+ *
+ * Rows here looked clickable and were: clicking jumped straight into a
+ * two-player comparison, which is a different question from "what is this
+ * guy's week?". The receiver on the other side of the matchup decides your
+ * week as much as anyone on your own bench, and until now the page had a
+ * full account of him nowhere.
+ */
+function Roster({ title, players, outcomeFor, max, series, onCompare,
+    detailFor, openId, onOpen }: {
     title: string;
     players: RedraftPlayer[];
     outcomeFor: (p: RedraftPlayer) => { outcome: Outcome; sample: SampleGame[] };
     max: number;
     series: 'a' | 'b' | 'context';
     onCompare: (id: number) => void;
+    detailFor?: (p: RedraftPlayer) => React.ReactNode;
+    openId?: number | null;
+    onOpen?: (id: number | null) => void;
 }) {
     return (
         <section className="rounded-xl border border-white/[0.07] p-4"
@@ -508,7 +588,10 @@ function Roster({ title, players, outcomeFor, max, series, onCompare }: {
                 {players.map(p => {
                     const { outcome, sample } = outcomeFor(p);
                     return (
-                        <button key={p.id} type="button" onClick={() => onCompare(p.id)}
+                        <React.Fragment key={p.id}>
+                        <button type="button"
+                            aria-expanded={openId === p.id}
+                            onClick={() => onOpen?.(openId === p.id ? null : p.id)}
                             className="w-full grid items-center gap-x-2 gap-y-1
                                        grid-cols-[minmax(0,1fr)_auto]
                                        sm:grid-cols-[128px_minmax(0,1fr)_96px]
@@ -565,6 +648,18 @@ function Roster({ title, players, outcomeFor, max, series, onCompare }: {
                                 </>)}
                             </span>
                         </button>
+                        {openId === p.id && detailFor && (
+                            <div className="px-1.5 pb-2 pt-1">
+                                {detailFor(p)}
+                                <button type="button" onClick={() => onCompare(p.id)}
+                                    className="mt-2 text-[10px] text-muted-foreground/50
+                                               hover:text-foreground/80 underline
+                                               underline-offset-2">
+                                    Compare with someone
+                                </button>
+                            </div>
+                        )}
+                        </React.Fragment>
                     );
                 })}
             </div>

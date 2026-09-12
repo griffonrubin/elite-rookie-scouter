@@ -45,6 +45,18 @@ const assert = (l, pass, extra = '') => {
 };
 const step = (n, s) => console.log(`\n── ${n}. ${s}`);
 
+/**
+ * The slot rows, and only those.
+ *
+ * `button[aria-expanded]` used to be unique to the slot board. Bench and
+ * opponent rows open now too, so the bare selector silently started counting
+ * fifteen extra rows as lineup slots — a test that would have kept passing
+ * had it asserted anything looser than an exact shape.
+ */
+const slotRows = () => page.locator('section')
+    .filter({ has: page.getByRole('heading', { name: /slot by slot/i }) })
+    .locator('button[aria-expanded]');
+
 step(1, 'connect as txmossad');
 await page.goto(`${BASE}/redraft/start-sit`, { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(2500);
@@ -62,14 +74,14 @@ await page.waitForTimeout(11000);
 
 step(3, 'the real lineup');
 t = await page.locator('body').innerText();
-const labels = await page.locator('button[aria-expanded] > span:first-child').allInnerTexts();
+const labels = await slotRows().locator('> span:first-child').allInnerTexts();
 console.log('      slots:', labels.join(' '));
 assert('nine slots, matching the league', labels.length === 9, `got ${labels.length}`);
 assert('the shape is right', labels.join(' ') === 'QB RB RB WR WR TE FLEX K DEF', labels.join(' '));
 assert('my real opponent is named', /The Opponent/.test(t));
 
 step(4, 'the defence resolved from its abbreviation');
-const defRow = await page.locator('button[aria-expanded]').nth(8).innerText();
+const defRow = await slotRows().nth(8).innerText();
 console.log('      DEF row:', defRow.replace(/\n+/g, ' | '));
 assert('the D/ST is a named team, not "BAL"',
     /Ravens|Baltimore/i.test(defRow), defRow.split('\n')[1] ?? '');
@@ -79,9 +91,9 @@ step(5, 'the player on injured reserve is not offered');
 // A player on IR cannot be started, so he must appear neither on the bench
 // nor among a slot's candidates.
 const IR_NAME = 'Zach Charbonnet';
-await page.locator('button[aria-expanded]').nth(6).click();   // the FLEX
+await slotRows().nth(6).click();   // the FLEX
 await page.waitForTimeout(2500);
-const flexPanel = await page.locator('button[aria-expanded]').nth(6)
+const flexPanel = await slotRows().nth(6)
     .evaluate(el => el.parentElement?.innerText ?? '');
 console.log('      FLEX candidates:', flexPanel.replace(/\n+/g, ' | ').slice(0, 200));
 assert('the IR player is not a FLEX candidate', !flexPanel.includes(IR_NAME));
@@ -107,15 +119,15 @@ await page.getByRole('button', { name: /^TBD$/ }).first().click();
 await page.waitForTimeout(2500);
 await page.getByRole('button', { name: /^txmossad$/ }).first().click();
 await page.waitForTimeout(11000);
-const sfLabels = await page.locator('button[aria-expanded] > span:first-child').allInnerTexts();
+const sfLabels = await slotRows().locator('> span:first-child').allInnerTexts();
 console.log('      superflex slots:', sfLabels.join(' '));
 assert('SUPER_FLEX is a real slot', sfLabels.some(s => /SUPER/i.test(s)), sfLabels.join(' '));
 
 step(7, 'a quarterback can fill the superflex');
 const sfIdx = sfLabels.findIndex(s => /SUPER/i.test(s));
-await page.locator('button[aria-expanded]').nth(sfIdx).click();
+await slotRows().nth(sfIdx).click();
 await page.waitForTimeout(2500);
-const sfPanel = await page.locator('button[aria-expanded]').nth(sfIdx)
+const sfPanel = await slotRows().nth(sfIdx)
     .evaluate(el => el.parentElement?.innerText ?? '');
 console.log('      SUPER_FLEX candidates:', sfPanel.replace(/\n+/g, ' | ').slice(0, 200));
 assert('the superflex offers candidates', (sfPanel.match(/%/g) ?? []).length >= 1);
@@ -130,7 +142,7 @@ await page.getByRole('button', { name: /Dallas Crew Fantasy/ }).first().click();
 await page.waitForTimeout(2500);
 await page.getByRole('button', { name: /^txmossad$/ }).first().click();
 await page.waitForTimeout(11000);
-const bbLabels = await page.locator('button[aria-expanded] > span:first-child').allInnerTexts();
+const bbLabels = await slotRows().locator('> span:first-child').allInnerTexts();
 console.log('      best-ball slots:', bbLabels.join(' '));
 assert('the shape is right', bbLabels.join(' ') === 'QB RB RB WR WR TE FLEX FLEX', bbLabels.join(' '));
 assert('no kicker or defence slot', !bbLabels.some(s => /^(K|DEF|DST)$/i.test(s)));
@@ -138,8 +150,8 @@ assert('no kicker or defence slot', !bbLabels.some(s => /^(K|DEF|DST)$/i.test(s)
 // Two slots of the same kind is what broke the old engine: both FLEX rows
 // nominated the same bench player, which is a move you cannot make. Nobody
 // should be named twice on this board, as a starter or as a replacement.
-const current = await page.locator('button[aria-expanded] span.font-semibold').allInnerTexts();
-const alts = await page.locator('button[aria-expanded] span.text-muted-foreground\\/70').allInnerTexts();
+const current = await slotRows().locator('span.font-semibold').allInnerTexts();
+const alts = await slotRows().locator('span.text-muted-foreground\\/70').allInnerTexts();
 console.log('      starting:', current.join(', '));
 console.log('      nominated:', alts.join(', ') || '(none)');
 assert('eight distinct starters', new Set(current).size === current.length, current.join(', '));

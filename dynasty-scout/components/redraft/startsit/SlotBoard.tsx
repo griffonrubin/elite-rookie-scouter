@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { CHART_INK, DIVERGING, MARK, SERIES } from '@/lib/vizTokens';
 import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
 import { WhyBars, WhyBarsProps } from './WhyBars';
-import { UsageStrip } from './UsageStrip';
+import { PlayerDetail } from './PlayerDetail';
 
 /**
  * One row per decision, not one row per pairing.
@@ -54,10 +54,19 @@ export interface SlotBoardProps {
     contextOf?: (id: number) => WhyBarsProps['context'];
     /** Per-game usage, which leads the points the projection is built on. */
     logsOf?: (id: number) => import('@/app/api/redraft/startsit/route').GameLog[];
+    /** Which candidate is being looked at, and how to change that. */
+    selected?: { index: number; playerId: number } | null;
+    onSelect?: (index: number, playerId: number | null) => void;
+    /**
+     * The consequence of starting that candidate, rendered by the owner —
+     * simulating a whole lineup needs the league, which lives up there.
+     */
+    renderPreview?: (index: number, playerId: number) => React.ReactNode;
 }
 
 export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
-    showCall = true, contextOf, logsOf }: SlotBoardProps) {
+    showCall = true, contextOf, logsOf, selected, onSelect,
+    renderPreview }: SlotBoardProps) {
     const [open, setOpen] = useState<number | null>(null);
 
     return (
@@ -153,26 +162,24 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
                                 {/* Why this number, before who else could fill
                                     the slot: opening a row is asking a question
                                     about the player who is in it. */}
-                                {o && (
-                                    <div className="px-2 pb-2.5 pt-0.5 grid gap-x-6 gap-y-2.5
-                                                    lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">
-                                        <WhyBars outcome={o.outcome}
-                                            context={{
-                                                ...(contextOf?.(d.currentId!) ?? {}),
-                                                position: cur?.position ?? null,
-                                            }} />
-                                        {/* Beside the arithmetic, not under it:
-                                            "the number says 16.9" and "his
-                                            carries are down eight" are two
-                                            halves of one question. */}
-                                        {d.currentId != null && logsOf && (
-                                            <UsageStrip logs={logsOf(d.currentId)}
-                                                position={cur?.position ?? null} />
-                                        )}
+                                {o && d.currentId != null && (
+                                    <div className="px-2 pb-2.5 pt-0.5">
+                                        <PlayerDetail outcome={o.outcome}
+                                            context={contextOf?.(d.currentId)}
+                                            logs={logsOf?.(d.currentId) ?? []}
+                                            position={cur?.position ?? null} />
                                     </div>
                                 )}
                                 <Candidates d={d} playerOf={playerOf} outcomeOf={outcomeOf}
-                                    max={max} onCompare={onCompare} />
+                                    max={max} onCompare={onCompare}
+                                    selectedId={selected?.index === d.index
+                                        ? selected.playerId : null}
+                                    onSelect={pid => onSelect?.(d.index, pid)} />
+                                {selected?.index === d.index && renderPreview && (
+                                    <div className="px-2 pb-2">
+                                        {renderPreview(d.index, selected.playerId)}
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
@@ -190,12 +197,14 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
  * whose spreads sit on top of each other are a coin flip whatever their
  * projections say, and two that barely touch are not a decision at all.
  */
-function Candidates({ d, playerOf, outcomeOf, max, onCompare }: {
+function Candidates({ d, playerOf, outcomeOf, max, onCompare, selectedId, onSelect }: {
     d: SlotDecision;
     playerOf: SlotBoardProps['playerOf'];
     outcomeOf: SlotBoardProps['outcomeOf'];
     max: number;
     onCompare?: (a: number, b: number) => void;
+    selectedId?: number | null;
+    onSelect?: (playerId: number | null) => void;
 }) {
     if (d.candidates.length <= 1) {
         return (
@@ -212,10 +221,16 @@ function Candidates({ d, playerOf, outcomeOf, max, onCompare }: {
                 const delta = c.deltaWinProb;
                 return (
                     <button key={c.playerId} type="button"
-                        onClick={() => d.currentId != null && c.playerId !== d.currentId
-                            && onCompare?.(c.playerId, d.currentId)}
-                        className="w-full grid grid-cols-[56px_minmax(0,1fr)_92px] items-center gap-2
-                                   px-0 py-0.5 rounded hover:bg-white/[0.04] text-left">
+                        aria-pressed={selectedId === c.playerId}
+                        onClick={() => {
+                            if (c.current) return;
+                            onSelect?.(selectedId === c.playerId ? null : c.playerId);
+                        }}
+                        className={cn(
+                            `w-full grid grid-cols-[56px_minmax(0,1fr)_92px] items-center gap-2
+                             px-0 py-0.5 rounded text-left transition-colors`,
+                            c.current ? 'cursor-default' : 'hover:bg-white/[0.05]',
+                            selectedId === c.playerId && 'bg-white/[0.06]')}>
                         <span className="text-[10px] text-right pr-1 truncate"
                             style={{ color: c.current ? '#7DD3FC' : 'rgba(255,255,255,0.45)' }}>
                             {c.current ? 'now' : ''}
@@ -263,7 +278,8 @@ function Candidates({ d, playerOf, outcomeOf, max, onCompare }: {
             })}
             <p className="text-[10px] text-muted-foreground/40 pt-0.5">
                 Win probability against whoever is in the slot now, and the share of
-                weeks this player outscores them. Click a name for the full comparison.
+                weeks this player outscores them. Pick anyone to see their week and
+                what starting them would do to this matchup.
             </p>
         </div>
     );

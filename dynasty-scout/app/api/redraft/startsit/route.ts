@@ -42,6 +42,14 @@ export interface GameLog {
     wopr: number | null;
     receptions: number | null;
     pass_attempts: number | null;
+    /** The box score itself, so the points can be taken apart. */
+    rush_yards: number | null;
+    rush_tds: number | null;
+    rec_yards: number | null;
+    rec_tds: number | null;
+    pass_yards: number | null;
+    pass_tds: number | null;
+    interceptions: number | null;
 }
 
 export interface StartSitPlayer {
@@ -124,11 +132,15 @@ export async function GET(req: NextRequest) {
         targets: number | null; carries: number | null;
         target_share: number | null; snap_share: number | null;
         wopr: number | null; receptions: number | null;
-        pass_attempts: number | null;
+        pass_attempts: number | null; rush_yards: number | null;
+        rush_tds: number | null; rec_yards: number | null; rec_tds: number | null;
+        pass_yards: number | null; pass_tds: number | null;
+        interceptions: number | null;
     }>(
         `SELECT player_id, season, week, fantasy_points_ppr AS points, opponent,
                 targets, carries, target_share, offense_pct AS snap_share, wopr,
-                receptions, pass_attempts
+                receptions, pass_attempts, rush_yards, rush_tds, rec_yards,
+                rec_tds, pass_yards, pass_tds, interceptions
            FROM nfl_player_week
           WHERE player_id IN (${ph}) AND season_type = 'REG'
             AND season >= ${SEASON - 2}
@@ -242,7 +254,10 @@ export async function GET(req: NextRequest) {
             targets: n(l.targets), carries: n(l.carries),
             target_share: n(l.target_share), snap_share: n(l.snap_share),
             wopr: n(l.wopr), receptions: n(l.receptions),
-            pass_attempts: n(l.pass_attempts),
+            pass_attempts: n(l.pass_attempts), rush_yards: n(l.rush_yards),
+            rush_tds: n(l.rush_tds), rec_yards: n(l.rec_yards),
+            rec_tds: n(l.rec_tds), pass_yards: n(l.pass_yards),
+            pass_tds: n(l.pass_tds), interceptions: n(l.interceptions),
         };
         const arr = logsByPlayer.get(l.player_id);
         if (arr) arr.push(row);
