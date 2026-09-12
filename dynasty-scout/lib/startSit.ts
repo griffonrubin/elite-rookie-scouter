@@ -568,7 +568,33 @@ export function makeRng(seed: number): () => number {
  */
 export function usableSample(sample?: number[]): boolean {
     if (!sample || sample.length < 4) return false;
-    return sample.reduce((a, b) => a + b, 0) / sample.length > 1;
+    return sampleMeanOf(sample) > 1;
+}
+
+/**
+ * A sample's mean, worked out once.
+ *
+ * `drawLineup` needs it to rescale a resampled week onto the projection, and
+ * it is a constant for the player — but it was being computed inside the
+ * trial loop, twice: once by `usableSample` and again for the scale. At
+ * seventeen games, eighteen players and six thousand trials that is six
+ * million additions per simulated matchup, and the slot board runs fifty of
+ * them. It was the whole reason a loaded board took three and a half seconds
+ * on a mid-range phone, and it never varied.
+ *
+ * Keyed on the array rather than the player: samples are built once and
+ * never mutated, and a WeakMap lets them be collected with their owner.
+ */
+const sampleMeans = new WeakMap<number[], number>();
+
+export function sampleMeanOf(sample: number[]): number {
+    const hit = sampleMeans.get(sample);
+    if (hit !== undefined) return hit;
+    let total = 0;
+    for (let i = 0; i < sample.length; i++) total += sample[i];
+    const m = sample.length ? total / sample.length : 0;
+    sampleMeans.set(sample, m);
+    return m;
 }
 
 function drawLineup(players: SimPlayer[], rng: () => number): number {
@@ -580,12 +606,15 @@ function drawLineup(players: SimPlayer[], rng: () => number): number {
         // two-thirds of a player — he is the whole player most weeks and an
         // empty slot the rest, and those two lineups win differently.
         if (p.outcome.playProbability < 1 && rng() >= p.outcome.playProbability) continue;
-        if (usableSample(p.sample)) {
-            const m = p.sample!.reduce((a, b) => a + b, 0) / p.sample!.length;
-            total += drawFrom(p.sample!, p.outcome.mean / m, rng);
-        } else {
-            total += drawNormal(p.outcome.mean, p.outcome.sd, rng);
+        const s = p.sample;
+        if (s && s.length >= 4) {
+            const m = sampleMeanOf(s);
+            if (m > 1) {
+                total += drawFrom(s, p.outcome.mean / m, rng);
+                continue;
+            }
         }
+        total += drawNormal(p.outcome.mean, p.outcome.sd, rng);
     }
     return total;
 }

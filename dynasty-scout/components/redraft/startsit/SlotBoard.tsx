@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { ChevronDown, Check, Equal, ArrowUpRight } from 'lucide-react';
 import { Outcome } from '@/lib/startSit';
 import { RedraftPlayer } from '@/lib/types';
-import { SlotDecision } from '@/lib/lineup';
+import { formatDelta, SlotDecision } from '@/lib/lineup';
 import { POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { CHART_INK, DIVERGING, MARK, SERIES } from '@/lib/vizTokens';
@@ -138,7 +138,10 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
                                              flex items-center justify-end gap-1.5">
                                 {alt && (
                                     <span className="text-[10px] text-muted-foreground/70 truncate hidden sm:inline"
-                                        title={`${alt.full_name} is ${d.gain} points of win probability better`}>
+                                        title={`${alt.full_name} is worth about `
+                                            + `${Math.abs(d.gain).toFixed(0)} points of win `
+                                            + `probability, give or take one — the simulation `
+                                            + `cannot tell finer than that`}>
                                         {alt.full_name.split(' ').slice(-1)[0]}
                                     </span>
                                 )}
@@ -147,7 +150,7 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
                                                      text-[10px] font-bold tracking-wide shrink-0"
                                         style={{ color: v.colour, background: v.bg }}>
                                         <v.Icon className="w-3 h-3" aria-hidden="true" />
-                                        {d.verdict === 'set' ? '' : `+${d.gain}`}
+                                        {d.verdict === 'set' ? '' : formatDelta(d.gain)}
                                         {d.verdict === 'set' && <span className="sr-only">{v.label}</span>}
                                     </span>
                                 )}
@@ -248,7 +251,7 @@ function Candidates({ d, playerOf, outcomeOf, max, onCompare, selectedId, onSele
                                     color: c.current ? 'rgba(255,255,255,0.4)'
                                         : delta > 0 ? DIVERGING.positive : DIVERGING.negative,
                                 }}>
-                                {c.current ? '—' : `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}`}
+                                {c.current ? '—' : formatDelta(delta)}
                             </span>
                             {/* The same comparison in the units people argue in.
                                 A win-probability delta is the right thing to

@@ -13,7 +13,7 @@ import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
 import { findProblems, LineupAlerts, SwapRow } from './LineupAlerts';
 import { SlotBoard } from './SlotBoard';
 import { MatchupChart } from './MatchupChart';
-import { optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
+import { formatDelta, optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
 import { LeagueConnect } from './LeagueConnect';
 import { SwapPreview } from './SwapPreview';
 import { PlayerDetail } from './PlayerDetail';
@@ -468,7 +468,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                                     {Math.round(best.prob * 1000) / 10}%
                                                 </span>
                                                 <span className="text-muted-foreground/60">
-                                                    {' '}— {best.gain > 0 ? `+${best.gain}` : best.gain} from
+                                                    {' '}— {formatDelta(best.gain)} from
                                                     {best.changes.length === 1 ? ' one change' : ` ${best.changes.length} changes`}
                                                 </span>
                                             </p>

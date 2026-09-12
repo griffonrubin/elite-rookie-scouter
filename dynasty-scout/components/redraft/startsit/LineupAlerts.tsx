@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { AlertTriangle, ArrowRight } from 'lucide-react';
+import { formatDelta } from '@/lib/lineup';
 import { Outcome } from '@/lib/startSit';
 import { RedraftPlayer } from '@/lib/types';
 /**
@@ -99,14 +100,14 @@ export function LineupAlerts({ problems, onPick }: {
                             <button type="button" onClick={() => onPick?.(fix)}
                                 className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded
                                            bg-white/[0.06] hover:bg-white/[0.12] transition-colors"
-                                title={`Start ${fix.inName} instead — `
-                                    + `${fix.deltaWinProb >= 0 ? '+' : ''}${fix.deltaWinProb} `
-                                    + `points of win probability`}>
+                                title={`Start ${fix.inName} instead — worth `
+                                    + `${formatDelta(fix.deltaWinProb)} points of win `
+                                    + `probability`}>
                                 <ArrowRight className="w-3 h-3 text-muted-foreground/60"
                                     aria-hidden="true" />
                                 <span className="font-semibold">{fix.inName}</span>
                                 <span className="tabular-nums text-muted-foreground/70">
-                                    {fix.deltaWinProb >= 0 ? '+' : ''}{fix.deltaWinProb.toFixed(1)}
+                                    {formatDelta(fix.deltaWinProb)}
                                 </span>
                             </button>
                         ) : (

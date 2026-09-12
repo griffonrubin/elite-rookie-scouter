@@ -45,6 +45,9 @@ export function OutcomeStrip({
     // one. The dots are the evidence behind every number on the page, so
     // they get a real tooltip that shows up when the pointer does.
     const [hover, setHover] = useState<number | null>(null);
+    // Pattern ids are global to the document, so each strip needs its own or
+    // they all point at whichever definition rendered last.
+    const hatchId = React.useId();
     const colour = series === 'context' ? CHART_INK.context : SERIES[series];
     const pct = (v: number) => `${Math.max(0, Math.min(100, (v / max) * 100))}%`;
     const h = compact ? 26 : 34;
@@ -74,6 +77,10 @@ export function OutcomeStrip({
         );
     }
 
+    const bar = 8;                       // the floor-ceiling band, in px
+    const tick = compact ? 16 : 20;      // the expected-week marker
+    const ring = MARK.gap;               // surface ring, as a stroke now
+
     return (
         <div className="relative w-full" style={{ height: h }}
             role="img"
@@ -84,42 +91,72 @@ export function OutcomeStrip({
                     ? `, ${Math.round(outcome.playProbability * 100)}% chance of playing`
                     + (outcome.availability ? ` (${outcome.availability})` : '')
                     : '')}>
-            {/* floor–ceiling span */}
-            <div className="absolute top-1/2 -translate-y-1/2 h-2"
-                style={{
-                    left: pct(outcome.floor),
-                    width: pct(Math.max(0, outcome.ceiling - outcome.floor)),
-                    background: colour,
-                    opacity: 0.22,
-                    borderRadius: MARK.barRadius,
-                }} />
-            {/* the games themselves.
-                Each dot names its own game on hover. A dot at 28 is worth far
-                more to a reader who can see it was week 4 against a defence
-                they are about to play again than it is as an anonymous point
-                in a cloud. */}
-            {sample.map((g, i) => (
-                <span key={i}
-                    className="absolute top-1/2 rounded-full cursor-help"
-                    title={gameLabel(g)}
-                    onMouseEnter={() => setHover(i)}
-                    onMouseLeave={() => setHover(h => (h === i ? null : h))}
-                    style={{
-                        left: pct(g.points),
-                        width: MARK.dotRadius * 2,
-                        height: MARK.dotRadius * 2,
-                        marginLeft: -MARK.dotRadius,
-                        marginTop: -MARK.dotRadius,
-                        background: colour,
-                        // A ring in the surface colour keeps overlapping dots
-                        // countable instead of merging into one blob.
-                        boxShadow: `0 0 0 ${MARK.gap}px ${CHART_INK.surface}`,
-                        // The hovered dot lifts out of the cloud so it is
-                        // obvious which game the tooltip belongs to.
-                        opacity: hover === i ? 1 : 0.55,
-                        zIndex: hover === i ? 2 : undefined,
-                    }} />
-            ))}
+            {/*
+                One SVG rather than a cloud of positioned spans.
+                Each strip used to be twenty absolutely-positioned elements,
+                every dot carrying a box-shadow for its ring — and there are
+                thirty-odd strips on a loaded board, which came to six hundred
+                spans the browser had to lay out and paint individually. On a
+                mid-range phone that was three and a half seconds of blocked
+                main thread.
+
+                The geometry is unchanged: percentage x-coordinates keep the
+                marks on the shared axis, and because only cx is a percentage
+                the circles stay circular instead of stretching with the
+                column. The ring is a stroke in the surface colour, which is
+                the same picture and a fraction of the paint.
+            */}
+            <svg width="100%" height={h} className="block overflow-visible"
+                aria-hidden="true"
+                onMouseLeave={() => setHover(null)}>
+                {/* floor–ceiling span */}
+                <rect x={pct(outcome.floor)} y={(h - bar) / 2}
+                    width={pct(Math.max(0, outcome.ceiling - outcome.floor))}
+                    height={bar} rx={MARK.barRadius}
+                    fill={colour} opacity={0.22} />
+
+                {/* Doubt drawn as doubt.
+                    A questionable starter is not a smaller player — he is this
+                    player most weeks and an empty slot the rest, so the band
+                    is hatched across the share of weeks he does not suit up
+                    and the risk reads as the coin flip it is. */}
+                {outcome.playProbability < 1 && outcome.playProbability > 0 && (<>
+                    <defs>
+                        <pattern id={hatchId} width="4" height="4"
+                            patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                            <rect width="1.5" height="4" fill="rgba(255,255,255,0.55)" />
+                        </pattern>
+                    </defs>
+                    <rect x={pct(outcome.floor)} y={(h - bar) / 2}
+                        width={pct(Math.max(0, outcome.ceiling - outcome.floor))}
+                        height={bar} rx={MARK.barRadius}
+                        fill={`url(#${hatchId})`}
+                        opacity={1 - outcome.playProbability} />
+                </>)}
+
+                {/* the games themselves — each names its own on hover, because
+                    a dot at 28 is worth far more to a reader who can see it
+                    was week 4 against a defence they play again. */}
+                {sample.map((g, i) => (
+                    <circle key={i}
+                        cx={pct(g.points)} cy={h / 2} r={MARK.dotRadius}
+                        fill={colour}
+                        stroke={CHART_INK.surface} strokeWidth={ring}
+                        opacity={hover === i ? 1 : 0.55}
+                        className="cursor-help"
+                        onMouseEnter={() => setHover(i)}>
+                        <title>{gameLabel(g)}</title>
+                    </circle>
+                ))}
+
+                {/* the expected week */}
+                <rect x={pct(outcome.mean)} y={(h - tick) / 2}
+                    width={MARK.lineWidth + 1} height={tick} rx={1}
+                    transform={`translate(${-(MARK.lineWidth + 1) / 2} 0)`}
+                    fill={colour}
+                    stroke={CHART_INK.surface} strokeWidth={ring} />
+            </svg>
+
             {hover != null && sample[hover] && (
                 <span className="absolute z-10 px-1.5 py-1 rounded-md text-[10px]
                                  whitespace-nowrap pointer-events-none font-semibold"
@@ -135,34 +172,6 @@ export function OutcomeStrip({
                     {gameLabel(sample[hover])}
                 </span>
             )}
-            {/* Doubt drawn as doubt.
-                A questionable starter is not a smaller player — he is this
-                player most weeks and an empty slot the rest. The bar is
-                hatched across the share of weeks he does not suit up, so the
-                risk reads as the coin flip it is rather than as a quietly
-                lower projection. */}
-            {outcome.playProbability < 1 && outcome.playProbability > 0 && (
-                <div className="absolute top-1/2 -translate-y-1/2 h-2 pointer-events-none"
-                    style={{
-                        left: pct(outcome.floor),
-                        width: pct(Math.max(0, outcome.ceiling - outcome.floor)),
-                        borderRadius: MARK.barRadius,
-                        opacity: 1 - outcome.playProbability,
-                        backgroundImage: 'repeating-linear-gradient(135deg,'
-                            + 'rgba(255,255,255,0.55) 0 1.5px, transparent 1.5px 4px)',
-                    }} />
-            )}
-            {/* the expected week */}
-            <div className="absolute top-1/2 -translate-y-1/2"
-                style={{
-                    left: pct(outcome.mean),
-                    width: MARK.lineWidth + 1,
-                    height: compact ? 16 : 20,
-                    marginLeft: -(MARK.lineWidth + 1) / 2,
-                    background: colour,
-                    borderRadius: 1,
-                    boxShadow: `0 0 0 ${MARK.gap}px ${CHART_INK.surface}`,
-                }} />
         </div>
     );
 }

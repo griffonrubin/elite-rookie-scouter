@@ -31,8 +31,14 @@ const logsOf = db.prepare(`
    WHERE player_id = ? AND season_type='REG' AND season >= 2024
    ORDER BY season, week`);
 
+// Seventeen real weeks each, because that is what a loaded board has — and
+// an empty sample takes the cheap normal-draw path, which is how this
+// benchmark managed to report 69ms for the thing that actually cost 850ms.
+const FALLBACK = [14, 9, 21, 3, 17, 12, 26, 8, 15, 11, 19, 6, 23, 10, 13, 18, 7];
 const mk = (p: any): SimPlayer => {
-    const logs = logsOf.all(p.id) as any[];
+    const rows = logsOf.all(p.id) as any[];
+    const logs = rows.length >= 4 ? rows
+        : FALLBACK.map((points, i) => ({ season: 2025, week: i + 1, points }));
     const outcome = buildOutcome({ playerId: p.id, position: p.position, logs,
         context: { impliedTeamTotal: 23, spread: -2 } }, 2025);
     return { outcome, sample: logs.map(l => l.points) };

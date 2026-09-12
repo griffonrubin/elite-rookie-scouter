@@ -121,11 +121,17 @@ console.log('      box score rows:', rowCount);
 assert('several games listed', rowCount >= 5, String(rowCount));
 
 step(5, 'data points name themselves on hover');
-const dot = panel.locator('span[title*="pts"]').first();
+// The dots are SVG circles now, not positioned spans, so the game name is a
+// <title> child rather than a title attribute — one strip used to be twenty
+// elements each carrying a box-shadow, and there are thirty of them.
+const dot = panel.locator('svg circle').first();
+const native = await dot.locator('title').evaluate(el => el.textContent ?? '');
+assert('every dot carries its own game', /pts ·/.test(native), native);
 await dot.hover();
 await page.waitForTimeout(500);
 const tip = await panel.innerText();
-assert('a dot names its game', /pts ·/.test(tip), (tip.match(/[\d.]+ pts · [^\n]*/)||[])[0]);
+assert('hovering names it on the page too', /pts ·/.test(tip),
+    (tip.match(/[\d.]+ pts · [^\n]*/) || [])[0] ?? '(no tooltip rendered)');
 
 step(6, 'nothing blew up');
 assert('no page errors', errs.length === 0, errs.slice(0,2).join(' | '));
