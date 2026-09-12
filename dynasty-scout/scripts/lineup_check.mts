@@ -32,7 +32,8 @@ console.log('\n== verdicts ==');
 const mk = (id: number, mean: number, sd: number): SimPlayer => ({
     outcome: { playerId: id, mean, sd, floor: mean - sd, ceiling: mean + sd, sample: 17,
         formWeight: 0, contextAdjustment: 0, onBye: false, playProbability: 1,
-        availability: null, centreSource: 'model' },
+        availability: null, centreSource: 'model',
+        drivers: { base: mean, teamTotal: 0, script: 0, matchup: 0, market: 0 } },
 });
 const pos = new Map<number, string>([[1,'RB'],[2,'RB'],[3,'WR'],[4,'WR'],[9,'RB'],[8,'WR'],[7,'RB']]);
 const sims = new Map<number, SimPlayer>([

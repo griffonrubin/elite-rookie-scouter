@@ -86,6 +86,19 @@ export interface PlayerInputs {
 }
 
 /** A player's week, as a distribution rather than a number. */
+export interface OutcomeDrivers {
+    /** The player's own level: the projection and their form, blended. */
+    base: number;
+    /** Points from how many the books expect this offence to score. */
+    teamTotal: number;
+    /** Points from the game script the spread implies. */
+    script: number;
+    /** Points from what this defence gives up to the position. */
+    matchup: number;
+    /** Points from the betting market replacing the model's centre. */
+    market: number;
+}
+
 export interface Outcome {
     playerId: number;
     /** Expected points. */
@@ -102,6 +115,22 @@ export interface Outcome {
     formWeight: number;
     /** Why the centre moved off the projection, for the UI to explain itself. */
     contextAdjustment: number;
+    /**
+     * The same adjustment, itemised.
+     *
+     * A single number says the projection moved; it does not say what moved
+     * it, and a reader who cannot see the parts cannot disagree with one of
+     * them. These are points, signed, and they add to the mean: base plus
+     * the three contributions is the centre (before the floor at zero, which
+     * only bites if the context is more negative than the player's own base
+     * — rare, and the mean stays authoritative if it does).
+     *
+     * `market` is non-zero only when a prop line replaced the model's centre
+     * outright, in which case the other three are zero by construction: the
+     * line already prices the total, the script and the defence, and adding
+     * the model's tilt would count them twice.
+     */
+    drivers: OutcomeDrivers;
     onBye: boolean;
     /**
      * Chance this player is active, from the injury report. Everything above
@@ -333,6 +362,10 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
     // A thinly priced player — a yards line and nothing else — is not a full
     // projection, so the market only takes over once at least two of their
     // markets were priced. Below that the model keeps its own centre.
+    // The player's own level, before anything about this particular week.
+    // Kept so the UI can show what the context did rather than only its sum.
+    const base = centre;
+
     const market = p.marketProjection;
     const marketUsable = market != null && market > 0 && (p.marketMarkets ?? 0) >= 2;
     if (marketUsable) {
@@ -340,18 +373,22 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
     }
 
     // ── game environment ────────────────────────────────────────────────
-    let adjustment = 0;
+    const drivers: OutcomeDrivers = {
+        base, teamTotal: 0, script: 0, matchup: 0,
+        market: marketUsable ? market! - base : 0,
+    };
     if (!ctx.onBye && !marketUsable) {
         if (ctx.impliedTeamTotal != null) {
             const elasticity = TEAM_TOTAL_ELASTICITY[pos] ?? 0.45;
             const relative = (ctx.impliedTeamTotal - NEUTRAL_TEAM_TOTAL) / NEUTRAL_TEAM_TOTAL;
-            adjustment += centre * elasticity * relative;
+            drivers.teamTotal = centre * elasticity * relative;
         }
         if (ctx.spread != null) {
-            adjustment += (SCRIPT_PER_POINT[pos] ?? 0) * ctx.spread;
+            drivers.script = (SCRIPT_PER_POINT[pos] ?? 0) * ctx.spread;
         }
-        adjustment += centre * matchupEdge(ctx);
+        drivers.matchup = centre * matchupEdge(ctx);
     }
+    const adjustment = drivers.teamTotal + drivers.script + drivers.matchup;
     centre = Math.max(0, centre + adjustment);
 
     if (ctx.onBye) {
@@ -359,6 +396,7 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
             playerId: p.playerId, mean: 0, sd: 0, floor: 0, ceiling: 0,
             sample: shapeSample.length, formWeight: w,
             contextAdjustment: 0, onBye: true,
+            drivers: { base, teamTotal: 0, script: 0, matchup: 0, market: 0 },
             playProbability: 0, availability: null,
             centreSource: 'model',
         };
@@ -380,9 +418,50 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
         ceiling = centre + 0.84 * sd;
     }
 
+    const r1 = (v: number) => Math.round(v * 10) / 10;
+
+    /**
+     * Rounded so the parts still add to the whole.
+     *
+     * Rounding each contribution on its own is what turns an audit back into
+     * an illustration: 17.34 base with -0.16, -0.47 and +0.14 of context
+     * displays as 17.3 and -0.2, -0.5, +0.1, which sums to 16.7 beside a
+     * stated mean of 16.9. Every number is individually correct and the
+     * column does not add up, which is worse than a coarser number would be.
+     *
+     * So the residual is given to the largest contribution, where one tenth
+     * is the smallest relative lie available. The mean is never adjusted — it
+     * is the figure the simulation actually used.
+     */
+    const shown = {
+        base: r1(drivers.base), teamTotal: r1(drivers.teamTotal),
+        script: r1(drivers.script), matchup: r1(drivers.matchup),
+        market: r1(drivers.market),
+    };
+    const meanShown = r1(centre);
+    // The clamp at zero can legitimately break the identity; leave those be
+    // rather than inventing a contribution to cover it.
+    if (centre > 0) {
+        const keys = ['teamTotal', 'script', 'matchup', 'market'] as const;
+        const residual = r1(meanShown
+            - (shown.base + keys.reduce((t, k) => t + shown[k], 0)));
+        if (residual !== 0) {
+            let biggest: typeof keys[number] | null = null;
+            for (const k of keys) {
+                if (shown[k] !== 0
+                    && (biggest === null || Math.abs(shown[k]) > Math.abs(shown[biggest]))) {
+                    biggest = k;
+                }
+            }
+            if (biggest) shown[biggest] = r1(shown[biggest] + residual);
+            else shown.base = r1(shown.base + residual);
+        }
+    }
+
     return {
         playerId: p.playerId,
-        mean: Math.round(centre * 10) / 10,
+        drivers: shown,
+        mean: meanShown,
         sd: Math.round(sd * 10) / 10,
         floor: Math.round(floor * 10) / 10,
         ceiling: Math.round(ceiling * 10) / 10,

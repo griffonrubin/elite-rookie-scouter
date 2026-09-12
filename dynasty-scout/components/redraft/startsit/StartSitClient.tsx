@@ -417,6 +417,17 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                     sample: [] };
                         }}
                         showCall={!bestBall}
+                        contextOf={id => {
+                            const d = data.get(id);
+                            return {
+                                opponent: d?.opponent ?? null,
+                                impliedTeamTotal: d?.implied_team_total ?? null,
+                                spread: d?.spread ?? null,
+                                defenseAllowed: d?.def_allowed ?? null,
+                                defenseLeagueAvg: d?.def_league_avg ?? null,
+                                defenseSample: d?.def_sample ?? null,
+                            };
+                        }}
                         onCompare={(a, b) => setCompare([a, b])} />
                 </section>
             </div>
