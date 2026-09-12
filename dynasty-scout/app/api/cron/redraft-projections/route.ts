@@ -7,6 +7,7 @@ import {
 import { refreshRankingSources } from '@/lib/redraftSources';
 import { refreshAvailability } from '@/lib/availability';
 import { refreshPlayerProps } from '@/lib/playerProps';
+import { refreshVegasLines } from '@/lib/vegasLines';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -294,6 +295,17 @@ export async function GET(req: NextRequest) {
         availability = { error: String((e as Error)?.message ?? e) };
     }
 
+    // The betting market first, because everything after it depends on the
+    // week this answers. Nothing used to refresh these: the table was read
+    // for the current week and written by hand, so the lines the model moves
+    // every projection on went stale the day they were loaded.
+    let vegas: unknown;
+    try {
+        vegas = await refreshVegasLines(SEASON);
+    } catch (e) {
+        vegas = { status: 'failed', reason: String((e as Error)?.message ?? e) };
+    }
+
     // Props, when a key is configured. Lines move all week, so like the
     // injury report this is only worth anything if it is re-read; without a
     // key it reports skipped and nothing downstream changes.
@@ -315,6 +327,7 @@ export async function GET(req: NextRequest) {
         espn_ids: report(ids),
         rankings,
         availability,
+        vegas,
         props,
     }, { status: ok ? 200 : 502 });
 }
