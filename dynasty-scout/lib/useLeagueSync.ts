@@ -55,6 +55,17 @@ export interface LeagueTeam {
     slots: LeagueSlot[];
     /** The starting lineup in slot order, empty spots included. */
     lineupSlots?: { slot: string; playerId: string | null }[];
+    /**
+     * What has happened so far, where the platform reports it.
+     *
+     * Kept because a record and a roster are different claims, and early in
+     * a season the gap between them is the most interesting thing in a
+     * league: 3-0 with the sixth-best roster is a fact about the schedule.
+     */
+    record?: {
+        wins: number; losses: number; ties: number;
+        pointsFor: number; pointsAgainst: number;
+    };
 }
 
 export interface LeagueSnapshot {
@@ -246,6 +257,15 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
                 slot: startableSlots[i] ?? 'FLEX',
                 playerId: pid && pid !== '0' ? pid : null,
             })),
+            record: r.settings ? {
+                wins: r.settings.wins ?? 0,
+                losses: r.settings.losses ?? 0,
+                ties: r.settings.ties ?? 0,
+                pointsFor: (r.settings.fpts ?? 0)
+                    + (r.settings.fpts_decimal ?? 0) / 100,
+                pointsAgainst: (r.settings.fpts_against ?? 0)
+                    + (r.settings.fpts_against_decimal ?? 0) / 100,
+            } : undefined,
         };
     });
 

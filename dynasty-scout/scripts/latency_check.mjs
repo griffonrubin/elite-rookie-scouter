@@ -83,10 +83,10 @@ await page.getByPlaceholder(/sleeper username/i).fill('txmossad');
 await page.getByRole('button', { name: /^find$/i }).click();
 await page.getByRole('button', { name: /Den Fantasy Football League 1/ }).first().waitFor({ timeout: 20000 });
 await page.getByRole('button', { name: /Den Fantasy Football League 1/ }).first().click();
-await page.getByRole('button', { name: /^txmossad$/ }).first().waitFor({ timeout: 20000 });
+await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().waitFor({ timeout: 20000 });
 await page.evaluate(() => { window.__long = []; window.__api = []; });
 const t3 = Date.now();
-await page.getByRole('button', { name: /^txmossad$/ }).first().click();
+await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().click();
 await page.locator('section').filter({ has: page.getByRole('heading', { name: /slot by slot/i }) })
     .locator('button[aria-expanded]').nth(8).waitFor({ timeout: 40000 });
 const wall = Date.now() - t3;

@@ -70,8 +70,8 @@ await page.getByPlaceholder(/sleeper username/i).fill('txmossad');
 await page.getByRole('button', { name: /^find$/i }).click();
 await page.getByRole('button', { name: /Den Fantasy Football League 1/ }).first().waitFor({ timeout: 20000 });
 await page.getByRole('button', { name: /Den Fantasy Football League 1/ }).first().click();
-await page.getByRole('button', { name: /^txmossad$/ }).first().waitFor({ timeout: 20000 });
-await page.getByRole('button', { name: /^txmossad$/ }).first().click();
+await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().waitFor({ timeout: 20000 });
+await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().click();
 await page.waitForTimeout(9000);
 
 step(2, 'it lists available players with their trend');

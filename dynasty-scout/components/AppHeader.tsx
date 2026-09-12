@@ -93,7 +93,7 @@ const SECTIONS: readonly Section[] = [
     nav: [
       { href: '/redraft/start-sit', label: 'Start/Sit' },
       { href: '/in-season/waivers', label: 'Waiver Wire' },
-      { href: '/in-season/power',   label: 'Power Rankings', soon: true },
+      { href: '/in-season/power',   label: 'Power Rankings' },
       { href: '/in-season/team',    label: 'Team Analysis',  soon: true },
       { href: '/in-season/trades',  label: 'Trade Analyzer', soon: true },
       // Not a fantasy tool at all, but the same data answers it: the spread,

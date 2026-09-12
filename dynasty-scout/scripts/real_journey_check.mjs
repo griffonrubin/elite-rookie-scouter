@@ -69,7 +69,7 @@ assert('the real leagues come back', /Den Fantasy Football League 1/.test(t) && 
 step(2, 'open the standard league and pick my team');
 await page.getByRole('button', { name: /Den Fantasy Football League 1/ }).first().click();
 await page.waitForTimeout(2500);
-await page.getByRole('button', { name: /^txmossad$/ }).first().click();
+await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().click();
 await page.waitForTimeout(11000);
 
 step(3, 'the real lineup');
@@ -78,7 +78,13 @@ const labels = await slotRows().locator('> span:first-child').allInnerTexts();
 console.log('      slots:', labels.join(' '));
 assert('nine slots, matching the league', labels.length === 9, `got ${labels.length}`);
 assert('the shape is right', labels.join(' ') === 'QB RB RB WR WR TE FLEX K DEF', labels.join(' '));
-assert('my real opponent is named', /The Opponent/.test(t));
+// Named, not labelled. This used to check for the generic "The Opponent"
+// fallback, which is what the page shows when the owner cannot be resolved
+// — and with a fixture trimmed to three rosters, it could not be. The real
+// league pairs roster 11 against roster 8 in week 1, so the panel has to
+// say whose lineup it is.
+assert('my real week-1 opponent is named', /BONEYJABRONI STARTS/i.test(t),
+    (t.match(/[A-Z0-9' ]+ STARTS/i) || ['(no opponent panel)'])[0]);
 
 step(4, 'the defence resolved from its abbreviation');
 const defRow = await slotRows().nth(8).innerText();
@@ -109,6 +115,14 @@ assert('five players on the bench', benchNames.length === 5,
     `${benchNames.length}: ${benchNames.join(', ')}`);
 assert('the IR player is not on the bench', !benchNames.includes(IR_NAME));
 
+/**
+ * The same owner is picked by a different label in each league.
+ *
+ * Sleeper's team picker shows the team name where one is set and the handle
+ * where it is not, and txmossad has named the team in the twelve-team league
+ * only. Clicking "txmossad" everywhere used to work because the fixture had
+ * been trimmed down to rosters with no metadata at all.
+ */
 step(6, 'switch to the superflex league');
 await page.locator('button[title="Connect another league"]').click();
 await page.waitForTimeout(1200);
