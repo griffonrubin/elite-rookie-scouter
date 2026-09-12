@@ -61,9 +61,13 @@ const posOf = (id: number) => String(pool.find(p => p.id === id)?.position ?? ''
 const c = time('decisions rankSlots(9 slots, 6 bench, 6000)  [pooled draws]',
     () => resolveConflicts(rankSlots(lineup, posOf, id => byId.get(id)!,
         pool.slice(9, 15).map(p => p.id), opp, 6000)));
+// rankSwaps is gone: it simulated every bench-and-starter pair to answer a
+// question the slot board had already answered, and was 79% of the page.
+const e = 0;
+console.log('       0 ms   swaps    the slot board already ranked them');
 const d = time('pairs    9 x beatsProbability(3000)',
     () => { for (let i = 0; i < 9; i++) beatsProbability(mine[i], opp[i], 3000, 17); });
-const total = a + b + c + d;
+const total = a + b + c + d + e;
 console.log(`\n  ${total.toFixed(0)} ms total, blocking the main thread`);
 console.log(`  rankSlots is ${((c / total) * 100).toFixed(0)}% of it`);
 

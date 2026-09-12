@@ -4,14 +4,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { RedraftPlayer } from '@/lib/types';
 import { useLeagueSync } from '@/lib/useLeagueSync';
 import {
-    beatsProbability, buildOutcome, Outcome, rankSwaps, simulateMatchup, SimPlayer,
+    beatsProbability, buildOutcome, Outcome, simulateMatchup, SimPlayer,
     usableSample,
 } from '@/lib/startSit';
 import { POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
-import { SwapRow } from './SwapBars';
-import { findProblems, LineupAlerts } from './LineupAlerts';
+import { findProblems, LineupAlerts, SwapRow } from './LineupAlerts';
 import { SlotBoard } from './SlotBoard';
 import { MatchupChart } from './MatchupChart';
 import { optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
@@ -75,6 +74,18 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
     }, [needed.join(','), league.week]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+    /**
+     * Whether the week's data has arrived.
+     *
+     * `data` starts empty, so every simulation on this page used to run once
+     * against nothing — no logs, no lines, no injury report — produce a set
+     * of meaningless outcomes, render the whole board from them, and then do
+     * it all again when the fetch landed. A third of the wait was spent
+     * computing an answer that was always going to be thrown away, and for a
+     * moment the board showed it.
+     */
+    const ready = needed.length === 0 || data.size > 0;
 
     const outcomeFor = useMemo(() => {
         const cache = new Map<number, { outcome: Outcome; sample: SampleGame[] }>();
@@ -150,26 +161,12 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     }, [outcomeFor]);
 
     const matchup = useMemo(() => {
+        if (!ready) return null;
         if (league.me.starters.length === 0 || league.opponent.starters.length === 0) return null;
         return simulateMatchup(
             league.me.starters.map(sim), league.opponent.starters.map(sim), 20000, 11,
             { bins: 40 });
-    }, [league.me.starters, league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
-
-    const swaps: SwapRow[] = useMemo(() => {
-        if (!matchup || league.me.bench.length === 0) return [];
-        const starters = league.me.starters;
-        const bench = league.me.bench;
-        const verdicts = rankSwaps(
-            starters.map(sim), bench.map(sim), league.opponent.starters.map(sim),
-            (b, s) => canFill(bench[b].position ?? '', starters[s].position ?? '', true),
-            6000);
-        const name = (id: number) =>
-            [...starters, ...bench].find(p => p.id === id)?.full_name ?? String(id);
-        return verdicts.slice(0, 12).map(v => ({
-            ...v, inName: name(v.inId), outName: name(v.outId),
-        }));
-    }, [matchup, league.me.starters, league.me.bench, league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
+    }, [ready, league.me.starters, league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     /**
      * The lineup as slots, which is how it is actually set.
@@ -270,6 +267,30 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     }, [matchup, slotLineup, league.me.bench, league.opponent.starters, data, bestBall]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     /**
+     * The replacement for a starter who cannot play, from the slot board.
+     *
+     * This was its own engine — rankSwaps over every bench-and-starter pair,
+     * a full lineup simulation each, 445ms of the page's compute — feeding
+     * one alert about at most two players. The board already ranks every
+     * slot's candidates by the same measure, so the answer was being
+     * computed twice and the expensive copy thrown away.
+     */
+    const fixFor = React.useCallback((playerId: number): SwapRow | undefined => {
+        const d = decisions.find(x => x.currentId === playerId);
+        const best = d?.candidates.find(c => !c.current);
+        if (!d || !best) return undefined;
+        const all = [...league.me.starters, ...league.me.bench];
+        const inP = all.find(p => p.id === best.playerId);
+        const outP = all.find(p => p.id === playerId);
+        if (!inP || !outP) return undefined;
+        return {
+            inId: inP.id, outId: outP.id,
+            inName: inP.full_name, outName: outP.full_name,
+            deltaWinProb: best.deltaWinProb, deltaPoints: best.deltaPoints,
+        };
+    }, [decisions, league.me.starters, league.me.bench]);
+
+    /**
      * The lineup the simulation would set, and what it is worth.
      *
      * The single most useful number on the page is not your win probability —
@@ -338,6 +359,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
      * apart.
      */
     const slotPairs: SlotPair[] = useMemo(() => {
+        if (!ready) return [];
         const oppSlots = resolveSlots(league.opponent.team, league.opponent.starters);
         if (slotLineup.length === 0 || oppSlots.length === 0) return [];
         const all = [...league.me.starters, ...league.me.bench, ...league.opponent.starters];
@@ -356,8 +378,8 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                     ? beatsProbability(sim(mineP), sim(theirsP), 3000, 17) : null,
             };
         });
-    }, [slotLineup, league.opponent.team, league.opponent.starters, league.me.starters,
-        league.me.bench, resolveSlots, data]);   // eslint-disable-line react-hooks/exhaustive-deps
+    }, [ready, slotLineup, league.opponent.team, league.opponent.starters,
+        league.me.starters, league.me.bench, resolveSlots, data]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     const axisMax = useMemo(() => {
         const all = [...league.me.starters, ...league.me.bench].map(p => outcomeFor(p).outcome.ceiling);
@@ -378,7 +400,8 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                 Silent in best ball, where every problem it would name is one
                 the platform resolves for you. */}
             {!bestBall && <LineupAlerts
-                problems={findProblems(league.me.starters, p => outcomeFor(p).outcome, swaps)}
+                problems={findProblems(league.me.starters,
+                    p => outcomeFor(p).outcome, fixFor)}
                 onPick={r => setCompare([r.inId, r.outId])} />}
 
             {/* ── the headline: one number, no chart ── */}
