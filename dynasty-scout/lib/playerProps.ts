@@ -186,6 +186,16 @@ export async function refreshPlayerProps(
     const byName = new Map<string, number>();
     for (const [k, v] of seen) if (v.length === 1) byName.set(k, v[0]);
 
+    // The key travels in the query string, so it is present in every request
+    // URL — and fetch failures routinely quote the URL they failed on. Any
+    // reason we hand back is rendered into the cron route's JSON response and
+    // its logs, so scrub the key out of the string rather than trusting the
+    // shape of somebody else's error message.
+    const scrub = (v: unknown) => {
+        const s = String((v as Error)?.message ?? v);
+        return key ? s.split(key).join('[apiKey]') : s;
+    };
+
     const get = async (url: string) => {
         const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(45_000) });
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
@@ -196,12 +206,44 @@ export async function refreshPlayerProps(
     try {
         events = await get(`${API}/sports/${SPORT}/events?apiKey=${key}`);
     } catch (e) {
-        return { status: 'failed', reason: String((e as Error)?.message ?? e) };
+        return { status: 'failed', reason: scrub(e) };
     }
+
+    /**
+     * Only this week's games.
+     *
+     * The events endpoint answers with everything upcoming, which in season
+     * includes games beyond the week being refreshed. Pricing those was
+     * wrong twice over: every row is written under the week passed in, so a
+     * game eight days out landed in this week's projection, and the odds
+     * endpoint is billed per request — one call per event, for events nobody
+     * asked about.
+     *
+     * The schedule we already hold gives the real window. A kickoff is
+     * stated in UTC, so a Monday night game reads as Tuesday and the upper
+     * bound needs the extra day; no kickoff is ever earlier in UTC than its
+     * local gameday, so the lower bound stands as it is.
+     */
+    const span = await query<{ first: string | null; last: string | null }>(
+        `SELECT MIN(gameday) AS first, MAX(gameday) AS last FROM vegas_game_lines
+          WHERE season = $1 AND week = $2`, [season, week]);
+    const first = span[0]?.first ?? null;
+    const last = span[0]?.last ?? null;
+    const dayAfter = last
+        ? new Date(Date.parse(`${last}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10)
+        : null;
+    // No schedule loaded is not a reason to price nothing; take them all and
+    // let the week label be the caller's problem, as it was before.
+    const scheduled = first && dayAfter
+        ? events.filter(ev => {
+            const d = String(ev?.commence_time ?? '').slice(0, 10);
+            return d >= first && d <= dayAfter;
+        })
+        : events;
 
     const markets = Object.keys(MARKETS).join(',');
     const rows: PropRow[] = [];
-    for (const ev of events) {
+    for (const ev of scheduled) {
         try {
             const odds = await get(
                 `${API}/sports/${SPORT}/events/${ev.id}/odds`

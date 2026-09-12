@@ -189,5 +189,87 @@ async function main() {
             + `${v.deltaWinProb >= 0 ? '+' : ''}${v.deltaWinProb} pp win prob`);
     }
     console.log('   (points delta is constant; the win-prob delta should flip sign)');
+    // ── 6. the decomposition has to add up ──────────────────────────────────
+    //
+    // The panel's whole claim is that base plus the contributions is the mean.
+    // Rounding each on its own quietly breaks that — 17.34 with -0.16, -0.47 and
+    // +0.14 displays as 17.3 with -0.2, -0.5, +0.1 and sums to 16.7 next to a
+    // stated 16.9 — so the identity is asserted on the rounded numbers, which is
+    // what a reader actually adds up.
+    console.log('\n== 6. the parts add to the whole ==');
+    {
+        const logs = (pts: number[]) =>
+            pts.map((points, i) => ({ season: 2025, week: i + 1, points }));
+        const cases: [string, Parameters<typeof buildOutcome>[0]][] = [
+            ['soft spot', { playerId: 1, position: 'RB', logs: logs([14, 9, 18, 11, 16, 12, 13]),
+                context: { impliedTeamTotal: 28.25, spread: -7,
+                    defenseAllowed: 19.5, defenseLeagueAvg: 14, defenseSample: 40 } }],
+            ['tough spot', { playerId: 2, position: 'WR', logs: logs([11, 7, 15, 9, 13]),
+                context: { impliedTeamTotal: 17.5, spread: 7,
+                    defenseAllowed: 4.5, defenseLeagueAvg: 6.8, defenseSample: 60 } }],
+            ['awkward rounding', { playerId: 3, position: 'RB',
+                logs: logs([17.3, 17.4, 17.35, 17.33, 17.37]),
+                context: { impliedTeamTotal: 22.0, spread: 3.5,
+                    defenseAllowed: 8.0, defenseLeagueAvg: 7.7, defenseSample: 49 } }],
+            ['market priced', { playerId: 4, position: 'WR', logs: logs([10, 12, 8, 14, 11]),
+                marketProjection: 17.5, marketMarkets: 3,
+                context: { impliedTeamTotal: 28, spread: -7,
+                    defenseAllowed: 20, defenseLeagueAvg: 14, defenseSample: 40 } }],
+        ];
+        for (const [label, input] of cases) {
+            const o = buildOutcome(input, 2025);
+            const d = o.drivers;
+            const sum = Math.round(
+                (d.base + d.teamTotal + d.script + d.matchup + d.market) * 10) / 10;
+            const adds = Math.abs(sum - o.mean) < 0.051;
+            console.log(`   ${adds ? 'ok  ' : 'FAIL'} ${label.padEnd(18)}`
+                + ` ${d.base} ${d.teamTotal >= 0 ? '+' : ''}${d.teamTotal}`
+                + ` ${d.script >= 0 ? '+' : ''}${d.script}`
+                + ` ${d.matchup >= 0 ? '+' : ''}${d.matchup}`
+                + `${d.market ? ` mkt ${d.market >= 0 ? '+' : ''}${d.market}` : ''}`
+                + ` = ${sum}  mean ${o.mean}`);
+            if (!adds) process.exitCode = 1;
+        }
+        // ── the base is a blend, and says so ────────────────────────────────
+    //
+    // How much of a player is August's projection and how much is what he
+    // has done since is the most contestable choice here, so the split has
+    // to be reported and has to reconcile with the weight it claims.
+    console.log('\n== 7. the base splits into projection and form ==');
+    {
+        const g = (season: number, pts: number[]) =>
+            pts.map((points, i) => ({ season, week: i + 1, points }));
+        for (const n of [0, 4, 16]) {
+            const o = buildOutcome({ playerId: 9, position: 'RB',
+                seasonProjection: 13 * 17, projectedGames: 17,
+                logs: [...g(2024, [12, 14, 13, 11, 12]), ...g(2025, Array(n).fill(19))],
+                context: {} }, 2025);
+            const { projectionPerGame: proj, formMean: form, base } = o.drivers;
+            const w = o.formWeight;
+            const rebuilt = form == null ? proj
+                : Math.round(((proj ?? 0) * (1 - w) + form * w) * 10) / 10;
+            const agrees = rebuilt != null && Math.abs(rebuilt - base) < 0.11;
+            console.log(`   ${agrees ? 'ok  ' : 'FAIL'} ${String(n).padStart(2)} games`
+                + `  weight ${(w * 100).toFixed(0)}%  form ${form ?? '—'}`
+                + `  proj ${proj}  base ${base}`);
+            if (!agrees) process.exitCode = 1;
+            // With no games this season there is nothing to blend, and the
+            // panel must say "all projection" rather than invent a form.
+            if (n === 0 && form !== null) {
+                console.log('   FAIL no games played must leave form null');
+                process.exitCode = 1;
+            }
+        }
+    }
+
+    // The market replaces the model's tilt; it must never stack on top of it.
+        const m = buildOutcome(cases[3][1], 2025);
+        const stacked = m.drivers.teamTotal || m.drivers.script || m.drivers.matchup;
+        console.log(`   ${stacked ? 'FAIL' : 'ok  '} a priced player has no model tilt`
+            + `  ${stacked ? 'stacked!' : 'replaced, not added'}`);
+        if (stacked) process.exitCode = 1;
+    }
+
 }
+
 main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });

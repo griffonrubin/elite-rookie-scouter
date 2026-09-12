@@ -9,6 +9,8 @@ import { POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { CHART_INK, DIVERGING, MARK, SERIES } from '@/lib/vizTokens';
 import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
+import { WhyBars, WhyBarsProps } from './WhyBars';
+import { UsageStrip } from './UsageStrip';
 
 /**
  * One row per decision, not one row per pairing.
@@ -47,10 +49,15 @@ export interface SlotBoardProps {
     /** False in best ball, where the platform sets the lineup and a verdict
         on each slot would be a call nobody gets to make. */
     showCall?: boolean;
+    /** The week's evidence for one player, so a row can show its reasoning
+        in the units a reader would argue with rather than only in points. */
+    contextOf?: (id: number) => WhyBarsProps['context'];
+    /** Per-game usage, which leads the points the projection is built on. */
+    logsOf?: (id: number) => import('@/app/api/redraft/startsit/route').GameLog[];
 }
 
 export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
-    showCall = true }: SlotBoardProps) {
+    showCall = true, contextOf, logsOf }: SlotBoardProps) {
     const [open, setOpen] = useState<number | null>(null);
 
     return (
@@ -142,8 +149,31 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
                         </button>
 
                         {isOpen && (
-                            <Candidates d={d} playerOf={playerOf} outcomeOf={outcomeOf}
-                                max={max} onCompare={onCompare} />
+                            <>
+                                {/* Why this number, before who else could fill
+                                    the slot: opening a row is asking a question
+                                    about the player who is in it. */}
+                                {o && (
+                                    <div className="px-2 pb-2.5 pt-0.5 grid gap-x-6 gap-y-2.5
+                                                    lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">
+                                        <WhyBars outcome={o.outcome}
+                                            context={{
+                                                ...(contextOf?.(d.currentId!) ?? {}),
+                                                position: cur?.position ?? null,
+                                            }} />
+                                        {/* Beside the arithmetic, not under it:
+                                            "the number says 16.9" and "his
+                                            carries are down eight" are two
+                                            halves of one question. */}
+                                        {d.currentId != null && logsOf && (
+                                            <UsageStrip logs={logsOf(d.currentId)}
+                                                position={cur?.position ?? null} />
+                                        )}
+                                    </div>
+                                )}
+                                <Candidates d={d} playerOf={playerOf} outcomeOf={outcomeOf}
+                                    max={max} onCompare={onCompare} />
+                            </>
                         )}
                     </div>
                 );
