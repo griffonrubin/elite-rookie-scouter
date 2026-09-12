@@ -428,6 +428,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                 defenseSample: d?.def_sample ?? null,
                             };
                         }}
+                        logsOf={id => data.get(id)?.logs ?? []}
                         onCompare={(a, b) => setCompare([a, b])} />
                 </section>
             </div>

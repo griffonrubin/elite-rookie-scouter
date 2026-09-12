@@ -15,6 +15,35 @@ export const dynamic = 'force-dynamic';
 
 const SEASON = 2026;
 
+/**
+ * One game, with the points and the usage that produced them.
+ *
+ * The points are what the projection is built from; the usage is what says
+ * whether those points are about to change. A back losing snaps has the same
+ * history as one gaining them right up to the week it matters.
+ */
+export interface GameLog {
+    season: number;
+    week: number;
+    points: number;
+    opponent: string | null;
+    targets: number | null;
+    carries: number | null;
+    /** Share of the team's targets, 0-1. */
+    target_share: number | null;
+    /** Share of the team's offensive snaps, 0-1. */
+    snap_share: number | null;
+    /**
+     * Weighted opportunity rating: 1.5 x target share + 0.7 x air yards
+     * share. An index, not a share — it runs negative and above 1, because
+     * team air yards can be small or negative on a night of screens, so it
+     * must never be rendered as a percentage.
+     */
+    wopr: number | null;
+    receptions: number | null;
+    pass_attempts: number | null;
+}
+
 export interface StartSitPlayer {
     id: number;
     slug: string;
@@ -28,7 +57,7 @@ export interface StartSitPlayer {
     spread: number | null;
     opponent: string | null;
     on_bye: boolean;
-    logs: { season: number; week: number; points: number; opponent: string | null }[];
+    logs: GameLog[];
     /** PPR implied by this week's prop market, when the books priced them. */
     market_points: number | null;
     market_markets: number | null;
@@ -85,11 +114,21 @@ export async function GET(req: NextRequest) {
 
     // Weekly logs, most recent two seasons — the shape estimate never reaches
     // further back than that and the rows add up quickly.
+    //
+    // Usage rides along, on the same rolling window rather than a season of
+    // its own: usage is the leading indicator of a projection built on past
+    // points, and one pinned to last season cannot lead anything by November.
     const logs = await query<{
         player_id: number; season: number; week: number;
         points: number; opponent: string | null;
+        targets: number | null; carries: number | null;
+        target_share: number | null; snap_share: number | null;
+        wopr: number | null; receptions: number | null;
+        pass_attempts: number | null;
     }>(
-        `SELECT player_id, season, week, fantasy_points_ppr AS points, opponent
+        `SELECT player_id, season, week, fantasy_points_ppr AS points, opponent,
+                targets, carries, target_share, offense_pct AS snap_share, wopr,
+                receptions, pass_attempts
            FROM nfl_player_week
           WHERE player_id IN (${ph}) AND season_type = 'REG'
             AND season >= ${SEASON - 2}
@@ -190,17 +229,24 @@ export async function GET(req: NextRequest) {
                      THEN AVG(COALESCE(rush_epa,0) + COALESCE(rec_epa,0) + COALESCE(pass_epa,0))
                      END AS epa
            FROM nfl_player_week
-          WHERE player_id IN (${ph}) AND season_type = 'REG' AND season = ${SEASON - 1}
+          WHERE player_id IN (${ph}) AND season_type = 'REG'
+            AND season >= ${SEASON - 2}
           GROUP BY player_id`, ids);
     const usageByPlayer = new Map(usageRows.map(u => [u.player_id, u]));
 
-    const logsByPlayer = new Map<number,
-        { season: number; week: number; points: number; opponent: string | null }[]>();
+    const logsByPlayer = new Map<number, GameLog[]>();
+    const n = (v: number | null) => (v == null ? null : Number(v));
     for (const l of logs) {
+        const row = {
+            season: l.season, week: l.week, points: l.points, opponent: l.opponent,
+            targets: n(l.targets), carries: n(l.carries),
+            target_share: n(l.target_share), snap_share: n(l.snap_share),
+            wopr: n(l.wopr), receptions: n(l.receptions),
+            pass_attempts: n(l.pass_attempts),
+        };
         const arr = logsByPlayer.get(l.player_id);
-        if (arr) arr.push({ season: l.season, week: l.week, points: l.points, opponent: l.opponent });
-        else logsByPlayer.set(l.player_id,
-            [{ season: l.season, week: l.week, points: l.points, opponent: l.opponent }]);
+        if (arr) arr.push(row);
+        else logsByPlayer.set(l.player_id, [row]);
     }
 
     const players: StartSitPlayer[] = base.map(p => {
