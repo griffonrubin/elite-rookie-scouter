@@ -89,10 +89,10 @@ const SECTIONS: readonly Section[] = [
     accent: '#34d399',
     glow: 'rgba(52,211,153,0.4)',
     root: '/redraft/start-sit',
-    owns: ['/redraft/start-sit', '/settings/leagues'],
+    owns: ['/redraft/start-sit', '/in-season', '/settings/leagues'],
     nav: [
       { href: '/redraft/start-sit', label: 'Start/Sit' },
-      { href: '/in-season/waivers', label: 'Waiver Wire',    soon: true },
+      { href: '/in-season/waivers', label: 'Waiver Wire' },
       { href: '/in-season/power',   label: 'Power Rankings', soon: true },
       { href: '/in-season/team',    label: 'Team Analysis',  soon: true },
       { href: '/in-season/trades',  label: 'Trade Analyzer', soon: true },

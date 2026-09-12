@@ -26,6 +26,17 @@ import { CHART_INK, DIVERGING, MARK } from '@/lib/vizTokens';
 
 export interface WhyBarsProps {
     outcome: Outcome;
+    /**
+     * What he has actually averaged lately, from the log.
+     *
+     * Needed to catch the case the model cannot see on its own: in week 1
+     * the form weight is zero, so the centre is entirely a projection made
+     * in August — which is the right default for an established player and
+     * badly wrong for one whose role has changed since. The waiver page is
+     * full of them.
+     */
+    recentMean?: number | null;
+    recentGames?: number | null;
     /** For naming the matchup and the game in words rather than in points. */
     context?: {
         opponent?: string | null;
@@ -158,7 +169,8 @@ export function WhyBars(props: WhyBarsProps) {
                 </span>
             </div>
 
-            <BaseSplit outcome={o} />
+            <BaseSplit outcome={o} recentMean={props.recentMean}
+                recentGames={props.recentGames} />
 
             {trivial ? (
                 <p className="text-[11px] text-muted-foreground/55 leading-snug">
@@ -259,7 +271,9 @@ export function WhyBars(props: WhyBarsProps) {
  * Stated, it is a judgement anyone can overrule. Hidden, it is the model
  * deciding quietly and presenting the result as arithmetic.
  */
-function BaseSplit({ outcome: o }: { outcome: Outcome }) {
+function BaseSplit({ outcome: o, recentMean, recentGames }: {
+    outcome: Outcome; recentMean?: number | null; recentGames?: number | null;
+}) {
     const { projectionPerGame: proj, formMean: form } = o.drivers;
     const w = o.formWeight;
 
@@ -267,13 +281,30 @@ function BaseSplit({ outcome: o }: { outcome: Outcome }) {
     if (proj == null || form == null) {
         const only = proj ?? form;
         if (only == null) return null;
+        // A projection made in August against a role that has since changed
+        // is not a small disagreement, it is the wrong number — and with no
+        // games this season there is nothing in the blend to correct it.
+        const stale = proj != null && recentMean != null && (recentGames ?? 0) >= 4
+            && recentMean > Math.max(proj * 1.6, proj + 4);
         return (
-            <p className="text-[10px] text-muted-foreground/45 leading-snug">
-                {proj != null
-                    ? `${only.toFixed(1)} a game from the preseason projection — `
-                      + 'no games logged this season yet to weigh against it.'
-                    : `${only.toFixed(1)} a game from his own logs; no preseason `
-                      + 'projection to blend with.'}
+            <p className="text-[10px] leading-snug"
+                style={{ color: stale ? '#FDBA74' : undefined }}>
+                <span className={stale ? '' : 'text-muted-foreground/45'}>
+                    {proj != null
+                        ? `${only.toFixed(1)} a game from the preseason projection — `
+                          + 'no games logged this season yet to weigh against it.'
+                        : `${only.toFixed(1)} a game from his own logs; no preseason `
+                          + 'projection to blend with.'}
+                </span>
+                {stale && (
+                    <span className="text-muted-foreground/60">
+                        {' '}But his last {recentGames} games average{' '}
+                        <span className="font-semibold">{recentMean!.toFixed(1)}</span>,
+                        so the projection predates whatever his role is now and
+                        everything above inherits that. Read the usage and the log
+                        rather than the number.
+                    </span>
+                )}
             </p>
         );
     }

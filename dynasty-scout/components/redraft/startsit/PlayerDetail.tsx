@@ -34,11 +34,25 @@ export function PlayerDetail({
     outcome, context, logs = [], position, stacked = false,
     opponent, season,
 }: PlayerDetailProps) {
+    const recent = React.useMemo(() => {
+        const last = [...logs]
+            .sort((a, b) => a.season - b.season || a.week - b.week)
+            .slice(-5);
+        return {
+            games: last.length,
+            mean: last.length
+                ? last.reduce((t, g) => t + g.points, 0) / last.length : null,
+        };
+    }, [logs]);
     return (
         <div className={stacked
             ? 'space-y-2.5'
             : `grid gap-x-6 gap-y-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)]`}>
-            <WhyBars outcome={outcome} context={{ ...context, position }} />
+            {/* The log is right here, so the panel can catch a projection that
+                predates the player's current role instead of presenting it
+                straight. */}
+            <WhyBars outcome={outcome} context={{ ...context, position }}
+                recentMean={recent.mean} recentGames={recent.games} />
             {/* Beside the arithmetic, not under it: "the number says 16.9"
                 and "his carries are down six" are two halves of one
                 question. */}
