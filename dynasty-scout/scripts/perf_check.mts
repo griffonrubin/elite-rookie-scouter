@@ -14,12 +14,10 @@
  */
 import Database from 'better-sqlite3';
 import { buildOutcome, simulateMatchup, beatsProbability, type SimPlayer }
-    from '/home/user/elite-rookie-scouter/dynasty-scout/lib/startSit';
-import { rankSlots, resolveConflicts }
-    from '/home/user/elite-rookie-scouter/dynasty-scout/lib/lineup';
+    from '../lib/startSit';
+import { rankSlots, resolveConflicts } from '../lib/lineup';
 
-const db = new Database('/home/user/elite-rookie-scouter/dynasty-scout/dynasty_scout.db',
-    { readonly: true });
+const db = new Database('dynasty_scout.db', { readonly: true });
 
 // A realistic pool: 9 starters, 6 bench, 9 opponents, with real logs.
 const pool = db.prepare(`
