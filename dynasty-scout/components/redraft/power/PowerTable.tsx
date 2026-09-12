@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, ordinal } from '@/lib/utils';
 import { EvenBar, spanFor } from './EvenBar';
 import { POWER_NOISE, type PowerGap, type PowerRow } from '@/lib/power';
 
@@ -21,11 +21,6 @@ import { POWER_NOISE, type PowerGap, type PowerRow } from '@/lib/power';
  * overall matters less than being the one team you cannot beat.
  */
 
-const ord = (n: number) => {
-    const s = ['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] ?? ['th', 'st', 'nd', 'rd'][n % 100] ?? 'th';
-    return `${n}${s}`;
-};
-
 function LuckNote({ row }: { row: PowerRow }) {
     // Null means the standings cannot say — week one, or a league still
     // level. The gap is the only honest thing to withhold there.
@@ -43,7 +38,7 @@ function LuckNote({ row }: { row: PowerRow }) {
     return (
         <span className="text-[10px] font-semibold"
             style={{ color: lucky ? '#FDBA74' : '#93C5FD' }}
-            title={`${ord(row.rank)}-best roster, ${ord(row.recordRank)} in the standings`}>
+            title={`${ordinal(row.rank)}-best roster, ${ordinal(row.recordRank)} in the standings`}>
             {lucky
                 ? `${Math.abs(gap)} better off than the roster`
                 : `${Math.abs(gap)} worse off than the roster`}

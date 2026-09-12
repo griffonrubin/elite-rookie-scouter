@@ -26,7 +26,8 @@ const STORAGE_KEY = 'redraft_league_sync';
 const SAVED_KEY = 'redraft_league_saved';
 
 /** Slots that are not part of the lineup being set. */
-const BENCH_SLOTS = new Set(['BN', 'IR', 'TAXI']);
+/** Slots that are not part of the lineup, so not part of its shape. */
+export const BENCH_SLOTS = new Set(['BN', 'IR', 'TAXI']);
 
 export type LeaguePlatform = 'sleeper' | 'espn';
 

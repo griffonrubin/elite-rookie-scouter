@@ -3,7 +3,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RedraftPlayer } from '@/lib/types';
 import { useLeagueSync } from '@/lib/useLeagueSync';
-import { buildOutcome, Outcome } from '@/lib/startSit';
+import { Outcome } from '@/lib/startSit';
+import { simInputFor } from '@/lib/simInput';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
 import { PlayerDetail } from '@/components/redraft/startsit/PlayerDetail';
 import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
@@ -97,23 +98,7 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
     const outcomeOf = (r: WaiverRow): Outcome | null => {
         const d = detail.get(r.id);
         if (!d) return null;
-        return buildOutcome({
-            playerId: r.id, position: r.position ?? '',
-            seasonProjection: d.proj_points ?? null, projectedGames: 17,
-            logs: d.logs ?? [],
-            marketProjection: d.market_points ?? null,
-            marketMarkets: d.market_markets ?? null,
-            context: {
-                impliedTeamTotal: d.implied_team_total ?? null,
-                spread: d.spread ?? null,
-                defenseAllowed: d.def_allowed ?? null,
-                defenseLeagueAvg: d.def_league_avg ?? null,
-                defenseSample: d.def_sample ?? null,
-                reportStatus: d.report_status ?? null,
-                practiceStatus: d.practice_status ?? null,
-                onBye: d.on_bye ?? false,
-            },
-        }, SEASON);
+        return simInputFor({ id: r.id, position: r.position ?? '' }, d, SEASON).outcome;
     };
 
     if (!league.connection || !league.connection.teamKey) {

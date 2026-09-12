@@ -3,7 +3,8 @@
 import React, { useMemo, useState } from 'react';
 import { RedraftPlayer } from '@/lib/types';
 import { useLeagueSync } from '@/lib/useLeagueSync';
-import { buildOutcome, MAX_STARTSIT_IDS, SimPlayer, usableSample } from '@/lib/startSit';
+import { MAX_STARTSIT_IDS, SimPlayer } from '@/lib/startSit';
+import { simInputFor, simPlayerFrom } from '@/lib/simInput';
 import { powerRank, PowerResult, PowerTeam } from '@/lib/power';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
 import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
@@ -104,28 +105,8 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
         const byId = new Map(players.map(p => [p.id, p]));
         const sim = (id: number): SimPlayer | null => {
             const p = byId.get(id);
-            const d = data.get(id);
             if (!p) return null;
-            const logs = d?.logs ?? [];
-            const outcome = buildOutcome({
-                playerId: id, position: p.position ?? '',
-                seasonProjection: d?.proj_points ?? null, projectedGames: 17,
-                logs,
-                marketProjection: d?.market_points ?? null,
-                marketMarkets: d?.market_markets ?? null,
-                context: {
-                    impliedTeamTotal: d?.implied_team_total ?? null,
-                    spread: d?.spread ?? null,
-                    defenseAllowed: d?.def_allowed ?? null,
-                    defenseLeagueAvg: d?.def_league_avg ?? null,
-                    defenseSample: d?.def_sample ?? null,
-                    reportStatus: d?.report_status ?? null,
-                    practiceStatus: d?.practice_status ?? null,
-                    onBye: d?.on_bye ?? false,
-                },
-            }, SEASON);
-            const sample = logs.map(l => l.points);
-            return { outcome, sample: usableSample(sample) ? sample : undefined };
+            return simPlayerFrom(simInputFor(p, data.get(id), SEASON));
         };
         const teams: PowerTeam[] = lineups.map(t => ({
             key: t.key, name: t.name, record: t.record,
