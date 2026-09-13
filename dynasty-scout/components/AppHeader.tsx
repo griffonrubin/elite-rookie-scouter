@@ -94,7 +94,7 @@ const SECTIONS: readonly Section[] = [
       { href: '/redraft/start-sit', label: 'Start/Sit' },
       { href: '/in-season/waivers', label: 'Waiver Wire' },
       { href: '/in-season/power',   label: 'Power Rankings' },
-      { href: '/in-season/team',    label: 'Team Analysis',  soon: true },
+      { href: '/in-season/team',    label: 'Team Analysis'  },
       { href: '/in-season/trades',  label: 'Trade Analyzer' },
       // Not a fantasy tool at all, but the same data answers it: the spread,
       // the total and the de-vigged moneyline are already loaded for every
