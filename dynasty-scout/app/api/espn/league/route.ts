@@ -125,6 +125,10 @@ export async function GET(req: NextRequest) {
         playoffWeekStart: data?.settings?.scheduleSettings?.matchupPeriodCount != null
             ? Number(data.settings.scheduleSettings.matchupPeriodCount) + 1
             : null,
+        /** How many teams make the playoffs, which is where the cut is. */
+        playoffTeams: data?.settings?.scheduleSettings?.playoffTeamCount != null
+            ? Number(data.settings.scheduleSettings.playoffTeamCount)
+            : null,
         teams: teams.map((t: any) => ({
             teamId: Number(t?.id),
             name: [t?.location, t?.nickname].filter(Boolean).join(' ').trim()

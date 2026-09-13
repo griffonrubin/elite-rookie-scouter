@@ -4,8 +4,10 @@ import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn, ordinal } from '@/lib/utils';
 import { EvenBar, spanFor } from './EvenBar';
-import { POWER_NOISE, seasonOutlook, type PowerGap, type PowerRow } from '@/lib/power';
+import { POWER_NOISE, seasonOutlook,
+    type PlayoffOdds, type PowerGap, type PowerRow } from '@/lib/power';
 import type { Horizon } from '@/lib/simInput';
+import { DIVERGING } from '@/lib/vizTokens';
 
 /**
  * Strength, and how far results have run ahead of it.
@@ -47,11 +49,20 @@ function LuckNote({ row }: { row: PowerRow }) {
     );
 }
 
-export function PowerTable({ rows, unranked, myKey, trials, horizon, remaining }: {
+export function PowerTable({
+    rows, unranked, myKey, trials, horizon, remaining, odds, spots, onSpots, spotsKnown,
+}: {
     rows: PowerRow[]; unranked?: PowerGap[]; myKey: string | null; trials: number;
     horizon: Horizon;
     /** Regular-season weeks still to play. */
     remaining: number;
+    /** How often each roster is still playing in January. */
+    odds: Map<string, PlayoffOdds> | null;
+    /** How many teams make the playoffs. */
+    spots: number;
+    onSpots: (n: number) => void;
+    /** True when the platform said, rather than the page assuming. */
+    spotsKnown: boolean;
 }) {
     const [open, setOpen] = useState<string | null>(null);
     if (rows.length === 0) return null;
@@ -76,9 +87,16 @@ export function PowerTable({ rows, unranked, myKey, trials, horizon, remaining }
     const showFinish = horizon === 'season' && remaining > 0;
     const GRID = showFinish
         ? `grid-cols-[22px_minmax(0,1fr)_auto]
-           sm:grid-cols-[22px_150px_190px_52px_66px_52px_minmax(0,1fr)_20px]`
+           sm:grid-cols-[22px_150px_178px_50px_74px_50px_minmax(0,1fr)_20px]`
         : `grid-cols-[22px_minmax(0,1fr)_auto]
            sm:grid-cols-[22px_150px_190px_52px_56px_minmax(0,1fr)_20px]`;
+    /**
+     * A colour for a probability, on the same two hues as everything else.
+     *
+     * Not a third scale: the diverging pair already means "better or worse
+     * than even", and playoff odds are the same claim about a season.
+     */
+    const oddsInk = (p: number) => (p >= 0.5 ? DIVERGING.positive : DIVERGING.negative);
 
     return (
         <section className="rounded-xl border border-white/[0.07] p-4"
@@ -90,8 +108,32 @@ export function PowerTable({ rows, unranked, myKey, trials, horizon, remaining }
                         ? 'Every roster against every other, rest of season'
                         : 'Every roster against every other, this week'}
                 </h2>
-                <span className="text-[10px] text-muted-foreground/45">
-                    {rows.length} teams · {(rows.length * (rows.length - 1)) / 2} pairings
+                <span className="flex items-center gap-x-3 gap-y-1 flex-wrap
+                                 text-[10px] text-muted-foreground/45">
+                    {/* Where the cut is, and who said so.
+                        Sleeper does not always report it, and a page that
+                        quietly assumes six is giving a confident wrong answer
+                        to the only question on it that matters. */}
+                    {showFinish && odds && (
+                        <label className="flex items-center gap-1.5">
+                            <span>{spotsKnown ? 'Top' : 'Assuming top'}</span>
+                            <select value={spots}
+                                onChange={e => onSpots(Number(e.target.value))}
+                                aria-label="How many teams make the playoffs"
+                                className="rounded px-1 py-0.5 text-[10px] font-bold
+                                           text-foreground border border-white/[0.10]"
+                                style={{ background: 'rgba(255,255,255,0.05)' }}>
+                                {Array.from({ length: Math.max(1, rows.length - 1) },
+                                    (_, i) => i + 1).map(n => (
+                                    <option key={n} value={n}>{n}</option>
+                                ))}
+                            </select>
+                            <span>make the playoffs</span>
+                        </label>
+                    )}
+                    <span>
+                        {rows.length} teams · {(rows.length * (rows.length - 1)) / 2} pairings
+                    </span>
                 </span>
             </div>
 
@@ -111,10 +153,12 @@ export function PowerTable({ rows, unranked, myKey, trials, horizon, remaining }
                 <span className="hidden sm:block text-right">Rate</span>
                 {showFinish && (
                     <span className="hidden sm:block text-right normal-case tracking-normal">
-                        <span className="uppercase tracking-widest">Finish</span>
+                        <span className="uppercase tracking-widest">
+                            {odds ? 'Playoffs' : 'Finish'}
+                        </span>
                         <span className="block font-normal text-muted-foreground/35
                                          text-[9px] leading-tight">
-                            {remaining} wk left
+                            {odds ? `top ${spots} · ${remaining} wk` : `${remaining} wk left`}
                         </span>
                     </span>
                 )}
@@ -212,10 +256,17 @@ export function PowerTable({ rows, unranked, myKey, trials, horizon, remaining }
                                         {showFinish && (() => {
                                             const o = seasonOutlook(r.winRate, remaining,
                                                 r.record);
+                                            const po = odds?.get(r.key);
                                             return (
                                                 <span className="text-muted-foreground/40">
-                                                    {` · projected ${o.projectedWins}–`
+                                                    {` · ${o.projectedWins}–`
                                                         + `${o.projectedLosses}`}
+                                                    {po && (
+                                                        <span style={{ color: oddsInk(po.odds) }}>
+                                                            {` · ${Math.round(po.odds * 100)}% `
+                                                                + 'playoffs'}
+                                                        </span>
+                                                    )}
                                                 </span>
                                             );
                                         })()}
@@ -230,27 +281,42 @@ export function PowerTable({ rows, unranked, myKey, trials, horizon, remaining }
 
                                 {showFinish && (() => {
                                     const o = seasonOutlook(r.winRate, remaining, r.record);
+                                    const po = odds?.get(r.key);
                                     return (
                                         <span className="hidden sm:block sm:col-start-5
                                                          sm:row-start-1 text-right tabular-nums"
                                             title={`${o.wonSoFar} won, ${o.winsToCome} more `
-                                                + `expected from ${o.remaining} weeks against `
-                                                + 'an average opponent. Eighty per cent of '
-                                                + `seasons finish between ${o.low} and `
-                                                + `${o.high} wins.`}>
-                                            <span className="block text-[11px] font-semibold">
-                                                {o.projectedWins}–{o.projectedLosses}
-                                            </span>
-                                            {/* The band, because fourteen
-                                                weeks at fifty-four per cent
-                                                is seven and a half wins and
-                                                also anywhere from five to
-                                                ten. A record printed without
-                                                it invites a reader to plan
-                                                around a coin flip. */}
+                                                + `expected from ${o.remaining} weeks. Eighty `
+                                                + `per cent of seasons finish between ${o.low} `
+                                                + `and ${o.high} wins`
+                                                + (po
+                                                    ? `, and between ${po.seedLow}th and `
+                                                      + `${po.seedHigh}th in the league.`
+                                                    : '.')}>
+                                            {/* The number an owner is
+                                                actually asking for. Eight
+                                                and six makes the playoffs in
+                                                one league and misses in
+                                                another, and they already
+                                                know which. */}
+                                            {po ? (
+                                                <span className="block text-[11px] font-bold"
+                                                    style={{ color: oddsInk(po.odds) }}>
+                                                    {po.odds >= 0.995 ? '>99'
+                                                        : po.odds <= 0.005 ? '<1'
+                                                        : Math.round(po.odds * 100)}%
+                                                </span>
+                                            ) : (
+                                                <span className="block text-[11px] font-semibold">
+                                                    {o.projectedWins}–{o.projectedLosses}
+                                                </span>
+                                            )}
                                             <span className="block text-[9px]
                                                              text-muted-foreground/40">
-                                                {o.low}–{o.high} wins
+                                                {po
+                                                    ? `${o.projectedWins}–${o.projectedLosses}`
+                                                      + ` · ${ordinal(po.seed)}`
+                                                    : `${o.low}–${o.high} wins`}
                                             </span>
                                         </span>
                                     );
@@ -349,14 +415,28 @@ export function PowerTable({ rows, unranked, myKey, trials, horizon, remaining }
                         over {remaining || 'the remaining'} weeks it will — a slot
                         somebody left empty this Sunday is a fact about one afternoon,
                         not about the team.
-                        {showFinish && (
+                        {showFinish && (odds ? (
+                            <>
+                                {' '}Playoff odds play the remaining {remaining} weeks
+                                out ten thousand times, shuffling the league into pairs
+                                each week and settling every pair on the head-to-head
+                                rate above. Pairing rather than carrying each team&rsquo;s
+                                rate forward on its own is what stops all twelve of them
+                                finishing 9&ndash;5: a win here is a loss there, which is
+                                the only way a finishing place means anything. The
+                                schedule itself is drawn at random, because whose
+                                remaining fixtures are soft is the thing a ranking by
+                                roster is trying not to measure — your real one is on
+                                your platform.
+                            </>
+                        ) : (
                             <>
                                 {' '}The projected finish carries that rate forward
                                 against an <em>average</em> opponent: the schedule is
                                 not modelled, and whose is soft is the thing a power
                                 ranking is trying not to measure.
                             </>
-                        )}
+                        ))}
                     </>
                 ) : (
                     <>

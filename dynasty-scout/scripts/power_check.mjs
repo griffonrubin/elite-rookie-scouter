@@ -243,26 +243,63 @@ assert('the table names the horizon it ranked on',
     (t.match(/every roster against every other[^\n]*/i) || ['(unnamed)'])[0]);
 assert('the week is not taken off the page, only off the default',
     await page.getByRole('button', { name: /^this week$/i }).count() > 0);
-assert('a projected finish is given, not just a rate',
-    /\d+ wk left/i.test(t) && /\d+–\d+ wins/.test(t),
-    (t.match(/\d+–\d+ wins/) || ['(no band)'])[0]);
-// And the band, because fourteen weeks at 54% is 7.6 wins and also five to
-// ten of them.
+/**
+ * And the question a projected record is standing in for.
+ *
+ * Eight and six makes the playoffs in one league and misses in another, and
+ * the owner asking already knows which. The invariant worth checking on a
+ * rendered page is the one that makes the number trustworthy: exactly six
+ * teams make a six-team playoff in every simulated season, so the column
+ * has to sum to six. It only does because the weeks are paired.
+ */
+assert('the cut is stated, not assumed silently',
+    /make the playoffs/i.test(t) && /top \d+ · \d+ wk/i.test(t),
+    (t.match(/(assuming )?top \d+[^\n]*make the playoffs/i)
+        || t.match(/top \d+ · \d+ wk/i) || ['(unstated)'])[0]);
 const finishes = await teamRows().evaluateAll(els => els.map(e => {
-    const m = e.innerText.match(/(\d+)–(\d+)\n(\d+)–(\d+) wins/);
-    return m ? { w: +m[1], l: +m[2], lo: +m[3], hi: +m[4] } : null;
+    const m = e.innerText.match(/(\d+|>99|<1)%\n(\d+)–(\d+) · (\d+)(?:st|nd|rd|th)/);
+    return m ? {
+        odds: m[1] === '>99' ? 99.5 : m[1] === '<1' ? 0.5 : +m[1],
+        w: +m[2], l: +m[3], seed: +m[4],
+    } : null;
 }).filter(Boolean));
-console.log('      ' + finishes.slice(0, 4)
-    .map(f => `${f.w}-${f.l} (${f.lo}-${f.hi})`).join('  '));
-assert('every row projects a record', finishes.length === 12, String(finishes.length));
-assert('each adds up to the season', finishes.every(f => f.w + f.l === 14),
-    finishes.map(f => f.w + f.l).join(','));
-assert('the band contains the projection',
-    finishes.every(f => f.lo <= f.w && f.w <= f.hi),
-    finishes.filter(f => f.lo > f.w || f.w > f.hi).length + ' outside');
-assert('and stronger rosters project more wins',
-    finishes[0].w >= finishes[finishes.length - 1].w,
-    `${finishes[0].w} vs ${finishes[finishes.length - 1].w}`);
+console.log('      ' + finishes.slice(0, 5)
+    .map(f => `${f.odds}% ${f.w}-${f.l} seed ${f.seed}`).join('  '));
+assert('every row gets playoff odds', finishes.length === 12, String(finishes.length));
+const oddsSum = finishes.reduce((a, f) => a + f.odds, 0) / 100;
+console.log(`      the column sums to ${oddsSum.toFixed(2)} places`);
+assert('and the column sums to the places the league has',
+    Math.abs(oddsSum - 6) < 0.2, oddsSum.toFixed(2));
+assert('each projected record adds up to the season',
+    finishes.every(f => f.w + f.l === 14), finishes.map(f => f.w + f.l).join(','));
+assert('odds fall with the ranking',
+    finishes.every((f, i) => i === 0 || f.odds <= finishes[i - 1].odds + 3),
+    finishes.map(f => f.odds).join(','));
+assert('and the seeds are a league, running one to twelve',
+    finishes[0].seed < finishes[finishes.length - 1].seed,
+    finishes.map(f => f.seed).join(','));
+// Moving the cut has to move the answer, or the control is decoration.
+const cutBefore = finishes.map(f => f.odds);
+await page.getByLabel(/how many teams make the playoffs/i).selectOption('4');
+await page.waitForTimeout(2500);
+// Anchored on the line beneath it, as the first scrape is. A bare
+// /(\d+)%\n/ finds the "9%" inside the rate column's "57.9%" and reports
+// every roster at nine per cent — a match that is not wrong so much as
+// somewhere else entirely.
+const cutAfter = await teamRows().evaluateAll(els => els.map(e => {
+    const m = e.innerText.match(/(\d+|>99|<1)%\n(\d+)–(\d+) · \d+(?:st|nd|rd|th)/);
+    return m ? (m[1] === '>99' ? 99.5 : m[1] === '<1' ? 0.5 : +m[1]) : null;
+}).filter(x => x != null));
+const sum4 = cutAfter.reduce((a, v) => a + v, 0) / 100;
+console.log(`      at a four-team cut the column sums to ${sum4.toFixed(2)}`);
+assert('a narrower cut is a harder cut', sum4 < oddsSum - 1, sum4.toFixed(2));
+assert('and it still sums to the places on offer', Math.abs(sum4 - 4) < 0.2,
+    sum4.toFixed(2));
+assert('with the middle of the table losing the most',
+    cutBefore[5] - cutAfter[5] > cutBefore[0] - cutAfter[0],
+    `${cutBefore[5]}→${cutAfter[5]} vs ${cutBefore[0]}→${cutAfter[0]}`);
+await page.getByLabel(/how many teams make the playoffs/i).selectOption('6');
+await page.waitForTimeout(2500);
 // Switching horizons has to change the answer, or the setting is decoration.
 await page.getByRole('button', { name: /^this week$/i }).click();
 await page.waitForTimeout(3500);

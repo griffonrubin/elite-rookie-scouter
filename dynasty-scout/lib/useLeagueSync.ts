@@ -106,6 +106,15 @@ export interface LeagueSnapshot {
      * about making the playoffs, not about week seventeen.
      */
     playoffWeekStart?: number | null;
+    /**
+     * How many teams make the playoffs, where the platform reports it.
+     *
+     * The cut is the whole question — eight and six makes it in one league
+     * and misses in another, and the owner asking already knows which. Where
+     * the platform will not say, the page picks half the league and lets the
+     * reader move it rather than quietly assuming.
+     */
+    playoffTeams?: number | null;
     /** True in a best-ball league: the platform scores the optimal lineup
         itself, so there is no start/sit call to make. */
     bestBall?: boolean;
@@ -354,6 +363,7 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         opponentKeyFor,
         rosterPositions: league?.roster_positions ?? null,
         playoffWeekStart: league?.settings?.playoff_week_start ?? null,
+        playoffTeams: league?.settings?.playoff_teams ?? null,
         bestBall: league?.settings?.best_ball === 1,
     };
 }
@@ -389,6 +399,7 @@ async function fetchEspn(conn: LeagueConnection, week: number): Promise<LeagueSn
     return {
         leagueName: d.name ?? null, week: d.week ?? week, teams, opponentKeyFor,
         playoffWeekStart: d.playoffWeekStart ?? null,
+        playoffTeams: d.playoffTeams ?? null,
     };
 }
 

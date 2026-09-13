@@ -6,7 +6,7 @@ import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
 import { SimPlayer } from '@/lib/startSit';
 import { useStartSitData } from '@/lib/useStartSit';
 import { simInputFor, simPlayerFrom, type Horizon } from '@/lib/simInput';
-import { powerRank, PowerResult, PowerTeam } from '@/lib/power';
+import { playoffOdds, powerRank, PowerResult, PowerTeam } from '@/lib/power';
 import { bestLineup, type TradeRosterPlayer } from '@/lib/trade';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
 import { HorizonToggle } from '@/components/redraft/HorizonToggle';
@@ -174,6 +174,35 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
         return Math.max(0, playoffs - (week ?? 1));
     }, [league.snapshot?.playoffWeekStart, week]);
 
+    /**
+     * Where the cut is.
+     *
+     * The platform usually says; Sleeper does not always, and a page that
+     * quietly assumes six is a page giving a confident wrong answer to the
+     * only question that matters. So the reader can move it, and the table
+     * says which number it used.
+     */
+    const [spots, setSpots] = useState<number | null>(null);
+    const cut = spots
+        ?? league.snapshot?.playoffTeams
+        ?? Math.max(2, Math.round((teams?.length ?? 12) / 2));
+
+    /**
+     * How often each roster is still playing in January.
+     *
+     * Every remaining week is played rather than assumed — the teams are
+     * shuffled into pairs and each pair settled on the head-to-head rate the
+     * round robin already produced. Carrying each rate forward on its own,
+     * which is what the projected record does, lets every team in the league
+     * finish 9-5; pairing conserves the wins, so a finishing position means
+     * something.
+     */
+    const odds = useMemo(
+        () => (remaining > 0 && result.rows.length > 1
+            ? playoffOdds(result.rows, remaining, cut)
+            : null),
+        [result.rows, remaining, cut]);
+
     if (!league.connection || !league.connection.teamKey) {
         return (
             <div className="space-y-4">
@@ -207,7 +236,9 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
             ) : (
                 <PowerTable rows={result.rows} unranked={result.unranked}
                     myKey={league.connection.teamKey ?? null} trials={TRIALS}
-                    horizon={horizon} remaining={remaining} />
+                    horizon={horizon} remaining={remaining}
+                    odds={odds} spots={cut} onSpots={setSpots}
+                    spotsKnown={league.snapshot?.playoffTeams != null} />
             )}
         </div>
     );

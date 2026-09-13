@@ -336,3 +336,123 @@ export function seasonOutlook(
         high: Math.min(wonSoFar + left, Math.round(total + 1.28 * sd)),
     };
 }
+
+/**
+ * The question a projected record is standing in for.
+ *
+ * "Eight and six" is better than a win rate and it is still not the answer,
+ * because eight and six makes the playoffs in one league and misses in
+ * another, and the owner asking already knows which. What they want is the
+ * share of seasons that end with them still playing.
+ *
+ * Every remaining week is played rather than assumed: the teams are shuffled
+ * into pairs and each pair settled on the head-to-head rate the round robin
+ * already produced. That matters more than it sounds. Carrying each team's
+ * rate forward independently — a binomial per team, which is what the
+ * projected record does — lets every team in the league finish 9-5, and a
+ * league where everybody wins nine is not a league. Pairing conserves the
+ * wins, so somebody's good season is somebody else's bad one, which is the
+ * only way a finishing position means anything.
+ *
+ * The schedule itself is unknown and is drawn at random each trial. That is
+ * the honest assumption rather than a convenient one: whose remaining
+ * fixtures are soft is exactly what a ranking by roster is trying not to
+ * measure, and a reader who wants their real schedule has it on their
+ * platform.
+ */
+export interface PlayoffOdds {
+    key: string;
+    /** Share of simulated seasons finishing inside the cut. */
+    odds: number;
+    /** Median final seed, and the middle eighty per cent of them. */
+    seed: number;
+    seedLow: number;
+    seedHigh: number;
+    /** Median final win total. */
+    wins: number;
+}
+
+export function playoffOdds(
+    rows: PowerRow[],
+    remaining: number,
+    spots: number,
+    trials = 10000,
+    seed = 41,
+): Map<string, PlayoffOdds> {
+    const out = new Map<string, PlayoffOdds>();
+    const n = rows.length;
+    if (n < 2) return out;
+    const cut = Math.max(1, Math.min(n, spots));
+    // Head-to-head rates as a flat matrix, so the inner loop is arithmetic.
+    const index = new Map(rows.map((r, i) => [r.key, i]));
+    const beat = new Float64Array(n * n);
+    for (let i = 0; i < n; i++) {
+        for (const [k, p] of Object.entries(rows[i].against)) {
+            const j = index.get(k);
+            if (j != null) beat[i * n + j] = p;
+        }
+    }
+    const startWins = rows.map(r => (r.record?.wins ?? 0) + (r.record?.ties ?? 0) / 2);
+    /**
+     * The tiebreak, which in nearly every league is points scored.
+     *
+     * Points already banked plus what this roster expects from the weeks
+     * left. Deterministic rather than drawn, because it only has to order
+     * teams that finished level and drawing it would add noise to a
+     * tiebreak rather than realism to a season.
+     */
+    const tieBreak = rows.map(r =>
+        (r.record?.pointsFor ?? 0) + r.expected * remaining);
+
+    const rng = makeRng(seed);
+    const made = new Int32Array(n);
+    const seeds: number[][] = rows.map(() => []);
+    const winTotals: number[][] = rows.map(() => []);
+    const order = new Int32Array(n);
+    for (let i = 0; i < n; i++) order[i] = i;
+    const wins = new Float64Array(n);
+    const rank = new Int32Array(n);
+
+    for (let t = 0; t < trials; t++) {
+        for (let i = 0; i < n; i++) wins[i] = startWins[i];
+        for (let w = 0; w < remaining; w++) {
+            // Fisher-Yates, then pair off adjacent entries. With an odd
+            // number of teams the last one sits the week out, which is what
+            // a bye week in a league of that shape actually is.
+            for (let i = n - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                const tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+            }
+            for (let p = 0; p + 1 < n; p += 2) {
+                const a = order[p];
+                const b = order[p + 1];
+                if (rng() < beat[a * n + b]) wins[a]++;
+                else wins[b]++;
+            }
+        }
+        for (let i = 0; i < n; i++) rank[i] = i;
+        const arr = Array.from(rank);
+        arr.sort((a, b) => (wins[b] - wins[a]) || (tieBreak[b] - tieBreak[a]));
+        for (let place = 0; place < n; place++) {
+            const i = arr[place];
+            seeds[i].push(place + 1);
+            winTotals[i].push(wins[i]);
+            if (place < cut) made[i]++;
+        }
+    }
+
+    const at = (xs: number[], q: number) =>
+        xs.slice().sort((a, b) => a - b)[Math.min(xs.length - 1,
+            Math.max(0, Math.floor(q * xs.length)))];
+    for (let i = 0; i < n; i++) {
+        out.set(rows[i].key, {
+            key: rows[i].key,
+            odds: made[i] / trials,
+            seed: at(seeds[i], 0.5),
+            seedLow: at(seeds[i], 0.1),
+            seedHigh: at(seeds[i], 0.9),
+            wins: at(winTotals[i], 0.5),
+        });
+    }
+    return out;
+}
