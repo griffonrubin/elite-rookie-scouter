@@ -54,7 +54,27 @@ export interface LeagueSlot {
 export interface LeagueTeam {
     key: string;
     name: string;
+    /**
+     * The roster spots that can hold a lineup, which is not the whole roster.
+     *
+     * Injured reserve and the taxi squad are deliberately absent: offering
+     * one of them for a lineup slot is offering a move the platform will
+     * refuse. That makes this the wrong list to ask "who is taken" with —
+     * see `rostered`.
+     */
     slots: LeagueSlot[];
+    /**
+     * Every platform id on this roster, injured reserve and taxi included.
+     *
+     * Being on somebody's injured reserve is the strongest possible form of
+     * being unavailable, and reading `slots` as the roster said the
+     * opposite: three players stashed on IR in a twelve-team league came
+     * back as free agents, and because value over replacement ranks on
+     * quality, the best of them led the list. A waiver page whose top
+     * recommendation cannot be claimed by anybody is worse than no waiver
+     * page.
+     */
+    rostered: string[];
     /** The starting lineup in slot order, empty spots included. */
     lineupSlots?: { slot: string; playerId: string | null }[];
     /**
@@ -285,6 +305,8 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         return {
             key: String(r.roster_id),
             name: teamName(userById.get(r.owner_id ?? '')),
+            // The whole roster, before anything is filtered for startability.
+            rostered: (r.players ?? []).map(String),
             slots: all.map(pid => ({
                 playerId: pid,
                 starting: starting.has(pid),
@@ -342,6 +364,10 @@ async function fetchEspn(conn: LeagueConnection, week: number): Promise<LeagueSn
     const teams: LeagueTeam[] = (d.teams ?? []).map((t: any) => ({
         key: String(t.teamId),
         name: t.name,
+        // ESPN's entries already carry the whole roster, injured spots
+        // included, so the two lists coincide here — stated rather than
+        // assumed, so a later filter on `slots` cannot silently shrink it.
+        rostered: (t.entries ?? []).map((e: any) => String(e.playerId)),
         slots: (t.entries ?? []).map((e: any) => ({
             playerId: String(e.playerId), dstTeam: e.dstTeam, starting: !!e.starting,
         })),
