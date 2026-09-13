@@ -12,7 +12,7 @@
  *
  *   npx tsx scripts/build_calibration.mts
  */
-import { getDb, query } from '../lib/db';
+import { checkpoint, getDb, query } from '../lib/db';
 import { buildCalibration, writeCalibration } from '../lib/vegasLines';
 
 const GAMES_URL =
@@ -93,3 +93,7 @@ for (const r of back) {
 }
 console.log(`${total.toLocaleString()} games, `
     + `${back[0]?.from_season}–${back[0]?.to_season}`);
+
+// Otherwise the ten rows above live in dynasty_scout.db-wal, which is
+// gitignored: present in every local query, absent from every clone.
+checkpoint();

@@ -108,3 +108,28 @@ export function getDb() {
         },
     };
 }
+
+// ─── checkpoint() ─────────────────────────────────────────────────────────────
+
+/**
+ * Fold the write-ahead log back into the database file.
+ *
+ * In WAL mode a write does not go into dynasty_scout.db. It goes into
+ * dynasty_scout.db-wal beside it, and every reader on this machine sees it
+ * from there — so a table can exist for you, answer queries, survive
+ * restarts, and still be invisible to git, which ignores the sidecar. That
+ * is not hypothetical: the historical spread table sat in the WAL through
+ * two commits with a clean `git status`, present in every local query and
+ * absent from every clone.
+ *
+ * SQLite folds the log in on its own when it passes a thousand pages or when
+ * the last connection closes cleanly, and a script that ends by letting the
+ * process exit does neither reliably. So any script that writes calls this
+ * before it finishes, and the file on disk is then the whole truth.
+ *
+ * A no-op against Postgres, which has no such split.
+ */
+export function checkpoint(): void {
+    if (USE_POSTGRES) return;
+    sqliteDb.pragma('wal_checkpoint(TRUNCATE)');
+}
