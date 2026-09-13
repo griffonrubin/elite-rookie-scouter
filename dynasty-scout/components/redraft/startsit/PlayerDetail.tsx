@@ -48,9 +48,10 @@ export function PlayerDetail({
         <div className={stacked
             ? 'space-y-2.5'
             : `grid gap-x-6 gap-y-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)]`}>
-            {/* The log is right here, so the panel can catch a projection that
-                predates the player's current role instead of presenting it
-                straight. */}
+            {/* The log is right here, so the panel can say when it and the
+                projection disagree sharply — as a fact about the blend
+                rather than as advice to prefer the log, which measures
+                worse. See scripts/formweight_check.mts. */}
             <WhyBars outcome={outcome} context={{ ...context, position }}
                 recentMean={recent.mean} recentGames={recent.games} />
             {/* Beside the arithmetic, not under it: "the number says 16.9"

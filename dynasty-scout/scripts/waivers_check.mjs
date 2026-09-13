@@ -101,8 +101,25 @@ assert('it shows the splits', /SPLITS/i.test(body));
 assert('and the box scores', /Game log/i.test(body));
 const why = await page.locator('h4:text-is("What moved it")').locator('xpath=../..').first().innerText();
 console.log('      ' + why.split('\n').slice(0, 4).join(' | '));
-assert('a stale projection is called out', /predates/i.test(why),
-    (why.match(/[^\n]*predates[^\n]*/)||['(not flagged)'])[0]);
+/**
+ * The disagreement is flagged, and flagged the right way round.
+ *
+ * This used to assert the word "predates", from copy that told readers the
+ * projection was stale and to prefer the recent log. scripts/formweight_check
+ * measured that over two seasons and it is backwards: a five-game average
+ * predicts the next week worse than a season average, and worst of all for
+ * the players who look exactly like this one. So the panel now flags the gap
+ * and points at the usage — and the test checks it does not go back to
+ * recommending the log.
+ */
+assert('the gap between projection and log is flagged',
+    /a long way from it/i.test(why),
+    (why.match(/[^\n]*long way from it[^\n]*/)||['(not flagged)'])[0]);
+assert('and points at the usage rather than the recent points',
+    /usage is the part that carries/i.test(why));
+assert('without telling a reader to prefer the log',
+    !/predates/i.test(why) && !/read the usage and the log/i.test(why),
+    (why.match(/[^\n]*(predates|read the usage and the log)[^\n]*/)||['clean'])[0]);
 
 step(5, 'a position is ranked within itself, not filtered out of the top forty');
 /**
