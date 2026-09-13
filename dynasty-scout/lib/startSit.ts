@@ -274,8 +274,17 @@ const SCRIPT_PER_POINT: Record<string, number> = {
  * different jobs.
  *
  * DEFENSE_PRIOR_GAMES shrinks the rate toward the positional average by
- * sample size, so a cell built on twenty player-games moves the projection
- * far less than one built on eighty. That handles noise.
+ * sample size, so a cell built on five games moves the projection far less
+ * than one built on a full season. That handles noise.
+ *
+ * Counted in *team*-games, which is a correction. The rate used to be an
+ * average over player-games — which divides by how many players a defence
+ * happened to face, so a defence that kept meeting committee backfields read
+ * as stingy against backs while conceding exactly as much; the two orderings
+ * disagree by up to eleven places across the league. The prior moved from
+ * sixty player-games to seventeen team-games so that a full season shrinks
+ * by exactly as much as it did before: this is a fix to *which* defences
+ * look soft, not a quiet re-tuning of how much that matters.
  *
  * DEFENSE_ELASTICITY handles bias: even a perfectly measured rate is last
  * year's defence, with this year's personnel and scheme, so only part of it
@@ -283,7 +292,7 @@ const SCRIPT_PER_POINT: Record<string, number> = {
  * genuinely soft matchup to show up next to the Vegas line, not enough for it
  * to outvote the line.
  */
-const DEFENSE_PRIOR_GAMES = 60;
+const DEFENSE_PRIOR_GAMES = 17;
 const DEFENSE_ELASTICITY = 0.5;
 
 function mean(xs: number[]): number {
@@ -328,6 +337,47 @@ export function formWeight(gamesThisSeason: number): number {
  * matchup leaves the projection exactly where the rest of the model put it
  * rather than nudging it toward an invented neutral.
  */
+/**
+ * What this week's game does to a player, in points.
+ *
+ * Pulled out of `buildOutcome` so the matchup rating can be computed from
+ * the same arithmetic rather than from a second copy of it. A rating that
+ * disagrees with the projection printed beside it is worse than no rating,
+ * and two implementations of one formula disagree eventually — which is
+ * what scripts/matchup_check pins.
+ *
+ * Three separable effects, because a reader deciding between two players
+ * needs to know which one is carrying the difference:
+ *
+ *   how much the books expect this offence to score, against a neutral
+ *   offence, scaled by how much of an offence's output this position
+ *   normally takes;
+ *
+ *   the game script the spread implies — a back favoured by ten gets the
+ *   fourth quarter, a back trailing by ten watches his quarterback throw;
+ *
+ *   and the defence, against what defences give up to this position on
+ *   average, regressed towards no edge until there are enough games to
+ *   believe it.
+ */
+export function contextDrivers(position: string, centre: number, ctx: GameContext): {
+    teamTotal: number; script: number; matchup: number;
+} {
+    const pos = (position || '').toUpperCase();
+    const out = { teamTotal: 0, script: 0, matchup: 0 };
+    if (ctx.onBye) return out;
+    if (ctx.impliedTeamTotal != null) {
+        const elasticity = TEAM_TOTAL_ELASTICITY[pos] ?? 0.45;
+        const relative = (ctx.impliedTeamTotal - NEUTRAL_TEAM_TOTAL) / NEUTRAL_TEAM_TOTAL;
+        out.teamTotal = centre * elasticity * relative;
+    }
+    if (ctx.spread != null) {
+        out.script = (SCRIPT_PER_POINT[pos] ?? 0) * ctx.spread;
+    }
+    out.matchup = centre * matchupEdge(ctx);
+    return out;
+}
+
 export function matchupEdge(ctx: GameContext): number {
     const { defenseAllowed: allowed, defenseLeagueAvg: avg } = ctx;
     if (allowed == null || avg == null || avg <= 0) return 0;
@@ -404,15 +454,7 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
         market: marketUsable ? market! - base : 0,
     };
     if (!ctx.onBye && !marketUsable) {
-        if (ctx.impliedTeamTotal != null) {
-            const elasticity = TEAM_TOTAL_ELASTICITY[pos] ?? 0.45;
-            const relative = (ctx.impliedTeamTotal - NEUTRAL_TEAM_TOTAL) / NEUTRAL_TEAM_TOTAL;
-            drivers.teamTotal = centre * elasticity * relative;
-        }
-        if (ctx.spread != null) {
-            drivers.script = (SCRIPT_PER_POINT[pos] ?? 0) * ctx.spread;
-        }
-        drivers.matchup = centre * matchupEdge(ctx);
+        Object.assign(drivers, contextDrivers(pos, centre, ctx));
     }
     const adjustment = drivers.teamTotal + drivers.script + drivers.matchup;
     centre = Math.max(0, centre + adjustment);

@@ -104,15 +104,16 @@ function driversOf({ outcome: o, context: c = {} }: WhyBarsProps): Driver[] {
     }
     if (d.matchup !== 0) {
         const { defenseAllowed: a, defenseLeagueAvg: lg, defenseSample: n } = c;
-        // Stated as a ratio, which is the only way it means anything.
+// Stated as a ratio, which is the only way it means anything,
+        // with the raw pair behind it as the evidence.
         //
-        // The raw figure is an average over every player at the position who
-        // faced this defence, third-stringers with two touches included, so it
-        // lands near 8 for a running back. Printed as "allows 8.0 to RBs" next
-        // to a 17.3 projection it reads as a contradiction, and the model
-        // never uses it as a level anyway — only as this defence against the
-        // league. So lead with that, and keep the raw pair as the evidence
-        // behind it, labelled for what it actually counts.
+        // The figure is now what a defence concedes to the position in a
+        // game — all of its backs together, not one back averaged over
+        // however many the defence happened to face. That average divided by
+        // the number of players a defence met, so a defence that kept
+        // running into committee backfields read as stingy while conceding
+        // exactly as much; it also landed near 8 for a running back, which
+        // printed next to a 17.3 projection looked like a contradiction.
         const pos = c.position ?? 'the position';
         const pct = a != null && lg != null && lg > 0
             ? Math.round(((a / lg) - 1) * 100) : null;
@@ -122,8 +123,9 @@ function driversOf({ outcome: o, context: c = {} }: WhyBarsProps): Driver[] {
                 ? `${c.opponent ?? 'This defence'} gives up `
                   + (pct === 0 ? 'about the league average'
                       : `${Math.abs(pct)}% ${pct > 0 ? 'more' : 'less'} than average`)
-                  + ` to ${pos}s — ${a!.toFixed(1)} against ${lg!.toFixed(1)} per `
-                  + `${pos} faced${n ? `, over ${n} games` : ''}.`
+                  + ` to ${pos}s — ${a!.toFixed(1)} a game against a league `
+                  + `average of ${lg!.toFixed(1)}`
+                  + `${n ? `, over ${n} games` : ''}.`
                 : 'What this defence gives up to the position.',
         });
     }

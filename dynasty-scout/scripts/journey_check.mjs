@@ -122,6 +122,44 @@ assert('the kicker slot is there', slotLabels.includes('K'));
 assert('the defence slot is there', slotLabels.some(s => /DEF|DST/.test(s)));
 assert('opponent is named', /Their Team/.test(t));
 
+step('5b', 'the matchup is on the row, not one click inside it');
+/**
+ * A lineup is nine decisions and nobody opens nine panels to make them.
+ *
+ * The chip is the scannable half: a place in the league, nought to ten,
+ * against the defence this player is facing. Deliberately *only* the
+ * defence, because a combined "startability score" that folds in the game
+ * total and the spread cannot be calibrated, cannot be argued with, and
+ * cannot be taken apart by the reader — the game environment is on the same
+ * row already and broken out in full inside.
+ */
+const chips = await slotRows().evaluateAll(els => els.map(e => {
+    const m = e.innerText.match(/vs ([A-Z]{2,3}) ([\d.]+) (soft|leaky|average|firm|tough)/);
+    return m ? { team: m[1], score: +m[2], word: m[3] } : null;
+}).filter(Boolean));
+console.log('      ' + chips.map(c => `${c.team} ${c.score} ${c.word}`).join('  '));
+assert('most slots carry a matchup', chips.length >= 5, `${chips.length} of ${slots}`);
+assert('every score is a place in the league',
+    chips.every(c => c.score >= 0 && c.score <= 10),
+    chips.map(c => c.score).join(','));
+assert('and the word agrees with the number',
+    chips.every(c => (c.score >= 6.6 ? /soft|leaky/ : c.score <= 3.3 ? /firm|tough/
+        : /average|leaky|firm/).test(c.word)),
+    chips.map(c => `${c.score}:${c.word}`).join(' '));
+/**
+ * The scale has to separate, or it is decoration.
+ *
+ * Nine players facing nine defences that all score between four and six is
+ * a chip nobody would ever act on, and it is what a badly anchored index
+ * produces. A league rank cannot do that by construction — which is the
+ * argument for using one, so it is worth checking the construction held.
+ */
+const spread = Math.max(...chips.map(c => c.score)) - Math.min(...chips.map(c => c.score));
+console.log(`      the week spans ${spread.toFixed(1)} points of matchup`);
+assert('a real slate spreads across the scale', spread > 3, spread.toFixed(1));
+assert('a kicker gets no chip rather than a made-up one',
+    chips.length < slots, `${chips.length} chips for ${slots} slots`);
+
 step(6, 'the kicker is not scored as zero');
 const kIdx = slotLabels.indexOf('K');
 const kRow = await slotRows().nth(kIdx).innerText();
@@ -139,6 +177,22 @@ await slotRows().nth(flexIdx).click();
 await page.waitForTimeout(2500);
 const panel = await slotRows().nth(flexIdx)
     .evaluate(el => el.parentElement?.innerText ?? '');
+const defPanel = panel.match(/defence · what they give up[\s\S]{0,600}/i);
+console.log('      defence panel: '
+    + (defPanel ? defPanel[0].replace(/\n+/g, ' | ').slice(0, 200) : '(missing)'));
+assert('the opponent defence is profiled inside the row',
+    /defence · what they give up/i.test(panel),
+    defPanel ? 'present' : '(missing)');
+assert('all four positions, so a reader can compare two of their own',
+    (panel.match(/\b(gives this up|leaks here|average here|holds up|shuts this down)\b/g)
+        || []).length >= 4,
+    String((panel.match(/of 32/g) || []).length) + ' ranks shown');
+assert('and how the points happen, not just how many',
+    /how they give it up to/i.test(panel)
+        && /(yards a carry|yards a catch|yards a throw)/i.test(panel),
+    (panel.match(/how they give it up to \w+/i) || ['(no mechanism)'])[0]);
+assert('measured per team-game, and says so',
+    /per team-game/i.test(panel));
 console.log('      flex panel:', panel.replace(/\n+/g, ' | ').slice(0, 220));
 assert('the flex lists more than one candidate',
     (panel.match(/%/g) ?? []).length >= 1);

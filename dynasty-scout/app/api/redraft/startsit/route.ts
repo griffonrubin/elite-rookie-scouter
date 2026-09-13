@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAX_STARTSIT_IDS } from '@/lib/startSit';
 import { query } from '@/lib/db';
+import { loadDefenceTotals } from '@/lib/defenceTotals';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -104,37 +105,24 @@ export interface StartSitPlayer {
 interface DefRow { defense: string; position: string; allowed: number; n: number }
 
 /**
- * The defence-vs-position table, computed once rather than per request.
+ * The defence-vs-position table, from the one loader that computes it.
  *
- * What each defence allowed per player-game at each position, computed here
- * rather than scraped: the weekly table already carries the opponent on
- * every row, so this is the same games read from the other side. Last season
- * only — a defence two games into a new year has told us almost nothing, and
- * the model shrinks by sample size anyway.
+ * It used to have its own copy of the query, averaged over *player*-games —
+ * which divides by how many players a defence happened to face, so a defence
+ * that kept meeting committee backfields read as stingy against backs while
+ * conceding exactly as much. Against the same season the two orderings
+ * disagree by up to eleven places, so the model was moving projections
+ * toward the wrong defences.
  *
- * This one has no player filter — it aggregates the whole weekly table and
- * comes back identical for every user, every roster and every slot, and it
- * was being recomputed on each load. It only changes when the daily pass
- * loads new weekly stats, so an hour is a conservative life for it: the
- * numbers behind it are a season's worth of games, and the model shrinks
- * them by sample size anyway.
+ * Shared with the endpoint that draws the profile, so the number that moves
+ * a projection and the number that explains it cannot come apart.
  */
-let defCache: { at: number; rows: DefRow[] } | null = null;
-const DEF_TTL_MS = 60 * 60 * 1000;
-
 async function defenceVsPosition(): Promise<DefRow[]> {
-    if (defCache && Date.now() - defCache.at < DEF_TTL_MS) return defCache.rows;
-    const rows = await query<{
-        defense: string; position: string; allowed: number; n: number;
-    }>(
-        `SELECT opponent AS defense, position,
-                AVG(fantasy_points_ppr) AS allowed, COUNT(*) AS n
-           FROM nfl_player_week
-          WHERE season = ${SEASON - 1} AND season_type = 'REG'
-            AND opponent IS NOT NULL AND fantasy_points_ppr IS NOT NULL
-          GROUP BY opponent, position`, []);
-    defCache = { at: Date.now(), rows };
-    return rows;
+    const totals = await loadDefenceTotals(SEASON);
+    return totals.map(t => ({
+        defense: t.defense, position: t.position,
+        allowed: t.points, n: t.games,
+    }));
 }
 
 export async function GET(req: NextRequest) {
