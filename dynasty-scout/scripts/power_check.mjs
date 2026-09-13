@@ -45,6 +45,31 @@ const page = await ctx.newPage();
 page.setDefaultTimeout(30000);
 const errs = [];
 page.on('pageerror', e => errs.push(e.message));
+
+/**
+ * What this page actually downloads.
+ *
+ * Ranking twelve rosters needs one number per player, and the endpoint was
+ * sending the full eighteen-column box score for every rostered player in
+ * the league — 1.7MB to use 0.4MB of it, with game logs at 92% of the
+ * payload. A page that reads only `points` off a log row has no business
+ * asking for `interceptions`.
+ */
+const payload = { bytes: 0, calls: 0, logKeys: new Set(), rows: 0 };
+page.on('response', async r => {
+    if (!r.url().includes('/api/redraft/startsit')) return;
+    payload.calls++;
+    try {
+        const body = await r.text();
+        payload.bytes += body.length;
+        for (const p of (JSON.parse(body).players ?? [])) {
+            for (const l of (p.logs ?? [])) {
+                payload.rows++;
+                for (const k of Object.keys(l)) payload.logKeys.add(k);
+            }
+        }
+    } catch { /* a body already consumed is not a finding */ }
+});
 const fails = [];
 const assert = (l, pass, extra = '') => {
     console.log(`   ${pass ? 'ok  ' : 'FAIL'} ${l}${extra ? '  ' + extra : ''}`);
@@ -166,6 +191,18 @@ assert('and it is Aekz48, who has no kicker',
     short[0]?.name === 'Aekz48', short[0]?.name ?? 'nobody');
 assert('and it is still ranked rather than dropped',
     names.includes('Aekz48') && !/Left out of the ranking/.test(t));
+
+step('5d', 'it downloads what it reads, and no more');
+console.log(`      ${payload.calls} requests, `
+    + `${(payload.bytes / 1024 / 1024).toFixed(2)}MB, ${payload.rows} log rows`);
+console.log(`      log row keys: ${[...payload.logKeys].sort().join(', ')}`);
+assert('the whole league was fetched', payload.rows > 1000, String(payload.rows));
+// Four fields is what a simulation reads off a log row.
+assert('log rows carry only what a simulation reads',
+    [...payload.logKeys].sort().join(',') === 'opponent,points,season,week',
+    [...payload.logKeys].sort().join(','));
+assert('so the page is under a megabyte', payload.bytes < 1024 * 1024,
+    `${(payload.bytes / 1024 / 1024).toFixed(2)}MB`);
 
 step(6, 'week one claims no luck gap');
 assert('no team is called lucky or unlucky', !/better off than the roster|worse off than the roster/.test(t),

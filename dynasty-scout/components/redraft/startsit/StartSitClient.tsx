@@ -56,7 +56,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         if (needed.length === 0 || league.week == null) { setData(new Map()); return; }
         let cancelled = false;
         setLoading(true);
-        fetch(`/api/redraft/startsit?ids=${needed.join(',')}&week=${league.week}`)
+        fetch(`/api/redraft/startsit?ids=${needed.join(',')}&week=${league.week}&detail=1`)
             .then(r => r.json())
             .then((d: { players: StartSitPlayer[] }) => {
                 if (cancelled) return;

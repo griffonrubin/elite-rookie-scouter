@@ -82,7 +82,7 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
     useEffect(() => {
         if (open == null || detail.has(open) || week == null) return;
         let cancelled = false;
-        fetch(`/api/redraft/startsit?ids=${open}&week=${week}`)
+        fetch(`/api/redraft/startsit?ids=${open}&week=${week}&detail=1`)
             .then(r => r.json())
             .then((d: { players: StartSitPlayer[] }) => {
                 if (cancelled || !d.players?.[0]) return;
