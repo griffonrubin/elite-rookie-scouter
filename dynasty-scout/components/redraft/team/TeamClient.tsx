@@ -12,6 +12,8 @@ import { bestLineup, type TradeRosterPlayer } from '@/lib/trade';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
 import { HorizonToggle } from '@/components/redraft/HorizonToggle';
 import { DepthTable } from './DepthTable';
+import { Contingency } from './Contingency';
+import { useSuccessors } from '@/lib/useSuccessors';
 import { TeamShape } from './TeamShape';
 import { SchedulePanel } from './SchedulePanel';
 import { useSchedule } from '@/lib/useSchedule';
@@ -183,6 +185,40 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
         return replacementCost(me.roster, slots, field, simOf, TRIALS);
     }, [ready, teams, myKey, slots, simOf]);
 
+    /**
+     * Who absorbs the work if one of these men is hurt, and who holds him.
+     *
+     * Asked about the whole roster rather than the starters alone, because a
+     * bench player's successor is the same question one injury later, and
+     * the fetch is one request either way.
+     */
+    const contingency = useSuccessors(useMemo(
+        () => myRoster.map(p => p.id), [myRoster]));
+
+    /**
+     * Every player any team in this league holds, injured reserve included.
+     *
+     * `slots` would be the wrong list: being stashed on somebody's IR is the
+     * strongest form of unavailable there is, and reading it as "not
+     * rostered" would put a successor nobody can claim at the top of a list
+     * sorted on claimability.
+     */
+    const rosteredBy = useMemo(() => {
+        const snap = league.snapshot;
+        const out = new Map<number, { key: string; name: string }>();
+        if (!snap) return out;
+        const espn = league.connection?.platform === 'espn';
+        const byPlatformId = new Map(players.map(p =>
+            [String(espn ? p.espn_nfl_id : p.sleeper_id), p]));
+        for (const t of snap.teams) {
+            for (const pid of t.rostered ?? []) {
+                const hit = byPlatformId.get(String(pid));
+                if (hit) out.set(hit.id, { key: t.key, name: t.name });
+            }
+        }
+        return out;
+    }, [league.snapshot, league.connection?.platform, players]);
+
     if (!league.connection || !league.connection.teamKey) {
         return (
             <div className="space-y-4">
@@ -230,6 +266,16 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
                 </p>
             ) : (
                 <DepthTable report={report} horizon={horizon} remaining={remaining} />
+            )}
+            {myRoster.length > 0 && (
+                <Contingency
+                    players={contingency.players}
+                    rosteredBy={rosteredBy}
+                    myKey={myKey}
+                    fromSeason={contingency.fromSeason}
+                    season={SEASON}
+                    loading={contingency.loading}
+                    failed={contingency.failed} />
             )}
         </div>
     );
