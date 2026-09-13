@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { RedraftPlayer } from '@/lib/types';
 import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
@@ -10,6 +10,9 @@ import { simInputFor, simPlayerFrom, type Horizon } from '@/lib/simInput';
 import { evaluateTrade, TradeResult, TradeRosterPlayer, TradeTeam } from '@/lib/trade';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
 import { HorizonToggle } from '@/components/redraft/HorizonToggle';
+import { TradeFinder } from './TradeFinder';
+import { measureTeam, rankLeague, type TeamProfile } from '@/lib/teamProfile';
+import type { Offer } from '@/lib/tradeFinder';
 import { RosterPicker } from './RosterPicker';
 import { TradeVerdict } from './TradeVerdict';
 
@@ -156,6 +159,21 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     }, [league.snapshot?.playoffWeekStart, week]);
 
     const meanOf = (id: number) => simOf(id)?.outcome.mean ?? null;
+    /**
+     * Stable identities for the finder's inputs.
+     *
+     * `findTrades` sweeps about thirty-five thousand offers, and it is
+     * memoised on its arguments — so an inline arrow for the means and an
+     * inline map for the rosters re-created the arguments on every render
+     * and re-ran the whole sweep on every click. That is how a click went
+     * from 2.3 seconds to 3.1: not a slower search, the same search done
+     * again for nothing.
+     */
+    const finderMean = useCallback(
+        (id: number) => simOf(id)?.outcome.mean ?? 0, [simOf]);
+    const finderTeams = useMemo(
+        () => (teams ?? []).map(t => ({ key: t.key, name: t.name, roster: t.roster })),
+        [teams]);
 
     /**
      * Who to price against before the reader has chosen.
@@ -177,6 +195,22 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     const partnerKey = partner ?? defaultPartner;
     const me = teams?.find(t => t.key === myKey) ?? null;
     const them = teams?.find(t => t.key === partnerKey) ?? null;
+
+    /**
+     * Every roster's positional standing, so an offer can say why it exists.
+     *
+     * "You are first of twelve at running back and twelfth at tight end;
+     * they are the other way round" is the sentence that gets a reply, and a
+     * suggestion a reader cannot explain is one they will not send.
+     */
+    const profiles: TeamProfile[] = useMemo(() => {
+        if (!ready || !teams) return [];
+        const measured = teams
+            .filter(t => t.roster.length > 0)
+            .map(t => measureTeam(t.key, t.name, t.roster, slots,
+                id => simOf(id)?.outcome ?? null, id => simOf(id)?.outcome ?? null));
+        return measured.length >= 2 ? rankLeague(measured) : [];
+    }, [ready, teams, slots, simOf]);
 
     const result: TradeResult | null = useMemo(() => {
         if (!ready || !teams || !me || !them) return null;
@@ -236,6 +270,31 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                 </p>
             ) : (
                 <>
+                    {/* Found before priced. The analyser is for a trade you
+                        have already thought of; this is for the one you have
+                        not, which is the one nobody makes. */}
+                    {me && teams && (
+                        <TradeFinder
+                            myRoster={me.roster}
+                            teams={finderTeams}
+                            slots={slots} meanOf={finderMean}
+                            nameOf={nameOf} positionOf={positionOf}
+                            profiles={profiles} myKey={myKey}
+                            rosterSize={league.snapshot?.rosterPositions?.length}
+                            partnerKey={partnerKey}
+                            onPick={(o: Offer) => {
+                                // Loading an offer sets the partner as well,
+                                // or the analyser would price it against
+                                // whoever happened to be selected.
+                                setPartner(o.teamKey);
+                                setMyGive(new Set(o.give));
+                                setTheirGive(new Set(o.get));
+                                if (typeof window !== 'undefined') {
+                                    window.scrollBy({ top: 220, behavior: 'smooth' });
+                                }
+                            }} />
+                    )}
+
                     <div className="flex flex-wrap items-center gap-2">
                         <label className="text-[11px] text-muted-foreground/60"
                             htmlFor="trade-partner">
