@@ -13,6 +13,8 @@ import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
 import { HorizonToggle } from '@/components/redraft/HorizonToggle';
 import { DepthTable } from './DepthTable';
 import { TeamShape } from './TeamShape';
+import { SchedulePanel } from './SchedulePanel';
+import { useSchedule } from '@/lib/useSchedule';
 import { measureTeam, rankLeague, type TeamProfile } from '@/lib/teamProfile';
 
 const SEASON = 2026;
@@ -106,6 +108,14 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
         };
     }, [players, data, horizon]);
 
+    /**
+     * The league's remaining schedule, position by position.
+     *
+     * Asked for from this week rather than from week one: a schedule that
+     * has already been played is not ahead of anybody.
+     */
+    const schedule = useSchedule(week, league.snapshot?.playoffWeekStart ?? null);
+
     /** Regular-season weeks still to play, for the toggle to name. */
     const remaining = useMemo(() => {
         const playoffs = league.snapshot?.playoffWeekStart ?? DEFAULT_PLAYOFF_WEEK;
@@ -145,6 +155,15 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
                 id => outcomeAt(id, 'season'), id => outcomeAt(id, 'week')));
         return measured.length >= 2 ? rankLeague(measured) : [];
     }, [ready, teams, slots, outcomeAt]);
+
+    /** My own roster, and the NFL team each of them plays for. */
+    const myRoster = useMemo(
+        () => teams?.find(t => t.key === myKey)?.roster ?? [],
+        [teams, myKey]);
+    const teamOf = useMemo(() => {
+        const byId = new Map(players.map(p => [p.id, p.nfl_team ?? null]));
+        return (id: number) => byId.get(id) ?? null;
+    }, [players]);
 
     const report: DepthReport | null = useMemo(() => {
         if (!ready || !teams || !myKey) return null;
@@ -190,6 +209,12 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
             <LeagueConnect league={league} compact />
             {profiles.length > 0 && (
                 <TeamShape profiles={profiles} myKey={myKey} />
+            )}
+            {myRoster.length > 0 && (
+                <SchedulePanel roster={myRoster}
+                    rest={schedule.rest} playoffs={schedule.playoffs}
+                    restWeeks={schedule.restWeeks} playoffWeeks={schedule.playoffWeeks}
+                    loading={schedule.loading} teamOf={teamOf} />
             )}
             <HorizonToggle value={horizon} onChange={setHorizon} remaining={remaining} />
             {failed ? (

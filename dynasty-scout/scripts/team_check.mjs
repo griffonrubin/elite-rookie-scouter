@@ -175,6 +175,68 @@ assert('and two series get a legend rather than two colours to guess at',
 await shape.getByLabel(/compare against another team/i).selectOption({ index: 0 });
 await page.waitForTimeout(1500);
 
+step('2c', 'the schedule ahead, for a position rather than for a team');
+/**
+ * Every site ships a strength of schedule and nearly all of them rank
+ * opponents by how good those teams are, which is the wrong question. On
+ * this league's real fixtures Pittsburgh are thirty-first for quarterbacks,
+ * thirty-second for receivers and first for tight ends — one number would be
+ * a lie for three of the four.
+ */
+const sched = page.locator('section')
+    .filter({ has: page.getByRole('heading', { name: /the schedule ahead/i }) });
+assert('the schedule is on the page', await sched.count() === 1);
+let schedText = await sched.innerText();
+assert('and it says what it measures',
+    /give up .*to his position/i.test(schedText.replace(/\n/g, ' ')),
+    (schedText.match(/What each player[^\n]*/i) || ['(unstated)'])[0].slice(0, 80));
+const sosRows = await sched.locator('button[aria-expanded]').evaluateAll(els =>
+    els.map(e => {
+        const x = e.innerText.replace(/\n+/g, ' | ');
+        const m = x.match(/([+−-][\d.]+)% \| (\d+) of (\d+) easiest \| for (\w+)s/);
+        return m ? { text: x, ease: parseFloat(m[1].replace('−', '-')),
+            rank: +m[2], of: +m[3], pos: m[4] } : { text: x };
+    }));
+const parsedSos = sosRows.filter(r => r.rank);
+console.log('      ' + parsedSos.slice(0, 3).map(r => r.text.slice(0, 62)).join('\n      '));
+assert('every rostered player gets a schedule', parsedSos.length >= 8,
+    `${parsedSos.length} of ${sosRows.length}`);
+assert('ranked against the whole league at that position',
+    parsedSos.every(r => r.of >= 30 && r.rank >= 1 && r.rank <= r.of),
+    parsedSos.map(r => `${r.rank}/${r.of}`).slice(0, 4).join(' '));
+assert('and the easier schedules are ranked nearer one',
+    parsedSos.every((r, i) => i === 0 || r.ease <= parsedSos[i - 1].ease + 0.05),
+    parsedSos.map(r => r.ease).join(','));
+/**
+ * The playoff weeks are a different question, and a schedule that is brutal
+ * in September and kind in December is a good schedule. Washington's backs
+ * are first in the league over the rest of the year and last of thirty-two
+ * across the playoff weeks — an average over both would hide that entirely.
+ */
+const restOrder = parsedSos.map(r => r.text.split(' | ')[0]);
+await sched.getByRole('button', { name: /playoffs/i }).click();
+await page.waitForTimeout(1500);
+schedText = await sched.innerText();
+const poRows = await sched.locator('button[aria-expanded]').evaluateAll(els =>
+    els.map(e => e.innerText.split('\n')[0].trim()));
+console.log('      playoff window: ' + poRows.slice(0, 3).join(', '));
+assert('the playoff weeks are measured apart',
+    /playoffs? ·/i.test(schedText) || poRows.join() !== restOrder.join(),
+    `${poRows.slice(0, 2).join(',')} vs ${restOrder.slice(0, 2).join(',')}`);
+assert('and say which weeks they are',
+    /these three weeks are the ones worth trading against/i.test(schedText));
+// Opening a row shows the fixtures, because an average over thirteen games
+// can hide a December nobody would want.
+await sched.locator('button[aria-expanded]').first().click();
+await page.waitForTimeout(600);
+const weeksShown = await sched.innerText();
+assert('a row opens to the fixtures behind the average',
+    /w\d+ [A-Z]{2,3}/.test(weeksShown),
+    (weeksShown.match(/w\d+ [A-Z]{2,3}[^\n]{0,30}/) || ['(no fixtures)'])[0]);
+await sched.locator('button[aria-expanded]').first().click();
+await sched.getByRole('button', { name: /^weeks /i }).click();
+await page.waitForTimeout(1200);
+
 step('3b', 'depth is a season question, and the page asks it that way');
 /**
  * The reason the horizon exists here.
