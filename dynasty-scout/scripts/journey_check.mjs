@@ -101,9 +101,21 @@ await page.waitForTimeout(9000);
 step(5, 'read the lineup');
 t = await page.locator('body').innerText();
 assert('a win probability is shown', /chance you win week/i.test(t));
-const slots = await page.locator('button[aria-expanded]').count();
+/**
+ * The slot rows, and only those.
+ *
+ * `button[aria-expanded]` used to be unique to the slot board. Bench and
+ * opponent rows open now too, so the bare selector silently started counting
+ * seventeen extra rows as lineup slots — this file had been asserting ten and
+ * seeing twenty-seven, which is a test that stopped testing its own subject
+ * without ever going quiet about it.
+ */
+const slotRows = () => page.locator('section')
+    .filter({ has: page.getByRole('heading', { name: /slot by slot/i }) })
+    .locator('button[aria-expanded]');
+const slots = await slotRows().count();
 assert('all ten slots are listed', slots === 10, `got ${slots}`);
-const slotLabels = await page.locator('button[aria-expanded] > span:first-child').allInnerTexts();
+const slotLabels = await slotRows().locator('> span:first-child').allInnerTexts();
 console.log('      slots:', slotLabels.join(' '));
 assert('the FLEX slot is named', slotLabels.includes('FLEX'));
 assert('the kicker slot is there', slotLabels.includes('K'));
@@ -112,9 +124,9 @@ assert('opponent is named', /Their Team/.test(t));
 
 step(6, 'the kicker is not scored as zero');
 const kIdx = slotLabels.indexOf('K');
-const kRow = await page.locator('button[aria-expanded]').nth(kIdx).innerText();
+const kRow = await slotRows().nth(kIdx).innerText();
 console.log('      K row:', kRow.replace(/\n+/g, ' | '));
-const kAria = await page.locator('button[aria-expanded]').nth(kIdx)
+const kAria = await slotRows().nth(kIdx)
     .locator('[role="img"]').first().getAttribute('aria-label');
 console.log('      K strip:', kAria);
 const kMean = kAria?.match(/expected ([\d.]+) points/);
@@ -123,9 +135,9 @@ assert('the kicker has a real projection',
 
 step(7, 'open the flex and look at the candidates');
 const flexIdx = slotLabels.indexOf('FLEX');
-await page.locator('button[aria-expanded]').nth(flexIdx).click();
+await slotRows().nth(flexIdx).click();
 await page.waitForTimeout(2500);
-const panel = await page.locator('button[aria-expanded]').nth(flexIdx)
+const panel = await slotRows().nth(flexIdx)
     .evaluate(el => el.parentElement?.innerText ?? '');
 console.log('      flex panel:', panel.replace(/\n+/g, ' | ').slice(0, 220));
 assert('the flex lists more than one candidate',

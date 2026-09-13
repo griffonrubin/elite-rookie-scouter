@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { RedraftPlayer } from '@/lib/types';
 import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
-import { MAX_STARTSIT_IDS, SimPlayer } from '@/lib/startSit';
+import { SimPlayer } from '@/lib/startSit';
+import { useStartSitData } from '@/lib/useStartSit';
 import { simInputFor, simPlayerFrom } from '@/lib/simInput';
 import { evaluateTrade, TradeResult, TradeRosterPlayer, TradeTeam } from '@/lib/trade';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
-import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
 import { RosterPicker } from './RosterPicker';
 import { TradeVerdict } from './TradeVerdict';
 
@@ -33,13 +34,32 @@ const DEFAULT_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF'];
  */
 export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
-    const [data, setData] = useState<Map<number, StartSitPlayer>>(new Map());
-    const [loading, setLoading] = useState(false);
-    const [failed, setFailed] = useState(false);
     /** Null until the reader picks one; the default below stands in. */
     const [partner, setPartner] = useState<string | null>(null);
-    const [myGive, setMyGive] = useState<Set<number>>(new Set());
+    /**
+     * Who I am offering, opening on whoever the URL names.
+     *
+     * Team Analysis knows which of my players the bench already covers —
+     * that is the whole point of it — and "covered well enough that losing
+     * him would not move the number" is the same sentence as "this is the
+     * easiest thing on this roster to trade". Arriving here with him already
+     * on the table is the difference between a finding and a move.
+     *
+     * Read through Next's hook, not off `window`: this page is
+     * server-rendered, so a useState initialiser runs where there is no
+     * window and hydration keeps the server's empty answer.
+     */
+    const offered = useSearchParams().get('give');
+    const [myGive, setMyGive] = useState<Set<number> | null>(null);
     const [theirGive, setTheirGive] = useState<Set<number>>(new Set());
+
+    const fromUrl = useMemo(() => {
+        const ids = (offered ?? '').split(',').map(Number)
+            .filter(n => Number.isInteger(n) && n > 0);
+        return new Set(ids);
+    }, [offered]);
+    // The reader's own picks win once they have made one.
+    const giving = myGive ?? fromUrl;
 
     const myKey = league.connection?.teamKey ?? null;
 
@@ -87,28 +107,11 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     }, [teams]);
 
     const week = league.week;
-    useEffect(() => {
-        if (needed.length === 0 || week == null) return;
-        let cancelled = false;
-        setLoading(true);
-        setFailed(false);
-        const chunks: number[][] = [];
-        for (let i = 0; i < needed.length; i += MAX_STARTSIT_IDS) {
-            chunks.push(needed.slice(i, i + MAX_STARTSIT_IDS));
-        }
-        Promise.all(chunks.map(c =>
-            fetch(`/api/redraft/startsit?ids=${c.join(',')}&week=${week}`)
-                .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))))
-            .then((rs: { players: StartSitPlayer[] }[]) => {
-                if (cancelled) return;
-                const m = new Map<number, StartSitPlayer>();
-                for (const r of rs) for (const p of r.players ?? []) m.set(p.id, p);
-                setData(m);
-            })
-            .catch(() => { if (!cancelled) setFailed(true); })
-            .finally(() => { if (!cancelled) setLoading(false); });
-        return () => { cancelled = true; };
-    }, [needed.join(','), week]);   // eslint-disable-line react-hooks/exhaustive-deps
+    // One hook, one cache: every In Season page asks about the same league,
+    // so the page a reader lands on second only pays for the ids the first
+    // one did not already fetch. It also chunks to the endpoint's own limit,
+    // which is the bug four hand-rolled copies of this produced.
+    const { data, loading, failed } = useStartSitData(needed, week);
 
     const ready = needed.length > 0 && data.size > 0 && !failed;
 
@@ -154,15 +157,15 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
 
     const result: TradeResult | null = useMemo(() => {
         if (!ready || !teams || !me || !them) return null;
-        if (myGive.size === 0 && theirGive.size === 0) return null;
+        if (giving.size === 0 && theirGive.size === 0) return null;
         const asTeams: TradeTeam[] = teams.map(t => ({
             key: t.key, name: t.name, roster: t.roster, record: t.record,
         }));
         return evaluateTrade(asTeams, slots,
-            { teamKey: me.key, give: [...myGive] },
+            { teamKey: me.key, give: [...giving] },
             { teamKey: them.key, give: [...theirGive] },
             simOf, TRIALS);
-    }, [ready, teams, me, them, myGive, theirGive, slots, simOf]);
+    }, [ready, teams, me, them, giving, theirGive, slots, simOf]);
 
     const nameOf = (id: number) =>
         teams?.flatMap(t => t.roster).find(p => p.id === id)?.name ?? String(id);
@@ -226,7 +229,7 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 <option key={t.key} value={t.key}>{t.name}</option>
                             ))}
                         </select>
-                        {(myGive.size > 0 || theirGive.size > 0) && (
+                        {(giving.size > 0 || theirGive.size > 0) && (
                             <button type="button"
                                 onClick={() => { setMyGive(new Set()); setTheirGive(new Set()); }}
                                 className="text-[11px] px-2 py-1 rounded-lg
@@ -243,8 +246,8 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 title={`${me.name} — you`}
                                 subtitle="pick who you would send"
                                 roster={me.roster} starting={me.starting}
-                                selected={myGive} meanOf={meanOf}
-                                onToggle={toggle(myGive, setMyGive)} />
+                                selected={giving} meanOf={meanOf}
+                                onToggle={toggle(giving, setMyGive)} />
                         )}
                         {them && (
                             <RosterPicker

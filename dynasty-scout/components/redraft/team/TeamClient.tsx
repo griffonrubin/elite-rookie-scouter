@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { RedraftPlayer } from '@/lib/types';
 import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
-import { MAX_STARTSIT_IDS, SimPlayer } from '@/lib/startSit';
+import { SimPlayer } from '@/lib/startSit';
+import { useStartSitData } from '@/lib/useStartSit';
 import { simInputFor, simPlayerFrom } from '@/lib/simInput';
 import { replacementCost, type DepthReport } from '@/lib/depth';
 import { bestLineup, type TradeRosterPlayer } from '@/lib/trade';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
-import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
 import { DepthTable } from './DepthTable';
 
 const SEASON = 2026;
@@ -30,9 +30,6 @@ const DEFAULT_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF'];
  */
 export function TeamClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
-    const [data, setData] = useState<Map<number, StartSitPlayer>>(new Map());
-    const [loading, setLoading] = useState(false);
-    const [failed, setFailed] = useState(false);
 
     const myKey = league.connection?.teamKey ?? null;
 
@@ -71,28 +68,11 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
     }, [teams]);
 
     const week = league.week;
-    useEffect(() => {
-        if (needed.length === 0 || week == null) return;
-        let cancelled = false;
-        setLoading(true);
-        setFailed(false);
-        const chunks: number[][] = [];
-        for (let i = 0; i < needed.length; i += MAX_STARTSIT_IDS) {
-            chunks.push(needed.slice(i, i + MAX_STARTSIT_IDS));
-        }
-        Promise.all(chunks.map(c =>
-            fetch(`/api/redraft/startsit?ids=${c.join(',')}&week=${week}`)
-                .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))))
-            .then((rs: { players: StartSitPlayer[] }[]) => {
-                if (cancelled) return;
-                const m = new Map<number, StartSitPlayer>();
-                for (const r of rs) for (const p of r.players ?? []) m.set(p.id, p);
-                setData(m);
-            })
-            .catch(() => { if (!cancelled) setFailed(true); })
-            .finally(() => { if (!cancelled) setLoading(false); });
-        return () => { cancelled = true; };
-    }, [needed.join(','), week]);   // eslint-disable-line react-hooks/exhaustive-deps
+    // One hook, one cache: every In Season page asks about the same league,
+    // so the page a reader lands on second only pays for the ids the first
+    // one did not already fetch. It also chunks to the endpoint's own limit,
+    // which is the bug four hand-rolled copies of this produced.
+    const { data, loading, failed } = useStartSitData(needed, week);
 
     const ready = needed.length > 0 && data.size > 0 && !failed;
 

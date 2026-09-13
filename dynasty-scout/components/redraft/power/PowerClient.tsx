@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { RedraftPlayer } from '@/lib/types';
 import { useLeagueSync } from '@/lib/useLeagueSync';
-import { MAX_STARTSIT_IDS, SimPlayer } from '@/lib/startSit';
+import { SimPlayer } from '@/lib/startSit';
+import { useStartSitData } from '@/lib/useStartSit';
 import { simInputFor, simPlayerFrom } from '@/lib/simInput';
 import { powerRank, PowerResult, PowerTeam } from '@/lib/power';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
-import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
 import { PowerTable } from './PowerTable';
 
 const SEASON = 2026;
@@ -33,9 +33,6 @@ const TRIALS = 20000;
  */
 export function PowerClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
-    const [data, setData] = useState<Map<number, StartSitPlayer>>(new Map());
-    const [loading, setLoading] = useState(false);
-    const [failed, setFailed] = useState(false);
 
     /** Every team's starting lineup, as our own player ids. */
     const lineups = useMemo(() => {
@@ -69,34 +66,11 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
     }, [lineups]);
 
     const week = league.week;
-    React.useEffect(() => {
-        if (needed.length === 0 || week == null) return;
-        let cancelled = false;
-        setLoading(true);
-        setFailed(false);
-        // Chunked, because a twelve-team league is more players than the
-        // start/sit endpoint prices in one request — and chunked to its own
-        // limit rather than to a number that looked about right, which is
-        // how a request of a hundred ids came back a 400 nobody read.
-        const chunks: number[][] = [];
-        for (let i = 0; i < needed.length; i += MAX_STARTSIT_IDS) {
-            chunks.push(needed.slice(i, i + MAX_STARTSIT_IDS));
-        }
-        Promise.all(chunks.map(c =>
-            fetch(`/api/redraft/startsit?ids=${c.join(',')}&week=${week}`)
-                .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))))
-            .then((rs: { players: StartSitPlayer[] }[]) => {
-                if (cancelled) return;
-                const m = new Map<number, StartSitPlayer>();
-                for (const r of rs) for (const p of r.players ?? []) m.set(p.id, p);
-                setData(m);
-            })
-            // A ranking is a comparison, so a league half read is not a
-            // partial answer — it is a wrong one with a bar chart on it.
-            .catch(() => { if (!cancelled) setFailed(true); })
-            .finally(() => { if (!cancelled) setLoading(false); });
-        return () => { cancelled = true; };
-    }, [needed.join(','), week]);   // eslint-disable-line react-hooks/exhaustive-deps
+    // One hook, one cache: every In Season page asks about the same league,
+    // so the page a reader lands on second only pays for the ids the first
+    // one did not already fetch. It also chunks to the endpoint's own limit,
+    // which is the bug four hand-rolled copies of this produced.
+    const { data, loading, failed } = useStartSitData(needed, week);
 
     const ready = needed.length > 0 && data.size > 0 && !failed;
 

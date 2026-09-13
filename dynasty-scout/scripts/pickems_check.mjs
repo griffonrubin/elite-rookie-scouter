@@ -132,6 +132,21 @@ assert('and described for a reader who cannot see it',
 const svgText = await svg.evaluate(el => el.textContent);
 assert('both series are labelled on the chart itself',
     /favourite wins/.test(svgText) && /favourite covers/.test(svgText), svgText.slice(0, 80));
+/**
+ * And labelled where a phone can see them.
+ *
+ * The direct labels sit at the right-hand end of each line, which on a
+ * phone is inside the horizontal scroller and off the first screen — so a
+ * reader met two unlabelled lines. A legend rides above the chart now,
+ * outside the scroller, which is what the rule about two series asks for
+ * anyway.
+ */
+const legend = page.locator('figure > div').first();
+const labels = await legend.locator('span').filter({ hasText: /favourite/ }).allInnerTexts();
+console.log('      legend: ' + labels.join(' | '));
+assert('a legend names both series outside the scroller',
+    labels.length === 2 && labels.some(l => /wins/.test(l)) && labels.some(l => /covers/.test(l)),
+    labels.join(' | '));
 const dots = await svg.locator('circle').count();
 assert('a dot per bucket per series', dots === api.calibration.length * 2,
     `${dots} for ${api.calibration.length} buckets`);

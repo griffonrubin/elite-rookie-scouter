@@ -281,9 +281,26 @@ function BaseSplit({ outcome: o, recentMean, recentGames }: {
     if (proj == null || form == null) {
         const only = proj ?? form;
         if (only == null) return null;
-        // A projection made in August against a role that has since changed
-        // is not a small disagreement, it is the wrong number — and with no
-        // games this season there is nothing in the blend to correct it.
+        /**
+         * A projection that disagrees sharply with the recent log.
+         *
+         * This used to be framed as the projection being wrong, and told the
+         * reader to prefer the log. Measured over two seasons that advice is
+         * backwards: a five-game average predicts the next week *worse* than
+         * a season average does, and worst of all for exactly these players
+         * — the ones whose recent games look nothing like their season are
+         * the ones where chasing the recent games costs two whole points of
+         * error. A hot finish is mostly variance.
+         *
+         * So the disagreement is still worth flagging, because it is real
+         * and the reader should know the blend has nothing to correct it
+         * with. What it points at is the usage, which is the half of "read
+         * the usage and the log" that survived the measurement: a snap share
+         * up ten points predicts a man beating his own average, where a
+         * five-game points surge predicts nothing.
+         *
+         * scripts/formweight_check.mts is the measurement.
+         */
         const stale = proj != null && recentMean != null && (recentGames ?? 0) >= 4
             && recentMean > Math.max(proj * 1.6, proj + 4);
         return (
@@ -298,11 +315,15 @@ function BaseSplit({ outcome: o, recentMean, recentGames }: {
                 </span>
                 {stale && (
                     <span className="text-muted-foreground/60">
-                        {' '}But his last {recentGames} games average{' '}
+                        {' '}His last {recentGames} games average{' '}
                         <span className="font-semibold">{recentMean!.toFixed(1)}</span>,
-                        so the projection predates whatever his role is now and
-                        everything above inherits that. Read the usage and the log
-                        rather than the number.
+                        which is a long way from it — and with no games this season
+                        there is nothing in the blend to settle the argument. Worth
+                        knowing, but not worth taking the recent games over the
+                        projection on: across two seasons a five-game average
+                        predicts the next week worse than a full one does, and
+                        worst of all for players who look like this. The usage is
+                        the part that carries, so read that.
                     </span>
                 )}
             </p>

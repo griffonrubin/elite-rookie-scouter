@@ -56,6 +56,22 @@ export function CoverChart({ rows }: { rows: CalibrationBucket[] }) {
         // axis labels render at five pixels, and unreadable text is worse
         // than text a reader has to swipe to.
         <figure className="m-0 max-w-[960px]">
+            {/* A legend as well as the direct labels, not instead of them.
+                The labels sit at the right-hand end of the lines, which on a
+                phone is inside the scroller and off the first screen — so a
+                reader met two unlabelled lines and had to swipe to find out
+                which was which. */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-1.5">
+                {series.map(s => (
+                    <span key={s.key} className="flex items-center gap-1.5 text-[11px]
+                                                 font-semibold"
+                        style={{ color: s.colour }}>
+                        <span className="block rounded-full"
+                            style={{ width: 14, height: 3, background: s.colour }} />
+                        {s.label}
+                    </span>
+                ))}
+            </div>
             <div className="overflow-x-auto [scrollbar-width:thin]">
             <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block min-w-[640px]"
                 role="img"

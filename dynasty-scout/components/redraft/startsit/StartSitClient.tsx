@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { RedraftPlayer } from '@/lib/types';
 import { useLeagueSync } from '@/lib/useLeagueSync';
 import {
     beatsProbability, buildOutcome, Outcome, simulateMatchup, SimPlayer,
 } from '@/lib/startSit';
 import { simInputFor, type SimInput } from '@/lib/simInput';
+import { useStartSitData } from '@/lib/useStartSit';
 import { POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
@@ -19,7 +20,6 @@ import { SwapPreview } from './SwapPreview';
 import { PlayerDetail } from './PlayerDetail';
 import { MatchupBySlot, SlotPair } from './MatchupBySlot';
 import { HeadToHead } from './HeadToHead';
-import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
 
 const SEASON = 2026;
 
@@ -33,8 +33,6 @@ function canFill(benchPos: string, starterPos: string, slotIsFlex: boolean): boo
 
 export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
-    const [data, setData] = useState<Map<number, StartSitPlayer>>(new Map());
-    const [loading, setLoading] = useState(false);
     const [compare, setCompare] = useState<[number, number] | null>(null);
 
     // Head-to-head can name anyone on screen, the opponent's starters
@@ -52,31 +50,13 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         return [...ids];
     }, [league.me.starters, league.me.bench, league.opponent.starters]);
 
-    useEffect(() => {
-        if (needed.length === 0 || league.week == null) { setData(new Map()); return; }
-        let cancelled = false;
-        setLoading(true);
-        fetch(`/api/redraft/startsit?ids=${needed.join(',')}&week=${league.week}`)
-            .then(r => r.json())
-            .then((d: { players: StartSitPlayer[] }) => {
-                if (cancelled) return;
-                setData(new Map(d.players.map(p => [p.id, p])));
-            })
-            .finally(() => { if (!cancelled) setLoading(false); });
-        return () => { cancelled = true; };
-    }, [needed.join(','), league.week]);   // eslint-disable-line react-hooks/exhaustive-deps
-
-    /**
-     * Whether the week's data has arrived.
-     *
-     * `data` starts empty, so every simulation on this page used to run once
-     * against nothing — no logs, no lines, no injury report — produce a set
-     * of meaningless outcomes, render the whole board from them, and then do
-     * it all again when the fetch landed. A third of the wait was spent
-     * computing an answer that was always going to be thrown away, and for a
-     * moment the board showed it.
-     */
-    const ready = needed.length === 0 || data.size > 0;
+    // The same cached hook every other In Season page uses, with the box
+    // scores this page actually renders. `nonce` is what makes the reload
+    // button reach the projections and not just the roster.
+    const { data, loading } = useStartSitData(needed, league.week,
+        { detail: true, nonce: league.nonce });
+    /** Enough has arrived to say something about the lineup. */
+    const ready = needed.length > 0 && data.size > 0;
 
     const outcomeFor = useMemo(() => {
         // Cached per player: this is called for each of nine starters, for

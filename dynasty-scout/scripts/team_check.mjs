@@ -213,7 +213,130 @@ assert('the headline rate is stated', /% against the league/.test(t),
     (t.match(/[\d.]+% against the league[^\n]*/) || ['(not stated)'])[0]);
 assert('and the floor is explained', /moves by on its own/.test(t));
 
-step(7, 'nothing blew up');
+step(7, 'a finding you cannot act on is half a tool');
+/**
+ * The chain this page exists to start.
+ *
+ * "Your only tight end is your whole tight end" is a finding. On its own it
+ * leaves a reader to go and work out what to do about it, which is the part
+ * they came here to avoid — so a bare slot carries the way to fill it.
+ */
+const links = await page.locator('a', { hasText: /find one/i }).all();
+const hrefs = await Promise.all(links.map(l => l.getAttribute('href')));
+console.log('      ' + (hrefs.join(', ') || 'no links'));
+assert('every bare slot offers a way to fill it',
+    links.length === uncovered.length, `${links.length} links, ${uncovered.length} bare slots`);
+assert('and each one asks for that position',
+    hrefs.every(h => /\/in-season\/waivers\?pos=(QB|RB|WR|TE|K|DST)$/.test(h ?? '')),
+    hrefs.join(', '));
+// The tight end is the interesting case: the link has to land on a list of
+// tight ends, not on the forty biggest movers in the league.
+const teHref = hrefs.find(h => (h ?? '').endsWith('pos=TE'));
+assert('the tight end slot links to tight ends', !!teHref, teHref ?? 'no TE link');
+// "you would start eightfind one" is what omitting the space looks like.
+assert('the link is a separate word from the sentence before it',
+    uncovered.every(r => !/eightfind/.test(r.behind)),
+    uncovered.map(r => r.behind).find(b => /eightfind/.test(b)) ?? 'spaced');
+await page.locator(`a[href="${teHref}"]`).first().click();
+await page.waitForTimeout(7000);
+const landed = await page.locator('body').innerText();
+const rows2 = await page.locator('button[aria-expanded]').count();
+const pressed = await page.locator('button[aria-pressed="true"]').allInnerTexts();
+console.log(`      landed on the waiver wire: ${rows2} rows, filter ${pressed.join('/')}`);
+assert('it lands on the waiver wire', /free agents/i.test(landed));
+assert('already filtered to tight ends', pressed.includes('TE'), pressed.join(','));
+assert('with a list worth reading, not three rows', rows2 >= 8, `${rows2} rows`);
+const names = await page.locator('button[aria-expanded]').first().innerText();
+console.log(`      top of the list: ${names.split('\n')[0]}`);
+await page.goBack({ waitUntil: 'domcontentloaded' });
+await page.getByRole('heading', { name: /what each starter is holding up/i })
+    .waitFor({ timeout: 30000 });
+await page.waitForTimeout(2500);
+
+step('7b', 'and the surplus reaches the page that prices it');
+// The other direction. "Covered well enough that losing him would not move
+// the number" is the same sentence as "this is the easiest thing on this
+// roster to trade", and it was a sentence with nowhere to go.
+const t7 = await page.locator('body').innerText();
+const spare = rows.filter(r => r.cost < 1.5).map(r => r.name);
+console.log('      spare, by the page\'s own floor: ' + (spare.join(', ') || 'none'));
+const worth = page.locator('a', { hasText: /see what (he|they) (is|are) worth/i }).first();
+if (await worth.count() === 0) {
+    console.log('      (no starter on this roster is inside the floor — nothing to link)');
+    assert('the page does not claim a surplus it has not found',
+        !/easiest thing on this roster to trade/.test(t7),
+        'no spare players, no sentence');
+    /**
+     * The link is conditional, the mechanism behind it is not.
+     *
+     * On a roster where every starter matters the footnote correctly says
+     * nothing, which would leave the thing it links to untested — so the
+     * receiving half is driven directly, with a player id read off the trade
+     * page itself.
+     */
+    await page.goto(`${BASE}/in-season/trades`, { waitUntil: 'domcontentloaded' });
+    await page.locator('#trade-partner').waitFor({ timeout: 30000 });
+    await page.waitForTimeout(1500);
+    const mine = page.locator('section').filter({ has: page.locator('h3') }).first();
+    const id = await mine.locator('button[data-player-id]').nth(3).getAttribute('data-player-id');
+    const name = (await mine.locator('button[data-player-id]').nth(3).innerText()).split('\n')[0];
+    console.log(`      driving /in-season/trades?give=${id} (${name})`);
+    await page.goto(`${BASE}/in-season/trades?give=${id}`, { waitUntil: 'domcontentloaded' });
+    await page.locator('#trade-partner').waitFor({ timeout: 30000 });
+    await page.waitForTimeout(3500);
+    const on = await page.locator('button[aria-pressed="true"][data-player-id]')
+        .evaluateAll(els => els.map(e => e.getAttribute('data-player-id')));
+    console.log('      already on the table: ' + (on.join(', ') || 'nobody'));
+    assert('the named player is already offered', on.join(',') === id, on.join(','));
+    /**
+     * Whose number is it?
+     *
+     * The verdict lists the two traders by how far each moved, not by which
+     * one is you — so reading the first "pts of win rate" on the page can
+     * easily be the other team's. A one-sided gift has to show *me* getting
+     * worse, and asserting that means finding my row rather than the first
+     * one.
+     */
+    const verdictRows = await page.locator('section')
+        .filter({ has: page.getByRole('heading', { name: /what it does to each side/i }) })
+        .locator('> div > div')
+        .evaluateAll(els => els.map(e => e.textContent?.replace(/\s+/g, ' ').trim() ?? ''));
+    for (const v of verdictRows) console.log('      ' + v.slice(0, 110));
+    const mineRow = verdictRows.find(v => /— you/.test(v)) ?? '';
+    const delta = parseFloat((mineRow.match(/([−+-][\d.]+) pts of win rate/) || [])[1]
+        ?.replace('−', '-') ?? 'NaN');
+    assert('the verdict names me', /— you/.test(mineRow), mineRow.slice(0, 60));
+    assert('and giving a starter away for nothing makes me worse',
+        delta < 0, String(delta));
+    // Clicking anything must hand control back to the reader.
+    await page.locator('button[data-player-id]').nth(6).click();
+    await page.waitForTimeout(2500);
+    const after = await page.locator('button[aria-pressed="true"][data-player-id]').count();
+    assert('and the reader can still change it', after === 2, `${after} selected`);
+} else {
+    const href = await worth.getAttribute('href');
+    console.log('      ' + href);
+    assert('the link offers real player ids',
+        /\/in-season\/trades\?give=\d+(,\d+)*$/.test(href ?? ''), href ?? '');
+    await worth.click();
+    await page.locator('#trade-partner').waitFor({ timeout: 30000 });
+    await page.waitForTimeout(2500);
+    const picked = await page.locator('button[aria-pressed="true"]').allInnerTexts();
+    console.log('      already on the table: ' + picked.map(x => x.split('\n')[0]).join(', '));
+    assert('it lands on the trade analyzer', await page.locator('#trade-partner').count() === 1);
+    assert('with those players already offered',
+        picked.length === (href ?? '').split('=')[1].split(',').length,
+        `${picked.length} selected`);
+    const verdict = await page.locator('body').innerText();
+    assert('and it has already priced the offer',
+        /pts of win rate/.test(verdict),
+        (verdict.match(/[^\n]*pts of win rate/) || ['(no verdict)'])[0]);
+    await page.goBack({ waitUntil: 'domcontentloaded' });
+    await page.getByRole('heading', { name: /what each starter is holding up/i })
+        .waitFor({ timeout: 30000 });
+}
+
+step(8, 'nothing blew up');
 assert('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 const o = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));

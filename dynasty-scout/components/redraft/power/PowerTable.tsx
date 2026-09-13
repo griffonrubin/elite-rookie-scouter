@@ -165,6 +165,14 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
                                     )}
                                 </span>
 
+                                {/* The bar owns row two outright on a phone.
+                                    It used to span all three columns while
+                                    the rate claimed the third of them in the
+                                    same row, so the two collided and the bar
+                                    rendered as an eight-pixel sliver against
+                                    the right edge — the whole visualisation,
+                                    gone, on the screen most of these
+                                    decisions are made on. */}
                                 <span className="col-span-3 row-start-2 sm:col-span-1
                                                  sm:col-start-3 sm:row-start-1"
                                     title={`Beats the other ${rows.length - 1} rosters `
@@ -172,9 +180,13 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
                                         + 'The line is even odds — a team exactly as good '
                                         + 'as its league.'}>
                                     <EvenBar p={r.winRate} span={fieldSpan} mine={isMe} />
+                                    <span className="sm:hidden text-[10px] tabular-nums
+                                                     text-muted-foreground/60 mt-0.5 block">
+                                        {(r.winRate * 100).toFixed(1)}% of simulated games
+                                    </span>
                                 </span>
 
-                                <span className="col-start-3 row-start-2 sm:col-start-4
+                                <span className="hidden sm:block sm:col-start-4
                                                  sm:row-start-1 text-[11px] tabular-nums
                                                  text-right text-muted-foreground/70">
                                     {(r.winRate * 100).toFixed(1)}%

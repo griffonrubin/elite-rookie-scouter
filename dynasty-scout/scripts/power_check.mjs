@@ -45,6 +45,31 @@ const page = await ctx.newPage();
 page.setDefaultTimeout(30000);
 const errs = [];
 page.on('pageerror', e => errs.push(e.message));
+
+/**
+ * What this page actually downloads.
+ *
+ * Ranking twelve rosters needs one number per player, and the endpoint was
+ * sending the full eighteen-column box score for every rostered player in
+ * the league — 1.7MB to use 0.4MB of it, with game logs at 92% of the
+ * payload. A page that reads only `points` off a log row has no business
+ * asking for `interceptions`.
+ */
+const payload = { bytes: 0, calls: 0, logKeys: new Set(), rows: 0 };
+page.on('response', async r => {
+    if (!r.url().includes('/api/redraft/startsit')) return;
+    payload.calls++;
+    try {
+        const body = await r.text();
+        payload.bytes += body.length;
+        for (const p of (JSON.parse(body).players ?? [])) {
+            for (const l of (p.logs ?? [])) {
+                payload.rows++;
+                for (const k of Object.keys(l)) payload.logKeys.add(k);
+            }
+        }
+    } catch { /* a body already consumed is not a finding */ }
+});
 const fails = [];
 const assert = (l, pass, extra = '') => {
     console.log(`   ${pass ? 'ok  ' : 'FAIL'} ${l}${extra ? '  ' + extra : ''}`);
@@ -167,6 +192,18 @@ assert('and it is Aekz48, who has no kicker',
 assert('and it is still ranked rather than dropped',
     names.includes('Aekz48') && !/Left out of the ranking/.test(t));
 
+step('5d', 'it downloads what it reads, and no more');
+console.log(`      ${payload.calls} requests, `
+    + `${(payload.bytes / 1024 / 1024).toFixed(2)}MB, ${payload.rows} log rows`);
+console.log(`      log row keys: ${[...payload.logKeys].sort().join(', ')}`);
+assert('the whole league was fetched', payload.rows > 1000, String(payload.rows));
+// Four fields is what a simulation reads off a log row.
+assert('log rows carry only what a simulation reads',
+    [...payload.logKeys].sort().join(',') === 'opponent,points,season,week',
+    [...payload.logKeys].sort().join(','));
+assert('so the page is under a megabyte', payload.bytes < 1024 * 1024,
+    `${(payload.bytes / 1024 / 1024).toFixed(2)}MB`);
+
 step(6, 'week one claims no luck gap');
 assert('no team is called lucky or unlucky', !/better off than the roster|worse off than the roster/.test(t),
     (t.match(/[\w ]+(better|worse) off than the roster/) || ['none claimed'])[0]);
@@ -214,11 +251,34 @@ assert('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 const o = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
 assert('no horizontal overflow', o.sw <= o.cw, JSON.stringify(o));
-await page.setViewportSize({ width: 400, height: 900 });
-await page.waitForTimeout(500);
+await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForTimeout(900);
 const op = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
 assert('nor at phone width', op.sw <= op.cw + 1, JSON.stringify(op));
+
+/**
+ * And the chart is still a chart there.
+ *
+ * "No overflow" passed while the bars were eight pixels wide against the
+ * right edge: the bar spanned all three columns of the phone grid and the
+ * rate claimed the third of them in the same row, so the two collided and
+ * the whole visualisation collapsed. Nothing overflowed, nothing errored,
+ * every assertion passed, and the page was useless on the screen most of
+ * these decisions get made on.
+ */
+const bars = await teamRows().locator('span[role="img"]')
+    .evaluateAll(els => els.map(e => e.getBoundingClientRect().width));
+console.log(`      bar track at 390px: ${Math.min(...bars).toFixed(0)}–`
+    + `${Math.max(...bars).toFixed(0)}px across ${bars.length} rows`);
+assert('every row still has a bar', bars.length === 12, String(bars.length));
+assert('and the track is a track, not a sliver',
+    Math.min(...bars) > 150, `${Math.min(...bars).toFixed(0)}px`);
+const marks = await teamRows().locator('span[role="img"] > span:last-child')
+    .evaluateAll(els => els.map(e => e.getBoundingClientRect().width));
+console.log(`      widest mark: ${Math.max(...marks).toFixed(0)}px`);
+assert('with marks a reader can compare', Math.max(...marks) > 40,
+    `${Math.max(...marks).toFixed(0)}px`);
 await page.setViewportSize({ width: 1500, height: 1200 });
 await page.waitForTimeout(400);
 await page.screenshot({ path: process.env.SHOT ?? 'power.png', fullPage: false });
