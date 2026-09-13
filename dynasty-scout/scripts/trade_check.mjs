@@ -163,6 +163,23 @@ if (offers.length === 0) {
         offers.map(o => `${o.mine}/${o.theirs}`).join(' '));
     assert('and both of them are real', offers.every(o => o.mine > 0 && o.theirs > 0),
         offers.map(o => `${o.mine}/${o.theirs}`).join(' '));
+    /**
+     * The weeks that decide a season, on both sides of the offer.
+     *
+     * A deal even on points that moves you from the hardest playoff
+     * schedule at the position to the easiest is not an even deal, and the
+     * points cannot say so — they are a season average and these are three
+     * particular weeks.
+     */
+    const sched = offers[0].text.match(/playoffs (\d+)\/(\d+)/g) ?? [];
+    console.log('      playoff schedules on the offer: ' + sched.join(' → '));
+    assert('both sides carry their playoff schedule', sched.length >= 2,
+        sched.join(' '));
+    assert('ranked against the whole league at that position',
+        sched.every(x => {
+            const [r, of] = x.match(/(\d+)\/(\d+)/).slice(1).map(Number);
+            return of >= 30 && r >= 1 && r <= of;
+        }), sched.join(' '));
     assert('ranked on the smaller of the two', offers.every((o, i) =>
         i === 0 || Math.min(o.mine, o.theirs)
             <= Math.min(offers[i - 1].mine, offers[i - 1].theirs) + 0.05),

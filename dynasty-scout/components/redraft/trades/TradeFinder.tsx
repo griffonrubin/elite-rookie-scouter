@@ -8,6 +8,8 @@ import { DIVERGING } from '@/lib/vizTokens';
 import { findTrades, offerReason, type FinderTeam, type Offer } from '@/lib/tradeFinder';
 import type { TradeRosterPlayer } from '@/lib/trade';
 import type { TeamProfile } from '@/lib/teamProfile';
+import type { SosRow } from '@/lib/schedule';
+import { SchedChip, schedFor } from '@/components/redraft/SchedChip';
 
 /**
  * Trades worth proposing, found rather than waited for.
@@ -27,23 +29,34 @@ import type { TeamProfile } from '@/lib/teamProfile';
  * the full simulation and the whole league's reaction.
  */
 
-function Side({ ids, nameOf, positionOf, tone }: {
+function Side({ ids, nameOf, positionOf, teamOf, playoffs, tone }: {
     ids: number[];
     nameOf: (id: number) => string;
     positionOf: (id: number) => string;
+    teamOf: (id: number) => string | null;
+    playoffs: SosRow[];
     tone: 'out' | 'in';
 }) {
     return (
         <span className="flex flex-col gap-0.5 min-w-0">
             {ids.map(id => (
-                <span key={id} className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0"
-                        style={{ background: POSITION_RAW[positionOf(id).toUpperCase()]
-                            ?? '#64748b' }} />
-                    <span className={cn('text-[12px] truncate',
-                        tone === 'in' ? 'font-semibold' : 'text-muted-foreground/70')}>
-                        {nameOf(id)}
+                <span key={id} className="min-w-0">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0"
+                            style={{ background: POSITION_RAW[positionOf(id).toUpperCase()]
+                                ?? '#64748b' }} />
+                        <span className={cn('text-[12px] truncate',
+                            tone === 'in' ? 'font-semibold' : 'text-muted-foreground/70')}>
+                            {nameOf(id)}
+                        </span>
                     </span>
+                    {/* The weeks that decide a season, on both sides of the
+                        offer. A deal that is even on points and moves you
+                        from the hardest playoff schedule at the position to
+                        the easiest is not an even deal. */}
+                    <SchedChip className="block pl-3"
+                        sos={schedFor(playoffs, teamOf(id), positionOf(id))}
+                        label="playoffs" />
                 </span>
             ))}
         </span>
@@ -51,8 +64,8 @@ function Side({ ids, nameOf, positionOf, tone }: {
 }
 
 export function TradeFinder({
-    myRoster, teams, slots, meanOf, nameOf, positionOf, profiles, myKey,
-    rosterSize, onPick, partnerKey,
+    myRoster, teams, slots, meanOf, nameOf, positionOf, teamOf, playoffs,
+    profiles, myKey, rosterSize, onPick, partnerKey,
 }: {
     myRoster: TradeRosterPlayer[];
     teams: FinderTeam[];
@@ -60,6 +73,10 @@ export function TradeFinder({
     meanOf: (id: number) => number;
     nameOf: (id: number) => string;
     positionOf: (id: number) => string;
+    /** The NFL team a player plays for, for the schedule behind him. */
+    teamOf: (id: number) => string | null;
+    /** Fantasy playoff-week schedule strength, by team and position. */
+    playoffs: SosRow[];
     /** Positional ranks, for saying why an offer exists. */
     profiles: TeamProfile[];
     myKey: string | null;
@@ -145,12 +162,14 @@ export function TradeFinder({
                                         )}
                                     </span>
                                     <Side ids={o.give} nameOf={nameOf}
-                                        positionOf={positionOf} tone="out" />
+                                        positionOf={positionOf} teamOf={teamOf}
+                                        playoffs={playoffs} tone="out" />
                                     <ArrowRight className="hidden sm:block w-3 h-3
                                                            text-muted-foreground/30"
                                         aria-hidden="true" />
                                     <Side ids={o.get} nameOf={nameOf}
-                                        positionOf={positionOf} tone="in" />
+                                        positionOf={positionOf} teamOf={teamOf}
+                                        playoffs={playoffs} tone="in" />
                                     <span className="text-right">
                                         {/* Both numbers, always. The one that
                                             decides whether to send it is
@@ -190,7 +209,11 @@ export function TradeFinder({
                 thing. Click one to load it into the analyser below, where it gets the
                 full round robin and the rest of the league&rsquo;s reaction to it. Two
                 names for one shrinks your roster and grows theirs, so those are only
-                offered where the league has room.
+                offered where the league has room. The playoff rank under each name is
+                that player&rsquo;s own position against his own remaining opponents
+                across the weeks that decide a season — a deal even on points that
+                moves you from the hardest of those schedules to the easiest is not an
+                even deal.
             </p>
         </section>
     );

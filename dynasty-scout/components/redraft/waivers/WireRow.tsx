@@ -8,7 +8,9 @@ import { DIVERGING, MARK } from '@/lib/vizTokens';
 import { SEASON_GAMES, type WaiverRow } from '@/lib/waiverRank';
 import type { AddDrop } from '@/lib/waiverPlan';
 import { MatchupChip } from '@/components/redraft/startsit/DefenceProfile';
+import { SchedChip } from '@/components/redraft/SchedChip';
 import type { DefenceCell } from '@/lib/defence';
+import type { SosRow } from '@/lib/schedule';
 
 /**
  * One free agent, priced the way the claim is actually decided.
@@ -27,6 +29,16 @@ export interface WireRowData {
     /** This week's projection, from the same model the lineup board uses. */
     week: number | null;
     plan: AddDrop | null;
+    /**
+     * What his own position faces for the rest of the year, and across the
+     * fantasy playoff weeks.
+     *
+     * A claim is a roster spot held for months, so the schedule behind it is
+     * part of the decision and not a footnote — and the playoff window is
+     * the half that decides a season.
+     */
+    rest: SosRow | null;
+    playoffs: SosRow | null;
 }
 
 function Net({ plan }: { plan: AddDrop }) {
@@ -55,7 +67,7 @@ export function WireRow({ data, cells, of, isOpen, onToggle }: {
     isOpen: boolean;
     onToggle: () => void;
 }) {
-    const { row: r, week, plan } = data;
+    const { row: r, week, plan, rest, playoffs } = data;
     const perWeek = r.proj_points != null ? r.proj_points / SEASON_GAMES : null;
     const gap = r.over_replacement;
 
@@ -118,6 +130,16 @@ export function WireRow({ data, cells, of, isOpen, onToggle }: {
                         {Math.abs(gap / SEASON_GAMES).toFixed(1)} a week{' '}
                         {gap >= 0 ? 'above' : 'below'} a startable{' '}
                         {(r.position ?? '').toUpperCase()}
+                    </span>
+                )}
+                {/* The schedule he is being claimed into. A roster spot is
+                    held for months, so who he plays is part of the decision
+                    rather than a footnote to it — and the playoff weeks are
+                    the half that decides a season. */}
+                {(rest || playoffs) && (
+                    <span className="flex gap-2">
+                        <SchedChip sos={rest} label="sched" />
+                        <SchedChip sos={playoffs} label="playoffs" />
                     </span>
                 )}
             </span>

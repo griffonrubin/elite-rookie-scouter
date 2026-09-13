@@ -110,6 +110,8 @@ const cells = () => wireRows().evaluateAll(els => els.map(e => {
         rank: (x.match(/\b(QB|RB|WR|TE|K|DST)(\d+)\b/) || [])[0] ?? null,
         net: (x.match(/([+−-][\d.]+) \| (drop [^|]+|open spot)/) || [])[1] ?? null,
         noUpgrade: /no upgrade/.test(x),
+        sched: (x.match(/sched (\d+)\/(\d+)/) || []).slice(1).map(Number),
+        playoffs: (x.match(/playoffs (\d+)\/(\d+)/) || []).slice(1).map(Number),
     };
 }));
 const rowCells = await cells();
@@ -139,6 +141,35 @@ assert('every row says what the claim would do to my lineup',
 assert('and the ones that are an upgrade name who goes',
     rowCells.filter(c => c.net != null).every(c => /drop |open spot/.test(c.text)),
     rowCells.filter(c => c.net != null).slice(0, 2).map(c => c.net).join(','));
+/**
+ * A claim is a roster spot held for months, so the fixtures behind a
+ * candidate belong on the row rather than one page away — and the playoff
+ * weeks more than the rest of them, because they are the half that decides
+ * a season. Measured against what those defences give up to his own
+ * position, not against how good they are: Pittsburgh are thirty-second in
+ * the league for receivers and first for tight ends.
+ */
+const withSched = rowCells.filter(c => c.sched.length === 2);
+console.log(`      ${withSched.length} rows carry a schedule; `
+    + rowCells.slice(0, 3).map(c =>
+        `${c.name.split(' ').pop()} ${c.sched.join('/')}→${c.playoffs.join('/')}`).join('  '));
+assert('the schedule he would be claimed into is on the row',
+    withSched.length >= rowCells.length - 2,
+    `${withSched.length} of ${rowCells.length}`);
+assert('with the playoff weeks given separately',
+    rowCells.filter(c => c.playoffs.length === 2).length >= rowCells.length - 2,
+    String(rowCells.filter(c => c.playoffs.length === 2).length));
+assert('ranked against the whole league at that position',
+    withSched.every(c => c.sched[1] >= 30 && c.sched[0] >= 1 && c.sched[0] <= c.sched[1]),
+    withSched.slice(0, 4).map(c => c.sched.join('/')).join(' '));
+// The two windows must be able to disagree, or one of them is decoration.
+const moved = withSched.filter(c => c.playoffs.length === 2
+    && Math.abs(c.sched[0] - c.playoffs[0]) >= 8).length;
+console.log(`      ${moved} of ${withSched.length} move eight places or more `
+    + 'between the two windows');
+assert('and the playoff window is a different question from the rest', moved >= 3,
+    String(moved));
+
 assert('the matchup is on the row too',
     /vs [A-Z]{2,3} [\d.]+ (soft|leaky|average|firm|tough)/.test(rowCells[0].text),
     (rowCells[0].text.match(/vs [A-Z]{2,3}[^|]*/) || ['(none)'])[0]);
@@ -165,6 +196,32 @@ assert('this week is ordered by this week',
 assert('and it is a different order from the season one',
     byWeek.join() !== bySeason.join(),
     `${byWeek[0]} vs ${bySeason[0]}`);
+const bySchedule = await orderBy('Playoff schedule');
+/**
+ * Read the ease, not the rank.
+ *
+ * A rank is *within a position* — a receiver ranked fifth easiest and a
+ * tight end ranked seventh are not on the same scale, so a list ordered
+ * correctly across positions looks unsorted if you read the ranks off it.
+ * What orders the list is the percentage those opponents give up against an
+ * average defence, which is relative and therefore comparable, and it lives
+ * in the chip's title.
+ */
+const eases = await wireRows().evaluateAll(els => els.map(e => {
+    const chip = [...e.querySelectorAll('[title]')]
+        .find(n => /Over playoffs/.test(n.getAttribute('title') ?? ''));
+    const m = chip?.getAttribute('title')?.match(/give up ([+−-][\d.]+)%/);
+    return m ? parseFloat(m[1].replace('−', '-')) : NaN;
+}).filter(Number.isFinite));
+console.log('      by playoff schedule: ' + bySchedule.slice(0, 3).join(', ')
+    + '  ease ' + eases.slice(0, 6).map(v => v.toFixed(1)).join(','));
+assert('the stash ordering really is by the playoff fixtures',
+    eases.length >= 10 && eases.every((v, i) => i === 0 || v <= eases[i - 1] + 0.05),
+    eases.slice(0, 8).map(v => v.toFixed(1)).join(','));
+assert('and it is a different list again',
+    bySchedule.join() !== bySeason.join() && bySchedule.join() !== byWeek.join(),
+    bySchedule.slice(0, 3).join(','));
+
 const byUpgrade = await orderBy('Upgrade to your lineup');
 console.log('      by upgrade: ' + byUpgrade.slice(0, 3).join(', '));
 assert('the upgrade ordering puts any real upgrade first', (() => {

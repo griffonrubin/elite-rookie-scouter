@@ -11,6 +11,7 @@ import { evaluateTrade, TradeResult, TradeRosterPlayer, TradeTeam } from '@/lib/
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
 import { HorizonToggle } from '@/components/redraft/HorizonToggle';
 import { TradeFinder } from './TradeFinder';
+import { useSchedule } from '@/lib/useSchedule';
 import { measureTeam, rankLeague, type TeamProfile } from '@/lib/teamProfile';
 import type { Offer } from '@/lib/tradeFinder';
 import { RosterPicker } from './RosterPicker';
@@ -159,6 +160,16 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     }, [league.snapshot?.playoffWeekStart, week]);
 
     const meanOf = (id: number) => simOf(id)?.outcome.mean ?? null;
+    /** The NFL team a player plays for, for the schedule behind him. */
+    const teamOf = useMemo(() => {
+        const byId = new Map(players.map(p => [p.id, p.nfl_team ?? null]));
+        return (id: number) => byId.get(id) ?? null;
+    }, [players]);
+    /**
+     * The league's remaining schedule, so an offer can be judged on the
+     * weeks that decide a season as well as on the points.
+     */
+    const schedule = useSchedule(week, league.snapshot?.playoffWeekStart ?? null);
     /**
      * Stable identities for the finder's inputs.
      *
@@ -279,6 +290,7 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                             teams={finderTeams}
                             slots={slots} meanOf={finderMean}
                             nameOf={nameOf} positionOf={positionOf}
+                            teamOf={teamOf} playoffs={schedule.playoffs}
                             profiles={profiles} myKey={myKey}
                             rosterSize={league.snapshot?.rosterPositions?.length}
                             partnerKey={partnerKey}

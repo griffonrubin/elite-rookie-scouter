@@ -8,6 +8,8 @@ import { Outcome } from '@/lib/startSit';
 import { simInputFor } from '@/lib/simInput';
 import { useStartSitData } from '@/lib/useStartSit';
 import { useDefence } from '@/lib/useDefence';
+import { useSchedule } from '@/lib/useSchedule';
+import { schedFor } from '@/components/redraft/SchedChip';
 import { planClaims, rosterVsWire } from '@/lib/waiverPlan';
 import type { TradeRosterPlayer } from '@/lib/trade';
 import { SEASON_GAMES, type PositionShape, type WaiverRow } from '@/lib/waiverRank';
@@ -44,7 +46,7 @@ const SHOWN = 30;
  * wants the rest of the season; and somebody deciding whether a claim is
  * worth a drop at all wants the only column that knows their roster.
  */
-type SortKey = 'week' | 'season' | 'upgrade';
+type SortKey = 'week' | 'season' | 'upgrade' | 'schedule';
 const SORTS: { id: SortKey; label: string; note: string }[] = [
     { id: 'season', label: 'Rest of season',
         note: 'Projected points from here, measured against the last player at that '
@@ -60,6 +62,11 @@ const SORTS: { id: SortKey; label: string; note: string }[] = [
         note: 'What claiming him would actually do: your best lineup this week with '
             + 'him in and somebody dropped, against your best lineup now. Every drop '
             + 'is tried, and the one named is the one that costs least.' },
+    { id: 'schedule', label: 'Playoff schedule',
+        note: 'Who he plays across the fantasy playoff weeks, measured against what '
+            + 'those defences give up to his own position rather than against how '
+            + 'good they are. The stash question: whether a bench spot held for two '
+            + 'months pays off in the three weeks that decide the season.' },
 ];
 
 /**
@@ -146,6 +153,14 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
     }, [league.snapshot?.rosterPositions]);
 
     const rosterSize = league.snapshot?.rosterPositions?.length;
+    /**
+     * The league's remaining schedule, from this week on.
+     *
+     * A waiver claim is a roster spot held for months, so the fixtures behind
+     * a candidate are part of the decision — and the playoff weeks more than
+     * the rest of them.
+     */
+    const schedule = useSchedule(league.week, league.snapshot?.playoffWeekStart ?? null);
 
     const week = league.week;
     useEffect(() => {
@@ -214,14 +229,19 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
             row: r,
             week: data.has(r.id) ? Math.round(meanOf(r.id) * 10) / 10 : null,
             plan: plans.get(r.id) ?? null,
+            rest: schedFor(schedule.rest, r.nfl_team ?? null, r.position ?? null),
+            playoffs: schedFor(schedule.playoffs, r.nfl_team ?? null, r.position ?? null),
         }));
         const by: Record<SortKey, (d: WireRowData) => number> = {
             week: d => d.week ?? -Infinity,
             season: d => d.row.over_replacement ?? -Infinity,
             upgrade: d => d.plan?.net ?? -Infinity,
+            // Ranked on the fixtures alone, which is the stash question: who
+            // is worth a bench spot for two months because of who he plays.
+            schedule: d => d.playoffs?.ease ?? d.rest?.ease ?? -Infinity,
         };
         return [...priced].sort((a, b) => by[sort](b) - by[sort](a)).slice(0, SHOWN);
-    }, [rows, data, myRoster, slots, sort, rosterSize, outcomeOf]);
+    }, [rows, data, myRoster, slots, sort, rosterSize, outcomeOf, schedule]);
 
     /** And the summary that answers "is any of this better than what I have". */
     const versus = useMemo(() => {
