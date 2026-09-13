@@ -210,6 +210,14 @@ export function DepthTable({ report }: { report: DepthReport }) {
                         {spare.length === 1 ? 'him' : 'them'} would not move the number —
                         which is also what makes {spare.length === 1 ? 'him' : 'them'} the
                         easiest thing on this roster to trade.{' '}
+                        <Link href={`/in-season/trades?give=${spare.map(r => r.playerId).join(',')}`}
+                            className="underline underline-offset-2 decoration-white/25
+                                       hover:decoration-white/60 text-muted-foreground/60
+                                       hover:text-foreground"
+                            title={`Open the trade analyzer with `
+                                + `${spare.map(r => r.name).join(' and ')} already offered`}>
+                            {spare.length === 1 ? 'see what he is worth' : 'see what they are worth'}
+                        </Link>.{' '}
                     </>
                 )}
                 Anything under {(FLOOR * 100).toFixed(1)} points of win rate is inside what

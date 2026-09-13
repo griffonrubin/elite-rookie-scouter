@@ -69,6 +69,10 @@ export function RosterPicker({
                                 <li key={p.id}>
                                     <button type="button" disabled={disabled}
                                         aria-pressed={on}
+                                        // So a link into this page can be
+                                        // checked against the player it
+                                        // claims to have put on the table.
+                                        data-player-id={p.id}
                                         onClick={() => onToggle(p.id)}
                                         className={cn(`w-full grid items-center gap-x-2
                                             px-1.5 py-1 rounded text-left text-[11px]
