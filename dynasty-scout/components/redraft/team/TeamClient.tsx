@@ -6,11 +6,14 @@ import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
 import { SimPlayer } from '@/lib/startSit';
 import { useStartSitData } from '@/lib/useStartSit';
 import { simInputFor, simPlayerFrom, type Horizon } from '@/lib/simInput';
+import type { Outcome } from '@/lib/startSit';
 import { replacementCost, type DepthReport } from '@/lib/depth';
 import { bestLineup, type TradeRosterPlayer } from '@/lib/trade';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
 import { HorizonToggle } from '@/components/redraft/HorizonToggle';
 import { DepthTable } from './DepthTable';
+import { TeamShape } from './TeamShape';
+import { measureTeam, rankLeague, type TeamProfile } from '@/lib/teamProfile';
 
 const SEASON = 2026;
 const TRIALS = 20000;
@@ -109,6 +112,40 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
         return Math.max(0, playoffs - (week ?? 1));
     }, [league.snapshot?.playoffWeekStart, week]);
 
+    /**
+     * Every roster's shape, on both horizons at once.
+     *
+     * The season horizon is what the roster *is*; the week horizon is what
+     * it does this Sunday, and the profile wants both on the same picture —
+     * so these are built independently of the toggle above rather than
+     * following it. A radar that redrew when you changed a setting meant for
+     * the table below it would be answering a question nobody asked.
+     */
+    const outcomeAt = useMemo(() => {
+        const byId = new Map(players.map(p => [p.id, p]));
+        const cache = new Map<string, Outcome | null>();
+        return (id: number, h: Horizon): Outcome | null => {
+            const k = `${id}:${h}`;
+            if (cache.has(k)) return cache.get(k)!;
+            const p = byId.get(id);
+            const d = data.get(id);
+            const v = p && d
+                ? simInputFor({ id, position: p.position ?? '' }, d, SEASON, h).outcome
+                : null;
+            cache.set(k, v);
+            return v;
+        };
+    }, [players, data]);
+
+    const profiles: TeamProfile[] = useMemo(() => {
+        if (!ready || !teams) return [];
+        const measured = teams
+            .filter(t => t.roster.length > 0)
+            .map(t => measureTeam(t.key, t.name, t.roster, slots,
+                id => outcomeAt(id, 'season'), id => outcomeAt(id, 'week')));
+        return measured.length >= 2 ? rankLeague(measured) : [];
+    }, [ready, teams, slots, outcomeAt]);
+
     const report: DepthReport | null = useMemo(() => {
         if (!ready || !teams || !myKey) return null;
         const me = teams.find(t => t.key === myKey);
@@ -131,12 +168,17 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
         return (
             <div className="space-y-4">
                 <p className="text-[12px] text-muted-foreground/60 max-w-[680px]">
-                    A projection tells you what a player is worth. It cannot tell you what
-                    he is worth <em>to you</em>, because that depends on who is behind him:
-                    a fifteen-point back with a fourteen-point back on your bench costs you
-                    almost nothing, and a ten-point tight end with nobody costs you ten.
-                    Connect a league and every starter is removed in turn to find out which
-                    is which.
+                    Connect a league and this shows where your roster stands against the
+                    eleven it has to beat — position by position, and on the five
+                    questions that decide a season: what you score this week, what you
+                    score from here, how far your starters can beat their projections,
+                    how far they can fall short, and what survives an injury. Lay any
+                    other team over it to see a matchup or find a trade.
+                    <br /><br />
+                    Underneath, the other half: a projection tells you what a player is
+                    worth, not what he is worth <em>to you</em>. A fifteen-point back
+                    with a fourteen-point back behind him costs you almost nothing; a
+                    ten-point tight end with nobody costs you ten.
                 </p>
                 <LeagueConnect league={league} />
             </div>
@@ -146,6 +188,9 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
     return (
         <div className="space-y-4">
             <LeagueConnect league={league} compact />
+            {profiles.length > 0 && (
+                <TeamShape profiles={profiles} myKey={myKey} />
+            )}
             <HorizonToggle value={horizon} onChange={setHorizon} remaining={remaining} />
             {failed ? (
                 <p className="text-[12px] py-3" style={{ color: '#FCA5A5' }}>

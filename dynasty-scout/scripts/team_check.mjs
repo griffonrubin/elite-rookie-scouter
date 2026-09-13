@@ -97,6 +97,84 @@ assert('the slots are the league\'s shape',
 assert('every row names a player', rows.every(r => r.name.length > 2),
     rows.map(r => r.name).join('|'));
 
+step('2b', 'where this roster stands, before what each starter holds up');
+/**
+ * The question an owner asks first.
+ *
+ * Not "what is this player worth to me" but "where do I stand, and what
+ * should I be trying to buy". A depth table cannot answer it: it knows what
+ * each of your starters is holding up and nothing at all about the eleven
+ * rosters you have to beat.
+ *
+ * Every axis is a percentile against the league, which is also the only
+ * defence a radar chart has. The usual objections — arbitrary axes at
+ * arbitrary scales, an enclosed area that looks like a quantity — are all
+ * about putting unlike numbers on unlike axes. A common rank scale with a
+ * real midpoint is the one case where the shape means what it appears to.
+ */
+const shape = page.locator('section')
+    .filter({ has: page.getByRole('heading', { name: /where this roster stands/i }) });
+assert('the roster is placed in its league', await shape.count() === 1);
+let shapeText = await shape.innerText();
+console.log('      ' + (shapeText.split('\n')[1] ?? '').slice(0, 120));
+assert('and the shape is read out in a sentence, not left to be squinted at',
+    /strongest at \w+ \(\d+ of \d+\), weakest at \w+ \(\d+ of \d+\)/i.test(shapeText),
+    (shapeText.match(/Strongest at[^.]*\./i) || ['(no reading)'])[0]);
+const radars = await shape.locator('svg[role="img"]').count();
+assert('two shapes, because they answer different questions', radars === 2,
+    String(radars));
+// Positions and qualities are different kinds of claim and do not share an
+// axis: folding them together would put "receivers" next to "upside".
+const labels = await shape.locator('svg[role="img"]').first()
+    .locator('text').evaluateAll(els => els.map(e => e.textContent.trim()));
+console.log('      positions: ' + labels.join(' '));
+assert('the first is position by position', labels.includes('QB')
+    && labels.includes('RB') && labels.includes('WR') && labels.includes('TE'),
+    labels.join(','));
+const quality = await shape.locator('svg[role="img"]').nth(1)
+    .locator('text').evaluateAll(els => els.map(e => e.textContent.trim()));
+console.log('      qualities: ' + quality.join(' '));
+assert('the second is what sort of team it is',
+    quality.includes('Upside') && quality.includes('Floor')
+        && quality.includes('Depth'), quality.join(','));
+/**
+ * And a table, which is not an afterthought.
+ *
+ * A percentile hides how close the league was: best of twelve by four points
+ * a week and best of twelve by a quarter of one draw identically. The
+ * measurement has to be printed beside the rank or the chart is an assertion.
+ */
+const rows2b = await shape.locator('tbody tr').evaluateAll(els => els.map(e =>
+    e.innerText.replace(/\n+/g, ' | ')));
+console.log('      ' + rows2b.slice(0, 3).join('\n      '));
+assert('every axis carries its rank', rows2b.every(r => /\d+ of \d+/.test(r)),
+    String(rows2b.filter(r => !/\d+ of \d+/.test(r)).length) + ' without one');
+assert('and the measurement behind it',
+    rows2b.every(r => /[\d.]+( a week|% kept)/.test(r)),
+    rows2b.filter(r => !/[\d.]+( a week|% kept)/.test(r)).slice(0, 2).join(' | '));
+assert('ranks are inside the league', rows2b.every(r => {
+    const m = r.match(/(\d+) of (\d+)/);
+    return m && +m[1] >= 1 && +m[1] <= +m[2];
+}), 'out of range');
+/**
+ * Laying another roster over it is the feature, not a garnish: "third-best
+ * receivers" is a ranking and "your receivers against the team you play on
+ * Sunday" is a matchup.
+ */
+await shape.getByLabel(/compare against another team/i).selectOption({ index: 1 });
+await page.waitForTimeout(2000);
+shapeText = await shape.innerText();
+const cols = await shape.locator('thead th').allInnerTexts();
+console.log('      columns after overlay: ' + cols.join(' | '));
+assert('a second roster can be laid over it', cols.length >= 4, cols.join(','));
+// The legend, plus the same name at the head of each table. Case-insensitive
+// because the headings are uppercased in CSS and the legend is not.
+assert('and two series get a legend rather than two colours to guess at',
+    (shapeText.match(/— you/gi) || []).length >= 3,
+    String((shapeText.match(/— you/gi) || []).length) + ' mentions');
+await shape.getByLabel(/compare against another team/i).selectOption({ index: 0 });
+await page.waitForTimeout(1500);
+
 step('3b', 'depth is a season question, and the page asks it that way');
 /**
  * The reason the horizon exists here.

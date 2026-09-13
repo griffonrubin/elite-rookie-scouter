@@ -65,7 +65,7 @@ const PAGES = [
     ['Power Rankings', /every roster against every other/i],
     ['Trade Analyzer', /Pick a player from either|what it does to each side/i],
     ['Team Analysis',  /what each starter is holding up/i],
-    ['Waiver Wire',    /Out of \d+ free agents/i],
+    ['Waiver Wire',    /Out of [\d,]+ free agents/i],
     ['Start\\/Sit',     /slot by slot/i],
 ];
 
