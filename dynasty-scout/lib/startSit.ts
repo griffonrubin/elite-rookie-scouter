@@ -194,6 +194,17 @@ const PRACTICE_PLAY_RATE: Array<[RegExp, number]> = [
  * directly. Silence is not evidence of injury: a player with no row at all is
  * simply healthy as far as anyone has said, and gets 1.
  */
+/**
+ * How many players the start/sit endpoint will price in one request.
+ *
+ * It lives here rather than in the route because callers have to chunk to
+ * it, and a caller that guesses is a caller that gets a 400 it may not be
+ * reading: a twelve-team league chunked at 100 against a cap of 80 sent one
+ * request of 100 that failed, one of 7 that worked, and ranked the league
+ * off the seven.
+ */
+export const MAX_STARTSIT_IDS = 80;
+
 export function playProbability(ctx: GameContext): number {
     const report = (ctx.reportStatus ?? '').trim().toUpperCase();
     if (report && report in REPORT_PLAY_RATE) return REPORT_PLAY_RATE[report];
@@ -597,7 +608,14 @@ export function sampleMeanOf(sample: number[]): number {
     return m;
 }
 
-function drawLineup(players: SimPlayer[], rng: () => number): number {
+/**
+ * One week's score for a whole lineup.
+ *
+ * Exported because a round-robin wants to draw each roster once per trial
+ * and compare every pair against that same week, rather than redraw both
+ * sides of all sixty-six pairings.
+ */
+export function drawLineup(players: SimPlayer[], rng: () => number): number {
     let total = 0;
     for (const p of players) {
         if (p.outcome.onBye) continue;

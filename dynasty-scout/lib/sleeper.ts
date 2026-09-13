@@ -207,6 +207,15 @@ export interface SleeperRoster {
     reserve?: string[] | null;
     /** Taxi squad, in dynasty leagues. Also not startable. */
     taxi?: string[] | null;
+    /**
+     * Standings so far. Points come as two fields — an integer part and a
+     * decimal part — so 120.54 arrives as fpts 120 and fpts_decimal 54.
+     */
+    settings?: {
+        wins?: number; losses?: number; ties?: number;
+        fpts?: number; fpts_decimal?: number;
+        fpts_against?: number; fpts_against_decimal?: number;
+    } | null;
 }
 
 export interface SleeperLeagueUser {

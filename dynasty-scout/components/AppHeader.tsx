@@ -89,17 +89,17 @@ const SECTIONS: readonly Section[] = [
     accent: '#34d399',
     glow: 'rgba(52,211,153,0.4)',
     root: '/redraft/start-sit',
-    owns: ['/redraft/start-sit', '/settings/leagues'],
+    owns: ['/redraft/start-sit', '/in-season', '/settings/leagues'],
     nav: [
       { href: '/redraft/start-sit', label: 'Start/Sit' },
-      { href: '/in-season/waivers', label: 'Waiver Wire',    soon: true },
-      { href: '/in-season/power',   label: 'Power Rankings', soon: true },
-      { href: '/in-season/team',    label: 'Team Analysis',  soon: true },
-      { href: '/in-season/trades',  label: 'Trade Analyzer', soon: true },
+      { href: '/in-season/waivers', label: 'Waiver Wire' },
+      { href: '/in-season/power',   label: 'Power Rankings' },
+      { href: '/in-season/team',    label: 'Team Analysis'  },
+      { href: '/in-season/trades',  label: 'Trade Analyzer' },
       // Not a fantasy tool at all, but the same data answers it: the spread,
       // the total and the de-vigged moneyline are already loaded for every
       // game of every week.
-      { href: '/in-season/pickems',  label: "Pick'ems", soon: true },
+      { href: '/in-season/pickems',  label: "Pick'ems" },
     ],
   },
 ];

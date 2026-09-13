@@ -5,8 +5,8 @@ import { RedraftPlayer } from '@/lib/types';
 import { useLeagueSync } from '@/lib/useLeagueSync';
 import {
     beatsProbability, buildOutcome, Outcome, simulateMatchup, SimPlayer,
-    usableSample,
 } from '@/lib/startSit';
+import { simInputFor, type SimInput } from '@/lib/simInput';
 import { POSITION_RAW } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
@@ -22,15 +22,6 @@ import { HeadToHead } from './HeadToHead';
 import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
 
 const SEASON = 2026;
-
-/**
- * How many recent games form a player's shape.
- *
- * One NFL season. Long enough that the floor and ceiling are not decided by
- * three games, short enough that it drops out of a role the player no longer
- * has.
- */
-const SAMPLE_GAMES = 17;
 
 /** Slots a bench player may legally fill, so a kicker is never offered at RB. */
 const FLEX_OK = new Set(['RB', 'WR', 'TE']);
@@ -88,51 +79,15 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     const ready = needed.length === 0 || data.size > 0;
 
     const outcomeFor = useMemo(() => {
-        const cache = new Map<number, { outcome: Outcome; sample: SampleGame[] }>();
+        // Cached per player: this is called for each of nine starters, for
+        // each candidate, for each slot, on top of every `.map(sim)` across
+        // five other memos. The outcome behind it was already cached; the
+        // points array was not.
+        const cache = new Map<number, SimInput>();
         return (p: RedraftPlayer) => {
             const hit = cache.get(p.id);
             if (hit) return hit;
-            const d = data.get(p.id);
-            const logs = d?.logs ?? [];
-            const outcome = buildOutcome({
-                playerId: p.id,
-                position: p.position ?? '',
-                seasonProjection: d?.proj_points ?? null,
-                projectedGames: 17,
-                logs,
-                marketProjection: d?.market_points ?? null,
-                marketMarkets: d?.market_markets ?? null,
-                context: {
-                    impliedTeamTotal: d?.implied_team_total ?? null,
-                    spread: d?.spread ?? null,
-                    defenseAllowed: d?.def_allowed ?? null,
-                    defenseLeagueAvg: d?.def_league_avg ?? null,
-                    defenseSample: d?.def_sample ?? null,
-                    reportStatus: d?.report_status ?? null,
-                    practiceStatus: d?.practice_status ?? null,
-                    onBye: d?.on_bye ?? false,
-                },
-            }, SEASON);
-            // A rolling window of the most recent games, not "last season".
-            //
-            // Filtering to last season is right in September and quietly wrong
-            // by November: a player would be nine games into a new role with
-            // all nine excluded from the shape, resampled instead from a season
-            // that no longer describes them. Taking the last SAMPLE_GAMES
-            // regardless of season slides on its own — 16 of last year in week
-            // 1, mostly this year by midseason — and every dot names its own
-            // season, so a mixed window still reads honestly.
-            const sample: SampleGame[] = logs
-                .slice()
-                .sort((x, y) => y.season - x.season || y.week - x.week)
-                .slice(0, SAMPLE_GAMES)
-                .map(l => ({ points: l.points, week: l.week, season: l.season, opponent: l.opponent }))
-                .reverse();
-            // A sample that cannot stand in for the player is not shown either.
-            // nflverse scores no kicking, so a kicker's games are seventeen
-            // zeroes — plotted as evidence they would say a nine-point kicker
-            // has never scored.
-            const v = { outcome, sample: usableSample(sample.map(g => g.points)) ? sample : [] };
+            const v = simInputFor(p, data.get(p.id), SEASON);
             cache.set(p.id, v);
             return v;
         };

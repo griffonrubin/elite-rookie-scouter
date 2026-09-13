@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { MAX_STARTSIT_IDS } from '@/lib/startSit';
 import { query } from '@/lib/db';
 
 export const runtime = 'nodejs';
@@ -134,7 +135,7 @@ export async function GET(req: NextRequest) {
     const week = Number(req.nextUrl.searchParams.get('week') ?? '1');
     const ids = idsParam.split(',').map(Number).filter(n => Number.isInteger(n) && n > 0);
     if (ids.length === 0) return NextResponse.json({ players: [] });
-    if (ids.length > 80) {
+    if (ids.length > MAX_STARTSIT_IDS) {
         return NextResponse.json({ error: 'too many players' }, { status: 400 });
     }
     if (!Number.isInteger(week) || week < 1 || week > 22) {

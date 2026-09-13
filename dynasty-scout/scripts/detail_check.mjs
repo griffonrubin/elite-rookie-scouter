@@ -67,7 +67,7 @@ await page.getByRole('button', { name: /^find$/i }).click();
 await page.waitForTimeout(2000);
 await page.getByRole('button', { name: /Den Fantasy Football League 1/ }).first().click();
 await page.waitForTimeout(2500);
-await page.getByRole('button', { name: /^txmossad$/ }).first().click();
+await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().click();
 await page.waitForTimeout(12000);
 
 step(1, 'a candidate opens with its own week and the consequence');
