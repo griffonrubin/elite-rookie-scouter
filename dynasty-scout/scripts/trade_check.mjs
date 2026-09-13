@@ -59,6 +59,20 @@ const step = (n, s) => console.log(`\n── ${n}. ${s}`);
 /** The two roster panels, mine first. */
 const panel = n => page.locator('section').filter({ has: page.locator('h3') }).nth(n);
 const rowsIn = n => panel(n).locator('button[aria-pressed]');
+/**
+ * Players in the offer, counted inside the rosters they come from.
+ *
+ * Counted page-wide this used to be the same number, which made it look
+ * like a fine way to ask. It is not a fact about the page, it is a fact
+ * about nothing else on the page having a pressed state — and the moment
+ * the horizon toggle did, three assertions started reporting a trade with
+ * one player in it as a trade with two.
+ */
+const inOffer = async () =>
+    await rowsIn(0).evaluateAll(e => e.filter(x =>
+        x.getAttribute('aria-pressed') === 'true').length)
+    + await rowsIn(1).evaluateAll(e => e.filter(x =>
+        x.getAttribute('aria-pressed') === 'true').length);
 const bodyText = () => page.locator('body').innerText();
 
 step(1, 'it states the premise before a league is connected');
@@ -107,8 +121,7 @@ assert('so is theirs', theirs >= 13, String(theirs));
 const stMarks = await panel(0).locator('button[aria-pressed] span:nth-child(2)').allInnerTexts();
 const starters = stMarks.filter(s => s.trim() === 'ST').length;
 assert('the lineup is marked on my roster', starters === 9, `${starters} marked ST`);
-assert('nothing is selected yet',
-    await page.locator('button[aria-pressed="true"]').count() === 0);
+assert('nothing is selected yet', await inOffer() === 0, String(await inOffer()));
 t = await bodyText();
 assert('and it asks for a pick', /Pick a player from either roster/i.test(t));
 
@@ -130,9 +143,59 @@ assert('and it says so in words', /worse off/.test(t),
     (t.match(/(clearly|a little) (better|worse) off/g) || []).join(','));
 assert('the answer arrives inside three seconds', ms < 3000, `${ms}ms`);
 
+step('6b', 'a trade is a season, not a Sunday');
+/**
+ * Nobody trades for one week.
+ *
+ * Priced on this Sunday the answer moves for reasons a trade cannot: a man
+ * on a bye is worth nothing, so acquiring him reads as giving a player away
+ * for free, and a soft matchup makes whoever you receive look like a steal
+ * for seven days. Both invert on Tuesday. The week is kept because one case
+ * is real — a must-win before the playoffs — but it is not the default and
+ * the page has to say which it used.
+ */
+/**
+ * The horizon control, and only it.
+ *
+ * `button[aria-pressed]` is not unique to it — roster rows and position
+ * filters press too — so the bare selector reads a selected player as the
+ * current horizon. It happens to give the right answer today, which is the
+ * kind of test that fails a year from now for a reason nobody can see.
+ */
+const horizonOn = () => page.locator('button[aria-pressed="true"]')
+    .filter({ hasText: /rest of season|this week/i });
+const tradeHorizon = await horizonOn().allInnerTexts();
+console.log('      horizon: ' + tradeHorizon.join(', '));
+assert('it prices the rest of the season by default',
+    tradeHorizon.some(x => /rest of season/i.test(x)), tradeHorizon.join(','));
+assert('and says so under the verdict',
+    /nobody trades for one Sunday/i.test(t),
+    (t.match(/[^\n]*nobody trades for one Sunday[^\n]*/i) || ['(not said)'])[0]);
+assert('the roster numbers are labelled to match',
+    /expected points in a typical week from here/i.test(t),
+    (t.match(/each name is expected points[^,]*/i) || ['(unlabelled)'])[0]);
+assert('without still claiming a trade costs you this Sunday\'s lineup',
+    !/what a trade costs you is\s*this Sunday/i.test(t.replace(/\s+/g, ' ')));
+// And the price really does change with the horizon.
+await page.getByRole('button', { name: /^this week$/i }).click();
+await page.waitForTimeout(3500);
+const weekT = await bodyText();
+const weekDelta = parseFloat((weekT.match(/Jebdaddybush — you\s*\n?\s*([−+-][\d.]+) pts/) || [])[1]
+    ?.replace('−', '-') ?? 'NaN');
+console.log(`      giving ${myBest} away: ${mineDelta} over the season, `
+    + `${weekDelta} this week`);
+assert('the week view labels itself', /misleading for everything else/i.test(weekT));
+assert('and prices the same offer differently', weekDelta !== mineDelta,
+    `${mineDelta} vs ${weekDelta}`);
+assert('but still says giving away your best player hurts', weekDelta < 0,
+    String(weekDelta));
+await page.getByRole('button', { name: /rest of season/i }).click();
+await page.waitForTimeout(3500);
+t = await bodyText();
+
 step(7, 'the lineup consequence is shown, not just the value');
 assert('my lineup panel is there', /Jebdaddybush[’']s lineup/i.test(t),
-    (t.match(/\b\w+[’']s lineup/g) || ['(no panel)']).join(' | '));
+    (t.match(/\b[\w ]+[’']s lineup/gi) || ['(no panel)']).join(' | '));
 // "2th → 12th in the league" is what shipped the first time this rendered.
 const ords = t.match(/\b\d+(st|nd|rd|th)\b/g) || [];
 console.log('      ordinals on the page: ' + ords.join(' '));
@@ -167,8 +230,8 @@ const theirBest = (await rowsIn(1).first().innerText()).split('\n')[0].trim();
 const line = (t.match(/[^\n]*pts of win rate[^\n]*/g) || []);
 console.log(`      swapping ${myBest} for ${theirBest}`);
 console.log('      ' + line.join(' | '));
-assert('two players are now in the trade',
-    await page.locator('button[aria-pressed="true"]').count() === 2);
+assert('two players are now in the trade', await inOffer() === 2,
+    String(await inOffer()));
 assert('both sides still get a verdict', line.length >= 2, line.join(' | '));
 assert('the two sides move in opposite directions', (() => {
     const ds = (t.match(/([−+-][\d.]+) pts of win rate/g) || [])
@@ -180,7 +243,7 @@ step(10, 'clearing it puts the page back');
 await page.getByRole('button', { name: /^clear$/i }).click();
 await page.waitForTimeout(600);
 t = await bodyText();
-assert('nothing is selected', await page.locator('button[aria-pressed="true"]').count() === 0);
+assert('nothing is selected', await inOffer() === 0, String(await inOffer()));
 assert('and the verdict is gone', !/what it does to each side/i.test(t));
 
 step(11, 'nothing blew up');

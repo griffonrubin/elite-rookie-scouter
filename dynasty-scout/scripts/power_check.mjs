@@ -222,7 +222,17 @@ step('5e', 'it is a power ranking, not this Sunday with a power ranking\'s title
  * week, "eight and six, and you need nine" is the thing being decided
  * against.
  */
-const horizonPressed = await page.locator('button[aria-pressed="true"]').allInnerTexts();
+/**
+ * The horizon control, and only it.
+ *
+ * `button[aria-pressed]` is not unique to it — roster rows and position
+ * filters press too — so the bare selector reads a selected player as the
+ * current horizon. It happens to give the right answer today, which is the
+ * kind of test that fails a year from now for a reason nobody can see.
+ */
+const horizonOn = () => page.locator('button[aria-pressed="true"]')
+    .filter({ hasText: /rest of season|this week/i });
+const horizonPressed = await horizonOn().allInnerTexts();
 console.log('      horizon: ' + horizonPressed.join(', '));
 assert('it opens on the rest of the season',
     horizonPressed.some(x => /rest of season/i.test(x)), horizonPressed.join(','));

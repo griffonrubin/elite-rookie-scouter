@@ -6,9 +6,10 @@ import { RedraftPlayer } from '@/lib/types';
 import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
 import { SimPlayer } from '@/lib/startSit';
 import { useStartSitData } from '@/lib/useStartSit';
-import { simInputFor, simPlayerFrom } from '@/lib/simInput';
+import { simInputFor, simPlayerFrom, type Horizon } from '@/lib/simInput';
 import { evaluateTrade, TradeResult, TradeRosterPlayer, TradeTeam } from '@/lib/trade';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
+import { HorizonToggle } from '@/components/redraft/HorizonToggle';
 import { RosterPicker } from './RosterPicker';
 import { TradeVerdict } from './TradeVerdict';
 
@@ -17,6 +18,8 @@ const TRIALS = 20000;
 
 /** The lineup shape when the platform does not report one. */
 const DEFAULT_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF'];
+/** Where the regular season ends when the platform will not say. */
+const DEFAULT_PLAYOFF_WEEK = 15;
 
 /**
  * A trade, judged on what it does rather than on what it is worth.
@@ -34,6 +37,20 @@ const DEFAULT_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF'];
  */
 export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
+    /**
+     * The rest of the season, because that is what a trade is.
+     *
+     * Nobody trades for one Sunday. Priced on this week the answer moves for
+     * reasons a trade cannot: a man on a bye is worth nothing, so acquiring
+     * him reads as giving a player away for free, and a soft matchup makes
+     * whoever you are receiving look like a steal for seven days. Both were
+     * happening, and both invert on the following Tuesday.
+     *
+     * The week stays available because one case is real — a must-win in the
+     * last week before the playoffs, where a bye genuinely is the whole
+     * question.
+     */
+    const [horizon, setHorizon] = useState<Horizon>('season');
     /** Null until the reader picks one; the default below stands in. */
     const [partner, setPartner] = useState<string | null>(null);
     /**
@@ -126,11 +143,17 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
             // A player with no row from the endpoint has no week, and
             // guessing one is how a trade gets evaluated against a lineup
             // nobody ever saw.
-            const v = p && d ? simPlayerFrom(simInputFor(p, d, SEASON)) : null;
+            const v = p && d ? simPlayerFrom(simInputFor(p, d, SEASON, horizon)) : null;
             cache.set(id, v);
             return v;
         };
-    }, [players, data]);
+    }, [players, data, horizon]);
+
+    /** Regular-season weeks still to play, for the toggle to name. */
+    const remaining = useMemo(() => {
+        const playoffs = league.snapshot?.playoffWeekStart ?? DEFAULT_PLAYOFF_WEEK;
+        return Math.max(0, playoffs - (week ?? 1));
+    }, [league.snapshot?.playoffWeekStart, week]);
 
     const meanOf = (id: number) => simOf(id)?.outcome.mean ?? null;
 
@@ -198,6 +221,7 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     return (
         <div className="space-y-4">
             <LeagueConnect league={league} compact />
+            <HorizonToggle value={horizon} onChange={setHorizon} remaining={remaining} />
 
             {failed ? (
                 <p className="text-[12px] py-3" style={{ color: '#FCA5A5' }}>
@@ -246,7 +270,7 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 title={`${me.name} — you`}
                                 subtitle="pick who you would send"
                                 roster={me.roster} starting={me.starting}
-                                selected={giving} meanOf={meanOf}
+                                selected={giving} meanOf={meanOf} horizon={horizon}
                                 onToggle={toggle(giving, setMyGive)} />
                         )}
                         {them && (
@@ -254,14 +278,15 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 title={them.name}
                                 subtitle="pick who you would want"
                                 roster={them.roster} starting={them.starting}
-                                selected={theirGive} meanOf={meanOf}
+                                selected={theirGive} meanOf={meanOf} horizon={horizon}
                                 onToggle={toggle(theirGive, setTheirGive)} />
                         )}
                     </div>
 
                     {result ? (
                         <TradeVerdict result={result} myKey={myKey}
-                            nameOf={nameOf} positionOf={positionOf} trials={TRIALS} />
+                            nameOf={nameOf} positionOf={positionOf} trials={TRIALS}
+                            horizon={horizon} />
                     ) : (
                         <p className="text-[12px] text-muted-foreground/50 py-2">
                             Pick a player from either roster. A one-sided offer is a

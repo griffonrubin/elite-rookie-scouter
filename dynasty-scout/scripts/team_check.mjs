@@ -107,7 +107,17 @@ step('3b', 'depth is a season question, and the page asks it that way');
  * starter on a bye is worth nothing, so his row reads "you can afford to
  * lose him", which is the exact opposite of the truth.
  */
-const teamHorizon = await page.locator('button[aria-pressed="true"]').allInnerTexts();
+/**
+ * The horizon control, and only it.
+ *
+ * `button[aria-pressed]` is not unique to it — roster rows and position
+ * filters press too — so the bare selector reads a selected player as the
+ * current horizon. It happens to give the right answer today, which is the
+ * kind of test that fails a year from now for a reason nobody can see.
+ */
+const horizonOn = () => page.locator('button[aria-pressed="true"]')
+    .filter({ hasText: /rest of season|this week/i });
+const teamHorizon = await horizonOn().allInnerTexts();
 console.log('      horizon: ' + teamHorizon.join(', '));
 assert('it opens on the rest of the season',
     teamHorizon.some(x => /rest of season/i.test(x)), teamHorizon.join(','));
