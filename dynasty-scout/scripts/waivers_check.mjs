@@ -104,12 +104,44 @@ console.log('      ' + why.split('\n').slice(0, 4).join(' | '));
 assert('a stale projection is called out', /predates/i.test(why),
     (why.match(/[^\n]*predates[^\n]*/)||['(not flagged)'])[0]);
 
-step(5, 'position filter narrows it');
-await page.getByRole('button', { name: /^RB$/ }).first().click();
-await page.waitForTimeout(1200);
-const rbRows = await page.locator('button[aria-expanded]').count();
-console.log('      RB rows:', rbRows);
-assert('filtering changes the list', rbRows > 0 && rbRows <= n, `${rbRows} of ${n}`);
+step(5, 'a position is ranked within itself, not filtered out of the top forty');
+/**
+ * The bug this replaces.
+ *
+ * Trend is ranked across every position at once, so a league's forty biggest
+ * movers are mostly backs and receivers — on this league, twelve backs,
+ * fifteen receivers, ten quarterbacks and three tight ends, with no kicker or
+ * defence at all. Filtering those forty in the browser meant "show me tight
+ * ends" answered with three while eighty-nine sat in the pool, and the
+ * kicker button, had there been one, would always have been empty.
+ */
+for (const [label, want] of [['RB', 8], ['TE', 8], ['K', 5]]) {
+    await page.getByRole('button', { name: new RegExp(`^${label}$`) }).first().click();
+    await page.waitForTimeout(2500);
+    const rows = await page.locator('button[aria-expanded]').count();
+    const body = await page.locator('body').innerText();
+    const considered = (body.match(/Out of ([\d,]+) free agents/) || [])[1];
+    console.log(`      ${label}: ${rows} rows from ${considered ?? '?'} considered`);
+    assert(`${label} is ranked within itself`, rows >= want, `${rows} rows`);
+}
+// A defence has no snap count and no touches, so there is nothing to rank —
+// which the page has to say rather than show a blank.
+await page.getByRole('button', { name: /^DST$/ }).first().click();
+await page.waitForTimeout(2500);
+const dstBody = await page.locator('body').innerText();
+console.log('      DST: ' + (dstBody.match(/A defence has[^.]*\./) || ['(no explanation)'])[0]);
+assert('and a defence is explained rather than left blank',
+    /A defence has no snap count/.test(dstBody),
+    (dstBody.match(/A defence has[^.]*\./) || ['(not explained)'])[0]);
+
+step('5b', 'arriving with a position in the URL opens on it');
+await page.goto(`${BASE}/in-season/waivers?pos=TE`, { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(6000);
+const pressed = await page.locator('button[aria-pressed="true"]').allInnerTexts();
+console.log('      pressed filter: ' + pressed.join(', '));
+assert('the tight end filter is already on', pressed.includes('TE'), pressed.join(','));
+const teRows = await page.locator('button[aria-expanded]').count();
+assert('and it is showing tight ends', teRows >= 8, `${teRows} rows`);
 
 step(6, 'nothing blew up');
 assert('no page errors', errs.length === 0, errs.slice(0,2).join(' | '));

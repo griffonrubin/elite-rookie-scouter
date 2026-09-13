@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { RedraftPlayer } from '@/lib/types';
 import { useLeagueSync } from '@/lib/useLeagueSync';
 import { Outcome } from '@/lib/startSit';
@@ -12,7 +13,17 @@ import type { WaiverRow } from '@/app/api/redraft/waivers/route';
 import { TrendRow } from './TrendRow';
 
 const SEASON = 2026;
-const POSITIONS = ['ALL', 'RB', 'WR', 'TE', 'QB'] as const;
+/**
+ * Kickers and defences are offered now that the ranking happens server-side.
+ *
+ * They were left off because filtering the top forty in the browser gave
+ * zero of each every time — the forty biggest movers in a league are backs
+ * and receivers. Ranked within their own position there are nineteen
+ * claimable kickers, which is a real answer. A defence still has nothing to
+ * trend on, and the empty state says so rather than leaving a reader to
+ * wonder whether it looked.
+ */
+const POSITIONS = ['ALL', 'RB', 'WR', 'TE', 'QB', 'K', 'DST'] as const;
 
 /**
  * The waiver wire, defined by your league rather than in general.
@@ -34,7 +45,29 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
     const [rows, setRows] = useState<WaiverRow[]>([]);
     const [considered, setConsidered] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
-    const [pos, setPos] = useState<(typeof POSITIONS)[number]>('ALL');
+    /**
+     * Opens on the position the URL asks for.
+     *
+     * Team Analysis links here when a slot has nobody behind it — "your only
+     * tight end is your whole tight end" is a finding, and a finding you
+     * cannot act on is half a tool.
+     */
+    const [pos, setPos] = useState<(typeof POSITIONS)[number] | null>(null);
+    /**
+     * Read through Next's hook rather than off `window`.
+     *
+     * A `useState` initialiser reading `window.location.search` looks like it
+     * works and does not: this page is server-rendered, so the initialiser
+     * runs where there is no window, returns "ALL", and hydration keeps the
+     * server's answer. Arriving from Team Analysis on `?pos=TE` landed on an
+     * unfiltered list.
+     */
+    const asked = useSearchParams().get('pos')?.toUpperCase() ?? '';
+    const urlPos = (POSITIONS as readonly string[]).includes(asked)
+        ? asked as (typeof POSITIONS)[number]
+        : 'ALL';
+    // The reader's own choice wins once they have made one.
+    const shownPos = pos ?? urlPos;
     const [open, setOpen] = useState<number | null>(null);
     const [detail, setDetail] = useState<Map<number, StartSitPlayer>>(new Map());
 
@@ -64,7 +97,13 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
         if (!taken || week == null) return;
         let cancelled = false;
         setLoading(true);
+        // The position goes to the server, not to a filter over the answer.
+        // Trend is ranked across every position at once, so a league's forty
+        // biggest movers are mostly backs and receivers — filtering those in
+        // the browser showed three tight ends and no kicker at all while
+        // eighty-nine and nineteen sat in the pool.
         const q = `?week=${week}&limit=40`
+            + (shownPos === 'ALL' ? '' : `&pos=${shownPos}`)
             + (taken.size ? `&taken=${[...taken].join(',')}` : '');
         fetch(`/api/redraft/waivers${q}`)
             .then(r => r.json())
@@ -75,7 +114,7 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
             })
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
-    }, [taken, week]);
+    }, [taken, week, shownPos]);
 
     // Detail is fetched only for the row somebody opens: forty players of
     // logs is a payload nobody reads.
@@ -91,9 +130,9 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
         return () => { cancelled = true; };
     }, [open, week, detail]);
 
-    const shown = useMemo(
-        () => (pos === 'ALL' ? rows : rows.filter(r => r.position === pos)),
-        [rows, pos]);
+    // The server already ranked within the position, so there is nothing
+    // left to filter here.
+    const shown = rows;
 
     const outcomeOf = (r: WaiverRow): Outcome | null => {
         const d = detail.get(r.id);
@@ -128,9 +167,9 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
                     <div className="flex items-center gap-1">
                         {POSITIONS.map(p => (
                             <button key={p} type="button" onClick={() => setPos(p)}
-                                aria-pressed={pos === p}
+                                aria-pressed={shownPos === p}
                                 className={`px-2 py-0.5 rounded text-[11px] font-bold
-                                            transition-colors ${pos === p
+                                            transition-colors ${shownPos === p
                                     ? 'bg-white/[0.12] text-foreground'
                                     : 'text-muted-foreground/55 hover:text-foreground/80'}`}>
                                 {p}
@@ -144,10 +183,19 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
                         Working out who is actually available…
                     </p>
                 ) : shown.length === 0 ? (
-                    <p className="text-[12px] text-muted-foreground/55 py-3">
-                        Nobody at this position has a growing role among the free
-                        agents — which is itself the answer, and a better one than
-                        a ranked list of people not worth claiming.
+                    <p className="text-[12px] text-muted-foreground/55 py-3 max-w-[620px]">
+                        {/* A defence has no snaps and no touches, so there is
+                            nothing here to trend — which is a different thing
+                            from having looked and found nobody, and worth
+                            saying rather than showing a reader a blank. */}
+                        {shownPos === 'DST'
+                            ? 'A defence has no snap count and no touches, so there is no '
+                              + 'change in role to rank one on. This page has nothing '
+                              + 'useful to say about them; the waiver list on your '
+                              + 'platform is as good as anything here.'
+                            : 'Nobody at this position has a growing role among the free '
+                              + 'agents — which is itself the answer, and a better one '
+                              + 'than a ranked list of people not worth claiming.'}
                     </p>
                 ) : (
                     <>

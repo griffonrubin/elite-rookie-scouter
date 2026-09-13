@@ -213,7 +213,46 @@ assert('the headline rate is stated', /% against the league/.test(t),
     (t.match(/[\d.]+% against the league[^\n]*/) || ['(not stated)'])[0]);
 assert('and the floor is explained', /moves by on its own/.test(t));
 
-step(7, 'nothing blew up');
+step(7, 'a finding you cannot act on is half a tool');
+/**
+ * The chain this page exists to start.
+ *
+ * "Your only tight end is your whole tight end" is a finding. On its own it
+ * leaves a reader to go and work out what to do about it, which is the part
+ * they came here to avoid — so a bare slot carries the way to fill it.
+ */
+const links = await page.locator('a', { hasText: /find one/i }).all();
+const hrefs = await Promise.all(links.map(l => l.getAttribute('href')));
+console.log('      ' + (hrefs.join(', ') || 'no links'));
+assert('every bare slot offers a way to fill it',
+    links.length === uncovered.length, `${links.length} links, ${uncovered.length} bare slots`);
+assert('and each one asks for that position',
+    hrefs.every(h => /\/in-season\/waivers\?pos=(QB|RB|WR|TE|K|DST)$/.test(h ?? '')),
+    hrefs.join(', '));
+// The tight end is the interesting case: the link has to land on a list of
+// tight ends, not on the forty biggest movers in the league.
+const teHref = hrefs.find(h => (h ?? '').endsWith('pos=TE'));
+assert('the tight end slot links to tight ends', !!teHref, teHref ?? 'no TE link');
+// "you would start eightfind one" is what omitting the space looks like.
+assert('the link is a separate word from the sentence before it',
+    uncovered.every(r => !/eightfind/.test(r.behind)),
+    uncovered.map(r => r.behind).find(b => /eightfind/.test(b)) ?? 'spaced');
+await page.locator(`a[href="${teHref}"]`).first().click();
+await page.waitForTimeout(7000);
+const landed = await page.locator('body').innerText();
+const rows2 = await page.locator('button[aria-expanded]').count();
+const pressed = await page.locator('button[aria-pressed="true"]').allInnerTexts();
+console.log(`      landed on the waiver wire: ${rows2} rows, filter ${pressed.join('/')}`);
+assert('it lands on the waiver wire', /free agents/i.test(landed));
+assert('already filtered to tight ends', pressed.includes('TE'), pressed.join(','));
+assert('with a list worth reading, not three rows', rows2 >= 8, `${rows2} rows`);
+const names = await page.locator('button[aria-expanded]').first().innerText();
+console.log(`      top of the list: ${names.split('\n')[0]}`);
+await page.goBack({ waitUntil: 'domcontentloaded' });
+await page.getByRole('heading', { name: /what each starter is holding up/i })
+    .waitFor({ timeout: 30000 });
+
+step(8, 'nothing blew up');
 assert('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 const o = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CHART_INK, MARK, SERIES } from '@/lib/vizTokens';
 import type { DepthReport, DepthRow } from '@/lib/depth';
@@ -28,6 +29,17 @@ import { POWER_NOISE } from '@/lib/power';
  * much on its own, so a difference under it is not a finding.
  */
 const FLOOR = POWER_NOISE;
+
+/**
+ * The position a slot needs, for the link to the waiver wire.
+ *
+ * Only the slots that want exactly one position: a flex can be filled from
+ * three of them, so sending a reader to a single-position list would be
+ * answering a narrower question than the one they have.
+ */
+const SLOT_POSITION: Record<string, string | undefined> = {
+    QB: 'QB', RB: 'RB', WR: 'WR', TE: 'TE', K: 'K', DEF: 'DST', DST: 'DST',
+};
 
 function Row({ r, top }: { r: DepthRow; top: number }) {
     const real = r.cost >= FLOOR;
@@ -88,8 +100,24 @@ function Row({ r, top }: { r: DepthRow; top: number }) {
             <span className="col-span-2 row-start-3 sm:col-span-1 sm:col-start-5 sm:row-start-1
                              text-[10px] min-w-0">
                 {r.uncovered ? (
-                    <span className="font-semibold" style={{ color: '#FCA5A5' }}>
-                        nobody can fill the slot — you would start eight
+                    // A finding you cannot act on is half a tool, so the row
+                    // that says "nobody is behind him" is also the way to go
+                    // and find somebody.
+                    <span>
+                        <span className="font-semibold" style={{ color: '#FCA5A5' }}>
+                            nobody can fill the slot — you would start eight
+                        </span>
+                        {' '}
+                        {SLOT_POSITION[r.slot] && (
+                            <Link href={`/in-season/waivers?pos=${SLOT_POSITION[r.slot]}`}
+                                className="ml-1.5 underline underline-offset-2
+                                           decoration-white/25 hover:decoration-white/60
+                                           text-muted-foreground/60 hover:text-foreground"
+                                title={`Free agents at ${SLOT_POSITION[r.slot]}, ranked on `
+                                    + 'whose role is growing'}>
+                                find one
+                            </Link>
+                        )}
                     </span>
                 ) : r.replacementSlot && r.replacementSlot !== r.slot ? (
                     // The cascade, named: whoever was in the flex moves up and

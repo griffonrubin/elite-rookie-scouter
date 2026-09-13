@@ -60,6 +60,21 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'too many taken ids' }, { status: 400 });
     }
     const limit = Math.min(60, Math.max(5, Number(url.searchParams.get('limit') ?? '40')));
+    /**
+     * One position, ranked against itself.
+     *
+     * Filtering the top forty in the browser looks equivalent and is not.
+     * Trend is ranked across every position at once, and a league's forty
+     * biggest movers are mostly backs and receivers — on txmossad's league
+     * they were twelve backs, fifteen receivers, ten quarterbacks and three
+     * tight ends, with no kicker or defence at all. So the position buttons
+     * for K and DST showed an empty list while free agents at both sat in
+     * the pool, and "my only tight end has nobody behind him, show me tight
+     * ends" answered with three.
+     */
+    const POSITIONS = new Set(['QB', 'RB', 'WR', 'TE', 'K', 'DST']);
+    const asked = (url.searchParams.get('pos') ?? '').toUpperCase();
+    const pos = POSITIONS.has(asked) ? asked : null;
 
     // Two seasons, because in September the change worth seeing is the one
     // between last year's role and this year's.
@@ -91,7 +106,9 @@ export async function GET(req: NextRequest) {
     }>(
         `SELECT id, slug, full_name, position, nfl_team
            FROM players
-          WHERE redraft_pool = 1 AND position IN ('QB','RB','WR','TE','K','DST')`, []);
+          WHERE redraft_pool = 1
+            AND position IN ('QB','RB','WR','TE','K','DST')
+            ${pos ? 'AND position = $1' : ''}`, pos ? [pos] : []);
 
     const linesP = query<{
         team: string; opponent: string; spread: number | null;
@@ -166,6 +183,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
         week, season: SEASON,
         considered: rows.length,
+        /** Which position this list was ranked within, when it was one. */
+        position: pos,
         players: rows.slice(0, limit),
     });
 }
