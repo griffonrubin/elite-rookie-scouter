@@ -160,6 +160,23 @@ assert('the tight end filter is already on', pressed.includes('TE'), pressed.joi
 const teRows = await page.locator('button[aria-expanded]').count();
 assert('and it is showing tight ends', teRows >= 8, `${teRows} rows`);
 
+step('5c', 'a phone reader can tell whose number that is');
+await page.goto(`${BASE}/in-season/waivers`, { waitUntil: 'domcontentloaded' });
+await page.setViewportSize({ width: 390, height: 844 });
+await page.getByText(/Out of \d+ free agents/).first().waitFor({ timeout: 30000 });
+await page.waitForTimeout(1500);
+const phoneRow = await page.locator('button[aria-expanded]').first().innerText();
+console.log('      ' + phoneRow.replace(/\n+/g, ' | '));
+// The column headers are desktop-only, so a bare "21.25" beside a player's
+// name reads as his projection when it is his team's implied total.
+assert('the implied total says it is the team\'s', /team total/i.test(phoneRow),
+    phoneRow.replace(/\n+/g, ' | '));
+const o2 = await page.evaluate(() => ({
+    sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
+assert('and the row still fits a phone', o2.sw <= o2.cw + 1, JSON.stringify(o2));
+await page.setViewportSize({ width: 1500, height: 1100 });
+await page.waitForTimeout(600);
+
 step(6, 'nothing blew up');
 assert('no page errors', errs.length === 0, errs.slice(0,2).join(' | '));
 const o = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));

@@ -99,7 +99,17 @@ export function TrendRow({ row, isOpen, onToggle }: {
                     <span className="text-[10px] text-muted-foreground/45">bye</span>
                 ) : (
                     <>
+                        {/* Named on a phone, where the column header is
+                            hidden. "21.25" beside a player's name reads as
+                            his own projection, and it is his team's implied
+                            total — which is the difference between claiming
+                            a man you think scores twenty-one and claiming
+                            one whose offence is expected to. */}
                         <span className="block text-[11px] tabular-nums font-semibold">
+                            <span className="sm:hidden font-normal text-[9px] uppercase
+                                             tracking-widest text-muted-foreground/40 mr-1">
+                                team total
+                            </span>
                             {row.implied_team_total != null
                                 ? `${row.implied_team_total}` : '—'}
                         </span>

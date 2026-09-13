@@ -251,11 +251,34 @@ assert('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 const o = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
 assert('no horizontal overflow', o.sw <= o.cw, JSON.stringify(o));
-await page.setViewportSize({ width: 400, height: 900 });
-await page.waitForTimeout(500);
+await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForTimeout(900);
 const op = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
 assert('nor at phone width', op.sw <= op.cw + 1, JSON.stringify(op));
+
+/**
+ * And the chart is still a chart there.
+ *
+ * "No overflow" passed while the bars were eight pixels wide against the
+ * right edge: the bar spanned all three columns of the phone grid and the
+ * rate claimed the third of them in the same row, so the two collided and
+ * the whole visualisation collapsed. Nothing overflowed, nothing errored,
+ * every assertion passed, and the page was useless on the screen most of
+ * these decisions get made on.
+ */
+const bars = await teamRows().locator('span[role="img"]')
+    .evaluateAll(els => els.map(e => e.getBoundingClientRect().width));
+console.log(`      bar track at 390px: ${Math.min(...bars).toFixed(0)}–`
+    + `${Math.max(...bars).toFixed(0)}px across ${bars.length} rows`);
+assert('every row still has a bar', bars.length === 12, String(bars.length));
+assert('and the track is a track, not a sliver',
+    Math.min(...bars) > 150, `${Math.min(...bars).toFixed(0)}px`);
+const marks = await teamRows().locator('span[role="img"] > span:last-child')
+    .evaluateAll(els => els.map(e => e.getBoundingClientRect().width));
+console.log(`      widest mark: ${Math.max(...marks).toFixed(0)}px`);
+assert('with marks a reader can compare', Math.max(...marks) > 40,
+    `${Math.max(...marks).toFixed(0)}px`);
 await page.setViewportSize({ width: 1500, height: 1200 });
 await page.waitForTimeout(400);
 await page.screenshot({ path: process.env.SHOT ?? 'power.png', fullPage: false });
