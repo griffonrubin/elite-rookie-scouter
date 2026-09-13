@@ -36,7 +36,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import {
     MIN_TREND_GAMES, RECENT, WINDOW,
-    positionShape, rankWaivers, replacementBaseline, type WaiverRow,
+    positionRanks, positionShape, rankWaivers, replacementBaseline, type WaiverRow,
 } from '@/lib/waiverRank';
 
 export type { WaiverRow, WaiverMode } from '@/lib/waiverRank';
@@ -57,7 +57,17 @@ export async function GET(req: NextRequest) {
     if (taken.length > 800) {
         return NextResponse.json({ error: 'too many taken ids' }, { status: 400 });
     }
-    const limit = Math.min(60, Math.max(5, Number(url.searchParams.get('limit') ?? '40')));
+    /**
+     * How many candidates come back.
+     *
+     * Bigger than it looks like it needs to be, because the page ranks these
+     * on the rest of the season and then re-sorts them on this week's
+     * projection in the browser — which it can only do over the rows it
+     * holds. Sixty is comfortably past the point where a free agent is worth
+     * a roster spot in any league, so the two orderings agree about who is
+     * on the page even when they disagree about the order.
+     */
+    const limit = Math.min(90, Math.max(5, Number(url.searchParams.get('limit') ?? '60')));
     /**
      * One position, ranked against itself.
      *
@@ -183,8 +193,10 @@ export async function GET(req: NextRequest) {
             points_now: t ? n(t.points_now) : null,
             points_before: t ? n(t.points_before) : null,
             proj_points: p.proj_points != null ? Number(p.proj_points) : null,
-            // Filled by the ranking, since it is relative to the whole pool.
+            // Both filled by the ranking, since both are relative to the
+            // whole pool rather than to the free agents in it.
             over_replacement: null,
+            pos_rank: null,
             implied_team_total: line?.implied_team_total ?? null,
             spread: line?.spread ?? null,
             opponent: line?.opponent ?? null,
@@ -194,7 +206,8 @@ export async function GET(req: NextRequest) {
     }
 
     const baseline = replacementBaseline(pool);
-    const { mode, trendable, players } = rankWaivers(rows, baseline, pos);
+    const { mode, trendable, players } = rankWaivers(
+        rows, baseline, pos, positionRanks(pool));
 
     return NextResponse.json({
         week, season: SEASON,

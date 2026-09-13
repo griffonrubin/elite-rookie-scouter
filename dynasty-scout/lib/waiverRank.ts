@@ -30,8 +30,18 @@ export interface WaiverRow {
     on_bye: boolean;
     /** Whose absence may have opened this up. */
     teammate_out: string | null;
-    /** Season projection, for the weeks there is no usage to rank on. */
+    /** Season projection: the rest-of-season number every list is built on. */
     proj_points: number | null;
+    /**
+     * Where that projection puts him at his position, across the whole pool.
+     *
+     * "RB41" is the sentence a manager actually thinks in, and it is the one
+     * thing a list of free agents cannot show you by itself: forty-first is
+     * a claim about the league, not about who happens to be unrostered. The
+     * rank counts every player in the pool, rostered or not, for the same
+     * reason value over replacement does.
+     */
+    pos_rank: number | null;
     /**
      * That projection against the last player at his position anybody starts.
      *
@@ -184,6 +194,30 @@ export function replacementBaseline(pool: Projected[]): Map<string, number> {
 export const overReplacement = (r: Projected, baseline: Map<string, number>) =>
     (r.proj_points ?? 0) - (baseline.get((r.position ?? '').toUpperCase()) ?? 0);
 
+/**
+ * Rest-of-season rank within a position, over the whole pool.
+ *
+ * Across everybody rather than across the free agents, because "the best
+ * available tight end" is a fact about your league's rosters and "TE19" is a
+ * fact about the player. A manager weighing a claim wants the second: it is
+ * what tells them whether the best thing on the wire is a starter somewhere
+ * or a bench body everywhere.
+ */
+export function positionRanks(pool: (Projected & { id: number })[]): Map<number, number> {
+    const out = new Map<number, number>();
+    const byPos = new Map<string, (Projected & { id: number })[]>();
+    for (const p of pool) {
+        if (p.proj_points == null) continue;
+        const k = (p.position ?? '').toUpperCase();
+        byPos.set(k, [...(byPos.get(k) ?? []), p]);
+    }
+    for (const [, xs] of byPos) {
+        xs.sort((a, b) => (b.proj_points ?? 0) - (a.proj_points ?? 0));
+        xs.forEach((p, i) => out.set(p.id, i + 1));
+    }
+    return out;
+}
+
 /** Games in a fantasy regular season, for turning a season into a week. */
 export const SEASON_GAMES = 17;
 
@@ -252,10 +286,12 @@ export function rankWaivers(
     rows: WaiverRow[],
     baseline: Map<string, number>,
     pos: string | null,
+    posRank?: Map<number, number>,
 ): Ranking {
     for (const r of rows) {
         r.over_replacement = r.proj_points == null ? null
             : Math.round(overReplacement(r, baseline) * 10) / 10;
+        r.pos_rank = posRank?.get(r.id) ?? null;
     }
     const trendable = rows.filter(isTrendable);
     const mode: WaiverMode = trendable.length >= TREND_MIN_POOL ? 'trend' : 'projection';

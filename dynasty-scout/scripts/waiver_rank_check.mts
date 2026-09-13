@@ -28,6 +28,7 @@ import {
     isTrendable, rankWaivers, replacementBaseline, trendScore,
     type WaiverRow,
 } from '../lib/waiverRank';
+import { planClaims, rosterVsWire } from '../lib/waiverPlan';
 
 const fails: string[] = [];
 const assert = (label: string, pass: boolean, extra = '') => {
@@ -50,6 +51,7 @@ function row(p: Partial<WaiverRow> & { position: string }): WaiverRow {
         on_bye: false, teammate_out: null,
         proj_points: p.proj_points ?? null,
         over_replacement: null,
+        pos_rank: null,
     };
 }
 
@@ -205,6 +207,111 @@ assert('and it is in descending order',
     combined.players.every((p, i) => i === 0
         || (p.over_replacement ?? 0) <= (combined.players[i - 1].over_replacement ?? 0)),
     combined.players.slice(0, 4).map(p => p.over_replacement).join(', '));
+
+step(8, 'a claim is priced against the roster it would join');
+/**
+ * The column no other waiver page has, and the one that can say no.
+ *
+ * A waiver list ranked on "best available" answers a question about other
+ * people's rosters. What a manager is deciding is whether anybody out there
+ * beats somebody they are already holding — which is a subtraction over
+ * their own lineup, and the whole cost of finding out is arithmetic nobody
+ * does in their head.
+ *
+ * Two cases have to work and one has to refuse. A clear upgrade must name
+ * the right man to drop; a roster already better than the wire must come
+ * back as no upgrade rather than as a small positive; and a drop at a
+ * position the newcomer cannot fill must not be offered, which is the case
+ * the obvious shortcut gets wrong — the cheapest man to lose is frequently
+ * a backup somewhere the newcomer cannot play.
+ */
+const SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX'];
+const mean = new Map<number, number>();
+let rosterId = 500;
+const man = (name: string, position: string, points: number) => {
+    const id = rosterId++;
+    mean.set(id, points);
+    return { id, name, position, startable: true };
+};
+const meanOf = (id: number) => mean.get(id) ?? 0;
+
+const qb = man('my quarterback', 'QB', 19);
+const rb1 = man('my first back', 'RB', 15);
+const rb2 = man('my second back', 'RB', 12);
+const wr1 = man('my first receiver', 'WR', 14);
+const wr2 = man('my second receiver', 'WR', 11);
+const te = man('my tight end', 'TE', 6);
+const flex = man('my flex', 'RB', 9);
+// A body at a position the lineup already has covered twice over: the
+// cheapest man on the roster to lose, and the wrong answer whenever the
+// newcomer is not a quarterback.
+const spareQb = man('my backup quarterback', 'QB', 3);
+const myRoster = [qb, rb1, rb2, wr1, wr2, te, flex, spareQb];
+
+const betterTe = man('a much better tight end', 'TE', 13);
+const worseTe = man('a worse tight end', 'TE', 4);
+const betterQb = man('a much better quarterback', 'QB', 24);
+const plans = planClaims(myRoster,
+    [betterTe, worseTe, betterQb], SLOTS, meanOf);
+
+const te2 = plans.get(betterTe.id)!;
+console.log(`      the better tight end: +${te2.net}, drop ${te2.dropName}`);
+assert('a real upgrade is priced as one', te2.net > 6, String(te2.net));
+assert('and it is exactly what the lineup gains',
+    Math.abs(te2.net - (13 - 6)) < 0.01, String(te2.net));
+assert('the man dropped is the one who can be spared',
+    te2.dropId === spareQb.id, te2.dropName ?? 'nobody');
+
+const worse = plans.get(worseTe.id)!;
+console.log(`      the worse tight end: ${worse.net}`);
+assert('a player worse than what I hold is not an upgrade', worse.net <= 0,
+    String(worse.net));
+
+const qb2 = plans.get(betterQb.id)!;
+console.log(`      the better quarterback: +${qb2.net}, drop ${qb2.dropName}`);
+assert('an upgrade at a one-deep slot is still found', qb2.net > 4, String(qb2.net));
+assert('and dropping the backup quarterback for him costs nothing else',
+    qb2.dropId === spareQb.id, qb2.dropName ?? 'nobody');
+
+/**
+ * The case the shortcut gets wrong.
+ *
+ * With the spare quarterback gone, every drop costs something, and the
+ * right one is the player the newcomer displaces rather than the cheapest
+ * name on the sheet — dropping a starting receiver for a tight end leaves
+ * the receiver slot empty and loses more than the tight end adds.
+ */
+const tight = myRoster.filter(p => p.id !== spareQb.id);
+const forced = planClaims(tight, [betterTe], SLOTS, meanOf).get(betterTe.id)!;
+console.log(`      with no spare: +${forced.net}, drop ${forced.dropName}`);
+assert('with nobody spare it drops the man it replaces',
+    forced.dropId === te.id, forced.dropName ?? 'nobody');
+assert('and the gain is the difference between them',
+    Math.abs(forced.net - (13 - 6)) < 0.01, String(forced.net));
+
+step(9, 'an open roster spot is a different decision and says so');
+const roomy = planClaims(myRoster, [betterTe], SLOTS, meanOf, myRoster.length + 1)
+    .get(betterTe.id)!;
+console.log(`      with a spot free: +${roomy.net}, drop ${roomy.dropName ?? 'nobody'}`);
+assert('nobody has to go', roomy.freeSpot && roomy.dropId === null,
+    String(roomy.dropId));
+assert('and the gain is the same, because the drop was free anyway',
+    Math.abs(roomy.net - (13 - 6)) < 0.01, String(roomy.net));
+
+step(10, 'the wire is compared against my weakest, not my best');
+const wire = rosterVsWire(myRoster, [betterTe, betterQb], ['QB', 'TE'], meanOf);
+for (const w of wire) {
+    console.log(`      ${w.position}: ${w.mineName} ${w.minePoints} vs `
+        + `${w.theirsName} ${w.theirsPoints} = ${w.gap}`);
+}
+const qbRow = wire.find(w => w.position === 'QB')!;
+assert('my weakest quarterback is the one on the line, not my starter',
+    qbRow.mineId === spareQb.id, qbRow.mineName ?? '?');
+assert('which is the only comparison that means anything — he is who gets dropped',
+    (qbRow.gap ?? 0) > 15, String(qbRow.gap));
+const teRow = wire.find(w => w.position === 'TE')!;
+assert('and the gap is the subtraction it claims to be',
+    Math.abs((teRow.gap ?? 0) - (13 - 6)) < 0.01, String(teRow.gap));
 
 console.log(`\n${fails.length ? fails.length + ' FAILED: ' + fails.join(', ') : 'every step passed'}`);
 process.exit(fails.length ? 1 : 0);
