@@ -270,3 +270,69 @@ export function powerRank(teams: PowerTeam[], trials = 8000, seed = 23): PowerRe
     });
     return { rows, unranked };
 }
+
+/**
+ * Where a roster's rate lands it by the end of the regular season.
+ *
+ * A win rate is the right way to rank rosters and the wrong way to talk
+ * about a season. "Fifty-four per cent" is a fact about a simulated week;
+ * "eight and six, and you need nine" is the thing an owner is actually
+ * deciding against, and the two are the same number wearing different
+ * clothes. Showing only the first is why a power table reads as trivia.
+ *
+ * The rate is the chance of beating an unknown opponent, which is what every
+ * remaining week holds — the schedule is not modelled, so this is a team's
+ * strength carried forward rather than a prediction of its fixtures. That
+ * assumption is worth stating on the page and is the honest one available:
+ * whose schedule is soft is exactly what a power ranking is trying not to
+ * measure.
+ */
+export interface SeasonOutlook {
+    /** Regular-season weeks still to play. */
+    remaining: number;
+    /** Wins already banked, where the platform reports them. */
+    wonSoFar: number;
+    lostSoFar: number;
+    /** Expected wins from here, and the total they add to. */
+    winsToCome: number;
+    projectedWins: number;
+    projectedLosses: number;
+    /**
+     * An eighty per cent band on the final win total.
+     *
+     * Fourteen weeks at fifty-four per cent is seven and a half wins, and it
+     * is also anywhere from five to ten. A projected record printed without
+     * that band invites a reader to plan around a number that a coin would
+     * move two games either way, which is the opposite of what this page is
+     * for.
+     */
+    low: number;
+    high: number;
+}
+
+export function seasonOutlook(
+    winRate: number,
+    remaining: number,
+    record?: PowerTeam['record'],
+): SeasonOutlook {
+    const wonSoFar = record?.wins ?? 0;
+    const lostSoFar = (record?.losses ?? 0) + (record?.ties ?? 0);
+    const left = Math.max(0, remaining);
+    const winsToCome = winRate * left;
+    // Binomial, because each remaining week is one independent game against
+    // an opponent of unknown strength. 1.28 sd either side is the middle
+    // eighty per cent, which is wide enough to be honest and narrow enough
+    // to mean something.
+    const sd = Math.sqrt(left * winRate * (1 - winRate));
+    const r1 = (v: number) => Math.round(v * 10) / 10;
+    const total = wonSoFar + winsToCome;
+    return {
+        remaining: left,
+        wonSoFar, lostSoFar,
+        winsToCome: r1(winsToCome),
+        projectedWins: Math.round(total),
+        projectedLosses: Math.round(lostSoFar + (left - winsToCome)),
+        low: Math.max(wonSoFar, Math.round(total - 1.28 * sd)),
+        high: Math.min(wonSoFar + left, Math.round(total + 1.28 * sd)),
+    };
+}

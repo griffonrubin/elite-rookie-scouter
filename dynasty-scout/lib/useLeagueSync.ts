@@ -98,6 +98,14 @@ export interface LeagueSnapshot {
     opponentKeyFor: Record<string, string | null>;
     /** Slot names in lineup order, where the platform reports them. */
     rosterPositions?: string[] | null;
+    /**
+     * The first week of the playoffs, where the platform reports it.
+     *
+     * "Rest of season" has to be a count of weeks or it is a slogan, and the
+     * count that matters is regular-season weeks left: a projected finish is
+     * about making the playoffs, not about week seventeen.
+     */
+    playoffWeekStart?: number | null;
     /** True in a best-ball league: the platform scores the optimal lineup
         itself, so there is no start/sit call to make. */
     bestBall?: boolean;
@@ -345,6 +353,7 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         teams,
         opponentKeyFor,
         rosterPositions: league?.roster_positions ?? null,
+        playoffWeekStart: league?.settings?.playoff_week_start ?? null,
         bestBall: league?.settings?.best_ball === 1,
     };
 }
@@ -377,7 +386,10 @@ async function fetchEspn(conn: LeagueConnection, week: number): Promise<LeagueSn
         opponentKeyFor[String(t.teamId)] =
             t.opponentTeamId != null ? String(t.opponentTeamId) : null;
     }
-    return { leagueName: d.name ?? null, week: d.week ?? week, teams, opponentKeyFor };
+    return {
+        leagueName: d.name ?? null, week: d.week ?? week, teams, opponentKeyFor,
+        playoffWeekStart: d.playoffWeekStart ?? null,
+    };
 }
 
 export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {

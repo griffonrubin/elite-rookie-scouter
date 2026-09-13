@@ -1,19 +1,22 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { RedraftPlayer } from '@/lib/types';
 import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
 import { SimPlayer } from '@/lib/startSit';
 import { useStartSitData } from '@/lib/useStartSit';
-import { simInputFor, simPlayerFrom } from '@/lib/simInput';
+import { simInputFor, simPlayerFrom, type Horizon } from '@/lib/simInput';
 import { replacementCost, type DepthReport } from '@/lib/depth';
 import { bestLineup, type TradeRosterPlayer } from '@/lib/trade';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
+import { HorizonToggle } from '@/components/redraft/HorizonToggle';
 import { DepthTable } from './DepthTable';
 
 const SEASON = 2026;
 const TRIALS = 20000;
 const DEFAULT_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF'];
+/** Where the regular season ends when the platform will not say. */
+const DEFAULT_PLAYOFF_WEEK = 15;
 
 /**
  * Where this roster is actually thin.
@@ -30,6 +33,17 @@ const DEFAULT_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF'];
  */
 export function TeamClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
+    /**
+     * The rest of the season by default, because that is the question.
+     *
+     * "Which of my players am I one hamstring away from missing" is asked
+     * about a season, not about Sunday — an injury costs you the weeks after
+     * it, and it is those weeks the bench has to cover. Priced on this week's
+     * inputs the answer moves for reasons that have nothing to do with depth:
+     * a starter on a bye is worth nothing this Sunday, so the page reports
+     * you can afford to lose him, which is the exact opposite of true.
+     */
+    const [horizon, setHorizon] = useState<Horizon>('season');
 
     const myKey = league.connection?.teamKey ?? null;
 
@@ -83,11 +97,17 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
             if (cache.has(id)) return cache.get(id)!;
             const p = byId.get(id);
             const d = data.get(id);
-            const v = p && d ? simPlayerFrom(simInputFor(p, d, SEASON)) : null;
+            const v = p && d ? simPlayerFrom(simInputFor(p, d, SEASON, horizon)) : null;
             cache.set(id, v);
             return v;
         };
-    }, [players, data]);
+    }, [players, data, horizon]);
+
+    /** Regular-season weeks still to play, for the toggle to name. */
+    const remaining = useMemo(() => {
+        const playoffs = league.snapshot?.playoffWeekStart ?? DEFAULT_PLAYOFF_WEEK;
+        return Math.max(0, playoffs - (week ?? 1));
+    }, [league.snapshot?.playoffWeekStart, week]);
 
     const report: DepthReport | null = useMemo(() => {
         if (!ready || !teams || !myKey) return null;
@@ -126,6 +146,7 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
     return (
         <div className="space-y-4">
             <LeagueConnect league={league} compact />
+            <HorizonToggle value={horizon} onChange={setHorizon} remaining={remaining} />
             {failed ? (
                 <p className="text-[12px] py-3" style={{ color: '#FCA5A5' }}>
                     Could not price the league, so there is nothing to measure this roster
@@ -138,7 +159,7 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
                         : 'Waiting for rosters.'}
                 </p>
             ) : (
-                <DepthTable report={report} />
+                <DepthTable report={report} horizon={horizon} remaining={remaining} />
             )}
         </div>
     );

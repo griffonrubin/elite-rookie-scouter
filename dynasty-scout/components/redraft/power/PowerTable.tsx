@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn, ordinal } from '@/lib/utils';
 import { EvenBar, spanFor } from './EvenBar';
-import { POWER_NOISE, type PowerGap, type PowerRow } from '@/lib/power';
+import { POWER_NOISE, seasonOutlook, type PowerGap, type PowerRow } from '@/lib/power';
+import type { Horizon } from '@/lib/simInput';
 
 /**
  * Strength, and how far results have run ahead of it.
@@ -46,8 +47,11 @@ function LuckNote({ row }: { row: PowerRow }) {
     );
 }
 
-export function PowerTable({ rows, unranked, myKey, trials }: {
+export function PowerTable({ rows, unranked, myKey, trials, horizon, remaining }: {
     rows: PowerRow[]; unranked?: PowerGap[]; myKey: string | null; trials: number;
+    horizon: Horizon;
+    /** Regular-season weeks still to play. */
+    remaining: number;
 }) {
     const [open, setOpen] = useState<string | null>(null);
     if (rows.length === 0) return null;
@@ -61,6 +65,20 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
     const fieldSpan = spanFor(rows.map(r => r.winRate));
     const h2hSpan = spanFor(rows.flatMap(r => Object.values(r.against)));
     const pp = (s: number) => `${Math.round(s * 100)}`;
+    /**
+     * A rate, said as a record.
+     *
+     * "Fifty-four per cent" is a fact about a simulated week; "eight and six,
+     * and you need nine" is what an owner is deciding against. Only shown on
+     * the season horizon and only when there are weeks left to project — a
+     * projected finish for this Sunday is not a thing.
+     */
+    const showFinish = horizon === 'season' && remaining > 0;
+    const GRID = showFinish
+        ? `grid-cols-[22px_minmax(0,1fr)_auto]
+           sm:grid-cols-[22px_150px_190px_52px_66px_52px_minmax(0,1fr)_20px]`
+        : `grid-cols-[22px_minmax(0,1fr)_auto]
+           sm:grid-cols-[22px_150px_190px_52px_56px_minmax(0,1fr)_20px]`;
 
     return (
         <section className="rounded-xl border border-white/[0.07] p-4"
@@ -68,17 +86,17 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-2">
                 <h2 className="text-[10px] uppercase tracking-widest font-bold
                                text-muted-foreground/45">
-                    Every roster against every other
+                    {horizon === 'season'
+                        ? 'Every roster against every other, rest of season'
+                        : 'Every roster against every other, this week'}
                 </h2>
                 <span className="text-[10px] text-muted-foreground/45">
                     {rows.length} teams · {(rows.length * (rows.length - 1)) / 2} pairings
                 </span>
             </div>
 
-            <div className="grid items-end gap-x-3 px-1 pb-1 text-[10px] uppercase
-                            tracking-widest font-bold text-muted-foreground/45
-                            grid-cols-[22px_minmax(0,1fr)_auto]
-                            sm:grid-cols-[22px_150px_190px_52px_56px_minmax(0,1fr)_20px]">
+            <div className={cn(`grid items-end gap-x-3 px-1 pb-1 text-[10px] uppercase
+                            tracking-widest font-bold text-muted-foreground/45`, GRID)}>
                 <span>#</span>
                 <span className="hidden sm:block">Team</span>
                 <span className="hidden sm:block normal-case tracking-normal">
@@ -91,6 +109,15 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
                     </span>
                 </span>
                 <span className="hidden sm:block text-right">Rate</span>
+                {showFinish && (
+                    <span className="hidden sm:block text-right normal-case tracking-normal">
+                        <span className="uppercase tracking-widest">Finish</span>
+                        <span className="block font-normal text-muted-foreground/35
+                                         text-[9px] leading-tight">
+                            {remaining} wk left
+                        </span>
+                    </span>
+                )}
                 <span className="hidden sm:block text-right">Pts</span>
                 <span className="hidden sm:block">{hasLuck ? 'Record vs roster' : ''}</span>
                 <span className="hidden sm:block" />
@@ -106,9 +133,8 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
                             <button type="button" aria-expanded={isOpen}
                                 onClick={() => setOpen(isOpen ? null : r.key)}
                                 className={cn(`w-full grid items-center gap-x-3 gap-y-1 px-1 py-1.5
-                                    rounded-lg text-left transition-colors hover:bg-white/[0.05]
-                                    grid-cols-[22px_minmax(0,1fr)_auto]
-                                    sm:grid-cols-[22px_150px_190px_52px_56px_minmax(0,1fr)_20px]`)}>
+                                    rounded-lg text-left transition-colors
+                                    hover:bg-white/[0.05]`, GRID)}>
                                 {/* A shared rank, because two rosters this
                                     close are not reliably ordered — see
                                     POWER_NOISE. Marking it is the difference
@@ -183,6 +209,16 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
                                     <span className="sm:hidden text-[10px] tabular-nums
                                                      text-muted-foreground/60 mt-0.5 block">
                                         {(r.winRate * 100).toFixed(1)}% of simulated games
+                                        {showFinish && (() => {
+                                            const o = seasonOutlook(r.winRate, remaining,
+                                                r.record);
+                                            return (
+                                                <span className="text-muted-foreground/40">
+                                                    {` · projected ${o.projectedWins}–`
+                                                        + `${o.projectedLosses}`}
+                                                </span>
+                                            );
+                                        })()}
                                     </span>
                                 </span>
 
@@ -192,19 +228,49 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
                                     {(r.winRate * 100).toFixed(1)}%
                                 </span>
 
-                                <span className="col-start-3 row-start-1 sm:col-start-5
-                                                 text-[11px] tabular-nums text-right
-                                                 font-semibold"
+                                {showFinish && (() => {
+                                    const o = seasonOutlook(r.winRate, remaining, r.record);
+                                    return (
+                                        <span className="hidden sm:block sm:col-start-5
+                                                         sm:row-start-1 text-right tabular-nums"
+                                            title={`${o.wonSoFar} won, ${o.winsToCome} more `
+                                                + `expected from ${o.remaining} weeks against `
+                                                + 'an average opponent. Eighty per cent of '
+                                                + `seasons finish between ${o.low} and `
+                                                + `${o.high} wins.`}>
+                                            <span className="block text-[11px] font-semibold">
+                                                {o.projectedWins}–{o.projectedLosses}
+                                            </span>
+                                            {/* The band, because fourteen
+                                                weeks at fifty-four per cent
+                                                is seven and a half wins and
+                                                also anywhere from five to
+                                                ten. A record printed without
+                                                it invites a reader to plan
+                                                around a coin flip. */}
+                                            <span className="block text-[9px]
+                                                             text-muted-foreground/40">
+                                                {o.low}–{o.high} wins
+                                            </span>
+                                        </span>
+                                    );
+                                })()}
+
+                                <span className={cn(`col-start-3 row-start-1 text-[11px]
+                                                 tabular-nums text-right font-semibold`,
+                                    showFinish ? 'sm:col-start-6' : 'sm:col-start-5')}
                                     title="Mean simulated score for this lineup">
                                     {r.expected}
                                 </span>
 
-                                <span className="col-span-3 row-start-3 sm:col-span-1
-                                                 sm:col-start-6 sm:row-start-1">
+                                <span className={cn('col-span-3 row-start-3 sm:col-span-1',
+                                    showFinish ? 'sm:col-start-7' : 'sm:col-start-6',
+                                    'sm:row-start-1')}>
                                     <LuckNote row={r} />
                                 </span>
 
-                                <span className="hidden sm:flex col-start-7 justify-end">
+                                <span className={cn('hidden sm:flex justify-end',
+                                    showFinish ? 'col-start-8' : 'col-start-7')}>
                                     <ChevronDown className={cn(
                                         'w-3 h-3 text-muted-foreground/30 transition-transform',
                                         isOpen && 'rotate-180')} aria-hidden="true" />
@@ -277,6 +343,29 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
             <p className="text-[10px] text-muted-foreground/40 mt-2 leading-snug">
                 Each roster plays every other {trials.toLocaleString()} times from one
                 seed, so the order is reproducible and the table is symmetric.
+                {horizon === 'season' ? (
+                    <>
+                        {' '}Every team fields the best lineup its roster can, because
+                        over {remaining || 'the remaining'} weeks it will — a slot
+                        somebody left empty this Sunday is a fact about one afternoon,
+                        not about the team.
+                        {showFinish && (
+                            <>
+                                {' '}The projected finish carries that rate forward
+                                against an <em>average</em> opponent: the schedule is
+                                not modelled, and whose is soft is the thing a power
+                                ranking is trying not to measure.
+                            </>
+                        )}
+                    </>
+                ) : (
+                    <>
+                        {' '}Every team fields the lineup its owner has actually set,
+                        against this week&rsquo;s opponents, lines and byes — which
+                        makes this a matchup preview rather than a judgement on a
+                        roster.
+                    </>
+                )}
                 {rows.some(r => r.tied) && (
                     <>
                         {' '}Places marked <span className="font-semibold">=</span> are

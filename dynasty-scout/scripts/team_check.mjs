@@ -97,6 +97,45 @@ assert('the slots are the league\'s shape',
 assert('every row names a player', rows.every(r => r.name.length > 2),
     rows.map(r => r.name).join('|'));
 
+step('3b', 'depth is a season question, and the page asks it that way');
+/**
+ * The reason the horizon exists here.
+ *
+ * "Which of my players am I one hamstring away from missing" is asked about
+ * a season, not about Sunday — an injury costs you the weeks *after* it, and
+ * it is those weeks a bench has to cover. Priced on this week's inputs a
+ * starter on a bye is worth nothing, so his row reads "you can afford to
+ * lose him", which is the exact opposite of the truth.
+ */
+const teamHorizon = await page.locator('button[aria-pressed="true"]').allInnerTexts();
+console.log('      horizon: ' + teamHorizon.join(', '));
+assert('it opens on the rest of the season',
+    teamHorizon.some(x => /rest of season/i.test(x)), teamHorizon.join(','));
+let body3b = await page.locator('body').innerText();
+assert('the heading says which horizon it priced',
+    /holding up, rest of season/i.test(body3b),
+    (body3b.match(/what each starter is holding up[^\n]*/i) || ['(unnamed)'])[0]);
+assert('and says what that means',
+    /an injury costs you the weeks/i.test(body3b));
+assert('the week is still available',
+    await page.getByRole('button', { name: /^this week$/i }).count() > 0);
+// Switching has to change the numbers, or the setting is decoration.
+const seasonCosts = rows.map(r => r.cost);
+await page.getByRole('button', { name: /^this week$/i }).click();
+await page.waitForTimeout(3500);
+body3b = await page.locator('body').innerText();
+const weekCosts = await depthRows().evaluateAll(els => els.map(e => parseFloat(
+    (e.children[2]?.textContent?.match(/([\d.]+) pts of win rate/) || [])[1] ?? '0')));
+console.log('      season ' + seasonCosts.slice(0, 5).join(',')
+    + '  →  week ' + weekCosts.slice(0, 5).join(','));
+assert('the week view warns that a bye hides a hole',
+    /costs you nothing this week and everything in November/i.test(body3b));
+assert('and the two horizons really do price differently',
+    seasonCosts.join() !== weekCosts.join(),
+    `${seasonCosts.slice(0, 3).join(',')} vs ${weekCosts.slice(0, 3).join(',')}`);
+await page.getByRole('button', { name: /rest of season/i }).click();
+await page.waitForTimeout(3500);
+
 step(4, 'sorted by what it costs, not by who is best');
 assert('costs fall down the list',
     rows.every((r, i) => i === 0 || r.cost <= rows[i - 1].cost + 1e-9),
@@ -205,8 +244,22 @@ assert('every starter with nobody behind him is named in the summary',
 const projections = await depthRows().evaluateAll(els => els.map(e =>
     (e.children[1]?.textContent?.match(/([\d.]+) projected/) || [])[1]));
 console.log('      projections: ' + projections.join(', '));
+/**
+ * Nine different players, not nine copies of one number.
+ *
+ * This used to demand nine *distinct* values, which is a stronger claim than
+ * the bug it was guarding and one the data can refuse: a kicker and a
+ * defence both projecting 6.3 a week is a coincidence, not a regression, and
+ * it arrives more often on the season horizon where no game line is pushing
+ * the numbers apart. What has to hold is that the column varies and is about
+ * players.
+ */
+const lineupTotal = Number((t.match(/([\d.]+) expected points/) || [])[1]);
 assert('each row shows that player\'s own projection',
-    new Set(projections).size === projections.length, projections.join(','));
+    new Set(projections).size >= 6, projections.join(','));
+assert('and not the lineup total repeated',
+    projections.every(p => Math.abs(Number(p) - lineupTotal) > 1),
+    `lineup ${lineupTotal}`);
 assert('and it is a player-sized number, not a lineup-sized one',
     projections.every(p => Number(p) > 0 && Number(p) < 40), projections.join(','));
 assert('the headline rate is stated', /% against the league/.test(t),

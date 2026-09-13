@@ -122,8 +122,15 @@ const cells = () => teamRows().evaluateAll(els => els.map(e => {
         name: kids[1]?.querySelector('span')?.textContent?.trim() ?? '',
         note: kids[1]?.textContent?.trim() ?? '',
         rate: parseFloat((kids[3]?.textContent?.match(/([\d.]+)%/) || [])[1] ?? 'NaN'),
-        pts: parseFloat(kids[4]?.textContent?.trim() ?? 'NaN'),
-        luck: kids[5]?.textContent?.trim() ?? '',
+        // Found by what the cell says it is rather than by where it sits.
+        // Adding a projected-finish column between the rate and the score
+        // moved every index after it, and an index-addressed test does not
+        // fail on that — it silently starts reading "8–6" as an expected
+        // score and asserting that eight is a plausible lineup total.
+        pts: parseFloat(e.querySelector('[title^="Mean simulated score"]')
+            ?.textContent?.trim() ?? 'NaN'),
+        finish: e.querySelector('[title*="expected from"]')?.textContent?.trim() ?? '',
+        luck: e.querySelector('[title*="in the standings"]')?.textContent?.trim() ?? '',
     };
 }));
 const rowCells = await cells();
@@ -203,6 +210,66 @@ assert('log rows carry only what a simulation reads',
     [...payload.logKeys].sort().join(','));
 assert('so the page is under a megabyte', payload.bytes < 1024 * 1024,
     `${(payload.bytes / 1024 / 1024).toFixed(2)}MB`);
+
+step('5e', 'it is a power ranking, not this Sunday with a power ranking\'s title');
+/**
+ * The complaint that produced the horizon.
+ *
+ * Ranked on this week's inputs a roster drops four places because three of
+ * its starters are on a bye, and recovers them next week without a single
+ * transaction. What the page owes a reader is which question it answered,
+ * and a projected record — "fifty-four per cent" is a fact about a simulated
+ * week, "eight and six, and you need nine" is the thing being decided
+ * against.
+ */
+const horizonPressed = await page.locator('button[aria-pressed="true"]').allInnerTexts();
+console.log('      horizon: ' + horizonPressed.join(', '));
+assert('it opens on the rest of the season',
+    horizonPressed.some(x => /rest of season/i.test(x)), horizonPressed.join(','));
+assert('and says how many weeks that is',
+    /rest of season · \d+ wk/i.test(horizonPressed.join(' ')), horizonPressed.join(','));
+assert('the table names the horizon it ranked on',
+    /every roster against every other, rest of season/i.test(t),
+    (t.match(/every roster against every other[^\n]*/i) || ['(unnamed)'])[0]);
+assert('the week is not taken off the page, only off the default',
+    await page.getByRole('button', { name: /^this week$/i }).count() > 0);
+assert('a projected finish is given, not just a rate',
+    /\d+ wk left/i.test(t) && /\d+–\d+ wins/.test(t),
+    (t.match(/\d+–\d+ wins/) || ['(no band)'])[0]);
+// And the band, because fourteen weeks at 54% is 7.6 wins and also five to
+// ten of them.
+const finishes = await teamRows().evaluateAll(els => els.map(e => {
+    const m = e.innerText.match(/(\d+)–(\d+)\n(\d+)–(\d+) wins/);
+    return m ? { w: +m[1], l: +m[2], lo: +m[3], hi: +m[4] } : null;
+}).filter(Boolean));
+console.log('      ' + finishes.slice(0, 4)
+    .map(f => `${f.w}-${f.l} (${f.lo}-${f.hi})`).join('  '));
+assert('every row projects a record', finishes.length === 12, String(finishes.length));
+assert('each adds up to the season', finishes.every(f => f.w + f.l === 14),
+    finishes.map(f => f.w + f.l).join(','));
+assert('the band contains the projection',
+    finishes.every(f => f.lo <= f.w && f.w <= f.hi),
+    finishes.filter(f => f.lo > f.w || f.w > f.hi).length + ' outside');
+assert('and stronger rosters project more wins',
+    finishes[0].w >= finishes[finishes.length - 1].w,
+    `${finishes[0].w} vs ${finishes[finishes.length - 1].w}`);
+// Switching horizons has to change the answer, or the setting is decoration.
+await page.getByRole('button', { name: /^this week$/i }).click();
+await page.waitForTimeout(3500);
+const weekText = await page.locator('body').innerText();
+const weekOrder = await teamRows().evaluateAll(els =>
+    els.map(e => (e.innerText.split('\n')[1] ?? '').trim()));
+console.log('      this week: ' + weekOrder.slice(0, 3).join(', '));
+assert('the week view says it is a matchup preview',
+    /matchup preview rather than a judgement/i.test(weekText));
+assert('and drops the projected finish, which is not a thing for one Sunday',
+    !/wk left/i.test(weekText));
+assert('the two horizons do not produce the same table',
+    weekOrder.join() !== names.join(),
+    `${weekOrder.slice(0, 3).join(', ')} vs ${names.slice(0, 3).join(', ')}`);
+await page.getByRole('button', { name: /rest of season/i }).click();
+await page.waitForTimeout(3500);
+t = await page.locator('body').innerText();
 
 step(6, 'week one claims no luck gap');
 assert('no team is called lucky or unlucky', !/better off than the roster|worse off than the roster/.test(t),
