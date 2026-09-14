@@ -27,6 +27,7 @@ import { readdirSync, existsSync } from 'fs';
 import path from 'path';
 import Database from 'better-sqlite3';
 import { query } from '../lib/db';
+import { LOAD_FAILURE_MARKER } from '../components/LoadFailure';
 
 const fails: string[] = [];
 const assert = (label: string, pass: boolean, extra = '') => {
@@ -170,6 +171,27 @@ assert('every route answered', unreachable.length === 0,
 const broken = timed.filter(t => t.status >= 500);
 assert('none of them is broken', broken.length === 0,
     broken.map(t => `${t.route} → ${t.status}`).join(', ') || 'no five hundreds');
+
+/**
+ * And none of them is quietly empty.
+ *
+ * A status code is not enough, which is the other half of what this sweep
+ * was built for. The positional dropoff page threw on every request, caught
+ * it, and answered two hundred with an empty chart — healthy by every
+ * measure here. Pages that load from the database now render a marker when
+ * the load fails instead of rendering nothing, so a sweep can see the
+ * difference between a quiet day and a broken one.
+ */
+const failedLoads: string[] = [];
+for (const t of timed.filter(t => t.kind === 'page')) {
+    try {
+        const body = await (await fetch(BASE + t.route + (PARAMS[t.route] ?? ''))).text();
+        if (body.includes(LOAD_FAILURE_MARKER)) failedLoads.push(t.route);
+    } catch { /* already counted as unreachable */ }
+}
+assert('no page is quietly empty behind a two hundred',
+    failedLoads.length === 0,
+    failedLoads.join(', ') || `${timed.filter(t => t.kind === 'page').length} pages read`);
 
 const slow = timed.filter(t => t.ms > BUDGET_MS);
 assert(`none of them takes more than ${BUDGET_MS}ms`, slow.length === 0,

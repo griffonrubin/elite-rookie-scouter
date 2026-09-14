@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { query } from '@/lib/db';
 import { AppHeader } from '@/components/AppHeader';
+import { LoadFailure } from '@/components/LoadFailure';
 import { PositionalDropoffChart, DropoffPlayer } from '@/components/redraft/PositionalDropoffChart';
 
 export const dynamic = 'force-dynamic';
@@ -61,10 +62,13 @@ async function getPlayers(): Promise<DropoffPlayer[]> {
 }
 
 export default async function DropoffPage() {
-    let players: DropoffPlayer[] = [];
+    let players: DropoffPlayer[] | null = null;
     try {
         players = await getPlayers();
     } catch (e) {
+        // This page rendered an empty chart for as long as it existed, because
+        // a caught error still answers with a two hundred and an empty chart
+        // looks like a thin projection set rather than a broken query.
         console.error('Failed to load projection curves:', e);
     }
 
@@ -82,7 +86,14 @@ export default async function DropoffPage() {
                     </p>
                 </div>
 
-                {players.length === 0 ? (
+                {/*
+                    Three states, not two. "No projections loaded yet" is a
+                    true thing to say in June and a lie when the query threw,
+                    and for one release of this page it was the lie.
+                */}
+                {players === null ? (
+                    <LoadFailure what="the projection curves" />
+                ) : players.length === 0 ? (
                     <div className="p-16 text-center text-muted-foreground border border-dashed border-border rounded-xl">
                         No {TARGET_SEASON} projections loaded yet. They refresh on their own
                         each morning from Sleeper and ESPN; to pull them right now, hit{' '}
