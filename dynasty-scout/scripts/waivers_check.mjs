@@ -334,6 +334,52 @@ assert('without telling a reader to prefer the recent log',
     !/predates/i.test(why) && !/read the usage and the log/i.test(why),
     (why.match(/[^\n]*(predates|read the usage and the log)[^\n]*/) || ['clean'])[0]);
 
+step('7b', 'and a stash carries the case a projection cannot make');
+/**
+ * The line that separates a four-point projection worth a bench spot from
+ * one that is not. Checked on all three of its facts, because each is
+ * useless without the others: a successor with no measured work is a depth
+ * chart, one without a sample size is a claim, and one without the starter's
+ * attendance is a handcuff to a man who has never been hurt.
+ */
+/**
+ * Reached through its own ordering, because the default one will not show
+ * it. The page ranks on projection, as it should — and a handcuff's whole
+ * point is that his projection is wrong about him, so he sits below the
+ * thirty rows displayed. The first version of this check looked at the
+ * default list, found nothing, and said so cheerfully.
+ */
+await page.getByRole('button', { name: /if someone gets hurt/i }).click();
+await page.waitForTimeout(1200);
+const covers = await page.locator('text=/^covers /').allTextContents();
+if (covers.length === 0) {
+    assert('the stash ordering finds somebody', false, 'no covers line on the page');
+} else {
+    console.log('        ' + covers.slice(0, 3).join('\n        '));
+    assert('it names the man, the production and the sample',
+        covers.every(t => /covers \w+ · [\d.]+ a game over \d+/.test(t)),
+        covers.find(t => !/covers \w+ · [\d.]+ a game over \d+/.test(t)) ?? '');
+    assert('and how often that job actually opens',
+        covers.every(t => /out \d+ of \d+/.test(t)),
+        covers.find(t => !/out \d+ of \d+/.test(t)) ?? `${covers.length} checked`);
+    /**
+     * And the list is only the men who have an answer. Padding it back out
+     * to thirty with candidates who inherit from nobody would turn the one
+     * finding on the page into a haystack.
+     */
+    const stashRows = await wireRows().count();
+    assert('every row in this ordering has an answer', covers.length === stashRows,
+        `${covers.length} covers lines, ${stashRows} rows`);
+    assert('the share of the work is a share',
+        covers.every(t => {
+            const m = t.match(/on (\d+)% of the work/);
+            return !m || (Number(m[1]) > 0 && Number(m[1]) <= 100);
+        }), covers.find(t => /on (\d+)% of the work/.test(t)) ?? 'none stated');
+}
+
+await page.getByRole('button', { name: /rest of season/i }).click();
+await page.waitForTimeout(800);
+
 step(8, 'a phone reader gets the decision, not a truncated table');
 await page.setViewportSize({ width: 390, height: 844 });
 await page.waitForTimeout(1500);

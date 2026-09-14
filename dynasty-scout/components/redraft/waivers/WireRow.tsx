@@ -11,6 +11,7 @@ import { MatchupChip } from '@/components/redraft/startsit/DefenceProfile';
 import { SchedChip } from '@/components/redraft/SchedChip';
 import type { DefenceCell } from '@/lib/defence';
 import type { SosRow } from '@/lib/schedule';
+import type { InheritanceOut } from '@/app/api/redraft/successors/route';
 
 /**
  * One free agent, priced the way the claim is actually decided.
@@ -39,6 +40,44 @@ export interface WireRowData {
      */
     rest: SosRow | null;
     playoffs: SosRow | null;
+    /**
+     * Whose absence this man was measured covering, where he was.
+     *
+     * The case for a stash, and the one a projection cannot make: a back
+     * projecting four points a week is not worth a bench spot, and a back
+     * projecting four points who took half the work and scored twelve the
+     * last time the starter sat is worth one. On the projection alone the two
+     * are the same row.
+     *
+     * Additional information, deliberately — it sits in the rest-of-season
+     * column rather than in the ranking, because a claim is decided on what a
+     * man does and this is what he would do if something else happened.
+     */
+    inherits: InheritanceOut['from'];
+}
+
+/**
+ * The opening behind a stash, in one line.
+ *
+ * Three facts, in the order they are worth: whose job it is, what this man
+ * did the last time it opened, and how often it opens. The third is the one
+ * every handcuff list leaves out and the one that decides whether the other
+ * two matter — a perfect successor to a man who has never missed a game is
+ * a roster spot spent on nothing.
+ */
+function InheritChip({ from }: { from: InheritanceOut['from'] }) {
+    const best = from[0];
+    if (!best) return null;
+    const games = best.missed + best.played;
+    const surname = best.name.split(' ').slice(-1)[0];
+    return (
+        <span className="block text-[9px] tabular-nums"
+            style={{ color: 'rgba(253,186,116,0.85)' }}>
+            covers {surname} · {best.pointsOut.toFixed(1)} a game over {best.games}
+            {best.absorbed != null && ` on ${(best.absorbed * 100).toFixed(0)}% of the work`}
+            {games > 0 && ` · out ${best.missed} of ${games}`}
+        </span>
+    );
 }
 
 function Net({ plan }: { plan: AddDrop }) {
@@ -67,7 +106,7 @@ export function WireRow({ data, cells, of, isOpen, onToggle }: {
     isOpen: boolean;
     onToggle: () => void;
 }) {
-    const { row: r, week, plan, rest, playoffs } = data;
+    const { row: r, week, plan, rest, playoffs, inherits } = data;
     const perWeek = r.proj_points != null ? r.proj_points / SEASON_GAMES : null;
     const gap = r.over_replacement;
 
@@ -142,6 +181,7 @@ export function WireRow({ data, cells, of, isOpen, onToggle }: {
                         <SchedChip sos={playoffs} label="playoffs" />
                     </span>
                 )}
+                {inherits.length > 0 && <InheritChip from={inherits} />}
             </span>
 
             {/* What it does to you. The only column that knows your roster. */}

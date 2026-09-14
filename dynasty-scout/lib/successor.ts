@@ -230,3 +230,121 @@ export function contingencyFor(playerId: number, rows: WeekRow[]): Contingency |
         successors,
     };
 }
+
+/**
+ * The same measurement read backwards: whose absence is this man covering?
+ *
+ * `contingencyFor` answers the question a roster owner asks — my starter, who
+ * replaces him. A waiver page asks the inverse and it is the harder half,
+ * because the answer is what separates a stash from a body. A back projecting
+ * four points a week is not worth a bench spot; the back who took half the
+ * work and scored twelve the last time the starter sat is worth one, and on a
+ * projection the two are indistinguishable.
+ *
+ * Every published handcuff list is this question answered from a depth chart,
+ * which is why they are all lists of backup running backs. This one names
+ * whoever the logs name — a third receiver, a second tight end, a back listed
+ * behind two others — and only where he was measured taking real work.
+ */
+export interface Inheritance {
+    /** The man whose absence this is. */
+    fromId: number;
+    fromName: string;
+    /** How often he has been absent, which is the whole prior. */
+    fromMissed: number;
+    fromPlayed: number;
+    /** And what he is worth when he plays, for the size of the opening. */
+    fromPoints: number;
+    /** This player's measured line across those absences. */
+    as: Successor;
+}
+
+/**
+ * How many men per position count as the ones worth covering.
+ *
+ * Two, by workload. A third-string back inherits from the starter and from
+ * the man above him, and both openings are real; a fourth relationship is a
+ * chain of two injuries, which is a different and much longer bet than this
+ * page is built to price.
+ */
+const STARTERS_PER_POSITION = 2;
+
+/** Games before a player's workload is worth ranking him on. */
+const MIN_STARTER_GAMES = 4;
+
+/**
+ * For one team's logs, who inherits from whom.
+ *
+ * Built once per team rather than per candidate: a waiver pool holds sixty
+ * men across thirty teams, and running the absence arithmetic per candidate
+ * would redo the same team's weeks a dozen times over.
+ */
+export function inheritanceIndex(rows: WeekRow[]): Map<number, Inheritance[]> {
+    const byPlayer = new Map<number, WeekRow[]>();
+    for (const r of rows) {
+        const at = byPlayer.get(r.player_id);
+        if (at) at.push(r); else byPlayer.set(r.player_id, [r]);
+    }
+
+    // The busiest two at each position, which is who an opening comes from.
+    const byPosition = new Map<string, { id: number; touches: number }[]>();
+    for (const [id, logs] of byPlayer) {
+        if (logs.length < MIN_STARTER_GAMES) continue;
+        const pos = logs[0].position ?? '';
+        const touches = mean(logs.map(r => r.touches));
+        const at = byPosition.get(pos);
+        if (at) at.push({ id, touches }); else byPosition.set(pos, [{ id, touches }]);
+    }
+
+    const loadOf = new Map<number, number>();
+    for (const [, list] of byPosition) {
+        for (const p of list) loadOf.set(p.id, p.touches);
+    }
+
+    const out = new Map<number, Inheritance[]>();
+    for (const [, list] of byPosition) {
+        const starters = [...list].sort((a, b) => b.touches - a.touches)
+            .slice(0, STARTERS_PER_POSITION);
+        for (const { id, touches } of starters) {
+            const c = contingencyFor(id, rows);
+            if (!c || c.missed === 0) continue;
+            for (const s of c.successors) {
+                if (!notable(s)) continue;
+                /**
+                 * An inheritance runs upwards or it is not one.
+                 *
+                 * The first rule here excluded anybody who was himself among
+                 * the two most-used men at the position, meaning to say that
+                 * the other starter in a committee is not a handcuff. It said
+                 * far more than that. Every team has exactly two
+                 * quarterbacks, so every backup quarterback is the second
+                 * most used and every one of them was banned — Tanner McKee
+                 * took eighty per cent of Jalen Hurts's work and disappeared.
+                 * The same went for every timeshare back who is both a
+                 * committee partner and the man who takes over, which is most
+                 * of the interesting ones.
+                 *
+                 * Comparing the two workloads says what was meant and only
+                 * that: a man who already handles more of the ball than the
+                 * one he is said to be covering for is not covering for
+                 * anybody.
+                 */
+                if ((loadOf.get(s.id) ?? 0) >= touches) continue;
+                const entry: Inheritance = {
+                    fromId: c.playerId, fromName: c.name,
+                    fromMissed: c.missed, fromPlayed: c.played,
+                    fromPoints: c.ownPoints,
+                    as: s,
+                };
+                const had = out.get(s.id);
+                if (had) had.push(entry); else out.set(s.id, [entry]);
+            }
+        }
+    }
+
+    // The biggest opening first: the man he covers for who scores the most.
+    for (const list of out.values()) {
+        list.sort((a, b) => b.fromPoints - a.fromPoints);
+    }
+    return out;
+}

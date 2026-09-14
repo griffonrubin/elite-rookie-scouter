@@ -182,6 +182,29 @@ if (newcomers.length > 0) {
     console.log('        no newcomers on this roster to check');
 }
 
+step('6b', 'the two questions the route answers stay apart');
+/**
+ * One route, two modes, and an absent parameter that parses to a list of one.
+ * `''.split(',')` is `['']`, `Number('')` is 0, and `Number.isFinite(0)` is
+ * true — so every request arrived carrying `inherits=[0]`, took the second
+ * path, and this whole panel went blank with no error anywhere. Both modes
+ * are asked directly, because the page can only show what the route sends
+ * and a page check cannot tell "no successors" from "wrong branch".
+ */
+const probe = await page.evaluate(async ids => {
+    const one = await (await fetch(`/api/redraft/successors?ids=${ids.join(',')}`)).json();
+    const two = await (await fetch(`/api/redraft/successors?inherits=${ids.join(',')}`)).json();
+    return { one, two };
+}, (payload?.players ?? []).slice(0, 12).map(p => p.playerId));
+assert('asking about my men answers about my men',
+    (probe.one.players ?? []).length > 0
+    && 'successors' in (probe.one.players[0] ?? {}),
+    `${(probe.one.players ?? []).length} contingencies`);
+assert('and asking the inverse answers the inverse',
+    Array.isArray(probe.two.players)
+    && (probe.two.players.length === 0 || 'from' in probe.two.players[0]),
+    `${(probe.two.players ?? []).length} inheritances`);
+
 step(7, 'and the panel is readable on a phone');
 await page.setViewportSize({ width: 390, height: 900 });
 await page.waitForTimeout(600);

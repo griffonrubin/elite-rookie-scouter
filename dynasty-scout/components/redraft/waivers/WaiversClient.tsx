@@ -9,6 +9,7 @@ import { simInputFor } from '@/lib/simInput';
 import { useStartSitData } from '@/lib/useStartSit';
 import { useDefence } from '@/lib/useDefence';
 import { useSchedule } from '@/lib/useSchedule';
+import { useInheritance } from '@/lib/useSuccessors';
 import { schedFor } from '@/components/redraft/SchedChip';
 import { planClaims, rosterVsWire } from '@/lib/waiverPlan';
 import type { TradeRosterPlayer } from '@/lib/trade';
@@ -46,7 +47,7 @@ const SHOWN = 30;
  * wants the rest of the season; and somebody deciding whether a claim is
  * worth a drop at all wants the only column that knows their roster.
  */
-type SortKey = 'week' | 'season' | 'upgrade' | 'schedule';
+type SortKey = 'week' | 'season' | 'upgrade' | 'schedule' | 'stash';
 const SORTS: { id: SortKey; label: string; note: string }[] = [
     { id: 'season', label: 'Rest of season',
         note: 'Projected points from here, measured against the last player at that '
@@ -66,7 +67,14 @@ const SORTS: { id: SortKey; label: string; note: string }[] = [
         note: 'Who he plays across the fantasy playoff weeks, measured against what '
             + 'those defences give up to his own position rather than against how '
             + 'good they are. The stash question: whether a bench spot held for two '
-            + 'months pays off in the three weeks that decide the season.' },
+            + 'months pays off in the three weeks that decide the season.' },    {
+        id: 'stash', label: 'If someone gets hurt',
+        note: 'Whose job each of these men was measured taking over — from the weeks '
+            + 'the starter did not dress, not from a depth chart. Ranked on the size '
+            + 'of the opening: what the starter scores, how often he is absent, and '
+            + 'what this man did the last time it happened. The one ordering where a '
+            + 'four-point projection can be the right claim.',
+    },
 ];
 
 /**
@@ -217,6 +225,16 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
     const meanOf = (id: number) => outcomeOf(id)?.mean ?? 0;
 
     /** Priced candidates, in the order the reader asked for. */
+    /**
+     * Whose absence each candidate was measured covering.
+     *
+     * Asked for the whole priced set rather than for the visible rows,
+     * because the page re-sorts in the browser and a line that appeared and
+     * vanished as the reader changed the order would read as a bug.
+     */
+    const inheritance = useInheritance(useMemo(
+        () => rows.slice(0, PRICED).map(r => r.id), [rows]));
+
     const shown: WireRowData[] = useMemo(() => {
         const top = rows.slice(0, PRICED);
         const candidates: TradeRosterPlayer[] = top.map(r => ({
@@ -231,6 +249,7 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
             plan: plans.get(r.id) ?? null,
             rest: schedFor(schedule.rest, r.nfl_team ?? null, r.position ?? null),
             playoffs: schedFor(schedule.playoffs, r.nfl_team ?? null, r.position ?? null),
+            inherits: inheritance.byPlayer.get(r.id) ?? [],
         }));
         const by: Record<SortKey, (d: WireRowData) => number> = {
             week: d => d.week ?? -Infinity,
@@ -239,9 +258,40 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
             // Ranked on the fixtures alone, which is the stash question: who
             // is worth a bench spot for two months because of who he plays.
             schedule: d => d.playoffs?.ease ?? d.rest?.ease ?? -Infinity,
+            /**
+             * The size of the opening, not the man's own projection.
+             *
+             * Three things multiplied rather than one: what the starter
+             * scores when he plays, how often he is absent, and what this
+             * man did the last time he was. A successor to a twenty-point
+             * back who has missed a third of his games outranks a successor
+             * to a nine-point tight end who has missed two, which is the
+             * right order and is not the order any of the three alone gives.
+             */
+            stash: d => {
+                const best = d.inherits[0];
+                if (!best) return -Infinity;
+                const games = best.missed + best.played;
+                const rate = games > 0 ? best.missed / games : 0;
+                return best.points * rate + best.pointsOut;
+            },
         };
-        return [...priced].sort((a, b) => by[sort](b) - by[sort](a)).slice(0, SHOWN);
-    }, [rows, data, myRoster, slots, sort, rosterSize, outcomeOf, schedule]);
+        /**
+         * This one ordering also filters.
+         *
+         * The other four rank every candidate on a number every candidate
+         * has. "If someone gets hurt" ranks them on a measurement most of
+         * them do not have, and padding the list back out to thirty with men
+         * who inherit from nobody turns a finding into a haystack — the page
+         * would promise "whose job each of these men was measured taking
+         * over" and then answer it for seven of thirty.
+         */
+        const pool = sort === 'stash'
+            ? priced.filter(d => d.inherits.length > 0)
+            : priced;
+        return [...pool].sort((a, b) => by[sort](b) - by[sort](a)).slice(0, SHOWN);
+    }, [rows, data, myRoster, slots, sort, rosterSize, outcomeOf, schedule,
+        inheritance.byPlayer]);
 
     /** And the summary that answers "is any of this better than what I have". */
     const versus = useMemo(() => {
@@ -333,8 +383,17 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
                     </p>
                 ) : shown.length === 0 ? (
                     <p className="text-[12px] text-muted-foreground/55 py-3 max-w-[620px]">
-                        Nobody at this position is projected at all among the free agents
-                        in this league, which is itself the answer.
+                        {sort === 'stash'
+                            // A different emptiness from the one below, and
+                            // saying so matters: the pool is not empty, it is
+                            // that none of it has this particular answer.
+                            ? inheritance.loading
+                                ? 'Reading the weeks these men’s teammates missed…'
+                                : 'None of the free agents here was measured taking over '
+                                  + 'anybody’s job — either the starters ahead of them have '
+                                  + 'not missed a game, or the men who covered are rostered.'
+                            : 'Nobody at this position is projected at all among the free '
+                              + 'agents in this league, which is itself the answer.'}
                     </p>
                 ) : (
                     <>
