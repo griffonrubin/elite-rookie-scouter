@@ -30,7 +30,7 @@ check('K fills PK', eligibleForSlot('PK', 'K'), true);
 
 console.log('\n== verdicts ==');
 const mk = (id: number, mean: number, sd: number): SimPlayer => ({
-    outcome: { playerId: id, mean, sd, floor: mean - sd, ceiling: mean + sd, sample: 17,
+    outcome: { playerId: id, position: 'RB', mean, sd, floor: mean - sd, ceiling: mean + sd, sample: 17,
         formWeight: 0, contextAdjustment: 0, onBye: false, playProbability: 1,
         availability: null, centreSource: 'model',
         drivers: { base: mean, projectionPerGame: null, formMean: null,

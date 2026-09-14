@@ -113,6 +113,12 @@ export interface OutcomeDrivers {
 
 export interface Outcome {
     playerId: number;
+    /**
+     * Carried because the spread correction is position-dependent and the
+     * simulation, which resamples a player's games directly, has the outcome
+     * and not the inputs.
+     */
+    position: string;
     /** Expected points. */
     mean: number;
     /** Spread of the distribution, in points. */
@@ -387,6 +393,58 @@ export function matchupEdge(ctx: GameContext): number {
     return weight * raw * DEFENSE_ELASTICITY;
 }
 
+/**
+ * How much wider a player's real week is than his own games suggest.
+ *
+ * The model reads a floor and a ceiling straight off the player's game log —
+ * his twentieth and eightieth percentiles, rescaled to wherever the centre
+ * ended up. That keeps his own skew, which is the point, and it is
+ * systematically too narrow, which nobody had checked.
+ *
+ * Backtested across 2024 and 2025 — every week a player had four games
+ * behind him, the distribution built from those games alone, compared against
+ * what he then scored — the stated sixty per cent interval contained the
+ * answer 53.5% of the time. Too narrow at every position, and worst where it
+ * matters most: with four or five games of history it caught 47%.
+ *
+ * Neither textbook correction explains a gap that size. A prediction interval
+ * for a new draw from an estimated normal is wider by sqrt(1 + 1/n), which is
+ * ten per cent at n=5; a t-quantile against a z is twelve. The rest is that
+ * weekly fantasy scoring is heavy-tailed, and a five-game sample of a
+ * heavy-tailed variable barely sees its tails at all. So the correction is
+ * measured rather than derived: the factor that puts coverage on sixty,
+ * fitted across five sample-size bands and checked in each.
+ *
+ * 1.10 + 7.5/n² holds the claim at every history length — 59.9% on four to
+ * five games, 61.3% on six to eight, 61.1% on nine to twelve, 60.6% on
+ * thirteen to twenty, 58.7% beyond. A flat factor cannot: the 1.20 that fixes
+ * the average leaves the four-and-five-game case at 52.8%, which is the case
+ * the correction exists for.
+ *
+ * One position needs more, and it survives the test that matters. After the
+ * sample-size correction quarterbacks still came in at 55% where everyone
+ * else sat near sixty, and splitting the two seasons — which are independent
+ * samples of different quarterbacks having different years — the extra
+ * factor needed was 1.22 in 2024 and 1.12 in 2025, against 1.06 and 1.00 for
+ * backs and 1.00 for receivers and tight ends in both. Consistent in sign
+ * and size across the split, so it is a property of the position rather than
+ * a season. A middling 1.15 is applied rather than either endpoint, because
+ * the two estimates disagree by more than the thing they are estimating.
+ *
+ * No mechanism is claimed. Passing volume swings with game script and a
+ * running quarterback's touchdowns are close to bimodal, either of which
+ * would do it; the measurement stands without knowing which.
+ *
+ * scripts/calibration_check re-runs the whole measurement.
+ */
+const QB_EXTRA = 1.15;
+
+export function spreadInflation(games: number, position?: string): number {
+    if (!Number.isFinite(games) || games < 1) return 1;
+    const base = 1.10 + 7.5 / (games * games);
+    return (position ?? '').toUpperCase() === 'QB' ? base * QB_EXTRA : base;
+}
+
 export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
     const pos = (p.position || '').toUpperCase();
     const ctx = p.context ?? {};
@@ -461,7 +519,8 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
 
     if (ctx.onBye) {
         return {
-            playerId: p.playerId, mean: 0, sd: 0, floor: 0, ceiling: 0,
+            playerId: p.playerId, position: p.position,
+            mean: 0, sd: 0, floor: 0, ceiling: 0,
             sample: shapeSample.length, formWeight: w,
             contextAdjustment: 0, onBye: true,
             drivers: {
@@ -481,9 +540,10 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
     let ceiling: number;
     if (shapeSample.length >= 4 && sampleMean > 1) {
         const scale = centre / sampleMean;
-        floor = Math.max(0, percentile(shapeSample, 0.20) * scale);
-        ceiling = percentile(shapeSample, 0.80) * scale;
-        sd = Math.max(MIN_SD, sampleSd * scale);
+        const k = spreadInflation(shapeSample.length, p.position);
+        floor = Math.max(0, centre - (centre - percentile(shapeSample, 0.20) * scale) * k);
+        ceiling = centre + (percentile(shapeSample, 0.80) * scale - centre) * k;
+        sd = Math.max(MIN_SD, sampleSd * scale * k);
     } else {
         floor = Math.max(0, centre - 0.84 * sd);
         ceiling = centre + 0.84 * sd;
@@ -535,6 +595,7 @@ export function buildOutcome(p: PlayerInputs, currentSeason: number): Outcome {
 
     return {
         playerId: p.playerId,
+        position: p.position,
         drivers: shown,
         mean: meanShown,
         sd: Math.round(sd * 10) / 10,
@@ -670,7 +731,18 @@ export function drawLineup(players: SimPlayer[], rng: () => number): number {
         if (s && s.length >= 4) {
             const m = sampleMeanOf(s);
             if (m > 1) {
-                total += drawFrom(s, p.outcome.mean / m, rng);
+                /**
+                 * Widened about the centre, exactly as the floor and ceiling
+                 * are, because this is the same claim reached a different
+                 * way. A bootstrap draw from a player's own games inherits
+                 * the same inward bias those games have — so leaving this
+                 * alone would print an honest range beside a win probability
+                 * built from a dishonest one, and the win probability is the
+                 * number a reader acts on.
+                 */
+                const k = spreadInflation(s.length, p.outcome.position);
+                const drawn = drawFrom(s, p.outcome.mean / m, rng);
+                total += p.outcome.mean + (drawn - p.outcome.mean) * k;
                 continue;
             }
         }
