@@ -222,6 +222,37 @@ assert('a settled board is not contradicted by the headline',
     !(/Every slot is already/.test(summary) && /Best available/.test(summary)),
     boardSays?.[0] + ' vs ' + bestSays?.[0]);
 
+step('8.6', 'the page says how often it has been right');
+/**
+ * The audit under the claim. A floor, a ceiling and a chance of winning are
+ * numbers a reader cannot check, and this is the panel that lets them — so
+ * it has to be on the page, it has to state the promise as well as the
+ * measurement, and it has to open to the cuts that matter. A panel that
+ * printed one number with no target beside it would be the same marketing
+ * badge every site already ships.
+ */
+const calib = page.locator('section').filter({ hasText: /How often this has been right/i }).first();
+assert('the calibration panel is there', await calib.count() === 1);
+if (await calib.count() === 1) {
+    const summary = (await calib.innerText()).replace(/\s+/g, ' ');
+    console.log('      ' + summary.slice(0, 150));
+    const claim = summary.match(/promise to contain the week (\d+)% of the time/);
+    const held = summary.match(/they held (\d+)% of the time/);
+    assert('it states the promise', !!claim, claim ? claim[1] + '%' : 'not stated');
+    assert('and what actually happened', !!held, held ? held[1] + '%' : 'not stated');
+    assert('over a sample worth reading', /[\d,]{4,} player-weeks/.test(summary),
+        (summary.match(/[\d,]+ player-weeks/) ?? ['none'])[0]);
+    await calib.getByRole('button').first().click();
+    await page.waitForTimeout(400);
+    const opened = (await calib.innerText()).replace(/\s+/g, ' ');
+    assert('and opens to the position and history cuts',
+        /By position/i.test(opened) && /By games behind him/i.test(opened),
+        opened.slice(0, 60));
+    assert('with the limits of the measurement stated, not just the number',
+        /replayed from the games before it/i.test(opened),
+        'the caveat is present');
+}
+
 step(9, 'nothing blew up');
 console.log('      failed requests:', failedUrls.length ? failedUrls.join('\n                       ') : 'none');
 const ours = failedUrls.filter(u =>

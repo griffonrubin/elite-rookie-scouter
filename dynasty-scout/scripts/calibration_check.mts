@@ -27,6 +27,7 @@
  */
 import { query } from '../lib/db';
 import { buildOutcome, type GameLog, type PlayerInputs } from '../lib/startSit';
+import { coverageOf, type CalibrationRow } from '../lib/modelCalibration';
 
 const fails: string[] = [];
 const assert = (label: string, pass: boolean, extra = '') => {
@@ -222,6 +223,52 @@ const perPos = ['QB', 'RB', 'WR', 'TE']
 assert('no position is more than eight points off the claim',
     perPos.every(c => Math.abs(c - 0.60) <= 0.08),
     perPos.map(c => `${(c * 100).toFixed(0)}%`).join(' '));
+
+step(6, 'and the number the page prints is this number');
+/**
+ * The stored table is what the start/sit panel shows, and it is written by a
+ * script rather than computed on the page — so it can go stale, and a stale
+ * accuracy claim is worse than none. It would say the model holds sixty-one
+ * per cent of the time while the model that earned that figure no longer
+ * exists, which is the precise failure this whole file was written to stop.
+ *
+ * So the table is compared against the measurement just taken. A model change
+ * without a rebuild fails here rather than on somebody's screen.
+ */
+let stored: CalibrationRow[] = [];
+try {
+    stored = await query<CalibrationRow>(
+        `SELECT slice, kind, weeks, inside, below, above, from_season, to_season,
+                updated_at FROM model_calibration`, []);
+} catch { /* no table, reported below */ }
+
+if (stored.length === 0) {
+    assert('the table the page reads exists', false,
+        'run scripts/build_model_calibration.mts');
+} else {
+    const all = stored.find(r => r.kind === 'overall');
+    assert('it holds an overall row', !!all, `${stored.length} slices`);
+    if (all) {
+        const live = inside.length / cases.length;
+        const drift = Math.abs(coverageOf(all) - live);
+        console.log(`        stored ${(coverageOf(all) * 100).toFixed(1)}% over `
+            + `${all.weeks.toLocaleString()} weeks, `
+            + `measured just now ${(live * 100).toFixed(1)}% over ${cases.length.toLocaleString()}`);
+        /**
+         * A point of slack for the handful of weeks the two paths drop
+         * differently, and no more: this is a staleness check, and the shape
+         * change that started all of this moved coverage seven points.
+         */
+        assert('and it matches what the model does today', drift < 0.01,
+            `${(drift * 100).toFixed(2)} points apart`);
+        assert('over the same weeks', Math.abs(all.weeks - cases.length) < 50,
+            `${all.weeks} stored, ${cases.length} measured`);
+    }
+    const positions = stored.filter(r => r.kind === 'position').length;
+    const bands = stored.filter(r => r.kind === 'history').length;
+    assert('and the cuts the panel expands to', positions === 4 && bands === 5,
+        `${positions} positions, ${bands} history bands`);
+}
 
 console.log(`\n${fails.length ? `FAILED: ${fails.join('; ')}` : 'every step passed'}`);
 process.exit(fails.length ? 1 : 0);

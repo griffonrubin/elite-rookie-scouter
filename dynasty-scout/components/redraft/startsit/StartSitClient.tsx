@@ -19,6 +19,7 @@ import { LeagueConnect } from './LeagueConnect';
 import { SwapPreview } from './SwapPreview';
 import { PlayerDetail } from './PlayerDetail';
 import { MatchupBySlot, SlotPair } from './MatchupBySlot';
+import { Calibrated } from './Calibrated';
 import { HeadToHead } from './HeadToHead';
 
 const SEASON = 2026;
@@ -532,6 +533,16 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                         onCompare={(a, b) => setCompare([a, b])} />
                 </section>
             </div>
+
+            {/*
+                The audit of everything above it, before anything else asks to
+                be believed. A floor, a ceiling and a chance of winning are
+                claims a reader cannot check, and every site that publishes
+                them leaves it that way — so the measurement sits directly
+                under the numbers it is about rather than on a methodology
+                page nobody opens.
+            */}
+            <Calibrated />
 
             {/* Where the week is won, before the rosters that might change it. */}
             <MatchupBySlot pairs={slotPairs}
