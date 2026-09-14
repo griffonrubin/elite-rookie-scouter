@@ -36,16 +36,36 @@ export async function GET(
         const mode = url.searchParams.get('mode') || 'player';
         const season = url.searchParams.get('season') || '2026';
 
+        /**
+         * Ranks live in consensus_rankings, not on the player.
+         *
+         * This asked `players` for ktc_rank, consensus_rank and best_rank,
+         * none of which is a column there, so the route answered five hundred
+         * for every slug anybody could pass it — a whole endpoint dead, and
+         * silent, because nothing measured it. It came out of a sweep that
+         * simply called every route in the app once.
+         *
+         * The fallback order is kept: a market rank first, then the consensus,
+         * then the most optimistic source, because a trade page would rather
+         * name a round than shrug.
+         */
         const player = await queryOne<{
           id: number; full_name: string; position: string;
-          ktc_rank: number | null; consensus_rank: number | null; best_rank: number | null
+          rank_overall: number | null; avg_rank: number | null; best_rank: number | null
         }>(
-            'SELECT id, full_name, position, ktc_rank, consensus_rank, best_rank FROM players WHERE slug = $1',
+            `SELECT p.id, p.full_name, p.position,
+                    c.rank_overall, c.avg_rank, c.best_rank
+               FROM players p
+               LEFT JOIN consensus_rankings c
+                 ON c.player_id = p.id AND c.format = 'REDRAFT'
+                AND c.calculated_at = (SELECT MAX(calculated_at) FROM consensus_rankings
+                                        WHERE format = 'REDRAFT')
+              WHERE p.slug = $1`,
             [slug]
         );
         if (!player) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
 
-        const projRank = player.ktc_rank ?? player.consensus_rank ?? player.best_rank ?? null;
+        const projRank = player.rank_overall ?? player.avg_rank ?? player.best_rank ?? null;
 
         if (mode === 'picks') {
             const round = projRank ? projRankToRound(projRank) : 1;
