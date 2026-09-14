@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { cn, ordinal } from '@/lib/utils';
+import type { Horizon } from '@/lib/simInput';
 import { DIVERGING, MARK } from '@/lib/vizTokens';
 import { TRADE_NOISE, type LineupChange, type TradeEffect } from '@/lib/trade';
 
@@ -138,7 +139,7 @@ function LineupPanel({ change, nameOf, positionOf }: {
                 <p className="text-[11px] text-muted-foreground/50">
                     The lineup does not change — nobody arriving can beat a player
                     already in it, and nobody leaving was in it. Whatever this trade
-                    is worth, it is not worth anything on the field this week.
+                    is worth, it is not worth anything on the field.
                 </p>
             ) : (
                 <ul className="space-y-1">
@@ -198,12 +199,13 @@ function LineupPanel({ change, nameOf, positionOf }: {
     );
 }
 
-export function TradeVerdict({ result, myKey, nameOf, positionOf, trials }: {
+export function TradeVerdict({ result, myKey, nameOf, positionOf, trials, horizon }: {
     result: { effects: TradeEffect[]; changes: LineupChange[]; unpriced: number[] };
     myKey: string | null;
     nameOf: (id: number) => string;
     positionOf: (id: number) => string;
     trials: number;
+    horizon: Horizon;
 }) {
     const { effects, changes, unpriced } = result;
     if (effects.length === 0) return null;
@@ -309,6 +311,20 @@ export function TradeVerdict({ result, myKey, nameOf, positionOf, trials }: {
                 rather than the simulation. That pairing is why a change of{' '}
                 {(TRADE_NOISE * 100).toFixed(1)} points can be believed here when a
                 place in the power table needs 1.5.
+                {horizon === 'season' ? (
+                    <>
+                        {' '}Priced on a typical week from here rather than on this
+                        Sunday, because nobody trades for one Sunday: a man on a bye
+                        is worth nothing this week, so acquiring him would read as
+                        giving a player away for free, and it inverts on Tuesday.
+                    </>
+                ) : (
+                    <>
+                        {' '}Priced on this Sunday alone — byes, lines and the injury
+                        report included. Right for a must-win before the playoffs,
+                        misleading for everything else a trade is about.
+                    </>
+                )}
             </p>
         </div>
     );

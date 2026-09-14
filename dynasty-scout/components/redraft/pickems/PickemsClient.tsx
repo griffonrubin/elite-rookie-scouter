@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { PickemsResponse } from '@/app/api/redraft/pickems/route';
 import { CoverChart } from './CoverChart';
-import { GameTable } from './GameTable';
+import { PickSheet } from './PickSheet';
 
 /**
  * Spreads, and the honest answer about them.
@@ -25,7 +25,6 @@ import { GameTable } from './GameTable';
 export function PickemsClient() {
     const [data, setData] = useState<PickemsResponse | null>(null);
     const [week, setWeek] = useState<number | null>(null);
-    const [sort, setSort] = useState<'kickoff' | 'confidence'>('kickoff');
     const [error, setError] = useState(false);
 
     useEffect(() => {
@@ -59,30 +58,6 @@ export function PickemsClient() {
 
     return (
         <div className="space-y-4">
-            {data.overall && (
-                <section className="rounded-xl border border-white/[0.07] p-4"
-                    style={{ background: 'var(--bg-card)' }}>
-                    <h2 className="text-[10px] uppercase tracking-widest font-bold
-                                   text-muted-foreground/45 mb-1">
-                        A spread predicts the winner, not the cover
-                    </h2>
-                    <p className="text-[12px] text-muted-foreground/70 max-w-[760px] mb-3">
-                        Across{' '}
-                        <span className="font-bold text-foreground">
-                            {data.overall.games.toLocaleString()} regular-season games
-                        </span>{' '}
-                        from {data.overall.fromSeason} to {data.overall.toSeason}, the
-                        favourite covered{' '}
-                        <span className="font-bold text-foreground">{cover}</span> of the
-                        time — and in every bucket below, between 47 and 51. That is not a
-                        flaw in the market, it is the market doing its job: the line moves
-                        until the money is even. Straight up is a different story, and the
-                        same chart tells it.
-                    </p>
-                    <CoverChart rows={data.calibration} />
-                </section>
-            )}
-
             <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[10px] uppercase tracking-widest font-bold
                                  text-muted-foreground/40 mr-1">
@@ -107,7 +82,43 @@ export function PickemsClient() {
                     No games priced for this week yet.
                 </p>
             ) : (
-                <GameTable games={data.games} sort={sort} onSort={setSort} />
+                <>
+                    {/* The answer first. A confidence pool is a stack rank,
+                        so the ranked sheet is the page and everything under
+                        it is evidence — the chart used to come first, which
+                        put a lesson about market efficiency between a reader
+                        and their picks. */}
+                    <PickSheet games={data.games} overall={data.overall} />
+                    {data.overall && (
+                        <section className="rounded-xl border border-white/[0.07] p-4"
+                            style={{ background: 'var(--bg-card)' }}>
+                            <h2 className="text-[10px] uppercase tracking-widest font-bold
+                                           text-muted-foreground/45 mb-1">
+                                Every bucket, and why the two columns differ
+                            </h2>
+                            <p className="text-[12px] text-muted-foreground/70
+                                          max-w-[800px] mb-3">
+                                Across{' '}
+                                <span className="font-bold text-foreground">
+                                    {data.overall.games.toLocaleString()} regular-season
+                                    games
+                                </span>{' '}
+                                from {data.overall.fromSeason} to {data.overall.toSeason},
+                                the favourite covered{' '}
+                                <span className="font-bold text-foreground">
+                                    {(data.overall.favCoverRate * 100).toFixed(1)}%
+                                </span>{' '}
+                                of the time — and in every bucket below, between 47 and
+                                51. That is not a flaw in the market, it is the market
+                                doing its job: the line moves until the money is even.
+                                Straight up is a different story, and the same chart
+                                tells it — which is why the sheet above ranks on who
+                                wins rather than on who covers.
+                            </p>
+                            <CoverChart rows={data.calibration} />
+                        </section>
+                    )}
+                </>
             )}
         </div>
     );

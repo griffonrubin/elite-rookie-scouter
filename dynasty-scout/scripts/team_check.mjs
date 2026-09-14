@@ -97,6 +97,195 @@ assert('the slots are the league\'s shape',
 assert('every row names a player', rows.every(r => r.name.length > 2),
     rows.map(r => r.name).join('|'));
 
+step('2b', 'where this roster stands, before what each starter holds up');
+/**
+ * The question an owner asks first.
+ *
+ * Not "what is this player worth to me" but "where do I stand, and what
+ * should I be trying to buy". A depth table cannot answer it: it knows what
+ * each of your starters is holding up and nothing at all about the eleven
+ * rosters you have to beat.
+ *
+ * Every axis is a percentile against the league, which is also the only
+ * defence a radar chart has. The usual objections — arbitrary axes at
+ * arbitrary scales, an enclosed area that looks like a quantity — are all
+ * about putting unlike numbers on unlike axes. A common rank scale with a
+ * real midpoint is the one case where the shape means what it appears to.
+ */
+const shape = page.locator('section')
+    .filter({ has: page.getByRole('heading', { name: /where this roster stands/i }) });
+assert('the roster is placed in its league', await shape.count() === 1);
+let shapeText = await shape.innerText();
+console.log('      ' + (shapeText.split('\n')[1] ?? '').slice(0, 120));
+assert('and the shape is read out in a sentence, not left to be squinted at',
+    /strongest at \w+ \(\d+ of \d+\), weakest at \w+ \(\d+ of \d+\)/i.test(shapeText),
+    (shapeText.match(/Strongest at[^.]*\./i) || ['(no reading)'])[0]);
+const radars = await shape.locator('svg[role="img"]').count();
+assert('two shapes, because they answer different questions', radars === 2,
+    String(radars));
+// Positions and qualities are different kinds of claim and do not share an
+// axis: folding them together would put "receivers" next to "upside".
+const labels = await shape.locator('svg[role="img"]').first()
+    .locator('text').evaluateAll(els => els.map(e => e.textContent.trim()));
+console.log('      positions: ' + labels.join(' '));
+assert('the first is position by position', labels.includes('QB')
+    && labels.includes('RB') && labels.includes('WR') && labels.includes('TE'),
+    labels.join(','));
+const quality = await shape.locator('svg[role="img"]').nth(1)
+    .locator('text').evaluateAll(els => els.map(e => e.textContent.trim()));
+console.log('      qualities: ' + quality.join(' '));
+assert('the second is what sort of team it is',
+    quality.includes('Upside') && quality.includes('Floor')
+        && quality.includes('Depth'), quality.join(','));
+/**
+ * And a table, which is not an afterthought.
+ *
+ * A percentile hides how close the league was: best of twelve by four points
+ * a week and best of twelve by a quarter of one draw identically. The
+ * measurement has to be printed beside the rank or the chart is an assertion.
+ */
+const rows2b = await shape.locator('tbody tr').evaluateAll(els => els.map(e =>
+    e.innerText.replace(/\n+/g, ' | ')));
+console.log('      ' + rows2b.slice(0, 3).join('\n      '));
+assert('every axis carries its rank', rows2b.every(r => /\d+ of \d+/.test(r)),
+    String(rows2b.filter(r => !/\d+ of \d+/.test(r)).length) + ' without one');
+assert('and the measurement behind it',
+    rows2b.every(r => /[\d.]+( a week|% kept)/.test(r)),
+    rows2b.filter(r => !/[\d.]+( a week|% kept)/.test(r)).slice(0, 2).join(' | '));
+assert('ranks are inside the league', rows2b.every(r => {
+    const m = r.match(/(\d+) of (\d+)/);
+    return m && +m[1] >= 1 && +m[1] <= +m[2];
+}), 'out of range');
+/**
+ * Laying another roster over it is the feature, not a garnish: "third-best
+ * receivers" is a ranking and "your receivers against the team you play on
+ * Sunday" is a matchup.
+ */
+await shape.getByLabel(/compare against another team/i).selectOption({ index: 1 });
+await page.waitForTimeout(2000);
+shapeText = await shape.innerText();
+const cols = await shape.locator('thead th').allInnerTexts();
+console.log('      columns after overlay: ' + cols.join(' | '));
+assert('a second roster can be laid over it', cols.length >= 4, cols.join(','));
+// The legend, plus the same name at the head of each table. Case-insensitive
+// because the headings are uppercased in CSS and the legend is not.
+assert('and two series get a legend rather than two colours to guess at',
+    (shapeText.match(/— you/gi) || []).length >= 3,
+    String((shapeText.match(/— you/gi) || []).length) + ' mentions');
+await shape.getByLabel(/compare against another team/i).selectOption({ index: 0 });
+await page.waitForTimeout(1500);
+
+step('2c', 'the schedule ahead, for a position rather than for a team');
+/**
+ * Every site ships a strength of schedule and nearly all of them rank
+ * opponents by how good those teams are, which is the wrong question. On
+ * this league's real fixtures Pittsburgh are thirty-first for quarterbacks,
+ * thirty-second for receivers and first for tight ends — one number would be
+ * a lie for three of the four.
+ */
+const sched = page.locator('section')
+    .filter({ has: page.getByRole('heading', { name: /the schedule ahead/i }) });
+assert('the schedule is on the page', await sched.count() === 1);
+let schedText = await sched.innerText();
+assert('and it says what it measures',
+    /give up .*to his position/i.test(schedText.replace(/\n/g, ' ')),
+    (schedText.match(/What each player[^\n]*/i) || ['(unstated)'])[0].slice(0, 80));
+const sosRows = await sched.locator('button[aria-expanded]').evaluateAll(els =>
+    els.map(e => {
+        const x = e.innerText.replace(/\n+/g, ' | ');
+        const m = x.match(/([+−-][\d.]+)% \| (\d+) of (\d+) easiest \| for (\w+)s/);
+        return m ? { text: x, ease: parseFloat(m[1].replace('−', '-')),
+            rank: +m[2], of: +m[3], pos: m[4] } : { text: x };
+    }));
+const parsedSos = sosRows.filter(r => r.rank);
+console.log('      ' + parsedSos.slice(0, 3).map(r => r.text.slice(0, 62)).join('\n      '));
+assert('every rostered player gets a schedule', parsedSos.length >= 8,
+    `${parsedSos.length} of ${sosRows.length}`);
+assert('ranked against the whole league at that position',
+    parsedSos.every(r => r.of >= 30 && r.rank >= 1 && r.rank <= r.of),
+    parsedSos.map(r => `${r.rank}/${r.of}`).slice(0, 4).join(' '));
+assert('and the easier schedules are ranked nearer one',
+    parsedSos.every((r, i) => i === 0 || r.ease <= parsedSos[i - 1].ease + 0.05),
+    parsedSos.map(r => r.ease).join(','));
+/**
+ * The playoff weeks are a different question, and a schedule that is brutal
+ * in September and kind in December is a good schedule. Washington's backs
+ * are first in the league over the rest of the year and last of thirty-two
+ * across the playoff weeks — an average over both would hide that entirely.
+ */
+const restOrder = parsedSos.map(r => r.text.split(' | ')[0]);
+await sched.getByRole('button', { name: /playoffs/i }).click();
+await page.waitForTimeout(1500);
+schedText = await sched.innerText();
+const poRows = await sched.locator('button[aria-expanded]').evaluateAll(els =>
+    els.map(e => e.innerText.split('\n')[0].trim()));
+console.log('      playoff window: ' + poRows.slice(0, 3).join(', '));
+assert('the playoff weeks are measured apart',
+    /playoffs? ·/i.test(schedText) || poRows.join() !== restOrder.join(),
+    `${poRows.slice(0, 2).join(',')} vs ${restOrder.slice(0, 2).join(',')}`);
+assert('and say which weeks they are',
+    /these three weeks are the ones worth trading against/i.test(schedText));
+// Opening a row shows the fixtures, because an average over thirteen games
+// can hide a December nobody would want.
+await sched.locator('button[aria-expanded]').first().click();
+await page.waitForTimeout(600);
+const weeksShown = await sched.innerText();
+assert('a row opens to the fixtures behind the average',
+    /w\d+ [A-Z]{2,3}/.test(weeksShown),
+    (weeksShown.match(/w\d+ [A-Z]{2,3}[^\n]{0,30}/) || ['(no fixtures)'])[0]);
+await sched.locator('button[aria-expanded]').first().click();
+await sched.getByRole('button', { name: /^weeks /i }).click();
+await page.waitForTimeout(1200);
+
+step('3b', 'depth is a season question, and the page asks it that way');
+/**
+ * The reason the horizon exists here.
+ *
+ * "Which of my players am I one hamstring away from missing" is asked about
+ * a season, not about Sunday — an injury costs you the weeks *after* it, and
+ * it is those weeks a bench has to cover. Priced on this week's inputs a
+ * starter on a bye is worth nothing, so his row reads "you can afford to
+ * lose him", which is the exact opposite of the truth.
+ */
+/**
+ * The horizon control, and only it.
+ *
+ * `button[aria-pressed]` is not unique to it — roster rows and position
+ * filters press too — so the bare selector reads a selected player as the
+ * current horizon. It happens to give the right answer today, which is the
+ * kind of test that fails a year from now for a reason nobody can see.
+ */
+const horizonOn = () => page.locator('button[aria-pressed="true"]')
+    .filter({ hasText: /rest of season|this week/i });
+const teamHorizon = await horizonOn().allInnerTexts();
+console.log('      horizon: ' + teamHorizon.join(', '));
+assert('it opens on the rest of the season',
+    teamHorizon.some(x => /rest of season/i.test(x)), teamHorizon.join(','));
+let body3b = await page.locator('body').innerText();
+assert('the heading says which horizon it priced',
+    /holding up, rest of season/i.test(body3b),
+    (body3b.match(/what each starter is holding up[^\n]*/i) || ['(unnamed)'])[0]);
+assert('and says what that means',
+    /an injury costs you the weeks/i.test(body3b));
+assert('the week is still available',
+    await page.getByRole('button', { name: /^this week$/i }).count() > 0);
+// Switching has to change the numbers, or the setting is decoration.
+const seasonCosts = rows.map(r => r.cost);
+await page.getByRole('button', { name: /^this week$/i }).click();
+await page.waitForTimeout(3500);
+body3b = await page.locator('body').innerText();
+const weekCosts = await depthRows().evaluateAll(els => els.map(e => parseFloat(
+    (e.children[2]?.textContent?.match(/([\d.]+) pts of win rate/) || [])[1] ?? '0')));
+console.log('      season ' + seasonCosts.slice(0, 5).join(',')
+    + '  →  week ' + weekCosts.slice(0, 5).join(','));
+assert('the week view warns that a bye hides a hole',
+    /costs you nothing this week and everything in November/i.test(body3b));
+assert('and the two horizons really do price differently',
+    seasonCosts.join() !== weekCosts.join(),
+    `${seasonCosts.slice(0, 3).join(',')} vs ${weekCosts.slice(0, 3).join(',')}`);
+await page.getByRole('button', { name: /rest of season/i }).click();
+await page.waitForTimeout(3500);
+
 step(4, 'sorted by what it costs, not by who is best');
 assert('costs fall down the list',
     rows.every((r, i) => i === 0 || r.cost <= rows[i - 1].cost + 1e-9),
@@ -205,15 +394,152 @@ assert('every starter with nobody behind him is named in the summary',
 const projections = await depthRows().evaluateAll(els => els.map(e =>
     (e.children[1]?.textContent?.match(/([\d.]+) projected/) || [])[1]));
 console.log('      projections: ' + projections.join(', '));
+/**
+ * Nine different players, not nine copies of one number.
+ *
+ * This used to demand nine *distinct* values, which is a stronger claim than
+ * the bug it was guarding and one the data can refuse: a kicker and a
+ * defence both projecting 6.3 a week is a coincidence, not a regression, and
+ * it arrives more often on the season horizon where no game line is pushing
+ * the numbers apart. What has to hold is that the column varies and is about
+ * players.
+ */
+const lineupTotal = Number((t.match(/([\d.]+) expected points/) || [])[1]);
 assert('each row shows that player\'s own projection',
-    new Set(projections).size === projections.length, projections.join(','));
+    new Set(projections).size >= 6, projections.join(','));
+assert('and not the lineup total repeated',
+    projections.every(p => Math.abs(Number(p) - lineupTotal) > 1),
+    `lineup ${lineupTotal}`);
 assert('and it is a player-sized number, not a lineup-sized one',
     projections.every(p => Number(p) > 0 && Number(p) < 40), projections.join(','));
 assert('the headline rate is stated', /% against the league/.test(t),
     (t.match(/[\d.]+% against the league[^\n]*/) || ['(not stated)'])[0]);
 assert('and the floor is explained', /moves by on its own/.test(t));
 
-step(7, 'nothing blew up');
+step(7, 'a finding you cannot act on is half a tool');
+/**
+ * The chain this page exists to start.
+ *
+ * "Your only tight end is your whole tight end" is a finding. On its own it
+ * leaves a reader to go and work out what to do about it, which is the part
+ * they came here to avoid — so a bare slot carries the way to fill it.
+ */
+const links = await page.locator('a', { hasText: /find one/i }).all();
+const hrefs = await Promise.all(links.map(l => l.getAttribute('href')));
+console.log('      ' + (hrefs.join(', ') || 'no links'));
+assert('every bare slot offers a way to fill it',
+    links.length === uncovered.length, `${links.length} links, ${uncovered.length} bare slots`);
+assert('and each one asks for that position',
+    hrefs.every(h => /\/in-season\/waivers\?pos=(QB|RB|WR|TE|K|DST)$/.test(h ?? '')),
+    hrefs.join(', '));
+// The tight end is the interesting case: the link has to land on a list of
+// tight ends, not on the forty biggest movers in the league.
+const teHref = hrefs.find(h => (h ?? '').endsWith('pos=TE'));
+assert('the tight end slot links to tight ends', !!teHref, teHref ?? 'no TE link');
+// "you would start eightfind one" is what omitting the space looks like.
+assert('the link is a separate word from the sentence before it',
+    uncovered.every(r => !/eightfind/.test(r.behind)),
+    uncovered.map(r => r.behind).find(b => /eightfind/.test(b)) ?? 'spaced');
+await page.locator(`a[href="${teHref}"]`).first().click();
+await page.waitForTimeout(7000);
+const landed = await page.locator('body').innerText();
+const rows2 = await page.locator('button[aria-expanded]').count();
+const pressed = await page.locator('button[aria-pressed="true"]').allInnerTexts();
+console.log(`      landed on the waiver wire: ${rows2} rows, filter ${pressed.join('/')}`);
+assert('it lands on the waiver wire', /free agents/i.test(landed));
+assert('already filtered to tight ends', pressed.includes('TE'), pressed.join(','));
+assert('with a list worth reading, not three rows', rows2 >= 8, `${rows2} rows`);
+const names = await page.locator('button[aria-expanded]').first().innerText();
+console.log(`      top of the list: ${names.split('\n')[0]}`);
+await page.goBack({ waitUntil: 'domcontentloaded' });
+await page.getByRole('heading', { name: /what each starter is holding up/i })
+    .waitFor({ timeout: 30000 });
+await page.waitForTimeout(2500);
+
+step('7b', 'and the surplus reaches the page that prices it');
+// The other direction. "Covered well enough that losing him would not move
+// the number" is the same sentence as "this is the easiest thing on this
+// roster to trade", and it was a sentence with nowhere to go.
+const t7 = await page.locator('body').innerText();
+const spare = rows.filter(r => r.cost < 1.5).map(r => r.name);
+console.log('      spare, by the page\'s own floor: ' + (spare.join(', ') || 'none'));
+const worth = page.locator('a', { hasText: /see what (he|they) (is|are) worth/i }).first();
+if (await worth.count() === 0) {
+    console.log('      (no starter on this roster is inside the floor — nothing to link)');
+    assert('the page does not claim a surplus it has not found',
+        !/easiest thing on this roster to trade/.test(t7),
+        'no spare players, no sentence');
+    /**
+     * The link is conditional, the mechanism behind it is not.
+     *
+     * On a roster where every starter matters the footnote correctly says
+     * nothing, which would leave the thing it links to untested — so the
+     * receiving half is driven directly, with a player id read off the trade
+     * page itself.
+     */
+    await page.goto(`${BASE}/in-season/trades`, { waitUntil: 'domcontentloaded' });
+    await page.locator('#trade-partner').waitFor({ timeout: 30000 });
+    await page.waitForTimeout(1500);
+    const mine = page.locator('section').filter({ has: page.locator('h3') }).first();
+    const id = await mine.locator('button[data-player-id]').nth(3).getAttribute('data-player-id');
+    const name = (await mine.locator('button[data-player-id]').nth(3).innerText()).split('\n')[0];
+    console.log(`      driving /in-season/trades?give=${id} (${name})`);
+    await page.goto(`${BASE}/in-season/trades?give=${id}`, { waitUntil: 'domcontentloaded' });
+    await page.locator('#trade-partner').waitFor({ timeout: 30000 });
+    await page.waitForTimeout(3500);
+    const on = await page.locator('button[aria-pressed="true"][data-player-id]')
+        .evaluateAll(els => els.map(e => e.getAttribute('data-player-id')));
+    console.log('      already on the table: ' + (on.join(', ') || 'nobody'));
+    assert('the named player is already offered', on.join(',') === id, on.join(','));
+    /**
+     * Whose number is it?
+     *
+     * The verdict lists the two traders by how far each moved, not by which
+     * one is you — so reading the first "pts of win rate" on the page can
+     * easily be the other team's. A one-sided gift has to show *me* getting
+     * worse, and asserting that means finding my row rather than the first
+     * one.
+     */
+    const verdictRows = await page.locator('section')
+        .filter({ has: page.getByRole('heading', { name: /what it does to each side/i }) })
+        .locator('> div > div')
+        .evaluateAll(els => els.map(e => e.textContent?.replace(/\s+/g, ' ').trim() ?? ''));
+    for (const v of verdictRows) console.log('      ' + v.slice(0, 110));
+    const mineRow = verdictRows.find(v => /— you/.test(v)) ?? '';
+    const delta = parseFloat((mineRow.match(/([−+-][\d.]+) pts of win rate/) || [])[1]
+        ?.replace('−', '-') ?? 'NaN');
+    assert('the verdict names me', /— you/.test(mineRow), mineRow.slice(0, 60));
+    assert('and giving a starter away for nothing makes me worse',
+        delta < 0, String(delta));
+    // Clicking anything must hand control back to the reader.
+    await page.locator('button[data-player-id]').nth(6).click();
+    await page.waitForTimeout(2500);
+    const after = await page.locator('button[aria-pressed="true"][data-player-id]').count();
+    assert('and the reader can still change it', after === 2, `${after} selected`);
+} else {
+    const href = await worth.getAttribute('href');
+    console.log('      ' + href);
+    assert('the link offers real player ids',
+        /\/in-season\/trades\?give=\d+(,\d+)*$/.test(href ?? ''), href ?? '');
+    await worth.click();
+    await page.locator('#trade-partner').waitFor({ timeout: 30000 });
+    await page.waitForTimeout(2500);
+    const picked = await page.locator('button[aria-pressed="true"]').allInnerTexts();
+    console.log('      already on the table: ' + picked.map(x => x.split('\n')[0]).join(', '));
+    assert('it lands on the trade analyzer', await page.locator('#trade-partner').count() === 1);
+    assert('with those players already offered',
+        picked.length === (href ?? '').split('=')[1].split(',').length,
+        `${picked.length} selected`);
+    const verdict = await page.locator('body').innerText();
+    assert('and it has already priced the offer',
+        /pts of win rate/.test(verdict),
+        (verdict.match(/[^\n]*pts of win rate/) || ['(no verdict)'])[0]);
+    await page.goBack({ waitUntil: 'domcontentloaded' });
+    await page.getByRole('heading', { name: /what each starter is holding up/i })
+        .waitFor({ timeout: 30000 });
+}
+
+step(8, 'nothing blew up');
 assert('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 const o = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));

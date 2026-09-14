@@ -240,6 +240,8 @@ export interface SleeperLeagueDetail {
     roster_positions: string[] | null;
     settings?: {
         playoff_week_start?: number;
+        /** How many teams make the playoffs — where the cut is. */
+        playoff_teams?: number;
         /** 1 in a best-ball league, where the platform scores your optimal
             lineup and there is no lineup to set. */
         best_ball?: number;

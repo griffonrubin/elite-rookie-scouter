@@ -4,7 +4,10 @@ import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn, ordinal } from '@/lib/utils';
 import { EvenBar, spanFor } from './EvenBar';
-import { POWER_NOISE, type PowerGap, type PowerRow } from '@/lib/power';
+import { POWER_NOISE, seasonOutlook,
+    type PlayoffOdds, type PowerGap, type PowerRow } from '@/lib/power';
+import type { Horizon } from '@/lib/simInput';
+import { DIVERGING } from '@/lib/vizTokens';
 
 /**
  * Strength, and how far results have run ahead of it.
@@ -46,8 +49,20 @@ function LuckNote({ row }: { row: PowerRow }) {
     );
 }
 
-export function PowerTable({ rows, unranked, myKey, trials }: {
+export function PowerTable({
+    rows, unranked, myKey, trials, horizon, remaining, odds, spots, onSpots, spotsKnown,
+}: {
     rows: PowerRow[]; unranked?: PowerGap[]; myKey: string | null; trials: number;
+    horizon: Horizon;
+    /** Regular-season weeks still to play. */
+    remaining: number;
+    /** How often each roster is still playing in January. */
+    odds: Map<string, PlayoffOdds> | null;
+    /** How many teams make the playoffs. */
+    spots: number;
+    onSpots: (n: number) => void;
+    /** True when the platform said, rather than the page assuming. */
+    spotsKnown: boolean;
 }) {
     const [open, setOpen] = useState<string | null>(null);
     if (rows.length === 0) return null;
@@ -61,6 +76,27 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
     const fieldSpan = spanFor(rows.map(r => r.winRate));
     const h2hSpan = spanFor(rows.flatMap(r => Object.values(r.against)));
     const pp = (s: number) => `${Math.round(s * 100)}`;
+    /**
+     * A rate, said as a record.
+     *
+     * "Fifty-four per cent" is a fact about a simulated week; "eight and six,
+     * and you need nine" is what an owner is deciding against. Only shown on
+     * the season horizon and only when there are weeks left to project — a
+     * projected finish for this Sunday is not a thing.
+     */
+    const showFinish = horizon === 'season' && remaining > 0;
+    const GRID = showFinish
+        ? `grid-cols-[22px_minmax(0,1fr)_auto]
+           sm:grid-cols-[22px_150px_178px_50px_74px_50px_minmax(0,1fr)_20px]`
+        : `grid-cols-[22px_minmax(0,1fr)_auto]
+           sm:grid-cols-[22px_150px_190px_52px_56px_minmax(0,1fr)_20px]`;
+    /**
+     * A colour for a probability, on the same two hues as everything else.
+     *
+     * Not a third scale: the diverging pair already means "better or worse
+     * than even", and playoff odds are the same claim about a season.
+     */
+    const oddsInk = (p: number) => (p >= 0.5 ? DIVERGING.positive : DIVERGING.negative);
 
     return (
         <section className="rounded-xl border border-white/[0.07] p-4"
@@ -68,17 +104,41 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-2">
                 <h2 className="text-[10px] uppercase tracking-widest font-bold
                                text-muted-foreground/45">
-                    Every roster against every other
+                    {horizon === 'season'
+                        ? 'Every roster against every other, rest of season'
+                        : 'Every roster against every other, this week'}
                 </h2>
-                <span className="text-[10px] text-muted-foreground/45">
-                    {rows.length} teams · {(rows.length * (rows.length - 1)) / 2} pairings
+                <span className="flex items-center gap-x-3 gap-y-1 flex-wrap
+                                 text-[10px] text-muted-foreground/45">
+                    {/* Where the cut is, and who said so.
+                        Sleeper does not always report it, and a page that
+                        quietly assumes six is giving a confident wrong answer
+                        to the only question on it that matters. */}
+                    {showFinish && odds && (
+                        <label className="flex items-center gap-1.5">
+                            <span>{spotsKnown ? 'Top' : 'Assuming top'}</span>
+                            <select value={spots}
+                                onChange={e => onSpots(Number(e.target.value))}
+                                aria-label="How many teams make the playoffs"
+                                className="rounded px-1 py-0.5 text-[10px] font-bold
+                                           text-foreground border border-white/[0.10]"
+                                style={{ background: 'rgba(255,255,255,0.05)' }}>
+                                {Array.from({ length: Math.max(1, rows.length - 1) },
+                                    (_, i) => i + 1).map(n => (
+                                    <option key={n} value={n}>{n}</option>
+                                ))}
+                            </select>
+                            <span>make the playoffs</span>
+                        </label>
+                    )}
+                    <span>
+                        {rows.length} teams · {(rows.length * (rows.length - 1)) / 2} pairings
+                    </span>
                 </span>
             </div>
 
-            <div className="grid items-end gap-x-3 px-1 pb-1 text-[10px] uppercase
-                            tracking-widest font-bold text-muted-foreground/45
-                            grid-cols-[22px_minmax(0,1fr)_auto]
-                            sm:grid-cols-[22px_150px_190px_52px_56px_minmax(0,1fr)_20px]">
+            <div className={cn(`grid items-end gap-x-3 px-1 pb-1 text-[10px] uppercase
+                            tracking-widest font-bold text-muted-foreground/45`, GRID)}>
                 <span>#</span>
                 <span className="hidden sm:block">Team</span>
                 <span className="hidden sm:block normal-case tracking-normal">
@@ -91,6 +151,17 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
                     </span>
                 </span>
                 <span className="hidden sm:block text-right">Rate</span>
+                {showFinish && (
+                    <span className="hidden sm:block text-right normal-case tracking-normal">
+                        <span className="uppercase tracking-widest">
+                            {odds ? 'Playoffs' : 'Finish'}
+                        </span>
+                        <span className="block font-normal text-muted-foreground/35
+                                         text-[9px] leading-tight">
+                            {odds ? `top ${spots} · ${remaining} wk` : `${remaining} wk left`}
+                        </span>
+                    </span>
+                )}
                 <span className="hidden sm:block text-right">Pts</span>
                 <span className="hidden sm:block">{hasLuck ? 'Record vs roster' : ''}</span>
                 <span className="hidden sm:block" />
@@ -106,9 +177,8 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
                             <button type="button" aria-expanded={isOpen}
                                 onClick={() => setOpen(isOpen ? null : r.key)}
                                 className={cn(`w-full grid items-center gap-x-3 gap-y-1 px-1 py-1.5
-                                    rounded-lg text-left transition-colors hover:bg-white/[0.05]
-                                    grid-cols-[22px_minmax(0,1fr)_auto]
-                                    sm:grid-cols-[22px_150px_190px_52px_56px_minmax(0,1fr)_20px]`)}>
+                                    rounded-lg text-left transition-colors
+                                    hover:bg-white/[0.05]`, GRID)}>
                                 {/* A shared rank, because two rosters this
                                     close are not reliably ordered — see
                                     POWER_NOISE. Marking it is the difference
@@ -165,6 +235,14 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
                                     )}
                                 </span>
 
+                                {/* The bar owns row two outright on a phone.
+                                    It used to span all three columns while
+                                    the rate claimed the third of them in the
+                                    same row, so the two collided and the bar
+                                    rendered as an eight-pixel sliver against
+                                    the right edge — the whole visualisation,
+                                    gone, on the screen most of these
+                                    decisions are made on. */}
                                 <span className="col-span-3 row-start-2 sm:col-span-1
                                                  sm:col-start-3 sm:row-start-1"
                                     title={`Beats the other ${rows.length - 1} rosters `
@@ -172,27 +250,93 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
                                         + 'The line is even odds — a team exactly as good '
                                         + 'as its league.'}>
                                     <EvenBar p={r.winRate} span={fieldSpan} mine={isMe} />
+                                    <span className="sm:hidden text-[10px] tabular-nums
+                                                     text-muted-foreground/60 mt-0.5 block">
+                                        {(r.winRate * 100).toFixed(1)}% of simulated games
+                                        {showFinish && (() => {
+                                            const o = seasonOutlook(r.winRate, remaining,
+                                                r.record);
+                                            const po = odds?.get(r.key);
+                                            return (
+                                                <span className="text-muted-foreground/40">
+                                                    {` · ${o.projectedWins}–`
+                                                        + `${o.projectedLosses}`}
+                                                    {po && (
+                                                        <span style={{ color: oddsInk(po.odds) }}>
+                                                            {` · ${Math.round(po.odds * 100)}% `
+                                                                + 'playoffs'}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            );
+                                        })()}
+                                    </span>
                                 </span>
 
-                                <span className="col-start-3 row-start-2 sm:col-start-4
+                                <span className="hidden sm:block sm:col-start-4
                                                  sm:row-start-1 text-[11px] tabular-nums
                                                  text-right text-muted-foreground/70">
                                     {(r.winRate * 100).toFixed(1)}%
                                 </span>
 
-                                <span className="col-start-3 row-start-1 sm:col-start-5
-                                                 text-[11px] tabular-nums text-right
-                                                 font-semibold"
+                                {showFinish && (() => {
+                                    const o = seasonOutlook(r.winRate, remaining, r.record);
+                                    const po = odds?.get(r.key);
+                                    return (
+                                        <span className="hidden sm:block sm:col-start-5
+                                                         sm:row-start-1 text-right tabular-nums"
+                                            title={`${o.wonSoFar} won, ${o.winsToCome} more `
+                                                + `expected from ${o.remaining} weeks. Eighty `
+                                                + `per cent of seasons finish between ${o.low} `
+                                                + `and ${o.high} wins`
+                                                + (po
+                                                    ? `, and between ${po.seedLow}th and `
+                                                      + `${po.seedHigh}th in the league.`
+                                                    : '.')}>
+                                            {/* The number an owner is
+                                                actually asking for. Eight
+                                                and six makes the playoffs in
+                                                one league and misses in
+                                                another, and they already
+                                                know which. */}
+                                            {po ? (
+                                                <span className="block text-[11px] font-bold"
+                                                    style={{ color: oddsInk(po.odds) }}>
+                                                    {po.odds >= 0.995 ? '>99'
+                                                        : po.odds <= 0.005 ? '<1'
+                                                        : Math.round(po.odds * 100)}%
+                                                </span>
+                                            ) : (
+                                                <span className="block text-[11px] font-semibold">
+                                                    {o.projectedWins}–{o.projectedLosses}
+                                                </span>
+                                            )}
+                                            <span className="block text-[9px]
+                                                             text-muted-foreground/40">
+                                                {po
+                                                    ? `${o.projectedWins}–${o.projectedLosses}`
+                                                      + ` · ${ordinal(po.seed)}`
+                                                    : `${o.low}–${o.high} wins`}
+                                            </span>
+                                        </span>
+                                    );
+                                })()}
+
+                                <span className={cn(`col-start-3 row-start-1 text-[11px]
+                                                 tabular-nums text-right font-semibold`,
+                                    showFinish ? 'sm:col-start-6' : 'sm:col-start-5')}
                                     title="Mean simulated score for this lineup">
                                     {r.expected}
                                 </span>
 
-                                <span className="col-span-3 row-start-3 sm:col-span-1
-                                                 sm:col-start-6 sm:row-start-1">
+                                <span className={cn('col-span-3 row-start-3 sm:col-span-1',
+                                    showFinish ? 'sm:col-start-7' : 'sm:col-start-6',
+                                    'sm:row-start-1')}>
                                     <LuckNote row={r} />
                                 </span>
 
-                                <span className="hidden sm:flex col-start-7 justify-end">
+                                <span className={cn('hidden sm:flex justify-end',
+                                    showFinish ? 'col-start-8' : 'col-start-7')}>
                                     <ChevronDown className={cn(
                                         'w-3 h-3 text-muted-foreground/30 transition-transform',
                                         isOpen && 'rotate-180')} aria-hidden="true" />
@@ -265,6 +409,43 @@ export function PowerTable({ rows, unranked, myKey, trials }: {
             <p className="text-[10px] text-muted-foreground/40 mt-2 leading-snug">
                 Each roster plays every other {trials.toLocaleString()} times from one
                 seed, so the order is reproducible and the table is symmetric.
+                {horizon === 'season' ? (
+                    <>
+                        {' '}Every team fields the best lineup its roster can, because
+                        over {remaining || 'the remaining'} weeks it will — a slot
+                        somebody left empty this Sunday is a fact about one afternoon,
+                        not about the team.
+                        {showFinish && (odds ? (
+                            <>
+                                {' '}Playoff odds play the remaining {remaining} weeks
+                                out ten thousand times, shuffling the league into pairs
+                                each week and settling every pair on the head-to-head
+                                rate above. Pairing rather than carrying each team&rsquo;s
+                                rate forward on its own is what stops all twelve of them
+                                finishing 9&ndash;5: a win here is a loss there, which is
+                                the only way a finishing place means anything. The
+                                schedule itself is drawn at random, because whose
+                                remaining fixtures are soft is the thing a ranking by
+                                roster is trying not to measure — your real one is on
+                                your platform.
+                            </>
+                        ) : (
+                            <>
+                                {' '}The projected finish carries that rate forward
+                                against an <em>average</em> opponent: the schedule is
+                                not modelled, and whose is soft is the thing a power
+                                ranking is trying not to measure.
+                            </>
+                        ))}
+                    </>
+                ) : (
+                    <>
+                        {' '}Every team fields the lineup its owner has actually set,
+                        against this week&rsquo;s opponents, lines and byes — which
+                        makes this a matchup preview rather than a judgement on a
+                        roster.
+                    </>
+                )}
                 {rows.some(r => r.tied) && (
                     <>
                         {' '}Places marked <span className="font-semibold">=</span> are

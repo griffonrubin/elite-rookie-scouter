@@ -61,3 +61,6 @@ next-env.d.ts
 .vercel
 scrapers/redraft_update.log
 scrapers/redraft/unmatched_nflverse.json
+
+# Screenshots the browser checks write when SHOT is not set.
+*.png

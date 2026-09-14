@@ -11,6 +11,8 @@ import { CHART_INK, DIVERGING, MARK, SERIES } from '@/lib/vizTokens';
 import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
 import { WhyBars, WhyBarsProps } from './WhyBars';
 import { PlayerDetail } from './PlayerDetail';
+import { MatchupChip } from './DefenceProfile';
+import { useDefence } from '@/lib/useDefence';
 
 /**
  * One row per decision, not one row per pairing.
@@ -70,6 +72,8 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
     showCall = true, contextOf, logsOf, selected, onSelect,
     renderPreview, season }: SlotBoardProps) {
     const [open, setOpen] = useState<number | null>(null);
+    // One fetch for the league's defences, shared with every open row.
+    const defence = useDefence();
 
     return (
         <div className="space-y-1">
@@ -110,7 +114,8 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
                                 {d.slot}
                             </span>
 
-                            <span className="col-start-2 row-start-1 flex items-center gap-1.5 min-w-0">
+                            <span className="col-start-2 row-start-1 min-w-0">
+                            <span className="flex items-center gap-1.5 min-w-0">
                                 <span className="w-1.5 h-1.5 rounded-full shrink-0"
                                     style={{ background: POSITION_RAW[(cur?.position ?? '').toUpperCase()] ?? '#64748b' }} />
                                 <span className="text-[12px] font-semibold truncate">
@@ -127,6 +132,17 @@ export function SlotBoard({ decisions, playerOf, outcomeOf, max, onCompare,
                                             : o.outcome.availability}
                                     </span>
                                 )}
+                            </span>
+                            {/* The matchup, where the decision is made rather
+                                than one click inside it. Nine slots is nine
+                                paragraphs to read otherwise, and the
+                                paragraph is still there under the row. */}
+                            {cur && (
+                                <MatchupChip cells={defence.cells} of={defence.of}
+                                    defense={contextOf?.(cur.id)?.opponent ?? null}
+                                    position={cur.position ?? null}
+                                    className="block mt-0.5" />
+                            )}
                             </span>
 
                             {/* Full width on a phone, its own column at size. */}

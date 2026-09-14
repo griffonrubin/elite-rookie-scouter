@@ -1,6 +1,7 @@
 import { query } from '@/lib/db';
 import { redraftBoardSqlLimited } from '@/lib/redraftBoardQuery';
 import { AppHeader } from '@/components/AppHeader';
+import { LoadFailure } from '@/components/LoadFailure';
 import { MockDraftClient } from '@/components/redraft/mock/MockDraftClient';
 import { RedraftPlayer } from '@/lib/types';
 
@@ -13,18 +14,29 @@ export const dynamic = "force-dynamic";
  */
 const POOL_SIZE = 600;
 
-async function getPool(): Promise<RedraftPlayer[]> {
+async function getPool(): Promise<RedraftPlayer[] | null> {
     try {
         const rows = await query<RedraftPlayer>(redraftBoardSqlLimited(POOL_SIZE), []);
         return rows.map((p, i) => ({ ...p, board_rank: i + 1 }));
     } catch (e) {
+        // Null rather than an empty list: "nobody is available" and "we could
+        // not read the board" are different things and only one of them is
+        // about football.
         console.error('Failed to load mock draft pool:', e);
-        return [];
+        return null;
     }
 }
 
 export default async function MockDraftPage() {
     const players = await getPool();
+    if (players === null) {
+        return (
+            <div className="min-h-screen bg-background text-foreground">
+                <AppHeader />
+                <LoadFailure what="the player pool" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-background text-foreground">

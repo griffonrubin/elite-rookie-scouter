@@ -18,7 +18,7 @@
  * a record that cannot separate two teams is not evidence about either.
  */
 import { buildOutcome, simulateMatchup, type SimPlayer } from '../lib/startSit';
-import { POWER_NOISE, powerRank, type PowerTeam } from '../lib/power';
+import { POWER_NOISE, playoffOdds, powerRank, type PowerTeam } from '../lib/power';
 
 const fails: string[] = [];
 const assert = (label: string, pass: boolean, extra = '') => {
@@ -254,6 +254,100 @@ assert('the order is reproducible',
     again.map(r => r.key).join('|') === big.map(r => r.key).join('|'));
 assert('the rates are identical',
     again.every((r, i) => r.winRate === big[i].winRate));
+
+step(11, 'playoff odds are a league, not twelve separate seasons');
+/**
+ * The invariant that makes the number trustworthy.
+ *
+ * Exactly `spots` teams make the playoffs in every simulated season, so the
+ * odds across a league must sum to `spots` — not approximately, but to
+ * within Monte Carlo error of nothing. That is only true because the weeks
+ * are *paired*: every win is somebody's loss.
+ *
+ * Carrying each team's rate forward on its own is the obvious way to do
+ * this and it is wrong in a way that looks right. Each row is individually
+ * defensible and the column adds to more than the league has places, so the
+ * page tells eight of twelve owners they are probably making a six-team
+ * playoff. That failure is reproduced below rather than described, because
+ * it is the whole reason for the pairing.
+ */
+const SPOTS = 6;
+const odds = playoffOdds(big, 14, SPOTS, 10000);
+const sum = [...odds.values()].reduce((a, o) => a + o.odds, 0);
+console.log('      ' + big.slice(0, 4).map(r =>
+    `${r.name}: ${(odds.get(r.key)!.odds * 100).toFixed(0)}%`).join('  '));
+console.log(`      the column sums to ${sum.toFixed(3)} for ${SPOTS} places`);
+assert('every team is priced', odds.size === big.length, String(odds.size));
+assert('and the column sums to the number of places',
+    Math.abs(sum - SPOTS) < 0.01, sum.toFixed(3));
+assert('odds fall with strength', (() => {
+    const xs = big.map(r => odds.get(r.key)!.odds);
+    return xs.every((v, i) => i === 0 || v <= xs[i - 1] + 0.03);
+})(), big.map(r => (odds.get(r.key)!.odds * 100).toFixed(0)).join(','));
+assert('the best roster is likelier than the worst by a wide margin',
+    odds.get(big[0].key)!.odds - odds.get(big[big.length - 1].key)!.odds > 0.4,
+    `${(odds.get(big[0].key)!.odds * 100).toFixed(0)}% vs `
+    + `${(odds.get(big[big.length - 1].key)!.odds * 100).toFixed(0)}%`);
+
+// The seeds are a permutation of the league in every season, so the median
+// seeds have to run down the table too.
+const medianSeeds = big.map(r => odds.get(r.key)!.seed);
+console.log('      median seeds: ' + medianSeeds.join(','));
+assert('median seeds are inside the league',
+    medianSeeds.every(v => v >= 1 && v <= big.length), medianSeeds.join(','));
+assert('and run with the ranking',
+    medianSeeds.every((v, i) => i === 0 || v >= medianSeeds[i - 1] - 1),
+    medianSeeds.join(','));
+assert('the band around a seed contains it',
+    big.every(r => {
+        const o = odds.get(r.key)!;
+        return o.seedLow <= o.seed && o.seed <= o.seedHigh;
+    }));
+
+/**
+ * What carrying each rate forward on its own would have said.
+ *
+ * The tempting shortcut: each team's remaining wins as its own binomial —
+ * which is exactly what the projected record is — and then "in the top six"
+ * as "beats the league's median win total". Each row is defensible on its
+ * own. The column is not: binomials know nothing about each other, so
+ * nothing stops the whole league clearing the bar in the same season.
+ *
+ * Measured on a league of near-identical rosters, where the shortcut is
+ * most tempting and most wrong, it hands out more than seven places in a
+ * six-team playoff. Reproduced rather than asserted about, because it is
+ * the entire reason the weeks are paired.
+ */
+const evens = powerRank(tight, 20000).rows;
+const nCk = (n: number, k: number) => {
+    let v = 1;
+    for (let i = 0; i < k; i++) v = (v * (n - i)) / (i + 1);
+    return v;
+};
+const atLeast = (n: number, p: number, k: number) => {
+    let total = 0;
+    for (let i = k; i <= n; i++) total += nCk(n, i) * p ** i * (1 - p) ** (n - i);
+    return total;
+};
+const independent = evens.reduce((total, r) => total + atLeast(14, r.winRate, 7), 0);
+const paired = [...playoffOdds(evens, 14, SPOTS, 10000).values()]
+    .reduce((a, o) => a + o.odds, 0);
+console.log(`      a league of near-identical rosters, ${SPOTS} places: `
+    + `carried forward independently the odds sum to ${independent.toFixed(2)}, `
+    + `paired they sum to ${paired.toFixed(2)}`);
+assert('carried forward independently the league gets more places than it has',
+    independent > SPOTS + 0.5, independent.toFixed(2));
+assert('and paired it gets exactly what it has',
+    Math.abs(paired - SPOTS) < 0.01, paired.toFixed(3));
+
+step(12, 'a season already over is not a projection');
+const done = playoffOdds(big, 0, SPOTS, 2000);
+const doneSum = [...done.values()].reduce((a, o) => a + o.odds, 0);
+assert('no weeks left, and the places still add up', Math.abs(doneSum - SPOTS) < 0.01,
+    doneSum.toFixed(3));
+assert('and nothing is left to chance: every team is in or out',
+    [...done.values()].every(o => o.odds === 0 || o.odds === 1),
+    [...done.values()].map(o => o.odds).join(','));
 
 console.log(`\n${fails.length ? fails.length + ' FAILED: ' + fails.join(', ') : 'every step passed'}`);
 process.exit(fails.length ? 1 : 0);

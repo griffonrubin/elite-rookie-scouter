@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAX_STARTSIT_IDS } from '@/lib/startSit';
 import { query } from '@/lib/db';
+import { loadDefenceTotals } from '@/lib/defenceTotals';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,35 +23,42 @@ const SEASON = 2026;
  * The points are what the projection is built from; the usage is what says
  * whether those points are about to change. A back losing snaps has the same
  * history as one gaining them right up to the week it matters.
+ *
+ * Everything past `opponent` arrives only when a caller asks for `detail`.
+ * Four fields is what a simulation reads off a log row; the other fourteen
+ * are a box score, and a box score is only ever looked at one player at a
+ * time. Sending all eighteen for every rostered player in a league made a
+ * page that ranks rosters download 1.7MB to use 0.4MB of it — logs were 92%
+ * of the payload and the wide columns were 73% of the logs.
  */
 export interface GameLog {
     season: number;
     week: number;
     points: number;
     opponent: string | null;
-    targets: number | null;
-    carries: number | null;
+    targets?: number | null;
+    carries?: number | null;
     /** Share of the team's targets, 0-1. */
-    target_share: number | null;
+    target_share?: number | null;
     /** Share of the team's offensive snaps, 0-1. */
-    snap_share: number | null;
+    snap_share?: number | null;
     /**
      * Weighted opportunity rating: 1.5 x target share + 0.7 x air yards
      * share. An index, not a share — it runs negative and above 1, because
      * team air yards can be small or negative on a night of screens, so it
      * must never be rendered as a percentage.
      */
-    wopr: number | null;
-    receptions: number | null;
-    pass_attempts: number | null;
+    wopr?: number | null;
+    receptions?: number | null;
+    pass_attempts?: number | null;
     /** The box score itself, so the points can be taken apart. */
-    rush_yards: number | null;
-    rush_tds: number | null;
-    rec_yards: number | null;
-    rec_tds: number | null;
-    pass_yards: number | null;
-    pass_tds: number | null;
-    interceptions: number | null;
+    rush_yards?: number | null;
+    rush_tds?: number | null;
+    rec_yards?: number | null;
+    rec_tds?: number | null;
+    pass_yards?: number | null;
+    pass_tds?: number | null;
+    interceptions?: number | null;
 }
 
 export interface StartSitPlayer {
@@ -97,37 +105,24 @@ export interface StartSitPlayer {
 interface DefRow { defense: string; position: string; allowed: number; n: number }
 
 /**
- * The defence-vs-position table, computed once rather than per request.
+ * The defence-vs-position table, from the one loader that computes it.
  *
- * What each defence allowed per player-game at each position, computed here
- * rather than scraped: the weekly table already carries the opponent on
- * every row, so this is the same games read from the other side. Last season
- * only — a defence two games into a new year has told us almost nothing, and
- * the model shrinks by sample size anyway.
+ * It used to have its own copy of the query, averaged over *player*-games —
+ * which divides by how many players a defence happened to face, so a defence
+ * that kept meeting committee backfields read as stingy against backs while
+ * conceding exactly as much. Against the same season the two orderings
+ * disagree by up to eleven places, so the model was moving projections
+ * toward the wrong defences.
  *
- * This one has no player filter — it aggregates the whole weekly table and
- * comes back identical for every user, every roster and every slot, and it
- * was being recomputed on each load. It only changes when the daily pass
- * loads new weekly stats, so an hour is a conservative life for it: the
- * numbers behind it are a season's worth of games, and the model shrinks
- * them by sample size anyway.
+ * Shared with the endpoint that draws the profile, so the number that moves
+ * a projection and the number that explains it cannot come apart.
  */
-let defCache: { at: number; rows: DefRow[] } | null = null;
-const DEF_TTL_MS = 60 * 60 * 1000;
-
 async function defenceVsPosition(): Promise<DefRow[]> {
-    if (defCache && Date.now() - defCache.at < DEF_TTL_MS) return defCache.rows;
-    const rows = await query<{
-        defense: string; position: string; allowed: number; n: number;
-    }>(
-        `SELECT opponent AS defense, position,
-                AVG(fantasy_points_ppr) AS allowed, COUNT(*) AS n
-           FROM nfl_player_week
-          WHERE season = ${SEASON - 1} AND season_type = 'REG'
-            AND opponent IS NOT NULL AND fantasy_points_ppr IS NOT NULL
-          GROUP BY opponent, position`, []);
-    defCache = { at: Date.now(), rows };
-    return rows;
+    const totals = await loadDefenceTotals(SEASON);
+    return totals.map(t => ({
+        defense: t.defense, position: t.position,
+        allowed: t.points, n: t.games,
+    }));
 }
 
 export async function GET(req: NextRequest) {
@@ -141,6 +136,15 @@ export async function GET(req: NextRequest) {
     if (!Number.isInteger(week) || week < 1 || week > 22) {
         return NextResponse.json({ error: 'bad week' }, { status: 400 });
     }
+    /**
+     * Whether the caller wants the box score too.
+     *
+     * Off by default, and deliberately the cheap way round: a page that
+     * forgets to ask gets a small payload and a visibly empty box score,
+     * which a test catches. A default of "everything" fails the other way —
+     * silently, as megabytes.
+     */
+    const detail = req.nextUrl.searchParams.get('detail') === '1';
 
     const ph = ids.map((_, i) => `$${i + 1}`).join(',');
     // The same id list shifted by one, for queries that bind the week first.
@@ -176,10 +180,11 @@ export async function GET(req: NextRequest) {
         pass_yards: number | null; pass_tds: number | null;
         interceptions: number | null;
     }>(
-        `SELECT player_id, season, week, fantasy_points_ppr AS points, opponent,
-                targets, carries, target_share, offense_pct AS snap_share, wopr,
-                receptions, pass_attempts, rush_yards, rush_tds, rec_yards,
-                rec_tds, pass_yards, pass_tds, interceptions
+        `SELECT player_id, season, week, fantasy_points_ppr AS points, opponent
+                ${detail ? `, targets, carries, target_share,
+                  offense_pct AS snap_share, wopr, receptions, pass_attempts,
+                  rush_yards, rush_tds, rec_yards, rec_tds, pass_yards,
+                  pass_tds, interceptions` : ''}
            FROM nfl_player_week
           WHERE player_id IN (${ph}) AND season_type = 'REG'
             AND season >= ${SEASON - 2}
@@ -287,7 +292,11 @@ export async function GET(req: NextRequest) {
     const logsByPlayer = new Map<number, GameLog[]>();
     const n = (v: number | null) => (v == null ? null : Number(v));
     for (const l of logs) {
-        const row = {
+        // On the slim path the wide keys are left off the object entirely
+        // rather than set to null: fourteen `"targets":null` pairs per row,
+        // across two thousand rows, is most of what the slim path exists to
+        // avoid sending.
+        const row = (detail ? {
             season: l.season, week: l.week, points: l.points, opponent: l.opponent,
             targets: n(l.targets), carries: n(l.carries),
             target_share: n(l.target_share), snap_share: n(l.snap_share),
@@ -296,7 +305,9 @@ export async function GET(req: NextRequest) {
             rush_tds: n(l.rush_tds), rec_yards: n(l.rec_yards),
             rec_tds: n(l.rec_tds), pass_yards: n(l.pass_yards),
             pass_tds: n(l.pass_tds), interceptions: n(l.interceptions),
-        };
+        } : {
+            season: l.season, week: l.week, points: l.points, opponent: l.opponent,
+        }) as GameLog;
         const arr = logsByPlayer.get(l.player_id);
         if (arr) arr.push(row);
         else logsByPlayer.set(l.player_id, [row]);

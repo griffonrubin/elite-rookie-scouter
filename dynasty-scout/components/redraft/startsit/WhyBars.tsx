@@ -104,15 +104,16 @@ function driversOf({ outcome: o, context: c = {} }: WhyBarsProps): Driver[] {
     }
     if (d.matchup !== 0) {
         const { defenseAllowed: a, defenseLeagueAvg: lg, defenseSample: n } = c;
-        // Stated as a ratio, which is the only way it means anything.
+// Stated as a ratio, which is the only way it means anything,
+        // with the raw pair behind it as the evidence.
         //
-        // The raw figure is an average over every player at the position who
-        // faced this defence, third-stringers with two touches included, so it
-        // lands near 8 for a running back. Printed as "allows 8.0 to RBs" next
-        // to a 17.3 projection it reads as a contradiction, and the model
-        // never uses it as a level anyway — only as this defence against the
-        // league. So lead with that, and keep the raw pair as the evidence
-        // behind it, labelled for what it actually counts.
+        // The figure is now what a defence concedes to the position in a
+        // game — all of its backs together, not one back averaged over
+        // however many the defence happened to face. That average divided by
+        // the number of players a defence met, so a defence that kept
+        // running into committee backfields read as stingy while conceding
+        // exactly as much; it also landed near 8 for a running back, which
+        // printed next to a 17.3 projection looked like a contradiction.
         const pos = c.position ?? 'the position';
         const pct = a != null && lg != null && lg > 0
             ? Math.round(((a / lg) - 1) * 100) : null;
@@ -122,8 +123,9 @@ function driversOf({ outcome: o, context: c = {} }: WhyBarsProps): Driver[] {
                 ? `${c.opponent ?? 'This defence'} gives up `
                   + (pct === 0 ? 'about the league average'
                       : `${Math.abs(pct)}% ${pct > 0 ? 'more' : 'less'} than average`)
-                  + ` to ${pos}s — ${a!.toFixed(1)} against ${lg!.toFixed(1)} per `
-                  + `${pos} faced${n ? `, over ${n} games` : ''}.`
+                  + ` to ${pos}s — ${a!.toFixed(1)} a game against a league `
+                  + `average of ${lg!.toFixed(1)}`
+                  + `${n ? `, over ${n} games` : ''}.`
                 : 'What this defence gives up to the position.',
         });
     }
@@ -281,9 +283,26 @@ function BaseSplit({ outcome: o, recentMean, recentGames }: {
     if (proj == null || form == null) {
         const only = proj ?? form;
         if (only == null) return null;
-        // A projection made in August against a role that has since changed
-        // is not a small disagreement, it is the wrong number — and with no
-        // games this season there is nothing in the blend to correct it.
+        /**
+         * A projection that disagrees sharply with the recent log.
+         *
+         * This used to be framed as the projection being wrong, and told the
+         * reader to prefer the log. Measured over two seasons that advice is
+         * backwards: a five-game average predicts the next week *worse* than
+         * a season average does, and worst of all for exactly these players
+         * — the ones whose recent games look nothing like their season are
+         * the ones where chasing the recent games costs two whole points of
+         * error. A hot finish is mostly variance.
+         *
+         * So the disagreement is still worth flagging, because it is real
+         * and the reader should know the blend has nothing to correct it
+         * with. What it points at is the usage, which is the half of "read
+         * the usage and the log" that survived the measurement: a snap share
+         * up ten points predicts a man beating his own average, where a
+         * five-game points surge predicts nothing.
+         *
+         * scripts/formweight_check.mts is the measurement.
+         */
         const stale = proj != null && recentMean != null && (recentGames ?? 0) >= 4
             && recentMean > Math.max(proj * 1.6, proj + 4);
         return (
@@ -298,11 +317,15 @@ function BaseSplit({ outcome: o, recentMean, recentGames }: {
                 </span>
                 {stale && (
                     <span className="text-muted-foreground/60">
-                        {' '}But his last {recentGames} games average{' '}
+                        {' '}His last {recentGames} games average{' '}
                         <span className="font-semibold">{recentMean!.toFixed(1)}</span>,
-                        so the projection predates whatever his role is now and
-                        everything above inherits that. Read the usage and the log
-                        rather than the number.
+                        which is a long way from it — and with no games this season
+                        there is nothing in the blend to settle the argument. Worth
+                        knowing, but not worth taking the recent games over the
+                        projection on: across two seasons a five-game average
+                        predicts the next week worse than a full one does, and
+                        worst of all for players who look like this. The usage is
+                        the part that carries, so read that.
                     </span>
                 )}
             </p>

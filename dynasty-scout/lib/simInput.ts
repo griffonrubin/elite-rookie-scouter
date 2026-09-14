@@ -28,6 +28,30 @@ import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
  */
 export const SAMPLE_GAMES = 17;
 
+/**
+ * Which question a page is asking of a player.
+ *
+ * `week` is this Sunday: the opponent's defence, the books' total for his
+ * offence, the game script the spread implies, whether he is on a bye and
+ * what the injury report says. Everything Start/Sit exists for.
+ *
+ * `season` is the rest of the year, and it is not the same question with a
+ * bigger number on it — it is the same player with all of that stripped off.
+ * A power ranking built on this week's inputs ranks a roster below a worse
+ * one because three of its starters are on a bye, and calls the result a
+ * statement about the team. It is a matchup preview with the wrong title. A
+ * week-to-week matchup averages out over fourteen games; a bye that has
+ * already been survived tells you nothing about November at all.
+ *
+ * The weekly injury report goes too, which is the debatable one. A man
+ * listed Out on Friday is not eighty-five per cent likely to miss every
+ * remaining week, and the report carries no flag for the injury that ends a
+ * season — so counting it would be right about one player in twenty and
+ * wrong about the rest. The pages say which horizon they are on so a reader
+ * can go and look at the week when the week is what matters.
+ */
+export type Horizon = 'week' | 'season';
+
 export interface SimInput {
     outcome: Outcome;
     /** The games behind the shape, oldest first, for plotting. */
@@ -45,17 +69,24 @@ export function simInputFor(
     player: Pick<RedraftPlayer, 'id' | 'position'>,
     data: StartSitPlayer | undefined,
     season: number,
+    horizon: Horizon = 'week',
 ): SimInput {
     const logs = data?.logs ?? [];
+    const weekly = horizon === 'week';
     const outcome = buildOutcome({
         playerId: player.id,
         position: player.position ?? '',
         seasonProjection: data?.proj_points ?? null,
         projectedGames: 17,
         logs,
-        marketProjection: data?.market_points ?? null,
-        marketMarkets: data?.market_markets ?? null,
-        context: {
+        // A prop line is a price on one game. Over a season it is the wrong
+        // instrument twice over: it is only quoted for this Sunday, and it
+        // is only quoted for the players the books bother to price, so
+        // letting it set the centre would move some rosters and not others
+        // for a reason that has nothing to do with how good they are.
+        marketProjection: weekly ? data?.market_points ?? null : null,
+        marketMarkets: weekly ? data?.market_markets ?? null : null,
+        context: weekly ? {
             impliedTeamTotal: data?.implied_team_total ?? null,
             spread: data?.spread ?? null,
             defenseAllowed: data?.def_allowed ?? null,
@@ -64,7 +95,10 @@ export function simInputFor(
             reportStatus: data?.report_status ?? null,
             practiceStatus: data?.practice_status ?? null,
             onBye: data?.on_bye ?? false,
-        },
+        // Empty, deliberately: what is left is the player's own level from
+        // his projection and his games, which is what a typical remaining
+        // week looks like.
+        } : {},
     }, season);
     const sample: SampleGame[] = logs
         .slice()

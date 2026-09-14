@@ -16,6 +16,8 @@ import { RedraftAdvancedStats } from './RedraftAdvancedStats';
 import { RedraftSourceRankings } from './RedraftSourceRankings';
 import { SeasonTrendChart } from './SeasonTrendChart';
 import { VegasPanel } from './VegasPanel';
+import { Availability } from './Availability';
+import type { ProfileAvailability } from '@/app/redraft/players/[slug]/page';
 
 interface SourceRank {
     source: string;
@@ -34,6 +36,8 @@ interface Props {
     vegasTeam: VegasTeamSeason | null;
     vegasSchedule: VegasGameLine[];
     teamLogos: Record<string, string>;
+    /** Null when the measurement could not be made, not when he never missed. */
+    availability: ProfileAvailability | null;
     season: number;
     boardRank: number | null;
     prev: { slug: string; full_name: string } | null;
@@ -93,6 +97,7 @@ function heightStr(inches: number | null): string {
 
 const SECTIONS = [
     { id: 'seasons', label: 'Production' },
+    { id: 'availability', label: 'Availability' },
     { id: 'advanced', label: 'Advanced' },
     { id: 'vegas', label: 'Vegas' },
     { id: 'trend', label: 'Trend' },
@@ -102,7 +107,7 @@ const SECTIONS = [
 
 export function RedraftProfileClient({
     player, seasons, sourceRanks, projections, advanced, peersBySeason,
-    vegasTeam, vegasSchedule, teamLogos, season, boardRank, prev, next,
+    vegasTeam, vegasSchedule, teamLogos, availability, season, boardRank, prev, next,
 }: Props) {
     const pos = (player.position || '').toUpperCase();
     const cols = SEASON_COLUMNS[pos] || SEASON_COLUMNS.WR;
@@ -354,6 +359,11 @@ export function RedraftProfileClient({
                         </div>
                     )}
                 </section>
+
+                {/* ── Whether he is there at all ── */}
+                {availability && (
+                    <Availability data={availability} name={player.full_name} />
+                )}
 
                 {/* ── Advanced production ── */}
                 <section id="advanced" className="scroll-mt-28">

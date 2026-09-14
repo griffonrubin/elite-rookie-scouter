@@ -1,13 +1,14 @@
 import { query } from '@/lib/db';
 import { REDRAFT_BOARD_SQL } from '@/lib/redraftBoardQuery';
 import { AppHeader } from '@/components/AppHeader';
+import { LoadFailure } from '@/components/LoadFailure';
 import { RedraftBoard } from '@/components/redraft/RedraftBoard';
 import { RedraftPlayer } from '@/lib/types';
 import { TrendingUp, Users } from 'lucide-react';
 
 export const dynamic = "force-dynamic";
 
-async function getRedraftBoard(): Promise<{ players: RedraftPlayer[]; lastUpdateDate: string | null }> {
+async function getRedraftBoard(): Promise<{ players: RedraftPlayer[] | null; lastUpdateDate: string | null }> {
   try {
     const players = await query<RedraftPlayer>(REDRAFT_BOARD_SQL, []);
 
@@ -27,13 +28,23 @@ async function getRedraftBoard(): Promise<{ players: RedraftPlayer[]; lastUpdate
 
     return { players: withRank, lastUpdateDate };
   } catch (error) {
+    // Null players, not an empty board: a board with nobody on it reads as a
+    // database waiting to be seeded rather than a query that threw.
     console.error('Failed to load redraft board:', error);
-    return { players: [], lastUpdateDate: null };
+    return { players: null, lastUpdateDate: null };
   }
 }
 
 export default async function RedraftPage() {
   const { players, lastUpdateDate } = await getRedraftBoard();
+  if (players === null) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <AppHeader />
+        <LoadFailure what="the redraft board" />
+      </div>
+    );
+  }
   const rankedCount = players.filter(p => p.rank_overall != null).length;
 
   return (

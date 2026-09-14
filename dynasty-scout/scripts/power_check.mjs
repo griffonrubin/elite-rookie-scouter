@@ -45,6 +45,31 @@ const page = await ctx.newPage();
 page.setDefaultTimeout(30000);
 const errs = [];
 page.on('pageerror', e => errs.push(e.message));
+
+/**
+ * What this page actually downloads.
+ *
+ * Ranking twelve rosters needs one number per player, and the endpoint was
+ * sending the full eighteen-column box score for every rostered player in
+ * the league — 1.7MB to use 0.4MB of it, with game logs at 92% of the
+ * payload. A page that reads only `points` off a log row has no business
+ * asking for `interceptions`.
+ */
+const payload = { bytes: 0, calls: 0, logKeys: new Set(), rows: 0 };
+page.on('response', async r => {
+    if (!r.url().includes('/api/redraft/startsit')) return;
+    payload.calls++;
+    try {
+        const body = await r.text();
+        payload.bytes += body.length;
+        for (const p of (JSON.parse(body).players ?? [])) {
+            for (const l of (p.logs ?? [])) {
+                payload.rows++;
+                for (const k of Object.keys(l)) payload.logKeys.add(k);
+            }
+        }
+    } catch { /* a body already consumed is not a finding */ }
+});
 const fails = [];
 const assert = (l, pass, extra = '') => {
     console.log(`   ${pass ? 'ok  ' : 'FAIL'} ${l}${extra ? '  ' + extra : ''}`);
@@ -97,8 +122,15 @@ const cells = () => teamRows().evaluateAll(els => els.map(e => {
         name: kids[1]?.querySelector('span')?.textContent?.trim() ?? '',
         note: kids[1]?.textContent?.trim() ?? '',
         rate: parseFloat((kids[3]?.textContent?.match(/([\d.]+)%/) || [])[1] ?? 'NaN'),
-        pts: parseFloat(kids[4]?.textContent?.trim() ?? 'NaN'),
-        luck: kids[5]?.textContent?.trim() ?? '',
+        // Found by what the cell says it is rather than by where it sits.
+        // Adding a projected-finish column between the rate and the score
+        // moved every index after it, and an index-addressed test does not
+        // fail on that — it silently starts reading "8–6" as an expected
+        // score and asserting that eight is a plausible lineup total.
+        pts: parseFloat(e.querySelector('[title^="Mean simulated score"]')
+            ?.textContent?.trim() ?? 'NaN'),
+        finish: e.querySelector('[title*="expected from"]')?.textContent?.trim() ?? '',
+        luck: e.querySelector('[title*="in the standings"]')?.textContent?.trim() ?? '',
     };
 }));
 const rowCells = await cells();
@@ -167,6 +199,125 @@ assert('and it is Aekz48, who has no kicker',
 assert('and it is still ranked rather than dropped',
     names.includes('Aekz48') && !/Left out of the ranking/.test(t));
 
+step('5d', 'it downloads what it reads, and no more');
+console.log(`      ${payload.calls} requests, `
+    + `${(payload.bytes / 1024 / 1024).toFixed(2)}MB, ${payload.rows} log rows`);
+console.log(`      log row keys: ${[...payload.logKeys].sort().join(', ')}`);
+assert('the whole league was fetched', payload.rows > 1000, String(payload.rows));
+// Four fields is what a simulation reads off a log row.
+assert('log rows carry only what a simulation reads',
+    [...payload.logKeys].sort().join(',') === 'opponent,points,season,week',
+    [...payload.logKeys].sort().join(','));
+assert('so the page is under a megabyte', payload.bytes < 1024 * 1024,
+    `${(payload.bytes / 1024 / 1024).toFixed(2)}MB`);
+
+step('5e', 'it is a power ranking, not this Sunday with a power ranking\'s title');
+/**
+ * The complaint that produced the horizon.
+ *
+ * Ranked on this week's inputs a roster drops four places because three of
+ * its starters are on a bye, and recovers them next week without a single
+ * transaction. What the page owes a reader is which question it answered,
+ * and a projected record — "fifty-four per cent" is a fact about a simulated
+ * week, "eight and six, and you need nine" is the thing being decided
+ * against.
+ */
+/**
+ * The horizon control, and only it.
+ *
+ * `button[aria-pressed]` is not unique to it — roster rows and position
+ * filters press too — so the bare selector reads a selected player as the
+ * current horizon. It happens to give the right answer today, which is the
+ * kind of test that fails a year from now for a reason nobody can see.
+ */
+const horizonOn = () => page.locator('button[aria-pressed="true"]')
+    .filter({ hasText: /rest of season|this week/i });
+const horizonPressed = await horizonOn().allInnerTexts();
+console.log('      horizon: ' + horizonPressed.join(', '));
+assert('it opens on the rest of the season',
+    horizonPressed.some(x => /rest of season/i.test(x)), horizonPressed.join(','));
+assert('and says how many weeks that is',
+    /rest of season · \d+ wk/i.test(horizonPressed.join(' ')), horizonPressed.join(','));
+assert('the table names the horizon it ranked on',
+    /every roster against every other, rest of season/i.test(t),
+    (t.match(/every roster against every other[^\n]*/i) || ['(unnamed)'])[0]);
+assert('the week is not taken off the page, only off the default',
+    await page.getByRole('button', { name: /^this week$/i }).count() > 0);
+/**
+ * And the question a projected record is standing in for.
+ *
+ * Eight and six makes the playoffs in one league and misses in another, and
+ * the owner asking already knows which. The invariant worth checking on a
+ * rendered page is the one that makes the number trustworthy: exactly six
+ * teams make a six-team playoff in every simulated season, so the column
+ * has to sum to six. It only does because the weeks are paired.
+ */
+assert('the cut is stated, not assumed silently',
+    /make the playoffs/i.test(t) && /top \d+ · \d+ wk/i.test(t),
+    (t.match(/(assuming )?top \d+[^\n]*make the playoffs/i)
+        || t.match(/top \d+ · \d+ wk/i) || ['(unstated)'])[0]);
+const finishes = await teamRows().evaluateAll(els => els.map(e => {
+    const m = e.innerText.match(/(\d+|>99|<1)%\n(\d+)–(\d+) · (\d+)(?:st|nd|rd|th)/);
+    return m ? {
+        odds: m[1] === '>99' ? 99.5 : m[1] === '<1' ? 0.5 : +m[1],
+        w: +m[2], l: +m[3], seed: +m[4],
+    } : null;
+}).filter(Boolean));
+console.log('      ' + finishes.slice(0, 5)
+    .map(f => `${f.odds}% ${f.w}-${f.l} seed ${f.seed}`).join('  '));
+assert('every row gets playoff odds', finishes.length === 12, String(finishes.length));
+const oddsSum = finishes.reduce((a, f) => a + f.odds, 0) / 100;
+console.log(`      the column sums to ${oddsSum.toFixed(2)} places`);
+assert('and the column sums to the places the league has',
+    Math.abs(oddsSum - 6) < 0.2, oddsSum.toFixed(2));
+assert('each projected record adds up to the season',
+    finishes.every(f => f.w + f.l === 14), finishes.map(f => f.w + f.l).join(','));
+assert('odds fall with the ranking',
+    finishes.every((f, i) => i === 0 || f.odds <= finishes[i - 1].odds + 3),
+    finishes.map(f => f.odds).join(','));
+assert('and the seeds are a league, running one to twelve',
+    finishes[0].seed < finishes[finishes.length - 1].seed,
+    finishes.map(f => f.seed).join(','));
+// Moving the cut has to move the answer, or the control is decoration.
+const cutBefore = finishes.map(f => f.odds);
+await page.getByLabel(/how many teams make the playoffs/i).selectOption('4');
+await page.waitForTimeout(2500);
+// Anchored on the line beneath it, as the first scrape is. A bare
+// /(\d+)%\n/ finds the "9%" inside the rate column's "57.9%" and reports
+// every roster at nine per cent — a match that is not wrong so much as
+// somewhere else entirely.
+const cutAfter = await teamRows().evaluateAll(els => els.map(e => {
+    const m = e.innerText.match(/(\d+|>99|<1)%\n(\d+)–(\d+) · \d+(?:st|nd|rd|th)/);
+    return m ? (m[1] === '>99' ? 99.5 : m[1] === '<1' ? 0.5 : +m[1]) : null;
+}).filter(x => x != null));
+const sum4 = cutAfter.reduce((a, v) => a + v, 0) / 100;
+console.log(`      at a four-team cut the column sums to ${sum4.toFixed(2)}`);
+assert('a narrower cut is a harder cut', sum4 < oddsSum - 1, sum4.toFixed(2));
+assert('and it still sums to the places on offer', Math.abs(sum4 - 4) < 0.2,
+    sum4.toFixed(2));
+assert('with the middle of the table losing the most',
+    cutBefore[5] - cutAfter[5] > cutBefore[0] - cutAfter[0],
+    `${cutBefore[5]}→${cutAfter[5]} vs ${cutBefore[0]}→${cutAfter[0]}`);
+await page.getByLabel(/how many teams make the playoffs/i).selectOption('6');
+await page.waitForTimeout(2500);
+// Switching horizons has to change the answer, or the setting is decoration.
+await page.getByRole('button', { name: /^this week$/i }).click();
+await page.waitForTimeout(3500);
+const weekText = await page.locator('body').innerText();
+const weekOrder = await teamRows().evaluateAll(els =>
+    els.map(e => (e.innerText.split('\n')[1] ?? '').trim()));
+console.log('      this week: ' + weekOrder.slice(0, 3).join(', '));
+assert('the week view says it is a matchup preview',
+    /matchup preview rather than a judgement/i.test(weekText));
+assert('and drops the projected finish, which is not a thing for one Sunday',
+    !/wk left/i.test(weekText));
+assert('the two horizons do not produce the same table',
+    weekOrder.join() !== names.join(),
+    `${weekOrder.slice(0, 3).join(', ')} vs ${names.slice(0, 3).join(', ')}`);
+await page.getByRole('button', { name: /rest of season/i }).click();
+await page.waitForTimeout(3500);
+t = await page.locator('body').innerText();
+
 step(6, 'week one claims no luck gap');
 assert('no team is called lucky or unlucky', !/better off than the roster|worse off than the roster/.test(t),
     (t.match(/[\w ]+(better|worse) off than the roster/) || ['none claimed'])[0]);
@@ -214,11 +365,34 @@ assert('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 const o = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
 assert('no horizontal overflow', o.sw <= o.cw, JSON.stringify(o));
-await page.setViewportSize({ width: 400, height: 900 });
-await page.waitForTimeout(500);
+await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForTimeout(900);
 const op = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
 assert('nor at phone width', op.sw <= op.cw + 1, JSON.stringify(op));
+
+/**
+ * And the chart is still a chart there.
+ *
+ * "No overflow" passed while the bars were eight pixels wide against the
+ * right edge: the bar spanned all three columns of the phone grid and the
+ * rate claimed the third of them in the same row, so the two collided and
+ * the whole visualisation collapsed. Nothing overflowed, nothing errored,
+ * every assertion passed, and the page was useless on the screen most of
+ * these decisions get made on.
+ */
+const bars = await teamRows().locator('span[role="img"]')
+    .evaluateAll(els => els.map(e => e.getBoundingClientRect().width));
+console.log(`      bar track at 390px: ${Math.min(...bars).toFixed(0)}–`
+    + `${Math.max(...bars).toFixed(0)}px across ${bars.length} rows`);
+assert('every row still has a bar', bars.length === 12, String(bars.length));
+assert('and the track is a track, not a sliver',
+    Math.min(...bars) > 150, `${Math.min(...bars).toFixed(0)}px`);
+const marks = await teamRows().locator('span[role="img"] > span:last-child')
+    .evaluateAll(els => els.map(e => e.getBoundingClientRect().width));
+console.log(`      widest mark: ${Math.max(...marks).toFixed(0)}px`);
+assert('with marks a reader can compare', Math.max(...marks) > 40,
+    `${Math.max(...marks).toFixed(0)}px`);
 await page.setViewportSize({ width: 1500, height: 1200 });
 await page.waitForTimeout(400);
 await page.screenshot({ path: process.env.SHOT ?? 'power.png', fullPage: false });

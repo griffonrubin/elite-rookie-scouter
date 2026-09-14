@@ -6,11 +6,56 @@ import {
     VegasGameLine, VegasTeamSeason,
 } from '@/lib/types';
 import { RedraftProfileClient } from '@/components/redraft/RedraftProfileClient';
+import { durabilityOf, type Durability } from '@/lib/durability';
+import { loadAttendance } from '@/lib/attendance';
+import { contingencyFor, inheritanceIndex, notable, type WeekRow } from '@/lib/successor';
 
 export const dynamic = "force-dynamic";
 
 /** The season the redraft board is being built for. */
 const TARGET_SEASON = 2026;
+
+/**
+ * How far back the availability window reaches.
+ *
+ * The same three seasons the successor measurement uses, so a reader moving
+ * between this page and Team Analysis is not told two different numbers
+ * about the same absences.
+ */
+const FROM_SEASON = TARGET_SEASON - 2;
+
+/** Weekly logs for one NFL team, which is all the absence work needs. */
+const TEAM_WEEKS_SQL = `
+  SELECT w.player_id, p.full_name, w.position, w.team, w.season, w.week,
+         w.fantasy_points_ppr AS points,
+         CASE WHEN w.position = 'QB'
+              THEN COALESCE(w.pass_attempts, 0) + COALESCE(w.carries, 0)
+              ELSE COALESCE(w.carries, 0) + COALESCE(w.targets, 0)
+         END AS touches
+    FROM nfl_player_week w
+    JOIN players p ON p.id = w.player_id
+   WHERE w.season_type = 'REG'
+     AND w.season BETWEEN ${FROM_SEASON} AND ${TARGET_SEASON}
+     AND UPPER(w.team) = $1
+   ORDER BY w.season, w.week
+`;
+
+export interface ProfileAvailability {
+    durability: Durability;
+    from: number;
+    to: number;
+    /** Who was measured taking his work, where anybody was. */
+    successors: {
+        id: number; name: string; slug: string | null;
+        games: number; pointsOut: number; lift: number | null; absorbed: number | null;
+    }[];
+    /** And whose work he was measured taking, if he is the one behind somebody. */
+    covers: {
+        id: number; name: string; slug: string | null;
+        missed: number; played: number; points: number;
+        games: number; pointsOut: number; absorbed: number | null;
+    }[];
+}
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -113,6 +158,68 @@ async function getPlayer(slug: string) {
         if (t.logo_url) logos[t.abbreviation] = t.logo_url;
     }
 
+    /**
+     * Availability, in both directions.
+     *
+     * His own attendance against his position, who covered for him, and —
+     * for a backup, where the interesting answer is — whose absence he was
+     * measured covering. A reader arriving here from the waiver wire clicked
+     * a line that said one of those things; the page should not then be
+     * silent about it.
+     */
+    let availability: ProfileAvailability | null = null;
+    try {
+        const team = (player.nfl_team ?? '').toUpperCase();
+        const [rows, weekRows] = await Promise.all([
+            loadAttendance(FROM_SEASON, TARGET_SEASON),
+            team ? query<WeekRow>(TEAM_WEEKS_SQL, [team]) : Promise.resolve([]),
+        ]);
+        const mine = rows.find(r => r.playerId === Number(player.id));
+        if (mine) {
+            const contingency = weekRows.length
+                ? contingencyFor(Number(player.id), weekRows) : null;
+            const index = weekRows.length ? inheritanceIndex(weekRows) : null;
+            const named = [
+                ...(contingency?.successors ?? []).filter(notable).map(s => s.id),
+                ...(index?.get(Number(player.id)) ?? []).map(i => i.fromId),
+            ];
+            // Where everyone named plays now, which the game logs cannot say.
+            const whereNow = new Map<number, { slug: string | null; team: string | null }>();
+            if (named.length) {
+                const found = await query<{ id: number; slug: string | null; nfl_team: string | null }>(
+                    `SELECT id, slug, nfl_team FROM players WHERE id IN (${[...new Set(named)].join(',')})`,
+                    []);
+                for (const f of found) {
+                    whereNow.set(Number(f.id), { slug: f.slug, team: f.nfl_team?.toUpperCase() ?? null });
+                }
+            }
+            const here = (id: number) => whereNow.get(id)?.team === team;
+            availability = {
+                durability: durabilityOf(mine, rows),
+                from: FROM_SEASON, to: TARGET_SEASON,
+                successors: (contingency?.successors ?? []).filter(notable)
+                    .filter(s => here(s.id))
+                    .map(s => ({
+                        id: s.id, name: s.name, slug: whereNow.get(s.id)?.slug ?? null,
+                        games: s.games, pointsOut: s.pointsOut,
+                        lift: s.lift, absorbed: s.absorbed,
+                    })),
+                covers: (index?.get(Number(player.id)) ?? [])
+                    .filter(i => here(i.fromId))
+                    .map(i => ({
+                        id: i.fromId, name: i.fromName,
+                        slug: whereNow.get(i.fromId)?.slug ?? null,
+                        missed: i.fromMissed, played: i.fromPlayed, points: i.fromPoints,
+                        games: i.as.games, pointsOut: i.as.pointsOut, absorbed: i.as.absorbed,
+                    })),
+            };
+        }
+    } catch (e) {
+        // Availability is an addition to the page, not the page. A failure
+        // here must not take the production tables down with it.
+        console.error('Failed to measure availability:', e);
+    }
+
     // Prev / next by board order, so the profile can page through the board.
     const ordered = await query<{ slug: string; full_name: string }>(
         `SELECT p.slug, p.full_name
@@ -138,6 +245,7 @@ async function getPlayer(slug: string) {
         vegasTeam,
         vegasSchedule,
         logos,
+        availability,
         boardRank: idx >= 0 ? idx + 1 : null,
         prev: idx > 0 ? ordered[idx - 1] : null,
         next: idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1] : null,
@@ -179,6 +287,7 @@ export default async function RedraftPlayerPage({ params }: PageProps) {
             vegasSchedule={data.vegasSchedule}
             teamLogos={data.logos}
             season={TARGET_SEASON}
+            availability={data.availability}
             boardRank={data.boardRank}
             prev={data.prev}
             next={data.next}

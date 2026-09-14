@@ -68,6 +68,21 @@ def ensure_schema(conn):
             FOREIGN KEY (player_a_id) REFERENCES players(id)
         )
     """)
+    # CREATE TABLE IF NOT EXISTS accepts a table of the wrong shape without
+    # a word, which is how a database ended up with a trades table from an
+    # older scraper — transaction_date where status_updated_at should be — and
+    # the trade endpoint answered five hundred for every player who has ever
+    # existed. Nothing noticed until a sweep called every route in the app
+    # once. Adding what is missing is safe on a table of any age.
+    for column, column_type in (("transaction_id", "TEXT"),
+                                ("status_updated_at", "INTEGER")):
+        try:
+            cur.execute(f"ALTER TABLE trades ADD COLUMN {column} {column_type}")
+            conn.commit()
+            print(f"  [schema] Added {column} to trades.")
+        except Exception:
+            conn.rollback()
+
     try:
         cur.execute("ALTER TABLE players ADD COLUMN sleeper_id TEXT")
         conn.commit()

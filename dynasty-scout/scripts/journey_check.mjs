@@ -101,20 +101,70 @@ await page.waitForTimeout(9000);
 step(5, 'read the lineup');
 t = await page.locator('body').innerText();
 assert('a win probability is shown', /chance you win week/i.test(t));
-const slots = await page.locator('button[aria-expanded]').count();
+/**
+ * The slot rows, and only those.
+ *
+ * `button[aria-expanded]` used to be unique to the slot board. Bench and
+ * opponent rows open now too, so the bare selector silently started counting
+ * seventeen extra rows as lineup slots — this file had been asserting ten and
+ * seeing twenty-seven, which is a test that stopped testing its own subject
+ * without ever going quiet about it.
+ */
+const slotRows = () => page.locator('section')
+    .filter({ has: page.getByRole('heading', { name: /slot by slot/i }) })
+    .locator('button[aria-expanded]');
+const slots = await slotRows().count();
 assert('all ten slots are listed', slots === 10, `got ${slots}`);
-const slotLabels = await page.locator('button[aria-expanded] > span:first-child').allInnerTexts();
+const slotLabels = await slotRows().locator('> span:first-child').allInnerTexts();
 console.log('      slots:', slotLabels.join(' '));
 assert('the FLEX slot is named', slotLabels.includes('FLEX'));
 assert('the kicker slot is there', slotLabels.includes('K'));
 assert('the defence slot is there', slotLabels.some(s => /DEF|DST/.test(s)));
 assert('opponent is named', /Their Team/.test(t));
 
+step('5b', 'the matchup is on the row, not one click inside it');
+/**
+ * A lineup is nine decisions and nobody opens nine panels to make them.
+ *
+ * The chip is the scannable half: a place in the league, nought to ten,
+ * against the defence this player is facing. Deliberately *only* the
+ * defence, because a combined "startability score" that folds in the game
+ * total and the spread cannot be calibrated, cannot be argued with, and
+ * cannot be taken apart by the reader — the game environment is on the same
+ * row already and broken out in full inside.
+ */
+const chips = await slotRows().evaluateAll(els => els.map(e => {
+    const m = e.innerText.match(/vs ([A-Z]{2,3}) ([\d.]+) (soft|leaky|average|firm|tough)/);
+    return m ? { team: m[1], score: +m[2], word: m[3] } : null;
+}).filter(Boolean));
+console.log('      ' + chips.map(c => `${c.team} ${c.score} ${c.word}`).join('  '));
+assert('most slots carry a matchup', chips.length >= 5, `${chips.length} of ${slots}`);
+assert('every score is a place in the league',
+    chips.every(c => c.score >= 0 && c.score <= 10),
+    chips.map(c => c.score).join(','));
+assert('and the word agrees with the number',
+    chips.every(c => (c.score >= 6.6 ? /soft|leaky/ : c.score <= 3.3 ? /firm|tough/
+        : /average|leaky|firm/).test(c.word)),
+    chips.map(c => `${c.score}:${c.word}`).join(' '));
+/**
+ * The scale has to separate, or it is decoration.
+ *
+ * Nine players facing nine defences that all score between four and six is
+ * a chip nobody would ever act on, and it is what a badly anchored index
+ * produces. A league rank cannot do that by construction — which is the
+ * argument for using one, so it is worth checking the construction held.
+ */
+const spread = Math.max(...chips.map(c => c.score)) - Math.min(...chips.map(c => c.score));
+console.log(`      the week spans ${spread.toFixed(1)} points of matchup`);
+assert('a real slate spreads across the scale', spread > 3, spread.toFixed(1));
+assert('a kicker gets no chip rather than a made-up one',
+    chips.length < slots, `${chips.length} chips for ${slots} slots`);
+
 step(6, 'the kicker is not scored as zero');
 const kIdx = slotLabels.indexOf('K');
-const kRow = await page.locator('button[aria-expanded]').nth(kIdx).innerText();
+const kRow = await slotRows().nth(kIdx).innerText();
 console.log('      K row:', kRow.replace(/\n+/g, ' | '));
-const kAria = await page.locator('button[aria-expanded]').nth(kIdx)
+const kAria = await slotRows().nth(kIdx)
     .locator('[role="img"]').first().getAttribute('aria-label');
 console.log('      K strip:', kAria);
 const kMean = kAria?.match(/expected ([\d.]+) points/);
@@ -123,10 +173,26 @@ assert('the kicker has a real projection',
 
 step(7, 'open the flex and look at the candidates');
 const flexIdx = slotLabels.indexOf('FLEX');
-await page.locator('button[aria-expanded]').nth(flexIdx).click();
+await slotRows().nth(flexIdx).click();
 await page.waitForTimeout(2500);
-const panel = await page.locator('button[aria-expanded]').nth(flexIdx)
+const panel = await slotRows().nth(flexIdx)
     .evaluate(el => el.parentElement?.innerText ?? '');
+const defPanel = panel.match(/defence · what they give up[\s\S]{0,600}/i);
+console.log('      defence panel: '
+    + (defPanel ? defPanel[0].replace(/\n+/g, ' | ').slice(0, 200) : '(missing)'));
+assert('the opponent defence is profiled inside the row',
+    /defence · what they give up/i.test(panel),
+    defPanel ? 'present' : '(missing)');
+assert('all four positions, so a reader can compare two of their own',
+    (panel.match(/\b(gives this up|leaks here|average here|holds up|shuts this down)\b/g)
+        || []).length >= 4,
+    String((panel.match(/of 32/g) || []).length) + ' ranks shown');
+assert('and how the points happen, not just how many',
+    /how they give it up to/i.test(panel)
+        && /(yards a carry|yards a catch|yards a throw)/i.test(panel),
+    (panel.match(/how they give it up to \w+/i) || ['(no mechanism)'])[0]);
+assert('measured per team-game, and says so',
+    /per team-game/i.test(panel));
 console.log('      flex panel:', panel.replace(/\n+/g, ' | ').slice(0, 220));
 assert('the flex lists more than one candidate',
     (panel.match(/%/g) ?? []).length >= 1);
@@ -155,6 +221,37 @@ console.log('      board:', boardSays?.[0], '| headline:', bestSays?.[0]);
 assert('a settled board is not contradicted by the headline',
     !(/Every slot is already/.test(summary) && /Best available/.test(summary)),
     boardSays?.[0] + ' vs ' + bestSays?.[0]);
+
+step('8.6', 'the page says how often it has been right');
+/**
+ * The audit under the claim. A floor, a ceiling and a chance of winning are
+ * numbers a reader cannot check, and this is the panel that lets them — so
+ * it has to be on the page, it has to state the promise as well as the
+ * measurement, and it has to open to the cuts that matter. A panel that
+ * printed one number with no target beside it would be the same marketing
+ * badge every site already ships.
+ */
+const calib = page.locator('section').filter({ hasText: /How often this has been right/i }).first();
+assert('the calibration panel is there', await calib.count() === 1);
+if (await calib.count() === 1) {
+    const summary = (await calib.innerText()).replace(/\s+/g, ' ');
+    console.log('      ' + summary.slice(0, 150));
+    const claim = summary.match(/promise to contain the week (\d+)% of the time/);
+    const held = summary.match(/they held (\d+)% of the time/);
+    assert('it states the promise', !!claim, claim ? claim[1] + '%' : 'not stated');
+    assert('and what actually happened', !!held, held ? held[1] + '%' : 'not stated');
+    assert('over a sample worth reading', /[\d,]{4,} player-weeks/.test(summary),
+        (summary.match(/[\d,]+ player-weeks/) ?? ['none'])[0]);
+    await calib.getByRole('button').first().click();
+    await page.waitForTimeout(400);
+    const opened = (await calib.innerText()).replace(/\s+/g, ' ');
+    assert('and opens to the position and history cuts',
+        /By position/i.test(opened) && /By games behind him/i.test(opened),
+        opened.slice(0, 60));
+    assert('with the limits of the measurement stated, not just the number',
+        /replayed from the games before it/i.test(opened),
+        'the caveat is present');
+}
 
 step(9, 'nothing blew up');
 console.log('      failed requests:', failedUrls.length ? failedUrls.join('\n                       ') : 'none');

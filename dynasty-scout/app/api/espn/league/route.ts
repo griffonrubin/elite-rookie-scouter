@@ -115,6 +115,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
         name: data?.settings?.name ?? null,
         week: scoringPeriod,
+        /**
+         * The first week that is no longer the regular season.
+         *
+         * Needed so "rest of season" is a number of weeks rather than a
+         * mood. ESPN counts regular-season matchup periods; the playoffs
+         * start the week after the last of them.
+         */
+        playoffWeekStart: data?.settings?.scheduleSettings?.matchupPeriodCount != null
+            ? Number(data.settings.scheduleSettings.matchupPeriodCount) + 1
+            : null,
+        /** How many teams make the playoffs, which is where the cut is. */
+        playoffTeams: data?.settings?.scheduleSettings?.playoffTeamCount != null
+            ? Number(data.settings.scheduleSettings.playoffTeamCount)
+            : null,
         teams: teams.map((t: any) => ({
             teamId: Number(t?.id),
             name: [t?.location, t?.nickname].filter(Boolean).join(' ').trim()

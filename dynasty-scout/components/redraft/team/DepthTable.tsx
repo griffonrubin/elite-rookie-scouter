@@ -1,9 +1,11 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CHART_INK, MARK, SERIES } from '@/lib/vizTokens';
 import type { DepthReport, DepthRow } from '@/lib/depth';
+import type { Horizon } from '@/lib/simInput';
 import { POWER_NOISE } from '@/lib/power';
 
 /**
@@ -28,6 +30,17 @@ import { POWER_NOISE } from '@/lib/power';
  * much on its own, so a difference under it is not a finding.
  */
 const FLOOR = POWER_NOISE;
+
+/**
+ * The position a slot needs, for the link to the waiver wire.
+ *
+ * Only the slots that want exactly one position: a flex can be filled from
+ * three of them, so sending a reader to a single-position list would be
+ * answering a narrower question than the one they have.
+ */
+const SLOT_POSITION: Record<string, string | undefined> = {
+    QB: 'QB', RB: 'RB', WR: 'WR', TE: 'TE', K: 'K', DEF: 'DST', DST: 'DST',
+};
 
 function Row({ r, top }: { r: DepthRow; top: number }) {
     const real = r.cost >= FLOOR;
@@ -88,8 +101,24 @@ function Row({ r, top }: { r: DepthRow; top: number }) {
             <span className="col-span-2 row-start-3 sm:col-span-1 sm:col-start-5 sm:row-start-1
                              text-[10px] min-w-0">
                 {r.uncovered ? (
-                    <span className="font-semibold" style={{ color: '#FCA5A5' }}>
-                        nobody can fill the slot — you would start eight
+                    // A finding you cannot act on is half a tool, so the row
+                    // that says "nobody is behind him" is also the way to go
+                    // and find somebody.
+                    <span>
+                        <span className="font-semibold" style={{ color: '#FCA5A5' }}>
+                            nobody can fill the slot — you would start eight
+                        </span>
+                        {' '}
+                        {SLOT_POSITION[r.slot] && (
+                            <Link href={`/in-season/waivers?pos=${SLOT_POSITION[r.slot]}`}
+                                className="ml-1.5 underline underline-offset-2
+                                           decoration-white/25 hover:decoration-white/60
+                                           text-muted-foreground/60 hover:text-foreground"
+                                title={`Free agents at ${SLOT_POSITION[r.slot]}, ranked on `
+                                    + 'whose role is growing'}>
+                                find one
+                            </Link>
+                        )}
                     </span>
                 ) : r.replacementSlot && r.replacementSlot !== r.slot ? (
                     // The cascade, named: whoever was in the flex moves up and
@@ -113,7 +142,12 @@ function Row({ r, top }: { r: DepthRow; top: number }) {
     );
 }
 
-export function DepthTable({ report }: { report: DepthReport }) {
+export function DepthTable({ report, horizon, remaining }: {
+    report: DepthReport;
+    horizon: Horizon;
+    /** Regular-season weeks still to play. */
+    remaining: number;
+}) {
     const { rows } = report;
     if (rows.length === 0) return null;
     const top = Math.max(...rows.map(r => r.cost)) || 1;
@@ -129,7 +163,9 @@ export function DepthTable({ report }: { report: DepthReport }) {
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-1">
                 <h2 className="text-[10px] uppercase tracking-widest font-bold
                                text-muted-foreground/45">
-                    What each starter is holding up
+                    {horizon === 'season'
+                        ? 'What each starter is holding up, rest of season'
+                        : 'What each starter is holding up this week'}
                 </h2>
                 <span className="text-[10px] text-muted-foreground/45 tabular-nums">
                     {(report.base * 100).toFixed(1)}% against the league ·{' '}
@@ -141,6 +177,26 @@ export function DepthTable({ report }: { report: DepthReport }) {
                 then the roster replays the league. What comes back is not what he is
                 worth — it is what he is worth <em>to you</em>, which is the gap between
                 him and whoever takes his place.
+                {horizon === 'season' ? (
+                    <>
+                        {' '}Priced on a typical week from here
+                        {remaining > 0 && <> — {remaining} of them left</>}, with no
+                        opponent, line, bye or injury report in it: an injury costs you
+                        the weeks <em>after</em> it, and those are the weeks a bench has
+                        to cover.
+                    </>
+                ) : (
+                    /* Worth saying plainly, because the week view answers a
+                       question that looks like this one and is not: a starter
+                       on a bye is worth nothing this Sunday, so his row reads
+                       "you can afford to lose him" when the truth is the
+                       opposite. */
+                    <>
+                        {' '}Priced on this Sunday alone — right for &ldquo;who do I need
+                        healthy on Sunday&rdquo;, and wrong for depth: a man on a bye
+                        costs you nothing this week and everything in November.
+                    </>
+                )}
             </p>
 
             <div className="grid items-end gap-x-3 px-1 pb-1 text-[10px] uppercase
@@ -182,6 +238,14 @@ export function DepthTable({ report }: { report: DepthReport }) {
                         {spare.length === 1 ? 'him' : 'them'} would not move the number —
                         which is also what makes {spare.length === 1 ? 'him' : 'them'} the
                         easiest thing on this roster to trade.{' '}
+                        <Link href={`/in-season/trades?give=${spare.map(r => r.playerId).join(',')}`}
+                            className="underline underline-offset-2 decoration-white/25
+                                       hover:decoration-white/60 text-muted-foreground/60
+                                       hover:text-foreground"
+                            title={`Open the trade analyzer with `
+                                + `${spare.map(r => r.name).join(' and ')} already offered`}>
+                            {spare.length === 1 ? 'see what he is worth' : 'see what they are worth'}
+                        </Link>.{' '}
                     </>
                 )}
                 Anything under {(FLOOR * 100).toFixed(1)} points of win rate is inside what

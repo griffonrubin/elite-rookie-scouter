@@ -7,6 +7,8 @@ import { WhyBars, WhyBarsProps } from './WhyBars';
 import { UsageStrip } from './UsageStrip';
 import { GameLogTable } from './GameLogTable';
 import { SplitsPanel } from './SplitsPanel';
+import { DefenceProfile } from './DefenceProfile';
+import { useDefence } from '@/lib/useDefence';
 
 /**
  * One player's week, at one depth, wherever they appear.
@@ -44,19 +46,32 @@ export function PlayerDetail({
                 ? last.reduce((t, g) => t + g.points, 0) / last.length : null,
         };
     }, [logs]);
+    // One fetch for the whole league's defences, shared by every open row.
+    const defence = useDefence();
     return (
         <div className={stacked
             ? 'space-y-2.5'
             : `grid gap-x-6 gap-y-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)]`}>
-            {/* The log is right here, so the panel can catch a projection that
-                predates the player's current role instead of presenting it
-                straight. */}
+            {/* The log is right here, so the panel can say when it and the
+                projection disagree sharply — as a fact about the blend
+                rather than as advice to prefer the log, which measures
+                worse. See scripts/formweight_check.mts. */}
             <WhyBars outcome={outcome} context={{ ...context, position }}
                 recentMean={recent.mean} recentGames={recent.games} />
             {/* Beside the arithmetic, not under it: "the number says 16.9"
                 and "his carries are down six" are two halves of one
                 question. */}
             <UsageStrip logs={logs} position={position} />
+            {/* Who he is playing, and what they let happen. The rest of this
+                panel is about him; this is the half of a matchup that is not.
+                Full width, because "soft against tight ends, tough against
+                receivers" is a comparison across four rows and squeezing it
+                into a column kills it. */}
+            <div className={stacked ? '' : 'lg:col-span-2'}>
+                <DefenceProfile cells={defence.cells} of={defence.of}
+                    defense={opponent ?? context?.opponent ?? null}
+                    position={position ?? null} loading={defence.loading} />
+            </div>
             {/* The arithmetic between the summary and the log: what he has
                 done lately, what he did last year, and what happened the last
                 time he played these people. */}

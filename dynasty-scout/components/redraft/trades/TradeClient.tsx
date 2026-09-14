@@ -1,13 +1,19 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { RedraftPlayer } from '@/lib/types';
 import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
-import { MAX_STARTSIT_IDS, SimPlayer } from '@/lib/startSit';
-import { simInputFor, simPlayerFrom } from '@/lib/simInput';
+import { SimPlayer } from '@/lib/startSit';
+import { useStartSitData } from '@/lib/useStartSit';
+import { simInputFor, simPlayerFrom, type Horizon } from '@/lib/simInput';
 import { evaluateTrade, TradeResult, TradeRosterPlayer, TradeTeam } from '@/lib/trade';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
-import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
+import { HorizonToggle } from '@/components/redraft/HorizonToggle';
+import { TradeFinder } from './TradeFinder';
+import { useSchedule } from '@/lib/useSchedule';
+import { measureTeam, rankLeague, type TeamProfile } from '@/lib/teamProfile';
+import type { Offer } from '@/lib/tradeFinder';
 import { RosterPicker } from './RosterPicker';
 import { TradeVerdict } from './TradeVerdict';
 
@@ -16,6 +22,8 @@ const TRIALS = 20000;
 
 /** The lineup shape when the platform does not report one. */
 const DEFAULT_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF'];
+/** Where the regular season ends when the platform will not say. */
+const DEFAULT_PLAYOFF_WEEK = 15;
 
 /**
  * A trade, judged on what it does rather than on what it is worth.
@@ -33,13 +41,46 @@ const DEFAULT_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF'];
  */
 export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
-    const [data, setData] = useState<Map<number, StartSitPlayer>>(new Map());
-    const [loading, setLoading] = useState(false);
-    const [failed, setFailed] = useState(false);
+    /**
+     * The rest of the season, because that is what a trade is.
+     *
+     * Nobody trades for one Sunday. Priced on this week the answer moves for
+     * reasons a trade cannot: a man on a bye is worth nothing, so acquiring
+     * him reads as giving a player away for free, and a soft matchup makes
+     * whoever you are receiving look like a steal for seven days. Both were
+     * happening, and both invert on the following Tuesday.
+     *
+     * The week stays available because one case is real — a must-win in the
+     * last week before the playoffs, where a bye genuinely is the whole
+     * question.
+     */
+    const [horizon, setHorizon] = useState<Horizon>('season');
     /** Null until the reader picks one; the default below stands in. */
     const [partner, setPartner] = useState<string | null>(null);
-    const [myGive, setMyGive] = useState<Set<number>>(new Set());
+    /**
+     * Who I am offering, opening on whoever the URL names.
+     *
+     * Team Analysis knows which of my players the bench already covers —
+     * that is the whole point of it — and "covered well enough that losing
+     * him would not move the number" is the same sentence as "this is the
+     * easiest thing on this roster to trade". Arriving here with him already
+     * on the table is the difference between a finding and a move.
+     *
+     * Read through Next's hook, not off `window`: this page is
+     * server-rendered, so a useState initialiser runs where there is no
+     * window and hydration keeps the server's empty answer.
+     */
+    const offered = useSearchParams().get('give');
+    const [myGive, setMyGive] = useState<Set<number> | null>(null);
     const [theirGive, setTheirGive] = useState<Set<number>>(new Set());
+
+    const fromUrl = useMemo(() => {
+        const ids = (offered ?? '').split(',').map(Number)
+            .filter(n => Number.isInteger(n) && n > 0);
+        return new Set(ids);
+    }, [offered]);
+    // The reader's own picks win once they have made one.
+    const giving = myGive ?? fromUrl;
 
     const myKey = league.connection?.teamKey ?? null;
 
@@ -87,28 +128,11 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     }, [teams]);
 
     const week = league.week;
-    useEffect(() => {
-        if (needed.length === 0 || week == null) return;
-        let cancelled = false;
-        setLoading(true);
-        setFailed(false);
-        const chunks: number[][] = [];
-        for (let i = 0; i < needed.length; i += MAX_STARTSIT_IDS) {
-            chunks.push(needed.slice(i, i + MAX_STARTSIT_IDS));
-        }
-        Promise.all(chunks.map(c =>
-            fetch(`/api/redraft/startsit?ids=${c.join(',')}&week=${week}`)
-                .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))))
-            .then((rs: { players: StartSitPlayer[] }[]) => {
-                if (cancelled) return;
-                const m = new Map<number, StartSitPlayer>();
-                for (const r of rs) for (const p of r.players ?? []) m.set(p.id, p);
-                setData(m);
-            })
-            .catch(() => { if (!cancelled) setFailed(true); })
-            .finally(() => { if (!cancelled) setLoading(false); });
-        return () => { cancelled = true; };
-    }, [needed.join(','), week]);   // eslint-disable-line react-hooks/exhaustive-deps
+    // One hook, one cache: every In Season page asks about the same league,
+    // so the page a reader lands on second only pays for the ids the first
+    // one did not already fetch. It also chunks to the endpoint's own limit,
+    // which is the bug four hand-rolled copies of this produced.
+    const { data, loading, failed } = useStartSitData(needed, week);
 
     const ready = needed.length > 0 && data.size > 0 && !failed;
 
@@ -123,13 +147,44 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
             // A player with no row from the endpoint has no week, and
             // guessing one is how a trade gets evaluated against a lineup
             // nobody ever saw.
-            const v = p && d ? simPlayerFrom(simInputFor(p, d, SEASON)) : null;
+            const v = p && d ? simPlayerFrom(simInputFor(p, d, SEASON, horizon)) : null;
             cache.set(id, v);
             return v;
         };
-    }, [players, data]);
+    }, [players, data, horizon]);
+
+    /** Regular-season weeks still to play, for the toggle to name. */
+    const remaining = useMemo(() => {
+        const playoffs = league.snapshot?.playoffWeekStart ?? DEFAULT_PLAYOFF_WEEK;
+        return Math.max(0, playoffs - (week ?? 1));
+    }, [league.snapshot?.playoffWeekStart, week]);
 
     const meanOf = (id: number) => simOf(id)?.outcome.mean ?? null;
+    /** The NFL team a player plays for, for the schedule behind him. */
+    const teamOf = useMemo(() => {
+        const byId = new Map(players.map(p => [p.id, p.nfl_team ?? null]));
+        return (id: number) => byId.get(id) ?? null;
+    }, [players]);
+    /**
+     * The league's remaining schedule, so an offer can be judged on the
+     * weeks that decide a season as well as on the points.
+     */
+    const schedule = useSchedule(week, league.snapshot?.playoffWeekStart ?? null);
+    /**
+     * Stable identities for the finder's inputs.
+     *
+     * `findTrades` sweeps about thirty-five thousand offers, and it is
+     * memoised on its arguments — so an inline arrow for the means and an
+     * inline map for the rosters re-created the arguments on every render
+     * and re-ran the whole sweep on every click. That is how a click went
+     * from 2.3 seconds to 3.1: not a slower search, the same search done
+     * again for nothing.
+     */
+    const finderMean = useCallback(
+        (id: number) => simOf(id)?.outcome.mean ?? 0, [simOf]);
+    const finderTeams = useMemo(
+        () => (teams ?? []).map(t => ({ key: t.key, name: t.name, roster: t.roster })),
+        [teams]);
 
     /**
      * Who to price against before the reader has chosen.
@@ -152,17 +207,33 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     const me = teams?.find(t => t.key === myKey) ?? null;
     const them = teams?.find(t => t.key === partnerKey) ?? null;
 
+    /**
+     * Every roster's positional standing, so an offer can say why it exists.
+     *
+     * "You are first of twelve at running back and twelfth at tight end;
+     * they are the other way round" is the sentence that gets a reply, and a
+     * suggestion a reader cannot explain is one they will not send.
+     */
+    const profiles: TeamProfile[] = useMemo(() => {
+        if (!ready || !teams) return [];
+        const measured = teams
+            .filter(t => t.roster.length > 0)
+            .map(t => measureTeam(t.key, t.name, t.roster, slots,
+                id => simOf(id)?.outcome ?? null, id => simOf(id)?.outcome ?? null));
+        return measured.length >= 2 ? rankLeague(measured) : [];
+    }, [ready, teams, slots, simOf]);
+
     const result: TradeResult | null = useMemo(() => {
         if (!ready || !teams || !me || !them) return null;
-        if (myGive.size === 0 && theirGive.size === 0) return null;
+        if (giving.size === 0 && theirGive.size === 0) return null;
         const asTeams: TradeTeam[] = teams.map(t => ({
             key: t.key, name: t.name, roster: t.roster, record: t.record,
         }));
         return evaluateTrade(asTeams, slots,
-            { teamKey: me.key, give: [...myGive] },
+            { teamKey: me.key, give: [...giving] },
             { teamKey: them.key, give: [...theirGive] },
             simOf, TRIALS);
-    }, [ready, teams, me, them, myGive, theirGive, slots, simOf]);
+    }, [ready, teams, me, them, giving, theirGive, slots, simOf]);
 
     const nameOf = (id: number) =>
         teams?.flatMap(t => t.roster).find(p => p.id === id)?.name ?? String(id);
@@ -195,6 +266,7 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     return (
         <div className="space-y-4">
             <LeagueConnect league={league} compact />
+            <HorizonToggle value={horizon} onChange={setHorizon} remaining={remaining} />
 
             {failed ? (
                 <p className="text-[12px] py-3" style={{ color: '#FCA5A5' }}>
@@ -209,6 +281,32 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                 </p>
             ) : (
                 <>
+                    {/* Found before priced. The analyser is for a trade you
+                        have already thought of; this is for the one you have
+                        not, which is the one nobody makes. */}
+                    {me && teams && (
+                        <TradeFinder
+                            myRoster={me.roster}
+                            teams={finderTeams}
+                            slots={slots} meanOf={finderMean}
+                            nameOf={nameOf} positionOf={positionOf}
+                            teamOf={teamOf} playoffs={schedule.playoffs}
+                            profiles={profiles} myKey={myKey}
+                            rosterSize={league.snapshot?.rosterPositions?.length}
+                            partnerKey={partnerKey}
+                            onPick={(o: Offer) => {
+                                // Loading an offer sets the partner as well,
+                                // or the analyser would price it against
+                                // whoever happened to be selected.
+                                setPartner(o.teamKey);
+                                setMyGive(new Set(o.give));
+                                setTheirGive(new Set(o.get));
+                                if (typeof window !== 'undefined') {
+                                    window.scrollBy({ top: 220, behavior: 'smooth' });
+                                }
+                            }} />
+                    )}
+
                     <div className="flex flex-wrap items-center gap-2">
                         <label className="text-[11px] text-muted-foreground/60"
                             htmlFor="trade-partner">
@@ -226,7 +324,7 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 <option key={t.key} value={t.key}>{t.name}</option>
                             ))}
                         </select>
-                        {(myGive.size > 0 || theirGive.size > 0) && (
+                        {(giving.size > 0 || theirGive.size > 0) && (
                             <button type="button"
                                 onClick={() => { setMyGive(new Set()); setTheirGive(new Set()); }}
                                 className="text-[11px] px-2 py-1 rounded-lg
@@ -243,22 +341,23 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 title={`${me.name} — you`}
                                 subtitle="pick who you would send"
                                 roster={me.roster} starting={me.starting}
-                                selected={myGive} meanOf={meanOf}
-                                onToggle={toggle(myGive, setMyGive)} />
+                                selected={giving} meanOf={meanOf} horizon={horizon}
+                                onToggle={toggle(giving, setMyGive)} />
                         )}
                         {them && (
                             <RosterPicker
                                 title={them.name}
                                 subtitle="pick who you would want"
                                 roster={them.roster} starting={them.starting}
-                                selected={theirGive} meanOf={meanOf}
+                                selected={theirGive} meanOf={meanOf} horizon={horizon}
                                 onToggle={toggle(theirGive, setTheirGive)} />
                         )}
                     </div>
 
                     {result ? (
                         <TradeVerdict result={result} myKey={myKey}
-                            nameOf={nameOf} positionOf={positionOf} trials={TRIALS} />
+                            nameOf={nameOf} positionOf={positionOf} trials={TRIALS}
+                            horizon={horizon} />
                     ) : (
                         <p className="text-[12px] text-muted-foreground/50 py-2">
                             Pick a player from either roster. A one-sided offer is a

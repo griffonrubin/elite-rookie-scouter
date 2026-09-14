@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { clearStartSitCache } from '@/lib/useStartSit';
 import { RedraftPlayer } from '@/lib/types';
 import {
     getCurrentWeek, getLeague, getLeagueRosters, getLeagueUsers, getMatchups, teamName,
@@ -53,7 +54,27 @@ export interface LeagueSlot {
 export interface LeagueTeam {
     key: string;
     name: string;
+    /**
+     * The roster spots that can hold a lineup, which is not the whole roster.
+     *
+     * Injured reserve and the taxi squad are deliberately absent: offering
+     * one of them for a lineup slot is offering a move the platform will
+     * refuse. That makes this the wrong list to ask "who is taken" with —
+     * see `rostered`.
+     */
     slots: LeagueSlot[];
+    /**
+     * Every platform id on this roster, injured reserve and taxi included.
+     *
+     * Being on somebody's injured reserve is the strongest possible form of
+     * being unavailable, and reading `slots` as the roster said the
+     * opposite: three players stashed on IR in a twelve-team league came
+     * back as free agents, and because value over replacement ranks on
+     * quality, the best of them led the list. A waiver page whose top
+     * recommendation cannot be claimed by anybody is worse than no waiver
+     * page.
+     */
+    rostered: string[];
     /** The starting lineup in slot order, empty spots included. */
     lineupSlots?: { slot: string; playerId: string | null }[];
     /**
@@ -77,6 +98,23 @@ export interface LeagueSnapshot {
     opponentKeyFor: Record<string, string | null>;
     /** Slot names in lineup order, where the platform reports them. */
     rosterPositions?: string[] | null;
+    /**
+     * The first week of the playoffs, where the platform reports it.
+     *
+     * "Rest of season" has to be a count of weeks or it is a slogan, and the
+     * count that matters is regular-season weeks left: a projected finish is
+     * about making the playoffs, not about week seventeen.
+     */
+    playoffWeekStart?: number | null;
+    /**
+     * How many teams make the playoffs, where the platform reports it.
+     *
+     * The cut is the whole question — eight and six makes it in one league
+     * and misses in another, and the owner asking already knows which. Where
+     * the platform will not say, the page picks half the league and lets the
+     * reader move it rather than quietly assuming.
+     */
+    playoffTeams?: number | null;
     /** True in a best-ball league: the platform scores the optimal lineup
         itself, so there is no start/sit call to make. */
     bestBall?: boolean;
@@ -108,6 +146,15 @@ export interface LeagueSyncState {
     forget: (c: LeagueConnection) => void;
     setWeek: (w: number) => void;
     refresh: () => void;
+    /**
+     * Bumped by `refresh`, so anything else fetching for this league can
+     * refetch too.
+     *
+     * Without it the reload button reloaded the roster and left the
+     * projections, the injury report and the game lines exactly as they
+     * were — which is most of what a reader presses it for.
+     */
+    nonce: number;
 }
 
 function readConnection(): LeagueConnection | null {
@@ -211,6 +258,35 @@ function matchSide(
     return { team, starters, bench, unmatched };
 }
 
+/**
+ * The last snapshot read for a league and week.
+ *
+ * Every In Season page mounts this hook, and the answer for a given league
+ * and week is the same on all of them — so walking from the power table to
+ * the trade page to team analysis was asking Sleeper for the same four
+ * things over and over: twenty requests for four navigations, each one a
+ * spinner the reader watched for no reason.
+ *
+ * Held in a module rather than in storage, and dropped by `refresh`, because
+ * a lineup is a thing somebody changes mid-session and a cache that survived
+ * the tab would be lying about it by Sunday afternoon.
+ */
+const snapshots = new Map<string, LeagueSnapshot>();
+
+/**
+ * Which NFL week it is, asked once.
+ *
+ * A tiny response, but it is a round trip on every page mount, and the
+ * answer does not change between two clicks of a nav bar.
+ */
+let currentWeek: number | null = null;
+
+/** Forget every cached league, so the reload button reloads. */
+export function clearSnapshotCache() {
+    snapshots.clear();
+    currentWeek = null;
+}
+
 async function fetchSleeper(conn: LeagueConnection, week: number): Promise<LeagueSnapshot | null> {
     const [league, rosters, users, matchups] = await Promise.all([
         getLeague(conn.id), getLeagueRosters(conn.id),
@@ -246,6 +322,8 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         return {
             key: String(r.roster_id),
             name: teamName(userById.get(r.owner_id ?? '')),
+            // The whole roster, before anything is filtered for startability.
+            rostered: (r.players ?? []).map(String),
             slots: all.map(pid => ({
                 playerId: pid,
                 starting: starting.has(pid),
@@ -284,6 +362,8 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         teams,
         opponentKeyFor,
         rosterPositions: league?.roster_positions ?? null,
+        playoffWeekStart: league?.settings?.playoff_week_start ?? null,
+        playoffTeams: league?.settings?.playoff_teams ?? null,
         bestBall: league?.settings?.best_ball === 1,
     };
 }
@@ -303,6 +383,10 @@ async function fetchEspn(conn: LeagueConnection, week: number): Promise<LeagueSn
     const teams: LeagueTeam[] = (d.teams ?? []).map((t: any) => ({
         key: String(t.teamId),
         name: t.name,
+        // ESPN's entries already carry the whole roster, injured spots
+        // included, so the two lists coincide here — stated rather than
+        // assumed, so a later filter on `slots` cannot silently shrink it.
+        rostered: (t.entries ?? []).map((e: any) => String(e.playerId)),
         slots: (t.entries ?? []).map((e: any) => ({
             playerId: String(e.playerId), dstTeam: e.dstTeam, starting: !!e.starting,
         })),
@@ -312,7 +396,11 @@ async function fetchEspn(conn: LeagueConnection, week: number): Promise<LeagueSn
         opponentKeyFor[String(t.teamId)] =
             t.opponentTeamId != null ? String(t.opponentTeamId) : null;
     }
-    return { leagueName: d.name ?? null, week: d.week ?? week, teams, opponentKeyFor };
+    return {
+        leagueName: d.name ?? null, week: d.week ?? week, teams, opponentKeyFor,
+        playoffWeekStart: d.playoffWeekStart ?? null,
+        playoffTeams: d.playoffTeams ?? null,
+    };
 }
 
 export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {
@@ -331,21 +419,44 @@ export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {
     // opens on the decision they actually have to make.
     useEffect(() => {
         if (week != null) return;
+        if (currentWeek != null) { setWeekState(currentWeek); return; }
         let live = true;
-        getCurrentWeek().then(w => { if (live && w) setWeekState(w); });
+        getCurrentWeek().then(w => {
+            if (!w) return;
+            currentWeek = w;
+            if (live) setWeekState(w);
+        });
         return () => { live = false; };
     }, [week]);
 
     const key = connection ? `${connection.platform}:${connection.id}:${connection.season}` : null;
 
+    const lastNonce = useRef(nonce);
     useEffect(() => {
+        // Reload means reload: cleared here rather than in its own effect,
+        // which would run after this one and discard what it just fetched.
+        if (lastNonce.current !== nonce) {
+            clearSnapshotCache();
+            clearStartSitCache();
+            lastNonce.current = nonce;
+        }
         if (!key || !connection || week == null) { setSnapshot(null); return; }
+        const cached = snapshots.get(`${key}:${week}`);
+        if (cached) {
+            // Served without a request and without a flash of "loading",
+            // which is the whole point: the reader already waited for this
+            // league once.
+            setSnapshot(cached);
+            setStatus('ready');
+            return;
+        }
         let cancelled = false;
         setStatus('loading');
         const run = connection.platform === 'espn' ? fetchEspn : fetchSleeper;
         run(connection, week)
             .then(s => {
                 if (cancelled) return;
+                if (s) snapshots.set(`${key}:${week}`, s);
                 setSnapshot(s);
                 setStatus(s ? 'ready' : 'error');
             })
@@ -413,6 +524,7 @@ export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {
         opponent: matchSide(oppTeam, playersRef.current, platform),
         connect, disconnect, setTeam, saved, switchTo, forget,
         setWeek: (w: number) => setWeekState(w),
+        nonce,
         refresh: () => setNonce(n => n + 1),
     };
 }

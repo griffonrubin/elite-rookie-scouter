@@ -4,6 +4,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { DIVERGING } from '@/lib/vizTokens';
 import type { TradeRosterPlayer } from '@/lib/trade';
+import type { Horizon } from '@/lib/simInput';
 
 /**
  * A roster you pick from, ordered the way you think about it.
@@ -17,7 +18,7 @@ import type { TradeRosterPlayer } from '@/lib/trade';
 const GROUPS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST'];
 
 export function RosterPicker({
-    title, subtitle, roster, starting, selected, onToggle, meanOf, disabled,
+    title, subtitle, roster, starting, selected, onToggle, meanOf, disabled, horizon,
 }: {
     title: string;
     subtitle?: string;
@@ -28,6 +29,8 @@ export function RosterPicker({
     onToggle: (id: number) => void;
     meanOf: (id: number) => number | null;
     disabled?: boolean;
+    /** Which week the numbers beside the names describe. */
+    horizon: Horizon;
 }) {
     const byGroup = GROUPS.map(g => ({
         group: g,
@@ -69,6 +72,10 @@ export function RosterPicker({
                                 <li key={p.id}>
                                     <button type="button" disabled={disabled}
                                         aria-pressed={on}
+                                        // So a link into this page can be
+                                        // checked against the player it
+                                        // claims to have put on the table.
+                                        data-player-id={p.id}
                                         onClick={() => onToggle(p.id)}
                                         className={cn(`w-full grid items-center gap-x-2
                                             px-1.5 py-1 rounded text-left text-[11px]
@@ -101,7 +108,10 @@ export function RosterPicker({
                                         <span className="text-[10px] tabular-nums
                                                          text-right
                                                          text-muted-foreground/50"
-                                            title="Expected points this week">
+                                            title={horizon === 'season'
+                                                ? 'Expected points in a typical week '
+                                                  + 'from here'
+                                                : 'Expected points this week'}>
                                             {mean == null ? '—' : mean.toFixed(1)}
                                         </span>
                                     </button>
@@ -113,9 +123,12 @@ export function RosterPicker({
             ))}
             <p className="text-[9px] text-muted-foreground/30 mt-2">
                 ST is in the lineup as the owner has it set now. The number beside
-                each name is expected points this week, and it is what sorts every
-                group — not a season ranking, because what a trade costs you is
-                this Sunday&rsquo;s lineup.
+                each name is expected points {horizon === 'season'
+                    ? 'in a typical week from here'
+                    : 'this Sunday'}, and it is what sorts every group. Not a
+                ranking of players in the abstract: what a trade costs you is a
+                place in your own lineup, so the order is the order they would
+                take those places in.
             </p>
         </section>
     );
