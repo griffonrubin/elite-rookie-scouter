@@ -49,6 +49,17 @@ export function Earned({ rows, myKey }: {
     const span = Math.max(1.5, ...played.map(r => Math.abs(r.play.luck)));
     const sorted = played.slice().sort((a, b) => b.play.luck - a.play.luck);
     const weeks = Math.max(...played.map(r => r.play.played));
+    /**
+     * The band the caption quotes, stated for the league rather than read
+     * off whichever team happens to be first in the list.
+     *
+     * Taken at an even rate, which is the widest a binomial gets: a team
+     * further from .500 has a tighter band, so a caption written from its
+     * own standard deviation would understate the swing for everybody
+     * else. Each row is still flagged against its own, which is the number
+     * that decides whether its bar is drawn in full.
+     */
+    const coinFlip = 1.28 * Math.sqrt(weeks) / 2;
 
     return (
         <section className="space-y-2">
@@ -180,12 +191,17 @@ export function Earned({ rows, myKey }: {
 
             <p className="text-[10px] text-muted-foreground/40 leading-relaxed
                           max-w-[660px]">
-                A gap under about {(1.28 * (played[0]?.play.sd ?? 1)).toFixed(1)} wins
-                is drawn faintly because it is inside what a coin does over
-                {' '}{weeks} weeks — real arithmetic, not evidence. The ones drawn
-                in full are the teams whose record and whose scoring are telling
-                you different things, which is the point at which it is worth
-                deciding which one you believe.
+                A gap under about {coinFlip.toFixed(1)} wins is drawn faintly
+                because it is inside what a coin does over {weeks} week
+                {weeks === 1 ? '' : 's'} — real arithmetic, not evidence. The ones
+                drawn in full are the teams whose record and whose scoring are
+                telling you different things, which is the point at which it is
+                worth deciding which one you believe.
+                {' '}This is a different comparison from the luck column in the
+                table above, and the two can disagree without either being wrong:
+                that one sets a team&rsquo;s place by roster against its place in
+                the standings, so the projection is part of it. This one uses
+                nothing but what has already happened.
             </p>
         </section>
     );
