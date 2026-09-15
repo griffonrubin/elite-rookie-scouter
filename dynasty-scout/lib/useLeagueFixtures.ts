@@ -47,14 +47,26 @@ export function useLeagueFixtures(league: LeagueSyncState): LeagueGame[] | null 
         : 14;
 
     const fromSnapshot = snapshot?.games ?? null;
-    const [games, setGames] = useState<LeagueGame[] | null>(fromSnapshot);
+    /**
+     * Read during render rather than written into state from an effect.
+     *
+     * Three of the four answers here are already known at render time — an
+     * ESPN league carries its fixtures in the snapshot, a league on neither
+     * platform has none, and a Sleeper league fetched earlier in this
+     * session is in the cache. Setting state for any of them costs a second
+     * render for a value that was a pure function of the props, which is
+     * the render cascade this codebase avoids elsewhere for the same
+     * reason. Only the fetch, which genuinely arrives later, needs state.
+     */
+    const cached = id && platform === 'sleeper' ? cache.get(id) ?? null : null;
+    /** Tagged with the league it belongs to, so switching leagues cannot
+        hand the new one the old one's schedule while the fetch is out. */
+    const [fetched, setFetched] =
+        useState<{ id: string; games: LeagueGame[] } | null>(null);
 
     useEffect(() => {
-        if (fromSnapshot?.length) { setGames(fromSnapshot); return; }
-        if (platform !== 'sleeper' || !id) { setGames(null); return; }
-
-        const hit = cache.get(id);
-        if (hit) { setGames(hit); return; }
+        if (fromSnapshot?.length) return;
+        if (platform !== 'sleeper' || !id || cache.has(id)) return;
 
         let live = true;
         const pending = inFlight.get(id)
@@ -63,9 +75,11 @@ export function useLeagueFixtures(league: LeagueSyncState): LeagueGame[] | null 
                 .then(rows => { cache.set(id, rows); inFlight.delete(id); return rows; })
                 .catch(() => { inFlight.delete(id); return [] as LeagueGame[]; });
         inFlight.set(id, pending);
-        pending.then(rows => { if (live) setGames(rows); });
+        pending.then(rows => { if (live) setFetched({ id, games: rows }); });
         return () => { live = false; };
     }, [fromSnapshot, platform, id, lastRegular]);
 
-    return games;
+    if (fromSnapshot?.length) return fromSnapshot;
+    if (cached) return cached;
+    return fetched && fetched.id === id ? fetched.games : null;
 }

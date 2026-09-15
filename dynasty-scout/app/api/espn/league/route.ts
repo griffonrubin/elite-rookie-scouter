@@ -195,7 +195,7 @@ export async function GET(req: NextRequest) {
         if (regularWeeks && period > regularWeeks) continue;
         const tier = g?.playoffTierType;
         if (tier && tier !== 'NONE') continue;
-        const pts = (side: any) => {
+        const pts = (side: { totalPoints?: unknown } | null | undefined) => {
             const v = Number(side?.totalPoints);
             return Number.isFinite(v) ? v : null;
         };
