@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { getUserId, getUserLeagues } from '@/lib/sleeper';
 import { parseLeagueId, readEspnCreds, saveEspnCreds } from '@/lib/espn';
 import { connectionKey, LeaguePlatform, LeagueSyncState } from '@/lib/useLeagueSync';
+import { isPpr, scoringLabel } from '@/lib/scoring';
 
 const SEASON = '2026';
 
@@ -114,6 +115,24 @@ export function LeagueConnect({ league, compact = false }: {
                 {league.opponent.team && (
                     <span className="text-[11px] text-muted-foreground/70">
                         vs <span className="font-semibold text-foreground">{league.opponent.team.name}</span>
+                    </span>
+                )}
+                {/*
+                    Which scoring the numbers on this page are in, printed
+                    only when it is not the one everybody assumes.
+
+                    Every projection and game log stored here is full PPR, so
+                    a half-PPR league was being shown a six-catch receiver
+                    three points a week clear of where his own league has him.
+                    That is corrected now, and a reader deserves to see that
+                    it was — a page quietly showing different numbers than
+                    last week with no explanation is its own small betrayal.
+                */}
+                {!isPpr(league.snapshot?.scoring) && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                        style={{ background: 'rgba(56,189,248,0.12)', color: '#7DD3FC' }}
+                        title="Your league's scoring, applied to every number on this page">
+                        {scoringLabel(league.snapshot?.scoring)}
                     </span>
                 )}
                 {(league.me.unmatched > 0 || league.opponent.unmatched > 0) && (

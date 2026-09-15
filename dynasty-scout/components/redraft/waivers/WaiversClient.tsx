@@ -89,6 +89,16 @@ const SORTS: { id: SortKey; label: string; note: string }[] = [
  */
 export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
+    /** What this league pays per catch; every stored number is full PPR. */
+    const scoring = league.snapshot?.scoring ?? null;
+    /**
+     * A stable key for it, because the scoring arrives with the snapshot and
+     * the memos below cache an outcome per player. Depending on the object
+     * would re-run them every time the snapshot is rebuilt; depending on
+     * nothing would leave every number full PPR for the whole session, since
+     * the first render has no league yet.
+     */
+    const scoringKey = `${scoring?.reception ?? 1}:${scoring?.teReceptionBonus ?? 0}`;
     const defence = useDefence();
     const [rows, setRows] = useState<WaiverRow[]>([]);
     const [considered, setConsidered] = useState<number | null>(null);
@@ -249,12 +259,12 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
             const p = byId.get(id);
             const d = data.get(id);
             const v = p && d
-                ? simInputFor({ id, position: p.position ?? '' }, d, SEASON).outcome
+                ? simInputFor({ id, position: p.position ?? '' }, d, SEASON, 'week', scoring).outcome
                 : null;
             cache.set(id, v);
             return v;
         };
-    }, [players, data]);
+    }, [players, data, scoringKey]);
     const meanOf = (id: number) => outcomeOf(id)?.mean ?? 0;
 
     /** Priced candidates, in the order the reader asked for. */

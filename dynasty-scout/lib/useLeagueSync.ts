@@ -7,6 +7,7 @@ import {
     getCurrentWeek, getLeague, getLeagueRosters, getLeagueUsers, getMatchups, teamName,
 } from '@/lib/sleeper';
 import { readEspnCreds } from '@/lib/espn';
+import { scoringFrom, type Scoring } from '@/lib/scoring';
 
 /**
  * Your lineup, and the one you are playing this week.
@@ -118,6 +119,16 @@ export interface LeagueSnapshot {
     /** True in a best-ball league: the platform scores the optimal lineup
         itself, so there is no start/sit call to make. */
     bestBall?: boolean;
+    /**
+     * What this league pays per catch, where the platform says.
+     *
+     * Every projection and every game log stored here is full PPR, so a
+     * half-PPR league was being shown numbers half a point per catch too
+     * high on everyone who catches passes — a six-catch receiver three
+     * points a week clear of where his own league has him, which is larger
+     * than most of the gaps these pages are asked to arbitrate.
+     */
+    scoring?: Scoring | null;
 }
 
 export interface MatchedSide {
@@ -365,6 +376,7 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         playoffWeekStart: league?.settings?.playoff_week_start ?? null,
         playoffTeams: league?.settings?.playoff_teams ?? null,
         bestBall: league?.settings?.best_ball === 1,
+        scoring: scoringFrom(league?.scoring_settings),
     };
 }
 

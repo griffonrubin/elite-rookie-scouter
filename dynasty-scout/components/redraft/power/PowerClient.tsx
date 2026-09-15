@@ -38,6 +38,10 @@ const TRIALS = 20000;
  */
 export function PowerClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
+    /** What this league pays per catch; every stored number is full PPR. */
+    const scoring = league.snapshot?.scoring ?? null;
+    /** Stable key, so the memo below re-runs when the scoring lands. */
+    const scoringKey = `${scoring?.reception ?? 1}:${scoring?.teReceptionBonus ?? 0}`;
     /**
      * Rest of season by default, which is what a power ranking is.
      *
@@ -126,7 +130,7 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
         const sim = (id: number): SimPlayer | null => {
             if (cache.has(id)) return cache.get(id)!;
             const p = byId.get(id);
-            const v = p ? simPlayerFrom(simInputFor(p, data.get(id), SEASON, horizon)) : null;
+            const v = p ? simPlayerFrom(simInputFor(p, data.get(id), SEASON, horizon, scoring)) : null;
             cache.set(id, v);
             return v;
         };
@@ -160,7 +164,7 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
             };
         });
         return powerRank(ranked, TRIALS);
-    }, [ready, teams, data, players, horizon, slots]);
+    }, [ready, teams, data, players, horizon, slots, scoringKey]);
 
     /**
      * Regular-season weeks still to play.

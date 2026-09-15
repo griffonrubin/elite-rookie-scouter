@@ -69,6 +69,13 @@ export interface StartSitPlayer {
     nfl_team: string | null;
     /** Season projection, averaged across whichever sources have one. */
     proj_points: number | null;
+    /**
+     * The catches behind that projection, so a league that does not pay a
+     * point for them can be told what the projection is worth to it. Without
+     * this the season number stays full PPR while the game logs beside it do
+     * not, and the two halves of a player disagree.
+     */
+    proj_receptions: number | null;
     /** This week's environment for the player's team. */
     implied_team_total: number | null;
     spread: number | null;
@@ -151,7 +158,8 @@ export async function GET(req: NextRequest) {
     const ph2 = ids.map((_, i) => `$${i + 2}`).join(',');
     const baseP = query<{
         id: number; slug: string; full_name: string;
-        position: string | null; nfl_team: string | null; proj_points: number | null;
+        position: string | null; nfl_team: string | null;
+        proj_points: number | null; proj_receptions: number | null;
     }>(
         `SELECT p.id, p.slug, p.full_name, p.position, p.nfl_team,
                 (SELECT AVG(pr.proj_points) FROM projections pr
@@ -159,7 +167,13 @@ export async function GET(req: NextRequest) {
                     AND pr.scraped_at = (SELECT MAX(scraped_at) FROM projections
                                           WHERE player_id = p.id AND season = ${SEASON}
                                             AND source = pr.source)
-                ) AS proj_points
+                ) AS proj_points,
+                (SELECT AVG(pr.proj_receptions) FROM projections pr
+                  WHERE pr.player_id = p.id AND pr.season = ${SEASON}
+                    AND pr.scraped_at = (SELECT MAX(scraped_at) FROM projections
+                                          WHERE player_id = p.id AND season = ${SEASON}
+                                            AND source = pr.source)
+                ) AS proj_receptions
            FROM players p
           WHERE p.id IN (${ph})`, ids);
 
@@ -319,6 +333,7 @@ export async function GET(req: NextRequest) {
             id: p.id, slug: p.slug, full_name: p.full_name,
             position: p.position, nfl_team: p.nfl_team,
             proj_points: p.proj_points != null ? Number(p.proj_points) : null,
+            proj_receptions: p.proj_receptions != null ? Number(p.proj_receptions) : null,
             implied_team_total: line?.implied_team_total ?? null,
             spread: line?.spread ?? null,
             opponent: line?.opponent ?? null,
