@@ -392,17 +392,43 @@ async function fetchEspn(conn: LeagueConnection, week: number): Promise<LeagueSn
     if (!res.ok) return null;
     const d = await res.json();
 
-    const teams: LeagueTeam[] = (d.teams ?? []).map((t: any) => ({
-        key: String(t.teamId),
-        name: t.name,
-        // ESPN's entries already carry the whole roster, injured spots
-        // included, so the two lists coincide here — stated rather than
-        // assumed, so a later filter on `slots` cannot silently shrink it.
-        rostered: (t.entries ?? []).map((e: any) => String(e.playerId)),
-        slots: (t.entries ?? []).map((e: any) => ({
-            playerId: String(e.playerId), dstTeam: e.dstTeam, starting: !!e.starting,
-        })),
-    }));
+    const teams: LeagueTeam[] = (d.teams ?? []).map((t: any) => {
+        const entries = (t.entries ?? []) as any[];
+        /**
+         * The lineup in slot order, which this path was not building.
+         *
+         * Sleeper leagues have carried it from the start; here the slot was
+         * read, used to decide `starting`, and then dropped — so every ESPN
+         * lineup was a set of players with no idea which slot held which,
+         * and no way to show a hole where a slot is empty. The board could
+         * only ever be a list for half its users.
+         */
+        const starters = entries.filter(e => e?.starting && e?.slotName);
+        return {
+            key: String(t.teamId),
+            name: t.name,
+            // ESPN's entries already carry the whole roster, injured spots
+            // included, so the two lists coincide here — stated rather than
+            // assumed, so a later filter on `slots` cannot silently shrink it.
+            rostered: entries.map((e: any) => String(e.playerId)),
+            slots: entries.map((e: any) => ({
+                playerId: String(e.playerId), dstTeam: e.dstTeam,
+                starting: !!e.starting,
+                slot: e.slotName ?? null,
+            })),
+            lineupSlots: starters.map((e: any) => ({
+                slot: String(e.slotName),
+                playerId: String(e.playerId),
+            })),
+            record: t.record ? {
+                wins: Number(t.record.wins ?? 0),
+                losses: Number(t.record.losses ?? 0),
+                ties: Number(t.record.ties ?? 0),
+                pointsFor: Number(t.record.pointsFor ?? 0),
+                pointsAgainst: Number(t.record.pointsAgainst ?? 0),
+            } : undefined,
+        };
+    });
     const opponentKeyFor: Record<string, string | null> = {};
     for (const t of d.teams ?? []) {
         opponentKeyFor[String(t.teamId)] =

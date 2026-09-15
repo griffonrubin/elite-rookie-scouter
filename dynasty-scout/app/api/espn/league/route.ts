@@ -94,6 +94,12 @@ interface Entry {
     dstTeam: string | null;
     name: string | null;
     slotId: number;
+    /**
+     * And what that slot is called, so the client does not need ESPN's id
+     * table to lay out a lineup. Null for the bench, injured reserve, and
+     * anything this pool cannot fill.
+     */
+    slotName: string | null;
     starting: boolean;
 }
 
@@ -106,6 +112,7 @@ function readEntries(team: any): Entry[] {
             dstTeam: dstTeamFor(id),
             name: e?.playerPoolEntry?.player?.fullName ?? null,
             slotId: Number(e?.lineupSlotId ?? 20),
+            slotName: ESPN_SLOT_NAMES[Number(e?.lineupSlotId ?? 20)] ?? null,
             starting: !BENCH_SLOTS.has(Number(e?.lineupSlotId ?? 20)),
         };
     });
@@ -204,6 +211,23 @@ export async function GET(req: NextRequest) {
             name: [t?.location, t?.nickname].filter(Boolean).join(' ').trim()
                 || t?.name || `Team ${t?.id}`,
             opponentTeamId: pairs[Number(t?.id)] ?? null,
+            /**
+             * What has happened so far, which the Sleeper path has sent from
+             * the start and this one never did.
+             *
+             * Power Rankings exists to separate a roster from its results —
+             * three-and-nothing with the sixth-best roster is a fact about
+             * the schedule — and without a record there is nothing to set the
+             * ranking against. The page simply had less to say to an ESPN
+             * league and did not mention it.
+             */
+            record: t?.record?.overall ? {
+                wins: Number(t.record.overall.wins ?? 0),
+                losses: Number(t.record.overall.losses ?? 0),
+                ties: Number(t.record.overall.ties ?? 0),
+                pointsFor: Number(t.record.overall.pointsFor ?? 0),
+                pointsAgainst: Number(t.record.overall.pointsAgainst ?? 0),
+            } : null,
             entries: readEntries(t),
         })),
     }, { headers: { 'cache-control': 'no-store' } });
