@@ -4,8 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { clearStartSitCache } from '@/lib/useStartSit';
 import { RedraftPlayer } from '@/lib/types';
 import {
-    getCurrentWeek, getLeague, getLeagueRosters, getLeagueUsers, getMatchups,
-    getLeagueSchedule, fixturesFrom, teamName,
+    getCurrentWeek, getLeague, getLeagueRosters, getLeagueUsers, getMatchups, teamName,
 } from '@/lib/sleeper';
 import type { LeagueGame } from '@/lib/leagueSchedule';
 import { readEspnCreds } from '@/lib/espn';
@@ -319,19 +318,6 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
     ]);
     if (rosters.length === 0) return null;
 
-    /**
-     * The fixture list, which Sleeper has no endpoint for.
-     *
-     * The schedule is the matchup groupings a week at a time, so reading it
-     * means asking for each week — once per league per session, behind the
-     * snapshot cache. Only the regular season: the weeks after it are a
-     * bracket decided by the seeding this is used to project.
-     */
-    const lastRegular = (league?.settings?.playoff_week_start ?? 0) > 1
-        ? (league!.settings!.playoff_week_start as number) - 1
-        : 14;
-    const games = fixturesFrom(await getLeagueSchedule(conn.id, lastRegular));
-
     const userById = new Map(users.map(u => [u.user_id, u]));
     const startersByRoster = new Map(matchups.map(m => [m.roster_id, m.starters ?? []]));
     const matchupOf = new Map(matchups.map(m => [m.roster_id, m.matchup_id]));
@@ -404,7 +390,17 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         playoffTeams: league?.settings?.playoff_teams ?? null,
         bestBall: league?.settings?.best_ball === 1,
         scoring: scoringFrom(league?.scoring_settings),
-        games,
+        /**
+         * Not here, deliberately — see `useLeagueFixtures`.
+         *
+         * Sleeper publishes no schedule endpoint, so a fixture list costs
+         * one request per week. Fetching it inside the snapshot made every
+         * In Season page wait on fourteen requests it had no use for, to
+         * serve the one page that does. ESPN sends its schedule inside the
+         * payload this already fetches, so that path fills this in and
+         * pays nothing.
+         */
+        games: null,
     };
 }
 

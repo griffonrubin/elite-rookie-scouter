@@ -16,6 +16,7 @@ import { RunHome } from './RunHome';
 import {
     allPlay, pairingTable, scheduleStrength, scheduleUsable,
 } from '@/lib/leagueSchedule';
+import { useLeagueFixtures } from '@/lib/useLeagueFixtures';
 
 const SEASON = 2026;
 /** Where the regular season ends when the platform will not say. */
@@ -216,7 +217,7 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
      * the weeks that happened to arrive and dropping the rest produces a
      * playoff number that is specific, confident and a fraction of a season.
      */
-    const games = league.snapshot?.games ?? null;
+    const games = useLeagueFixtures(league);
     const firstAhead = (week ?? 1);
     const lastWeek = firstAhead + remaining - 1;
     const schedule = useMemo(() => {
