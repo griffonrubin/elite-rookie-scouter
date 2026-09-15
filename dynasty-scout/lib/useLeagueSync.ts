@@ -412,6 +412,24 @@ async function fetchEspn(conn: LeagueConnection, week: number): Promise<LeagueSn
         leagueName: d.name ?? null, week: d.week ?? week, teams, opponentKeyFor,
         playoffWeekStart: d.playoffWeekStart ?? null,
         playoffTeams: d.playoffTeams ?? null,
+        /**
+         * The two facts about a league that change every number in the app,
+         * which this path was silently not carrying.
+         *
+         * Both fixes landed on the Sleeper side first and stopped there, so
+         * an ESPN superflex league was still measured against a
+         * one-quarterback replacement level and an ESPN half-PPR league was
+         * still shown full-PPR totals. Nothing said so, because absent reads
+         * exactly like standard.
+         */
+        rosterPositions: d.rosterPositions ?? null,
+        // Only an explicit number changes anything, the same as Sleeper: a
+        // missing value could be a standard league or a payload that did not
+        // carry the field, and taking a point off every catch on the
+        // strength of a silence is the worse of the two mistakes.
+        scoring: typeof d.receptionPoints === 'number'
+            ? { reception: d.receptionPoints, teReceptionBonus: 0 }
+            : null,
     };
 }
 

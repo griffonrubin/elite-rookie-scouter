@@ -37,6 +37,58 @@ function dstTeamFor(playerId: number): string | null {
  */
 const BENCH_SLOTS = new Set([20, 21]);
 
+/**
+ * ESPN's lineup slots, in the names the rest of this app uses.
+ *
+ * The slot ids are stable and public; the names are ours. Only the offensive
+ * ones are here because only those get filled from the redraft pool — an IDP
+ * league's linebackers would come back as a slot nothing can be assigned to,
+ * which is a larger job than renaming a number.
+ *
+ * Slot 7 is ESPN's "OP", an offensive player, and is the superflex slot: it
+ * takes a quarterback, which is the whole reason the distinction matters to
+ * a replacement level.
+ */
+const ESPN_SLOT_NAMES: Record<number, string> = {
+    0: 'QB', 2: 'RB', 4: 'WR', 6: 'TE', 16: 'DST', 17: 'K',
+    23: 'FLEX', 7: 'SUPER_FLEX', 3: 'WRRB_FLEX', 5: 'REC_FLEX',
+};
+
+/**
+ * ESPN's stat id for a reception.
+ *
+ * Fifty-three, which is documented and stable, and the only term this reads.
+ * A league that pays something other than a point for it has every number in
+ * this app overstated on everyone who catches passes, and that is one lookup
+ * away from being right.
+ *
+ * Tight-end premium is deliberately not attempted here. ESPN expresses it as
+ * a position override inside the same scoring item rather than as its own
+ * term, and guessing at that shape without a payload to check against is how
+ * a correction becomes a new fault.
+ */
+const ESPN_RECEPTION_STAT = 53;
+
+/** The starting lineup as a list of slot names, longest leagues included. */
+export function rosterPositionsFrom(counts: Record<string, number> | null | undefined): string[] | null {
+    if (!counts) return null;
+    const out: string[] = [];
+    for (const [id, n] of Object.entries(counts)) {
+        const name = ESPN_SLOT_NAMES[Number(id)];
+        if (!name) continue;                       // bench, IR, or a slot we do not fill
+        for (let i = 0; i < Math.min(Number(n) || 0, 12); i++) out.push(name);
+    }
+    return out.length ? out : null;
+}
+
+/** Points per catch, when the league says so and not otherwise. */
+export function receptionPointsFrom(items: any[] | null | undefined): number | null {
+    if (!Array.isArray(items)) return null;
+    const rec = items.find(i => Number(i?.statId) === ESPN_RECEPTION_STAT);
+    const pts = Number(rec?.points);
+    return Number.isFinite(pts) ? pts : null;
+}
+
 interface Entry {
     playerId: string;
     dstTeam: string | null;
@@ -129,6 +181,24 @@ export async function GET(req: NextRequest) {
         playoffTeams: data?.settings?.scheduleSettings?.playoffTeamCount != null
             ? Number(data.settings.scheduleSettings.playoffTeamCount)
             : null,
+        /**
+         * The shape of a lineup here, which decides replacement level.
+         *
+         * Sleeper leagues have sent this for a while and ESPN ones never
+         * did, so an ESPN superflex league was still being measured against
+         * a one-quarterback replacement — every claimable quarterback
+         * reading as far below startable in a league that starts two.
+         */
+        rosterPositions: rosterPositionsFrom(
+            data?.settings?.rosterSettings?.lineupSlotCounts),
+        /**
+         * And what it pays per catch, for the same reason: every stored
+         * number is full PPR, and an ESPN half-PPR league was being shown a
+         * six-catch receiver three points a week clear of where its own
+         * scoring has him.
+         */
+        receptionPoints: receptionPointsFrom(
+            data?.settings?.scoringSettings?.scoringItems),
         teams: teams.map((t: any) => ({
             teamId: Number(t?.id),
             name: [t?.location, t?.nickname].filter(Boolean).join(' ').trim()

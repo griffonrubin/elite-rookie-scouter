@@ -20,6 +20,9 @@
  */
 import { query } from '../lib/db';
 import { PPR, isPpr, rescore, scoringFrom, scoringLabel, type Scoring } from '../lib/scoring';
+import { receptionPointsFrom, rosterPositionsFrom } from '../app/api/espn/league/route';
+import { eligibleForSlot } from '../lib/lineup';
+import { startersByPosition } from '../lib/waiverRank';
 
 const fails: string[] = [];
 const assert = (label: string, pass: boolean, extra = '') => {
@@ -126,6 +129,63 @@ for (let i = 0; i < moved.length; i++) {
 console.log(`        ${flips} pairs out of ${moved.length * (moved.length - 1) / 2} swap order`);
 console.log(`        e.g. ${example}`);
 assert('real pairs change places', flips > 0, `${flips}`);
+
+step(6, 'and ESPN leagues get the same two answers Sleeper ones do');
+/**
+ * Both corrections landed on the Sleeper path first and stopped there, which
+ * is the quiet way a fix reaches half its users: absent reads exactly like
+ * standard, so an ESPN superflex league kept a one-quarterback replacement
+ * level and an ESPN half-PPR league kept full-PPR totals, and nothing said
+ * so on either page.
+ *
+ * ESPN speaks in slot ids and stat ids rather than names, so the translation
+ * is the thing that can be wrong. It is checked here rather than against the
+ * live API, which is not reachable from where this was written — so what is
+ * asserted is that the mapping does what it claims, not that ESPN sends
+ * exactly this. The shapes come from ESPN's documented ids: slot 0 is a
+ * quarterback, 7 is the superflex "OP", 23 is the flex, 20 and 21 are the
+ * bench and injured reserve, and stat 53 is a reception.
+ */
+const espnStandard = rosterPositionsFrom({ '0': 1, '2': 2, '4': 2, '6': 1, '23': 1,
+    '16': 1, '17': 1, '20': 7, '21': 1 });
+const espnSuperflex = rosterPositionsFrom({ '0': 1, '2': 2, '4': 3, '6': 1, '7': 1,
+    '23': 1, '20': 6 });
+console.log(`        standard  → ${espnStandard?.join(' ')}`);
+console.log(`        superflex → ${espnSuperflex?.join(' ')}`);
+assert('the bench and injured reserve are not starting slots',
+    !!espnStandard && !espnStandard.some(x => x === 'BN' || x === 'IR')
+    && espnStandard.length === 9,
+    `${espnStandard?.length} slots`);
+assert('and the superflex slot is named as one',
+    !!espnSuperflex && espnSuperflex.includes('SUPER_FLEX'),
+    espnSuperflex?.join(' ') ?? 'none');
+
+/** The end of the chain: the same slots must move replacement level. */
+const poolForShape = await query<{ position: string | null; proj_points: number | null }>(
+    `SELECT p.position,
+            (SELECT AVG(pr.proj_points) FROM projections pr
+              WHERE pr.player_id = p.id AND pr.season = 2026
+                AND pr.scraped_at = (SELECT MAX(scraped_at) FROM projections
+                                      WHERE player_id = p.id AND season = 2026
+                                        AND source = pr.source)) AS proj_points
+       FROM players p
+      WHERE p.redraft_pool = 1 AND p.position IN ('QB','RB','WR','TE','K','DST')`, []);
+const qbStd = startersByPosition(espnStandard ?? [], 12, poolForShape, eligibleForSlot).QB;
+const qbSf = startersByPosition(espnSuperflex ?? [], 12, poolForShape, eligibleForSlot).QB;
+console.log(`        quarterbacks started: ${qbStd} standard, ${qbSf} superflex`);
+assert('an ESPN superflex league starts far more quarterbacks', qbSf > qbStd + 6,
+    `${qbSf} against ${qbStd}`);
+
+assert('a reception is read off the scoring items',
+    receptionPointsFrom([{ statId: 42, points: 0.1 }, { statId: 53, points: 0.5 }]) === 0.5,
+    `${receptionPointsFrom([{ statId: 53, points: 0.5 }])}`);
+assert('an explicit nought is a standard league, not a silence',
+    receptionPointsFrom([{ statId: 53, points: 0 }]) === 0,
+    `${receptionPointsFrom([{ statId: 53, points: 0 }])}`);
+assert('and a missing item changes nothing',
+    receptionPointsFrom([{ statId: 42, points: 0.1 }]) === null
+    && receptionPointsFrom(null) === null,
+    'null both ways');
 
 console.log(`\n${fails.length ? `FAILED: ${fails.join('; ')}` : 'every step passed'}`);
 process.exit(fails.length ? 1 : 0);
