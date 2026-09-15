@@ -13,6 +13,7 @@ import { HorizonToggle } from '@/components/redraft/HorizonToggle';
 import { PowerTable } from './PowerTable';
 import { Earned } from './Earned';
 import { RunHome } from './RunHome';
+import { AtStake } from './AtStake';
 import {
     allPlay, pairingTable, scheduleStrength, scheduleUsable,
 } from '@/lib/leagueSchedule';
@@ -273,6 +274,21 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
         return rows.length > 1 ? rows : null;
     }, [games, result.rows, remaining, firstAhead, lastWeek]);
 
+    /**
+     * Who each team plays this week, so the panel that weighs the week can
+     * name the opponent rather than just the stake.
+     */
+    const thisWeekOpponents = useMemo(() => {
+        if (!games?.length || remaining <= 0) return null;
+        const m = new Map<string, string>();
+        for (const g of games) {
+            if (g.week !== firstAhead) continue;
+            m.set(g.home, g.away);
+            m.set(g.away, g.home);
+        }
+        return m.size > 0 ? m : null;
+    }, [games, firstAhead, remaining]);
+
     const weeksAhead = useMemo(() => {
         const ws: number[] = [];
         for (let w = firstAhead; w <= lastWeek; w++) ws.push(w);
@@ -317,8 +333,17 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
                         odds={odds} spots={cut} onSpots={setSpots}
                         realSchedule={schedule?.real ?? false}
                         spotsKnown={league.snapshot?.playoffTeams != null} />
-                    {(earned || runHome) && (
+                    {(earned || runHome || (odds && horizon === 'season')) && (
                         <div className="space-y-6 pt-2 border-t border-white/[0.06]">
+                            {/* The week first, because it is the only one of
+                                the three a reader can still do something
+                                about before Sunday. */}
+                            {odds && horizon === 'season' && (
+                                <AtStake rows={result.rows} odds={odds}
+                                    myKey={league.connection.teamKey ?? null}
+                                    opponentOf={thisWeekOpponents} week={week}
+                                    realSchedule={schedule?.real ?? false} />
+                            )}
                             {earned && (
                                 <Earned rows={earned}
                                     myKey={league.connection.teamKey ?? null} />

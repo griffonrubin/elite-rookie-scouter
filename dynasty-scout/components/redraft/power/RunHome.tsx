@@ -48,7 +48,7 @@ export function RunHome({ rows, myKey, weeks }: {
     const short = shortLabels(rows);
 
     return (
-        <section className="space-y-2">
+        <section data-panel="run-home" className="space-y-2">
             <header className="flex items-baseline justify-between gap-3 flex-wrap">
                 <h3 className="text-[12px] font-semibold tracking-tight">
                     The run home
