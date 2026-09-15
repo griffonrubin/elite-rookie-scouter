@@ -93,6 +93,15 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
     const [rows, setRows] = useState<WaiverRow[]>([]);
     const [considered, setConsidered] = useState<number | null>(null);
     const [shape, setShape] = useState<Record<string, PositionShape>>({});
+    /**
+     * Positions this league fields no slot for.
+     *
+     * Kept because a kicker is worth nothing in a league that cannot start
+     * one, and the honest form of that is a sentence rather than an empty
+     * list or — worse — a ranking against some other league's replacement
+     * level.
+     */
+    const [unplayed, setUnplayed] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [sort, setSort] = useState<SortKey>('season');
     const [pos, setPos] = useState<(typeof POSITIONS)[number] | null>(null);
@@ -171,27 +180,51 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
     const schedule = useSchedule(league.week, league.snapshot?.playoffWeekStart ?? null);
 
     const week = league.week;
+    /**
+     * The shape, but only when the platform really told us.
+     *
+     * `slots` above falls back to a standard lineup when roster_positions is
+     * missing, which is right for laying out a board and wrong for this:
+     * sending a guess as though it were the league would have the route
+     * compute a replacement level from a league that does not exist. Silence
+     * is better — the route then uses the same constants it always did.
+     */
+    const knownSlots = league.snapshot?.rosterPositions?.length ? slots : [];
+    const teamCount = league.snapshot?.teams.length ?? 0;
     useEffect(() => {
         if (!taken || week == null) return;
         let cancelled = false;
         setLoading(true);
+        /**
+         * The league's own shape goes with the request, because replacement
+         * level is a fact about the league rather than about football. A
+         * superflex league starts roughly two quarterbacks a team, so its
+         * replacement quarterback is the twenty-fourth and not the twelfth —
+         * and against the twelfth every claimable quarterback reads as far
+         * below startable, which is backwards on a wire where streaming them
+         * is half the point.
+         */
         const q = `?week=${week}&limit=60`
             + (shownPos === 'ALL' ? '' : `&pos=${shownPos}`)
+            + (knownSlots.length ? `&slots=${knownSlots.join(',')}` : '')
+            + (teamCount ? `&teams=${teamCount}` : '')
             + (taken.size ? `&taken=${[...taken].join(',')}` : '');
         fetch(`/api/redraft/waivers${q}`)
             .then(r => r.json())
             .then((d: {
                 players: WaiverRow[]; considered: number;
                 byPosition: Record<string, PositionShape>;
+                unplayed?: string[];
             }) => {
                 if (cancelled) return;
                 setRows(d.players ?? []);
                 setConsidered(d.considered ?? null);
                 setShape(d.byPosition ?? {});
+                setUnplayed(d.unplayed ?? []);
             })
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
-    }, [taken, week, shownPos]);
+    }, [taken, week, shownPos, knownSlots.join(','), teamCount]);
 
     /**
      * This week's projection for the candidates and for my own roster.
@@ -345,6 +378,8 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
                         {POSITIONS.map(p => (
                             <button key={p} type="button" onClick={() => setPos(p)}
                                 aria-pressed={shownPos === p}
+                                title={unplayed.includes(p)
+                                    ? 'this league fields no slot for it' : undefined}
                                 className={`px-2 py-0.5 rounded text-[11px] font-bold
                                             transition-colors ${shownPos === p
                                     ? 'bg-white/[0.12] text-foreground'
@@ -377,7 +412,20 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
                     {sortNote}
                 </p>
 
-                {loading && rows.length === 0 ? (
+                {/*
+                    A position the league does not field is answered before
+                    the list is, because no ordering of it would be true: a
+                    kicker is worth nothing in a league that cannot start one,
+                    and ranking him against some other league's replacement
+                    level is the quiet version of the same mistake.
+                */}
+                {unplayed.includes(shownPos) ? (
+                    <p className="text-[12px] text-muted-foreground/55 py-3 max-w-[620px]">
+                        This league starts no {shownPos === 'DST' ? 'defence' : shownPos}.
+                        There is no slot to put one in, so there is nothing here worth
+                        claiming at that position — which is itself the answer.
+                    </p>
+                ) : loading && rows.length === 0 ? (
                     <p className="text-[12px] text-muted-foreground/55 py-3">
                         Working out who is actually available…
                     </p>
