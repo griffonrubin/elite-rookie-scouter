@@ -22,6 +22,7 @@ import {
     scheduleUsable, pairingTable, scheduleStrength, allPlay, type LeagueGame,
 } from '../lib/leagueSchedule';
 import { fixturesFrom } from '../lib/sleeper';
+import { playoffOdds, type PowerRow } from '../lib/power';
 
 const fails: string[] = [];
 const assert = (label: string, pass: boolean, extra = '') => {
@@ -262,6 +263,87 @@ step(10, 'an incomplete Sleeper season falls back rather than half-simulating');
 assert('the partial season is refused', !scheduleUsable(mapped, ['1', '2', '3', '4'], 1, 3));
 assert('and the one complete week is still usable on its own',
     scheduleUsable(mapped, ['1', '2', '3', '4'], 1, 1));
+
+step(11, 'the run home changes the odds, which a random schedule cannot show');
+/**
+ * The whole reason for reading a fixture list. Same six rosters, same
+ * record, same seed — only the opponents change. A middling team handed
+ * the three weakest rosters has to finish better than the same team handed
+ * the three strongest, and a schedule drawn at random has to land between
+ * the two, because a random schedule is every fixture list averaged.
+ *
+ * This is the assertion that would have caught the fixture list being
+ * ignored: pass it, drop it on the floor, and all three numbers come back
+ * identical.
+ */
+const strengths: Record<string, number> = {
+    a: 0.50, b: 0.80, c: 0.75, d: 0.70, e: 0.25, f: 0.20,
+};
+/** Head to head from two win rates, the usual log-odds comparison. */
+const h2h = (me: number, them: number) => {
+    const lo = (p: number) => Math.log(p / (1 - p));
+    return 1 / (1 + Math.exp(-(lo(me) - lo(them))));
+};
+const oddsRows: PowerRow[] = Object.keys(strengths).map((k, i) => ({
+    key: k, name: k.toUpperCase(),
+    winRate: strengths[k],
+    expected: 100 + strengths[k] * 40,
+    rank: i + 1, tied: false, pointsRank: null, recordRank: null, luckGap: null,
+    record: { wins: 3, losses: 3, ties: 0, pointsFor: 700, pointsAgainst: 700 },
+    against: Object.fromEntries(Object.keys(strengths)
+        .filter(o => o !== k).map(o => [o, h2h(strengths[k], strengths[o])])),
+    priced: 9, filled: 9, slots: 9,
+}));
+
+/** Three weeks in which `a` draws e, f, e — the bottom of the league. */
+const soft: LeagueGame[] = [
+    { week: 1, home: 'a', away: 'e' }, { week: 1, home: 'b', away: 'c' },
+    { week: 1, home: 'd', away: 'f' },
+    { week: 2, home: 'a', away: 'f' }, { week: 2, home: 'b', away: 'd' },
+    { week: 2, home: 'c', away: 'e' },
+    { week: 3, home: 'a', away: 'e' }, { week: 3, home: 'c', away: 'd' },
+    { week: 3, home: 'b', away: 'f' },
+];
+/** And three in which it draws b, c, d — the top. */
+const hard: LeagueGame[] = [
+    { week: 1, home: 'a', away: 'b' }, { week: 1, home: 'c', away: 'e' },
+    { week: 1, home: 'd', away: 'f' },
+    { week: 2, home: 'a', away: 'c' }, { week: 2, home: 'b', away: 'e' },
+    { week: 2, home: 'd', away: 'f' },
+    { week: 3, home: 'a', away: 'd' }, { week: 3, home: 'b', away: 'f' },
+    { week: 3, home: 'c', away: 'e' },
+];
+const KEYS6 = oddsRows.map(r => r.key);
+assert('both fixture lists are complete',
+    scheduleUsable(soft, KEYS6, 1, 3) && scheduleUsable(hard, KEYS6, 1, 3));
+
+const run = (games: LeagueGame[] | null) => playoffOdds(
+    oddsRows, 3, 3, 20000, 41,
+    games ? pairingTable(games, KEYS6, 1, 3) : null);
+const easy = run(soft).get('a')!.odds;
+const tough = run(hard).get('a')!.odds;
+const drawn = run(null).get('a')!.odds;
+assert('the soft run home finishes better than the hard one', easy - tough > 0.10,
+    `${(easy * 100).toFixed(1)}% vs ${(tough * 100).toFixed(1)}%`);
+assert('and a random schedule sits between them',
+    drawn > tough && drawn < easy, `${(drawn * 100).toFixed(1)}%`);
+
+step(12, 'a fixture list is played once, not twice');
+/**
+ * Each pair is settled by the team with the lower index, and getting that
+ * wrong is silent: the league plays every week twice, every team finishes
+ * on double the wins, and the odds still look like odds.
+ */
+const finals = run(soft);
+const banked = 3;  // wins, from the record above
+const totalWins = KEYS6.reduce((sum, k) => sum + finals.get(k)!.wins, 0);
+const seasonWins = KEYS6.length * banked + (KEYS6.length / 2) * 3;
+assert('the league finishes on the wins its fixtures hand out',
+    Math.abs(totalWins - seasonWins) <= KEYS6.length / 2,
+    `${totalWins} against ${seasonWins} — medians, so a little slack`);
+assert('nobody finishes above what they could have played',
+    KEYS6.every(k => finals.get(k)!.wins <= banked + 3),
+    KEYS6.map(k => `${k}:${finals.get(k)!.wins}`).join(' '));
 
 console.log(fails.length === 0
     ? '\nevery step passed\n'
