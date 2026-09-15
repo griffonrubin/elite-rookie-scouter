@@ -1,0 +1,351 @@
+/**
+ * A record, the schedule that produced it, and the two ways of getting this
+ * wrong that would not show up on a page.
+ *
+ * The all-play record is the sort of arithmetic that looks right whichever
+ * way round it is: a number near .500 with a plausible spread. So the
+ * fixtures here are built so that the right answer and the wrong one are far
+ * apart — a team that scores second in the league every single week and
+ * loses every single week has an all-play rate near .900 and a record of
+ * nothing, and any implementation that quietly uses its own result instead
+ * of the league's will read .500 and be caught.
+ *
+ * The other failure is the one that matters more, because it degrades
+ * instead of erroring: a fixture list a platform only half delivered. Three
+ * weeks of a six-week run home, simulated, gives a playoff number that is
+ * specific, confident and half a season. The guard is asserted in the
+ * failing direction against every shape of incomplete schedule I could
+ * think of, because it is the only thing standing between a partial fetch
+ * and a wrong number nobody can see is wrong.
+ */
+import {
+    scheduleUsable, pairingTable, scheduleStrength, allPlay, type LeagueGame,
+} from '../lib/leagueSchedule';
+import { fixturesFrom } from '../lib/sleeper';
+import { playoffOdds, type PowerRow } from '../lib/power';
+
+const fails: string[] = [];
+const assert = (label: string, pass: boolean, extra = '') => {
+    console.log(`   ${pass ? 'ok  ' : 'FAIL'} ${label}${extra ? '  ' + extra : ''}`);
+    if (!pass) fails.push(label);
+};
+const step = (n: number | string, s: string) => console.log(`\n── ${n}. ${s}`);
+
+/** A complete round robin over `n` teams for `weeks` weeks, circle method. */
+function roundRobin(keys: string[], weeks: number, from = 1): LeagueGame[] {
+    const n = keys.length;
+    const ring = keys.slice();
+    if (n % 2 === 1) ring.push('__bye');
+    const m = ring.length;
+    const out: LeagueGame[] = [];
+    for (let w = 0; w < weeks; w++) {
+        for (let i = 0; i < m / 2; i++) {
+            const a = ring[i], b = ring[m - 1 - i];
+            if (a !== '__bye' && b !== '__bye') out.push({ week: from + w, home: a, away: b });
+        }
+        ring.splice(1, 0, ring.pop()!);   // rotate, first team fixed
+    }
+    return out;
+}
+
+const KEYS = ['a', 'b', 'c', 'd', 'e', 'f'];
+
+step(1, 'a complete fixture list is usable, and a partial one is not');
+const full = roundRobin(KEYS, 5);
+assert('the round robin passes', scheduleUsable(full, KEYS, 1, 5),
+    `${full.length} games over 5 weeks`);
+
+const missingWeek = full.filter(g => g.week !== 3);
+assert('a missing week is refused', !scheduleUsable(missingWeek, KEYS, 1, 5));
+
+const halfWeek = full.filter(g => !(g.week === 3 && g.home === 'a'));
+assert('a week one game short is refused', !scheduleUsable(halfWeek, KEYS, 1, 5));
+
+const doubled = full.concat([{ week: 2, home: 'a', away: 'b' }]);
+assert('a team playing twice in a week is refused', !scheduleUsable(doubled, KEYS, 1, 5));
+
+assert('a range beyond the fixtures is refused', !scheduleUsable(full, KEYS, 1, 6));
+assert('and the weeks inside it still pass', scheduleUsable(full, KEYS, 2, 4));
+
+step(2, 'an odd league, where somebody sits out every week');
+const odd = ['a', 'b', 'c', 'd', 'e'];
+const oddGames = roundRobin(odd, 5);
+assert('one team idle per week is allowed for', scheduleUsable(oddGames, odd, 1, 5),
+    `${oddGames.length} games, 2 per week`);
+
+step(3, 'the pairing table agrees with itself');
+const table = pairingTable(full, KEYS, 1, 5);
+let symmetric = true, paired = 0;
+for (let w = 0; w < 5; w++) {
+    for (let i = 0; i < KEYS.length; i++) {
+        const j = table[w * KEYS.length + i];
+        if (j < 0) continue;
+        paired++;
+        if (table[w * KEYS.length + j] !== i) symmetric = false;
+    }
+}
+assert('every opponent has you as their opponent', symmetric);
+assert('and everybody is paired every week', paired === KEYS.length * 5, `${paired} slots`);
+
+step(4, 'a team that scores second every week and loses every week');
+/**
+ * `b` scores 140 every week — second in the league, behind `a` on 200 and
+ * ahead of everybody else on 100 to 130 — and is scheduled against `a` every
+ * single week. So its scores beat four of the other five teams and its
+ * record is nothing at all: the largest gap between deserved and banked a
+ * league can produce.
+ */
+const cruel: LeagueGame[] = [];
+for (let w = 1; w <= 8; w++) {
+    cruel.push({ week: w, home: 'a', away: 'b', homePoints: 200, awayPoints: 140 });
+    cruel.push({ week: w, home: 'c', away: 'd', homePoints: 130, awayPoints: 120 });
+    cruel.push({ week: w, home: 'e', away: 'f', homePoints: 110, awayPoints: 100 });
+}
+const ap = allPlay(cruel, KEYS);
+const b = ap.get('b')!;
+assert('its all-play rate is near the top of the league', b.rate > 0.75,
+    `${(b.rate * 100).toFixed(0)}% over ${b.allPlayGames} all-play games`);
+assert('and its actual record is nothing', b.actualWins === 0);
+assert('so the gap is large and negative', b.luck < -5,
+    `${b.luck.toFixed(1)} wins below what it scored`);
+assert('and it clears the noise band', b.notable, `sd ${b.sd.toFixed(2)}`);
+const a = ap.get('a')!;
+assert('the team it kept beating is not flattered', Math.abs(a.luck) < 0.5,
+    `${a.luck.toFixed(1)} — it outscored everybody and won everything`);
+
+step(5, 'the all-play wins are conserved, which a per-team loop would not be');
+const total = KEYS.reduce((s, k) => s + ap.get(k)!.allPlayWins, 0);
+const expect = 8 * (KEYS.length * (KEYS.length - 1)) / 2;
+assert('every week hands out exactly one win per pair', total === expect,
+    `${total} of ${expect}`);
+
+step(6, 'a one-win gap over eight weeks is not evidence');
+/**
+ * Six teams, scores drawn so that everybody is close, and one team handed a
+ * single extra win by its fixtures. The gap is real arithmetic and it is
+ * inside a coin's swing, so the flag has to stay off — the whole point of
+ * carrying `sd` beside `luck`.
+ */
+const close: LeagueGame[] = [];
+for (let w = 1; w <= 8; w++) {
+    const edge = w <= 5 ? 1 : -1;   // a wins 5, loses 3, on near-level scores
+    close.push({ week: w, home: 'a', away: 'b', homePoints: 120 + edge, awayPoints: 120 });
+    close.push({ week: w, home: 'c', away: 'd', homePoints: 121, awayPoints: 119 });
+    close.push({ week: w, home: 'e', away: 'f', homePoints: 118, awayPoints: 122 });
+}
+const near = allPlay(close, KEYS).get('a')!;
+assert('the gap is under a win and a half', Math.abs(near.luck) < 1.5,
+    `${near.luck.toFixed(2)}`);
+assert('and it is not called notable', !near.notable,
+    `needs ${(1.28 * near.sd).toFixed(2)}`);
+
+step(7, 'an unplayed week is not a nil-nil draw');
+const withFuture = cruel.concat(roundRobin(KEYS, 3, 9));
+const later = allPlay(withFuture, KEYS).get('b')!;
+assert('weeks with no score are skipped', later.played === b.played,
+    `${later.played} played, ${withFuture.length - cruel.length} fixtures ahead`);
+assert('and the rate is unchanged', Math.abs(later.rate - b.rate) < 1e-9);
+
+step(8, 'strength of schedule ranks the run home, not the season so far');
+/**
+ * Six teams of known strength, and `a` scheduled against the three best in
+ * the weeks that are left after facing the two worst in the weeks gone.
+ * A measure that pooled the whole season would call that an average
+ * schedule; the split is the point, so both halves are asserted.
+ *
+ * No team can be given the mirror image of it — in a closed round robin the
+ * strong rosters `a` avoids early have to play somebody, so the softest run
+ * home is not free to hand out. That is a fact about schedules rather than a
+ * limitation of the fixture, and it is why the ordering is checked against
+ * the opponent means themselves rather than against a place picked in
+ * advance: a claim written to a hoped-for rank passes by being lucky.
+ */
+const strength = [
+    { key: 'a', expected: 110 }, { key: 'b', expected: 130 },
+    { key: 'c', expected: 128 }, { key: 'd', expected: 126 },
+    { key: 'e', expected: 92 }, { key: 'f', expected: 90 },
+];
+const split: LeagueGame[] = [
+    // Weeks gone: a draws the two weakest rosters in the league.
+    { week: 1, home: 'a', away: 'e' }, { week: 1, home: 'b', away: 'c' },
+    { week: 1, home: 'd', away: 'f' },
+    { week: 2, home: 'a', away: 'f' }, { week: 2, home: 'b', away: 'd' },
+    { week: 2, home: 'c', away: 'e' },
+    { week: 3, home: 'a', away: 'e' }, { week: 3, home: 'c', away: 'd' },
+    { week: 3, home: 'b', away: 'f' },
+    // Run home: a draws the three best.
+    { week: 4, home: 'a', away: 'b' }, { week: 4, home: 'c', away: 'e' },
+    { week: 4, home: 'd', away: 'f' },
+    { week: 5, home: 'a', away: 'c' }, { week: 5, home: 'b', away: 'e' },
+    { week: 5, home: 'd', away: 'f' },
+    { week: 6, home: 'a', away: 'd' }, { week: 6, home: 'b', away: 'f' },
+    { week: 6, home: 'c', away: 'e' },
+];
+const sos = scheduleStrength(strength, split, 4, 6);
+const aSos = sos.get('a')!;
+assert('the softest schedule in the league becomes one of the hardest',
+    aSos.playedRank === strength.length && aSos.rank <= 2,
+    `played rank ${aSos.playedRank} of ${strength.length}, remaining rank ${aSos.rank}`);
+assert('the opponents come back in week order and only the ones ahead',
+    aSos.opponents.map(o => o.key).join(',') === 'b,c,d');
+assert('and the weeks already played were the soft half',
+    (aSos.playedMeanOpponent ?? 0) < aSos.meanOpponent,
+    `had ${aSos.playedMeanOpponent?.toFixed(1)}, has ${aSos.meanOpponent.toFixed(1)}`);
+
+/** The ranking has to be the mean order, including the ties. */
+const byMean = strength.map(t => sos.get(t.key)!)
+    .sort((x, y) => y.meanOpponent - x.meanOpponent);
+let ordered = true;
+byMean.forEach((r, i) => {
+    if (i === 0) return;
+    const prev = byMean[i - 1];
+    if (r.meanOpponent < prev.meanOpponent && r.rank <= prev.rank) ordered = false;
+    if (r.meanOpponent === prev.meanOpponent && r.rank !== prev.rank) ordered = false;
+});
+assert('every rank agrees with its mean, ties shared', ordered,
+    byMean.map(r => `${r.key} ${r.meanOpponent.toFixed(1)}#${r.rank}`).join('  '));
+
+step(9, "Sleeper's groupings, which are the only schedule it publishes");
+/**
+ * Sleeper has no schedule endpoint. The fixture list is the matchup
+ * groupings, one week at a time, and the shapes that come back are not all
+ * games: before a league sets its schedule every roster has a null
+ * matchup_id, and a league mid-setup can return an id with one roster under
+ * it. Both have to be dropped rather than guessed at, because the reward
+ * for guessing is a fixture list that passes its completeness check and is
+ * wrong.
+ */
+const weekly = [
+    {
+        week: 1, matchups: [
+            { roster_id: 3, matchup_id: 1, starters: null, players: null, points: 118.4 },
+            { roster_id: 1, matchup_id: 1, starters: null, players: null, points: 102.2 },
+            { roster_id: 2, matchup_id: 2, starters: null, players: null, points: 95.0 },
+            { roster_id: 4, matchup_id: 2, starters: null, players: null, points: 131.6 },
+        ],
+    },
+    {
+        // A week ahead of the schedule being set: no ids at all.
+        week: 2, matchups: [
+            { roster_id: 1, matchup_id: null, starters: null, players: null, points: 0 },
+            { roster_id: 2, matchup_id: null, starters: null, players: null, points: 0 },
+        ],
+    },
+    {
+        // A group of one, which is not a game.
+        week: 3, matchups: [
+            { roster_id: 1, matchup_id: 7, starters: null, players: null, points: 0 },
+            { roster_id: 2, matchup_id: 8, starters: null, players: null, points: 0 },
+            { roster_id: 3, matchup_id: 8, starters: null, players: null, points: 0 },
+        ],
+    },
+];
+const mapped = fixturesFrom(weekly);
+assert('only the real pairs become fixtures', mapped.length === 3,
+    mapped.map(g => `w${g.week} ${g.home}v${g.away}`).join('  '));
+assert('a null matchup id is dropped', !mapped.some(g => g.week === 2));
+assert('a group of one is dropped', !mapped.some(g => g.home === '1' && g.week === 3));
+const w1 = mapped.filter(g => g.week === 1);
+assert('the lower roster id is home, so a fixture is the same way round twice',
+    w1.every(g => Number(g.home) < Number(g.away)),
+    w1.map(g => `${g.home}v${g.away}`).join(' '));
+assert('and the scores travel with the right side',
+    w1.find(g => g.home === '1')?.awayPoints === 118.4
+    && w1.find(g => g.home === '1')?.homePoints === 102.2);
+
+step(10, 'an incomplete Sleeper season falls back rather than half-simulating');
+/**
+ * The realistic failure: a league whose future weeks come back with no
+ * matchup ids. Three of the four teams' weeks are missing, so the fixture
+ * list must be refused — a playoff number simulated over the one week that
+ * survived would be specific, confident and a quarter of a season.
+ */
+assert('the partial season is refused', !scheduleUsable(mapped, ['1', '2', '3', '4'], 1, 3));
+assert('and the one complete week is still usable on its own',
+    scheduleUsable(mapped, ['1', '2', '3', '4'], 1, 1));
+
+step(11, 'the run home changes the odds, which a random schedule cannot show');
+/**
+ * The whole reason for reading a fixture list. Same six rosters, same
+ * record, same seed — only the opponents change. A middling team handed
+ * the three weakest rosters has to finish better than the same team handed
+ * the three strongest, and a schedule drawn at random has to land between
+ * the two, because a random schedule is every fixture list averaged.
+ *
+ * This is the assertion that would have caught the fixture list being
+ * ignored: pass it, drop it on the floor, and all three numbers come back
+ * identical.
+ */
+const strengths: Record<string, number> = {
+    a: 0.50, b: 0.80, c: 0.75, d: 0.70, e: 0.25, f: 0.20,
+};
+/** Head to head from two win rates, the usual log-odds comparison. */
+const h2h = (me: number, them: number) => {
+    const lo = (p: number) => Math.log(p / (1 - p));
+    return 1 / (1 + Math.exp(-(lo(me) - lo(them))));
+};
+const oddsRows: PowerRow[] = Object.keys(strengths).map((k, i) => ({
+    key: k, name: k.toUpperCase(),
+    winRate: strengths[k],
+    expected: 100 + strengths[k] * 40,
+    rank: i + 1, tied: false, pointsRank: null, recordRank: null, luckGap: null,
+    record: { wins: 3, losses: 3, ties: 0, pointsFor: 700, pointsAgainst: 700 },
+    against: Object.fromEntries(Object.keys(strengths)
+        .filter(o => o !== k).map(o => [o, h2h(strengths[k], strengths[o])])),
+    priced: 9, filled: 9, slots: 9,
+}));
+
+/** Three weeks in which `a` draws e, f, e — the bottom of the league. */
+const soft: LeagueGame[] = [
+    { week: 1, home: 'a', away: 'e' }, { week: 1, home: 'b', away: 'c' },
+    { week: 1, home: 'd', away: 'f' },
+    { week: 2, home: 'a', away: 'f' }, { week: 2, home: 'b', away: 'd' },
+    { week: 2, home: 'c', away: 'e' },
+    { week: 3, home: 'a', away: 'e' }, { week: 3, home: 'c', away: 'd' },
+    { week: 3, home: 'b', away: 'f' },
+];
+/** And three in which it draws b, c, d — the top. */
+const hard: LeagueGame[] = [
+    { week: 1, home: 'a', away: 'b' }, { week: 1, home: 'c', away: 'e' },
+    { week: 1, home: 'd', away: 'f' },
+    { week: 2, home: 'a', away: 'c' }, { week: 2, home: 'b', away: 'e' },
+    { week: 2, home: 'd', away: 'f' },
+    { week: 3, home: 'a', away: 'd' }, { week: 3, home: 'b', away: 'f' },
+    { week: 3, home: 'c', away: 'e' },
+];
+const KEYS6 = oddsRows.map(r => r.key);
+assert('both fixture lists are complete',
+    scheduleUsable(soft, KEYS6, 1, 3) && scheduleUsable(hard, KEYS6, 1, 3));
+
+const run = (games: LeagueGame[] | null) => playoffOdds(
+    oddsRows, 3, 3, 20000, 41,
+    games ? pairingTable(games, KEYS6, 1, 3) : null);
+const easy = run(soft).get('a')!.odds;
+const tough = run(hard).get('a')!.odds;
+const drawn = run(null).get('a')!.odds;
+assert('the soft run home finishes better than the hard one', easy - tough > 0.10,
+    `${(easy * 100).toFixed(1)}% vs ${(tough * 100).toFixed(1)}%`);
+assert('and a random schedule sits between them',
+    drawn > tough && drawn < easy, `${(drawn * 100).toFixed(1)}%`);
+
+step(12, 'a fixture list is played once, not twice');
+/**
+ * Each pair is settled by the team with the lower index, and getting that
+ * wrong is silent: the league plays every week twice, every team finishes
+ * on double the wins, and the odds still look like odds.
+ */
+const finals = run(soft);
+const banked = 3;  // wins, from the record above
+const totalWins = KEYS6.reduce((sum, k) => sum + finals.get(k)!.wins, 0);
+const seasonWins = KEYS6.length * banked + (KEYS6.length / 2) * 3;
+assert('the league finishes on the wins its fixtures hand out',
+    Math.abs(totalWins - seasonWins) <= KEYS6.length / 2,
+    `${totalWins} against ${seasonWins} — medians, so a little slack`);
+assert('nobody finishes above what they could have played',
+    KEYS6.every(k => finals.get(k)!.wins <= banked + 3),
+    KEYS6.map(k => `${k}:${finals.get(k)!.wins}`).join(' '));
+
+console.log(fails.length === 0
+    ? '\nevery step passed\n'
+    : `\n${fails.length} FAILED\n${fails.map(f => '  · ' + f).join('\n')}\n`);
+process.exit(fails.length === 0 ? 0 : 1);

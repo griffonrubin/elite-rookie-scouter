@@ -354,11 +354,18 @@ export function seasonOutlook(
  * wins, so somebody's good season is somebody else's bad one, which is the
  * only way a finishing position means anything.
  *
- * The schedule itself is unknown and is drawn at random each trial. That is
- * the honest assumption rather than a convenient one: whose remaining
- * fixtures are soft is exactly what a ranking by roster is trying not to
- * measure, and a reader who wants their real schedule has it on their
- * platform.
+ * The schedule is the league's own where the platform will give a complete
+ * one, and drawn at random each trial where it will not. Those are
+ * different claims and the page says which is in use, because they differ
+ * by more than the caveat suggests: a random schedule is every team's
+ * fixtures averaged, so it systematically understates the best and worst
+ * runs home — the two cases an owner is actually asking about. Six weeks
+ * against the top three rosters is not the mean schedule and no number of
+ * trials makes it one.
+ *
+ * A partial fixture list is refused upstream rather than patched, because
+ * simulating the weeks a platform happened to return and dropping the rest
+ * gives a number that is specific, confident and a fraction of a season.
  */
 export interface PlayoffOdds {
     key: string;
@@ -378,6 +385,13 @@ export function playoffOdds(
     spots: number,
     trials = 10000,
     seed = 41,
+    /**
+     * The league's own fixtures for the weeks being played, as
+     * `pairingTable` builds them: opponent index per team per week, -1 for
+     * a team idle that week. Undefined draws the schedule at random, which
+     * is what this did before any platform was asked for one.
+     */
+    pairs?: Int32Array | null,
 ): Map<string, PlayoffOdds> {
     const out = new Map<string, PlayoffOdds>();
     const n = rows.length;
@@ -413,9 +427,22 @@ export function playoffOdds(
     const wins = new Float64Array(n);
     const rank = new Int32Array(n);
 
+    const real = pairs != null && pairs.length >= n * remaining;
     for (let t = 0; t < trials; t++) {
         for (let i = 0; i < n; i++) wins[i] = startWins[i];
         for (let w = 0; w < remaining; w++) {
+            if (real) {
+                // The fixture list. Each pair is settled once — the team
+                // with the lower index owns the game — or a league would
+                // play every week twice and hand out two wins a fixture.
+                for (let a = 0; a < n; a++) {
+                    const b = pairs![w * n + a];
+                    if (b < 0 || b <= a) continue;
+                    if (rng() < beat[a * n + b]) wins[a]++;
+                    else wins[b]++;
+                }
+                continue;
+            }
             // Fisher-Yates, then pair off adjacent entries. With an odd
             // number of teams the last one sits the week out, which is what
             // a bye week in a league of that shape actually is.

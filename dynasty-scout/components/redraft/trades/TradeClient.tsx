@@ -8,6 +8,8 @@ import { SimPlayer } from '@/lib/startSit';
 import { useStartSitData } from '@/lib/useStartSit';
 import { simInputFor, simPlayerFrom, type Horizon } from '@/lib/simInput';
 import { evaluateTrade, TradeResult, TradeRosterPlayer, TradeTeam } from '@/lib/trade';
+import { pairingTable, scheduleUsable } from '@/lib/leagueSchedule';
+import { useLeagueFixtures } from '@/lib/useLeagueFixtures';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
 import { HorizonToggle } from '@/components/redraft/HorizonToggle';
 import { TradeFinder } from './TradeFinder';
@@ -233,6 +235,38 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
         return measured.length >= 2 ? rankLeague(measured) : [];
     }, [ready, teams, slots, simOf]);
 
+    /**
+     * How many teams make the playoffs, which is where a trade's real
+     * verdict is decided.
+     *
+     * Where the platform will not say, half the league — the same fallback
+     * the Power page uses, and the number is named on the panel so a
+     * reader whose league is different knows to discount it.
+     */
+    const cut = league.snapshot?.playoffTeams
+        ?? Math.max(2, Math.round((teams?.length ?? 12) / 2));
+
+    /**
+     * The league's own run home, so a trade is judged against the weeks it
+     * will actually be played in.
+     *
+     * It matters more here than anywhere: a trade that adds two points a
+     * week is worth a great deal to a team on the cut line with three of
+     * the best rosters left to play and almost nothing to the same team
+     * with three of the worst. A schedule drawn at random averages that
+     * away, which is to average away the reason for asking.
+     */
+    const games = useLeagueFixtures(league);
+    const firstAhead = week ?? 1;
+    const lastWeek = firstAhead + remaining - 1;
+    const pairs = useMemo(() => {
+        const keys = (teams ?? []).map(t => t.key);
+        if (!games?.length || keys.length < 2 || remaining <= 0) return null;
+        return scheduleUsable(games, keys, firstAhead, lastWeek)
+            ? pairingTable(games, keys, firstAhead, lastWeek)
+            : null;
+    }, [games, teams, remaining, firstAhead, lastWeek]);
+
     const result: TradeResult | null = useMemo(() => {
         if (!ready || !teams || !me || !them) return null;
         if (giving.size === 0 && theirGive.size === 0) return null;
@@ -242,8 +276,16 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
         return evaluateTrade(asTeams, slots,
             { teamKey: me.key, give: [...giving] },
             { teamKey: them.key, give: [...theirGive] },
-            simOf, TRIALS);
-    }, [ready, teams, me, them, giving, theirGive, slots, simOf]);
+            simOf, TRIALS, 23,
+            // Only over the rest of the season. Asked of a single week the
+            // question is meaningless — one Sunday does not have playoff
+            // odds — and answering it anyway would put a number on the page
+            // that moves for no reason a reader could follow.
+            horizon === 'season' && remaining > 0
+                ? { remaining, spots: cut, pairs }
+                : null);
+    }, [ready, teams, me, them, giving, theirGive, slots, simOf,
+        horizon, remaining, cut, pairs]);
 
     const nameOf = (id: number) =>
         teams?.flatMap(t => t.roster).find(p => p.id === id)?.name ?? String(id);
@@ -367,7 +409,8 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                     {result ? (
                         <TradeVerdict result={result} myKey={myKey}
                             nameOf={nameOf} positionOf={positionOf} trials={TRIALS}
-                            horizon={horizon} />
+                            horizon={horizon} spots={cut} realSchedule={pairs != null}
+                            spotsKnown={league.snapshot?.playoffTeams != null} />
                     ) : (
                         <p className="text-[12px] text-muted-foreground/50 py-2">
                             Pick a player from either roster. A one-sided offer is a

@@ -22,7 +22,7 @@
  */
 import { SimPlayer } from '@/lib/startSit';
 import { eligibleForSlot } from '@/lib/lineup';
-import { powerRank, PowerRow, PowerTeam } from '@/lib/power';
+import { playoffOdds, powerRank, PowerRow, PowerTeam } from '@/lib/power';
 
 export interface TradeRosterPlayer {
     id: number;
@@ -106,6 +106,22 @@ export interface TradeEffect {
     /** Expected lineup score before and after. */
     pointsBefore: number;
     pointsAfter: number;
+    /**
+     * The share of seasons this team is still playing in January, before
+     * and after — null unless the caller asked for the season to be played
+     * out.
+     *
+     * This is the number the win rate is standing in for. A rate says a
+     * roster got better; it does not say whether that matters, and whether
+     * it matters is the whole question: the same two points of win rate is
+     * the difference between missing and making the playoffs for a team on
+     * the cut line and nothing at all for a team already in or already out.
+     * An owner is not trying to have a good roster, they are trying to
+     * still be playing.
+     */
+    oddsBefore: number | null;
+    oddsAfter: number | null;
+    oddsDelta: number | null;
 }
 
 /** What a team's lineup does, for the two teams in the trade. */
@@ -146,6 +162,30 @@ export interface TradeResult {
 export const TRADE_NOISE = 0.004;
 
 /**
+ * How far playoff odds have to move before the move is the trade's doing.
+ *
+ * A percentage point, measured the way the others here were: the same
+ * trade re-run from eight seeds in a twelve-team league with seven weeks
+ * left. A swap that barely changes a lineup moves the odds by 0.26 points
+ * across those seeds on the league's own fixtures and 0.45 on a random
+ * schedule, so a floor of one point sits clear of both.
+ *
+ * It is a coarser number than TRADE_NOISE for a reason worth stating on
+ * the page. Odds are a step function of wins — a team on the cut line
+ * converts a fraction of a win into ten points of playoff odds, and a team
+ * already in or already out converts the same fraction into nothing — so
+ * the same trade honestly reads as enormous for one owner and as nothing
+ * for another. That is not noise, it is the answer.
+ *
+ * The seed-to-seed swing does grow with the size of the move: a
+ * blockbuster worth fifty-four points of odds swung by 1.6 on real
+ * fixtures and 3.0 on a random schedule. A flat floor is therefore
+ * conservative where it matters — near zero, where a reader is deciding
+ * whether anything happened at all.
+ */
+export const ODDS_NOISE = 0.01;
+
+/**
  * Run the league before and after, and report what moved.
  *
  * `simOf` must return null for a player whose week could not be priced; the
@@ -160,6 +200,20 @@ export function evaluateTrade(
     simOf: (id: number) => SimPlayer | null,
     trials = 20000,
     seed = 23,
+    /**
+     * Play the rest of the season out either side of the trade, so the
+     * verdict can be given in the currency an owner actually holds.
+     *
+     * `pairs` is the league's own fixture list where the platform gave a
+     * complete one, from `pairingTable`; without it the remaining weeks
+     * are drawn at random, exactly as the Power page does, and the caller
+     * says which on the page.
+     */
+    season?: {
+        remaining: number;
+        spots: number;
+        pairs?: Int32Array | null;
+    } | null,
 ): TradeResult {
     const give = new Map([[a.teamKey, new Set(a.give)], [b.teamKey, new Set(b.give)]]);
     const byKey = new Map(teams.map(t => [t.key, t]));
@@ -218,11 +272,28 @@ export function evaluateTrade(
     const after = powerRank(powerTeams(lineupsAfter), trials, seed);
     const rowOf = (rows: PowerRow[], key: string) => rows.find(r => r.key === key);
 
+    /**
+     * The same seed and the same fixtures on both sides, for the reason the
+     * whole function works this way: the two runs then differ by the trade
+     * and by nothing else, so a delta of half a point is a real half point
+     * rather than the gap between two independent samples.
+     */
+    const oddsBefore = season && season.remaining > 0 && before.rows.length > 1
+        ? playoffOdds(before.rows, season.remaining, season.spots,
+            Math.max(2000, Math.round(trials / 2)), seed + 1, season.pairs ?? null)
+        : null;
+    const oddsAfter = season && season.remaining > 0 && after.rows.length > 1
+        ? playoffOdds(after.rows, season.remaining, season.spots,
+            Math.max(2000, Math.round(trials / 2)), seed + 1, season.pairs ?? null)
+        : null;
+
     const effects: TradeEffect[] = [];
     for (const t of teams) {
         const x = rowOf(before.rows, t.key);
         const y = rowOf(after.rows, t.key);
         if (!x || !y) continue;
+        const ob = oddsBefore?.get(t.key)?.odds ?? null;
+        const oa = oddsAfter?.get(t.key)?.odds ?? null;
         effects.push({
             key: t.key, name: t.name,
             before: x.winRate, after: y.winRate,
@@ -230,6 +301,8 @@ export function evaluateTrade(
             rankBefore: x.rank, rankAfter: y.rank,
             trading: give.has(t.key),
             pointsBefore: x.expected, pointsAfter: y.expected,
+            oddsBefore: ob, oddsAfter: oa,
+            oddsDelta: ob != null && oa != null ? oa - ob : null,
         });
     }
     // Traders first, then by how far the trade moved them: the reader came

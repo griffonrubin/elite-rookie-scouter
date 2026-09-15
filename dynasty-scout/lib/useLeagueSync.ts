@@ -6,6 +6,7 @@ import { RedraftPlayer } from '@/lib/types';
 import {
     getCurrentWeek, getLeague, getLeagueRosters, getLeagueUsers, getMatchups, teamName,
 } from '@/lib/sleeper';
+import type { LeagueGame } from '@/lib/leagueSchedule';
 import { readEspnCreds } from '@/lib/espn';
 import { scoringFrom, type Scoring } from '@/lib/scoring';
 
@@ -129,6 +130,18 @@ export interface LeagueSnapshot {
      * than most of the gaps these pages are asked to arbitrate.
      */
     scoring?: Scoring | null;
+    /**
+     * Every regular-season fixture in the league, scores included where the
+     * week has been played.
+     *
+     * The one thing in a league that exists nowhere but its own platform.
+     * With it, a playoff projection plays the run home the league actually
+     * has rather than a schedule drawn at random, and a record can be read
+     * against what the same scores were worth against everybody. Null where
+     * the platform would not give a complete list, which the callers treat
+     * as "fall back", never as "assume".
+     */
+    games?: LeagueGame[] | null;
 }
 
 export interface MatchedSide {
@@ -377,6 +390,17 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         playoffTeams: league?.settings?.playoff_teams ?? null,
         bestBall: league?.settings?.best_ball === 1,
         scoring: scoringFrom(league?.scoring_settings),
+        /**
+         * Not here, deliberately — see `useLeagueFixtures`.
+         *
+         * Sleeper publishes no schedule endpoint, so a fixture list costs
+         * one request per week. Fetching it inside the snapshot made every
+         * In Season page wait on fourteen requests it had no use for, to
+         * serve the one page that does. ESPN sends its schedule inside the
+         * payload this already fetches, so that path fills this in and
+         * pays nothing.
+         */
+        games: null,
     };
 }
 
@@ -456,6 +480,7 @@ async function fetchEspn(conn: LeagueConnection, week: number): Promise<LeagueSn
         scoring: typeof d.receptionPoints === 'number'
             ? { reception: d.receptionPoints, teReceptionBonus: 0 }
             : null,
+        games: Array.isArray(d.games) ? (d.games as LeagueGame[]) : null,
     };
 }
 

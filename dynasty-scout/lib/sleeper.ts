@@ -8,6 +8,8 @@
  * Docs: https://docs.sleeper.com
  */
 
+import type { LeagueGame } from '@/lib/leagueSchedule';
+
 const API = 'https://api.sleeper.app/v1';
 
 /**
@@ -230,6 +232,14 @@ export interface SleeperMatchup {
     matchup_id: number | null;
     starters: string[] | null;
     players: string[] | null;
+    /**
+     * What this roster scored that week, in the league's own scoring.
+     *
+     * Zero for a week not yet played, which is why `allPlay` refuses a
+     * fixture both sides of which read nil rather than counting it as a
+     * draw: a season's worth of those would drag every rate towards a half.
+     */
+    points?: number | null;
 }
 
 export interface SleeperLeagueDetail {
@@ -288,6 +298,75 @@ export async function getMatchups(leagueId: string, week: number): Promise<Sleep
     } catch {
         return [];
     }
+}
+
+/**
+ * Every regular-season fixture in a league, as the platform has it.
+ *
+ * Sleeper publishes no schedule endpoint; the schedule is the matchup
+ * groupings, one week at a time, so reading it means asking for each week.
+ * That is up to eighteen small requests against an API with no key and a
+ * generous limit, made once per league per session and then cached with the
+ * snapshot — and it buys the two things a fixture list buys: the weeks
+ * ahead, which turns a playoff number from a guess about an unknown
+ * schedule into the league's actual run home, and the weeks behind, whose
+ * scores say whether a record was earned.
+ *
+ * Fetched in small batches rather than one burst of eighteen, because a
+ * browser opening eighteen connections to one host queues most of them
+ * anyway and a burst is the shape that gets a client rate-limited.
+ */
+export async function getLeagueSchedule(
+    leagueId: string, lastWeek: number,
+): Promise<{ week: number; matchups: SleeperMatchup[] }[]> {
+    const weeks: number[] = [];
+    for (let w = 1; w <= Math.min(lastWeek, 18); w++) weeks.push(w);
+    const out: { week: number; matchups: SleeperMatchup[] }[] = [];
+    const BATCH = 6;
+    for (let i = 0; i < weeks.length; i += BATCH) {
+        const slice = weeks.slice(i, i + BATCH);
+        const got = await Promise.all(
+            slice.map(w => getMatchups(leagueId, w).then(m => ({ week: w, matchups: m }))));
+        out.push(...got);
+    }
+    return out;
+}
+
+/**
+ * Turn those weekly groupings into fixtures.
+ *
+ * Two rosters share a matchup_id and that pair is the game. A group that is
+ * not a pair — one roster on its own before a schedule is set, or the whole
+ * league sharing an id in a format that is not head to head — is dropped
+ * rather than guessed at, and dropping it is what later makes the whole
+ * fixture list fail its completeness check instead of half-simulating.
+ */
+export function fixturesFrom(
+    weeks: { week: number; matchups: SleeperMatchup[] }[],
+): LeagueGame[] {
+    const out: LeagueGame[] = [];
+    for (const { week, matchups } of weeks) {
+        const groups = new Map<number, SleeperMatchup[]>();
+        for (const m of matchups) {
+            if (m.matchup_id == null) continue;
+            const g = groups.get(m.matchup_id);
+            if (g) g.push(m); else groups.set(m.matchup_id, [m]);
+        }
+        for (const g of groups.values()) {
+            if (g.length !== 2) continue;
+            // Lower roster id as home, so the same fixture is the same way
+            // round on every fetch and a diff of two snapshots is readable.
+            const [a, b] = g[0].roster_id <= g[1].roster_id ? g : [g[1], g[0]];
+            out.push({
+                week,
+                home: String(a.roster_id),
+                away: String(b.roster_id),
+                homePoints: a.points ?? null,
+                awayPoints: b.points ?? null,
+            });
+        }
+    }
+    return out;
 }
 
 /**

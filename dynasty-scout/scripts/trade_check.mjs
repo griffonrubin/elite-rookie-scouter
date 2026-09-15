@@ -49,6 +49,22 @@ page.on('response', r => {
         calls.push({ status: r.status(), n: (new URL(r.url()).searchParams.get('ids') || '').split(',').length });
     }
 });
+/**
+ * The verdict's headline is playoff odds where the rest of the season can
+ * be played out and the win rate where it cannot — a week-only horizon, a
+ * season already over, a platform that gave no fixture list. Both are real
+ * states of this page, so the check matches either rather than pinning
+ * itself to whichever one the fixture happens to produce: an assertion
+ * written to one wording fails the day the other is correct, and reads
+ * like a bug in the page.
+ */
+const HEADLINES = /[^\n]*pts of (playoff odds|win rate)[^\n]*/g;
+const DELTAS = /([−+-][\d.]+) pts of (?:playoff odds|win rate)/g;
+const VERDICT_WORDS =
+    /(clearly|a little) (better|worse) off|a (materially|slightly) (better|worse) season/g;
+const BETTER = /better off|better season/;
+const WORSE = /worse off|worse season/;
+
 const fails = [];
 const assert = (l, pass, extra = '') => {
     console.log(`   ${pass ? 'ok  ' : 'FAIL'} ${l}${extra ? '  ' + extra : ''}`);
@@ -201,8 +217,8 @@ if (offers.length === 0) {
         (await page.locator('#trade-partner').inputValue()).length > 0
         && new RegExp(team.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
             .test(after), team);
-    assert('and the analyser agrees it helps me', /better off/.test(after),
-        (after.match(/(clearly|a little) (better|worse) off/g) || []).join(','));
+    assert('and the analyser agrees it helps me', BETTER.test(after),
+        (after.match(VERDICT_WORDS) || []).join(','));
     await page.getByRole('button', { name: /^clear$/i }).click();
     await page.waitForTimeout(800);
 }
@@ -229,10 +245,23 @@ console.log(`      verdict in ${ms}ms after giving away ${myBest}`);
 t = await bodyText();
 const mineDelta = parseFloat((t.match(/Jebdaddybush — you\s*\n?\s*([−+-][\d.]+) pts/) || [])[1]
     ?.replace('−', '-') ?? 'NaN');
-console.log('      ' + (t.match(/[^\n]*pts of win rate[^\n]*/g) || []).join(' | '));
+console.log('      ' + (t.match(HEADLINES) || []).join(' | '));
 assert('giving away my best player makes me worse', mineDelta < 0, String(mineDelta));
-assert('and it says so in words', /worse off/.test(t),
-    (t.match(/(clearly|a little) (better|worse) off/g) || []).join(','));
+assert('and it says so in words', WORSE.test(t),
+    (t.match(VERDICT_WORDS) || []).join(','));
+/**
+ * And it says so in the currency that decides anything.
+ *
+ * Matching either wording above is what keeps this check honest across
+ * horizons; on its own it would also pass the day the odds quietly stopped
+ * being computed and every verdict fell back to the rate. This league has
+ * fourteen weeks left, so there is no honest reason for the season not to
+ * be played out.
+ */
+assert('the verdict is given in playoff odds, not only in win rate',
+    /pts of playoff odds/.test(t) && /to make the playoffs/.test(t),
+    (t.match(/\d+% → \d+% to make the playoffs/g) || []).join(' | ') || 'none');
+assert('and the working is still shown', /win rate/.test(t));
 /**
  * What the click actually costs, measured rather than inherited.
  *
@@ -335,17 +364,16 @@ await rowsIn(1).first().click();
 await page.waitForTimeout(2500);
 t = await bodyText();
 const theirBest = (await rowsIn(1).first().innerText()).split('\n')[0].trim();
-const line = (t.match(/[^\n]*pts of win rate[^\n]*/g) || []);
+const line = (t.match(HEADLINES) || []);
 console.log(`      swapping ${myBest} for ${theirBest}`);
 console.log('      ' + line.join(' | '));
 assert('two players are now in the trade', await inOffer() === 2,
     String(await inOffer()));
 assert('both sides still get a verdict', line.length >= 2, line.join(' | '));
 assert('the two sides move in opposite directions', (() => {
-    const ds = (t.match(/([−+-][\d.]+) pts of win rate/g) || [])
-        .map(x => parseFloat(x.replace('−', '-')));
+    const ds = (t.match(DELTAS) || []).map(x => parseFloat(x.replace('−', '-')));
     return ds.length >= 2 && Math.sign(ds[0]) !== Math.sign(ds[1]);
-})(), (t.match(/([−+-][\d.]+) pts of win rate/g) || []).join(','));
+})(), (t.match(DELTAS) || []).join(','));
 
 step(10, 'clearing it puts the page back');
 await page.getByRole('button', { name: /^clear$/i }).click();

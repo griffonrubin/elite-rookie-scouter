@@ -164,16 +164,53 @@ export async function GET(req: NextRequest) {
 
     // One schedule entry per game; each names the two teams by id.
     const scoringPeriod = Number(data?.scoringPeriodId ?? week ?? 0) || null;
+    const regularWeeks = Number(data?.settings?.scheduleSettings?.matchupPeriodCount) || null;
     const pairs: Record<number, number> = {};
+    /**
+     * The whole regular season's fixtures, which this route already had and
+     * was throwing away.
+     *
+     * Every entry of `schedule` was being filtered down to the current week
+     * for the one thing the page asked of it — who you play now — and the
+     * other sixteen weeks discarded. They are the answer to whether a run
+     * home is hard and whether a record was earned, and no other source has
+     * them: a league's schedule exists only on its platform.
+     *
+     * Playoff rounds are excluded. They are not fixtures in the sense meant
+     * here — a bracket is decided by the seeding this is trying to predict,
+     * so feeding it back in would be circular.
+     */
+    const games: {
+        week: number; home: string; away: string;
+        homePoints: number | null; awayPoints: number | null;
+    }[] = [];
     for (const g of data?.schedule ?? []) {
-        if (scoringPeriod && Number(g?.matchupPeriodId) !== scoringPeriod) continue;
         const home = Number(g?.home?.teamId), away = Number(g?.away?.teamId);
-        if (home && away) { pairs[home] = away; pairs[away] = home; }
+        if (!home || !away) continue;
+        const period = Number(g?.matchupPeriodId);
+        if (scoringPeriod && period === scoringPeriod) {
+            pairs[home] = away; pairs[away] = home;
+        }
+        if (!Number.isFinite(period) || period < 1) continue;
+        if (regularWeeks && period > regularWeeks) continue;
+        const tier = g?.playoffTierType;
+        if (tier && tier !== 'NONE') continue;
+        const pts = (side: { totalPoints?: unknown } | null | undefined) => {
+            const v = Number(side?.totalPoints);
+            return Number.isFinite(v) ? v : null;
+        };
+        games.push({
+            week: period,
+            home: String(home), away: String(away),
+            homePoints: pts(g?.home), awayPoints: pts(g?.away),
+        });
     }
 
     return NextResponse.json({
         name: data?.settings?.name ?? null,
         week: scoringPeriod,
+        /** Every regular-season fixture, scores included where played. */
+        games,
         /**
          * The first week that is no longer the regular season.
          *
