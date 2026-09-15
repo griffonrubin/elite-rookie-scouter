@@ -21,6 +21,7 @@
 import {
     scheduleUsable, pairingTable, scheduleStrength, allPlay, type LeagueGame,
 } from '../lib/leagueSchedule';
+import { fixturesFrom } from '../lib/sleeper';
 
 const fails: string[] = [];
 const assert = (label: string, pass: boolean, extra = '') => {
@@ -202,6 +203,65 @@ byMean.forEach((r, i) => {
 });
 assert('every rank agrees with its mean, ties shared', ordered,
     byMean.map(r => `${r.key} ${r.meanOpponent.toFixed(1)}#${r.rank}`).join('  '));
+
+step(9, "Sleeper's groupings, which are the only schedule it publishes");
+/**
+ * Sleeper has no schedule endpoint. The fixture list is the matchup
+ * groupings, one week at a time, and the shapes that come back are not all
+ * games: before a league sets its schedule every roster has a null
+ * matchup_id, and a league mid-setup can return an id with one roster under
+ * it. Both have to be dropped rather than guessed at, because the reward
+ * for guessing is a fixture list that passes its completeness check and is
+ * wrong.
+ */
+const weekly = [
+    {
+        week: 1, matchups: [
+            { roster_id: 3, matchup_id: 1, starters: null, players: null, points: 118.4 },
+            { roster_id: 1, matchup_id: 1, starters: null, players: null, points: 102.2 },
+            { roster_id: 2, matchup_id: 2, starters: null, players: null, points: 95.0 },
+            { roster_id: 4, matchup_id: 2, starters: null, players: null, points: 131.6 },
+        ],
+    },
+    {
+        // A week ahead of the schedule being set: no ids at all.
+        week: 2, matchups: [
+            { roster_id: 1, matchup_id: null, starters: null, players: null, points: 0 },
+            { roster_id: 2, matchup_id: null, starters: null, players: null, points: 0 },
+        ],
+    },
+    {
+        // A group of one, which is not a game.
+        week: 3, matchups: [
+            { roster_id: 1, matchup_id: 7, starters: null, players: null, points: 0 },
+            { roster_id: 2, matchup_id: 8, starters: null, players: null, points: 0 },
+            { roster_id: 3, matchup_id: 8, starters: null, players: null, points: 0 },
+        ],
+    },
+];
+const mapped = fixturesFrom(weekly);
+assert('only the real pairs become fixtures', mapped.length === 3,
+    mapped.map(g => `w${g.week} ${g.home}v${g.away}`).join('  '));
+assert('a null matchup id is dropped', !mapped.some(g => g.week === 2));
+assert('a group of one is dropped', !mapped.some(g => g.home === '1' && g.week === 3));
+const w1 = mapped.filter(g => g.week === 1);
+assert('the lower roster id is home, so a fixture is the same way round twice',
+    w1.every(g => Number(g.home) < Number(g.away)),
+    w1.map(g => `${g.home}v${g.away}`).join(' '));
+assert('and the scores travel with the right side',
+    w1.find(g => g.home === '1')?.awayPoints === 118.4
+    && w1.find(g => g.home === '1')?.homePoints === 102.2);
+
+step(10, 'an incomplete Sleeper season falls back rather than half-simulating');
+/**
+ * The realistic failure: a league whose future weeks come back with no
+ * matchup ids. Three of the four teams' weeks are missing, so the fixture
+ * list must be refused — a playoff number simulated over the one week that
+ * survived would be specific, confident and a quarter of a season.
+ */
+assert('the partial season is refused', !scheduleUsable(mapped, ['1', '2', '3', '4'], 1, 3));
+assert('and the one complete week is still usable on its own',
+    scheduleUsable(mapped, ['1', '2', '3', '4'], 1, 1));
 
 console.log(fails.length === 0
     ? '\nevery step passed\n'
