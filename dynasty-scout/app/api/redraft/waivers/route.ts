@@ -35,9 +35,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import {
-    MIN_TREND_GAMES, RECENT, WINDOW,
-    positionRanks, positionShape, rankWaivers, replacementBaseline, type WaiverRow,
+    MIN_TREND_GAMES, RECENT, STARTED, WINDOW,
+    positionRanks, positionShape, rankWaivers, replacementBaseline,
+    startersByPosition, type WaiverRow,
 } from '@/lib/waiverRank';
+import { eligibleForSlot } from '@/lib/lineup';
 
 export type { WaiverRow, WaiverMode } from '@/lib/waiverRank';
 
@@ -80,6 +82,26 @@ export async function GET(req: NextRequest) {
      * the pool, and "my only tight end has nobody behind him, show me tight
      * ends" answered with three.
      */
+    /**
+     * The shape of the league asking, because replacement level is a fact
+     * about it rather than about football.
+     *
+     * Without these the answer assumed a twelve-team, one-quarterback league
+     * — and in a superflex league nearly every team starts two quarterbacks,
+     * so the replacement quarterback is around the twenty-fourth and not the
+     * twelfth. Measured against QB12 every claimable quarterback reads as far
+     * below a startable one, which is precisely backwards on the wire where
+     * streaming them is half the point.
+     *
+     * Absent, the old constants still apply, so a caller that does not know
+     * its league gets the same answer it always did.
+     */
+    const slots = (url.searchParams.get('slots') ?? '')
+        .split(',').map(s => s.trim()).filter(Boolean).slice(0, 40);
+    const teamsRaw = Number(url.searchParams.get('teams') ?? '0');
+    const teams = Number.isFinite(teamsRaw) && teamsRaw >= 2 && teamsRaw <= 32
+        ? Math.round(teamsRaw) : 0;
+
     const POSITIONS = new Set(['QB', 'RB', 'WR', 'TE', 'K', 'DST']);
     const asked = (url.searchParams.get('pos') ?? '').toUpperCase();
     const pos = POSITIONS.has(asked) ? asked : null;
@@ -133,17 +155,20 @@ export async function GET(req: NextRequest) {
                 ) AS proj_points
            FROM players p
           WHERE p.redraft_pool = 1
-            AND p.position IN ('QB','RB','WR','TE','K','DST')
-            ${pos ? 'AND p.position = $1' : ''}`, pos ? [pos] : []);
+            AND p.position IN ('QB','RB','WR','TE','K','DST')`, []);
 
     /**
-     * The replacement line comes off the whole pool, never the filtered one.
+     * The pool is never filtered in SQL, and the position filter is applied
+     * after everything that needs the whole league has been worked out.
      *
-     * Asked for tight ends, `poolP` returns tight ends, and a baseline drawn
-     * from that is still the twelfth tight end — which is the number wanted.
-     * Asked for everyone it returns everyone. The one case that would break
-     * is a filtered query feeding a cross-position comparison, which is why
-     * the combined list never filters in SQL.
+     * It used to filter in the query, with a note arguing that a baseline
+     * drawn from tight ends alone is still the twelfth tight end. That was
+     * true of the baseline and stopped being true the moment the league's
+     * own shape got derived from the pool: asked for quarterbacks, the pool
+     * held only quarterbacks, so every other position came back with zero
+     * players, zero starters, and a page telling a superflex manager his
+     * league does not field receivers. The numbers that describe a league
+     * have to be computed from all of it.
      */
     const linesP = query<{
         team: string; opponent: string; spread: number | null;
@@ -205,13 +230,39 @@ export async function GET(req: NextRequest) {
         });
     }
 
-    const baseline = replacementBaseline(pool);
+    const leagueShaped = slots.length > 0 && teams > 0;
+    const started = leagueShaped
+        ? startersByPosition(slots, teams, pool, eligibleForSlot)
+        : STARTED;
+    /**
+     * A position this league does not field is worth nothing in it, and that
+     * has to be said rather than computed around.
+     *
+     * Deriving the counts introduced the case: the user's league starts no
+     * kicker and no defence, so both come back as zero, and value over
+     * replacement against a baseline of nothing is the player's whole
+     * projection — which would have printed every kicker as a hundred and
+     * fifty points above a startable one in a league that cannot start any.
+     * Ranking them against the old constants instead would be quieter and
+     * just as wrong: it would answer for a league the reader is not in.
+     */
+    const unplayed = leagueShaped
+        ? Object.keys(started).filter(p => !started[p])
+        : [];
+    const baseline = replacementBaseline(pool, started);
+    /**
+     * Now the filter, over rows rather than over the query — after the
+     * baseline, the starter counts and the positional depth, all of which
+     * are facts about the whole league.
+     */
+    const atPosition = pos
+        ? rows.filter(r => (r.position ?? '').toUpperCase() === pos) : rows;
     const { mode, trendable, players } = rankWaivers(
-        rows, baseline, pos, positionRanks(pool));
+        atPosition, baseline, pos, positionRanks(pool));
 
     return NextResponse.json({
         week, season: SEASON,
-        considered: rows.length,
+        considered: atPosition.length,
         /** Which position this list was ranked within, when it was one. */
         position: pos,
         /** What the order means, so the page can say it rather than imply it. */
@@ -228,6 +279,16 @@ export async function GET(req: NextRequest) {
          * and sixty-three".
          */
         replacement: Object.fromEntries(baseline),
+        /**
+         * And how many starters that line was drawn at, so a reader in an
+         * unusual league can see the page knew what shape it was in rather
+         * than wondering why its quarterbacks look different from everyone
+         * else's.
+         */
+        started,
+        leagueShaped,
+        /** Positions this league fields no slot for, so the page can say so. */
+        unplayed,
         /**
          * And how deep the wire is at each position.
          *

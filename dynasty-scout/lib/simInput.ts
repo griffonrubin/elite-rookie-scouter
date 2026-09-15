@@ -15,6 +15,7 @@ import { RedraftPlayer } from '@/lib/types';
 import { buildOutcome, Outcome, SimPlayer, usableSample } from '@/lib/startSit';
 import type { SampleGame } from '@/components/redraft/startsit/OutcomeStrip';
 import type { StartSitPlayer } from '@/app/api/redraft/startsit/route';
+import { isPpr, rescore, type Scoring } from '@/lib/scoring';
 
 /**
  * How many games back the resampled shape reaches.
@@ -70,13 +71,32 @@ export function simInputFor(
     data: StartSitPlayer | undefined,
     season: number,
     horizon: Horizon = 'week',
+    scoring?: Scoring | null,
 ): SimInput {
-    const logs = data?.logs ?? [];
+    /**
+     * Restated in the league's own points before anything reads them.
+     *
+     * Every stored total is full PPR, and this is the one place all four
+     * pages build a player from — so correcting the reception term here
+     * reaches the lineup, the waiver comparison, the power table and the
+     * trade verdict at once, and correcting it anywhere else would reach
+     * some of them and drift.
+     *
+     * The catches are on the log row, so the correction is exact rather than
+     * modelled: a PPR total minus what it was paid for catches, plus what
+     * this league pays.
+     */
+    const raw = data?.logs ?? [];
+    const logs = isPpr(scoring) ? raw : raw.map(l => ({
+        ...l,
+        points: rescore(l.points, l.receptions, player.position, scoring),
+    }));
     const weekly = horizon === 'week';
     const outcome = buildOutcome({
         playerId: player.id,
         position: player.position ?? '',
-        seasonProjection: data?.proj_points ?? null,
+        seasonProjection: data?.proj_points == null ? null
+            : rescore(data.proj_points, data.proj_receptions, player.position, scoring),
         projectedGames: 17,
         logs,
         // A prop line is a price on one game. Over a season it is the wrong

@@ -34,6 +34,16 @@ function canFill(benchPos: string, starterPos: string, slotIsFlex: boolean): boo
 
 export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
+    /** What this league pays per catch; every stored number is full PPR. */
+    const scoring = league.snapshot?.scoring ?? null;
+    /**
+     * A stable key for it, because the scoring arrives with the snapshot and
+     * the memos below cache an outcome per player. Depending on the object
+     * would re-run them every time the snapshot is rebuilt; depending on
+     * nothing would leave every number full PPR for the whole session, since
+     * the first render has no league yet.
+     */
+    const scoringKey = `${scoring?.reception ?? 1}:${scoring?.teReceptionBonus ?? 0}`;
     const [compare, setCompare] = useState<[number, number] | null>(null);
 
     // Head-to-head can name anyone on screen, the opponent's starters
@@ -68,11 +78,11 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         return (p: RedraftPlayer) => {
             const hit = cache.get(p.id);
             if (hit) return hit;
-            const v = simInputFor(p, data.get(p.id), SEASON);
+            const v = simInputFor(p, data.get(p.id), SEASON, 'week', scoring);
             cache.set(p.id, v);
             return v;
         };
-    }, [data]);
+    }, [data, scoringKey]);
 
     // The simulator resamples points and has no use for which game each came
     // from; the strip is the other way round. Same games, two shapes.

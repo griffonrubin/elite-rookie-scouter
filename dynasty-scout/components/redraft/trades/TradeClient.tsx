@@ -41,6 +41,16 @@ const DEFAULT_PLAYOFF_WEEK = 15;
  */
 export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
+    /** What this league pays per catch; every stored number is full PPR. */
+    const scoring = league.snapshot?.scoring ?? null;
+    /**
+     * A stable key for it, because the scoring arrives with the snapshot and
+     * the memos below cache an outcome per player. Depending on the object
+     * would re-run them every time the snapshot is rebuilt; depending on
+     * nothing would leave every number full PPR for the whole session, since
+     * the first render has no league yet.
+     */
+    const scoringKey = `${scoring?.reception ?? 1}:${scoring?.teReceptionBonus ?? 0}`;
     /**
      * The rest of the season, because that is what a trade is.
      *
@@ -147,11 +157,11 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
             // A player with no row from the endpoint has no week, and
             // guessing one is how a trade gets evaluated against a lineup
             // nobody ever saw.
-            const v = p && d ? simPlayerFrom(simInputFor(p, d, SEASON, horizon)) : null;
+            const v = p && d ? simPlayerFrom(simInputFor(p, d, SEASON, horizon, scoring)) : null;
             cache.set(id, v);
             return v;
         };
-    }, [players, data, horizon]);
+    }, [players, data, horizon, scoringKey]);
 
     /** Regular-season weeks still to play, for the toggle to name. */
     const remaining = useMemo(() => {

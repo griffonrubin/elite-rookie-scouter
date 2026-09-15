@@ -40,6 +40,16 @@ const DEFAULT_PLAYOFF_WEEK = 15;
  */
 export function TeamClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
+    /** What this league pays per catch; every stored number is full PPR. */
+    const scoring = league.snapshot?.scoring ?? null;
+    /**
+     * A stable key for it, because the scoring arrives with the snapshot and
+     * the memos below cache an outcome per player. Depending on the object
+     * would re-run them every time the snapshot is rebuilt; depending on
+     * nothing would leave every number full PPR for the whole session, since
+     * the first render has no league yet.
+     */
+    const scoringKey = `${scoring?.reception ?? 1}:${scoring?.teReceptionBonus ?? 0}`;
     /**
      * The rest of the season by default, because that is the question.
      *
@@ -104,11 +114,11 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
             if (cache.has(id)) return cache.get(id)!;
             const p = byId.get(id);
             const d = data.get(id);
-            const v = p && d ? simPlayerFrom(simInputFor(p, d, SEASON, horizon)) : null;
+            const v = p && d ? simPlayerFrom(simInputFor(p, d, SEASON, horizon, scoring)) : null;
             cache.set(id, v);
             return v;
         };
-    }, [players, data, horizon]);
+    }, [players, data, horizon, scoringKey]);
 
     /**
      * The league's remaining schedule, position by position.
@@ -142,12 +152,12 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
             const p = byId.get(id);
             const d = data.get(id);
             const v = p && d
-                ? simInputFor({ id, position: p.position ?? '' }, d, SEASON, h).outcome
+                ? simInputFor({ id, position: p.position ?? '' }, d, SEASON, h, scoring).outcome
                 : null;
             cache.set(k, v);
             return v;
         };
-    }, [players, data]);
+    }, [players, data, scoringKey]);
 
     const profiles: TeamProfile[] = useMemo(() => {
         if (!ready || !teams) return [];

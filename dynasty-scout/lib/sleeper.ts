@@ -246,6 +246,16 @@ export interface SleeperLeagueDetail {
             lineup and there is no lineup to set. */
         best_ball?: number;
     } | null;
+    /**
+     * What the league pays for each thing a player does.
+     *
+     * Read for two terms only — points per catch and the tight-end bonus —
+     * because those are the two that vary between leagues and the two this
+     * app can correct exactly from the stats it stores. Everything here is
+     * PPR until told otherwise, which for roughly half of leagues was a
+     * silent and systematic overstatement of everyone who catches passes.
+     */
+    scoring_settings?: Record<string, number> | null;
 }
 
 export async function getLeague(leagueId: string): Promise<SleeperLeagueDetail | null> {

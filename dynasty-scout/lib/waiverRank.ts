@@ -123,15 +123,106 @@ export const isTrendable = (r: WaiverRow) =>
     r.games >= MIN_TREND_GAMES && (r.points_now ?? 0) >= MIN_RECENT_POINTS;
 
 /**
- * How many of each position a twelve-team league actually starts.
+ * How many of each position a twelve-team, one-quarterback league starts.
  *
  * The line between a starter and a bench player, which is the line value
  * over replacement has to be drawn at. Flex is why backs and receivers run
  * past their own slot counts.
+ *
+ * Kept as the fallback for a league whose shape we have not been told, and
+ * *only* as that. It was the answer for every league, which is wrong in the
+ * one way that matters most to the reader it is wrong for: in a superflex
+ * league nearly every team starts two quarterbacks, so replacement is around
+ * the twenty-fourth rather than the twelfth, and measuring free agents
+ * against QB12 tells a superflex manager that every claimable quarterback is
+ * miles below a startable one. Streaming quarterbacks is half of what a
+ * superflex waiver wire is for.
  */
 export const STARTED: Record<string, number> = {
     QB: 12, RB: 30, WR: 36, TE: 12, K: 12, DST: 12,
 };
+
+/**
+ * And how many this league starts, worked out rather than assumed.
+ *
+ * Given the slots a league actually fields and how many teams field them,
+ * the starters at a position are found by filling every lineup at once from
+ * the top of the pool: dedicated slots first, because a WR slot can only be a
+ * receiver, then each flex type in turn taking the best of whoever is left
+ * that it accepts. What comes out is the real count — which handles
+ * superflex, two-quarterback, tight-end premium, ten-team and fourteen-team
+ * without any of them being special-cased.
+ *
+ * Most restrictive flex first, since a slot taking two positions should get
+ * its pick before one taking four; otherwise a superflex would eat the backs
+ * a WR/RB flex needed and the counts would depend on the order slots happen
+ * to appear in a platform's config.
+ */
+export function startersByPosition(
+    slots: string[],
+    teams: number,
+    pool: Projected[],
+    eligible: (slot: string, position: string) => boolean,
+): Record<string, number> {
+    const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST'];
+    const counts: Record<string, number> = {};
+    for (const p of POSITIONS) counts[p] = 0;
+    if (!slots.length || teams < 1) return { ...STARTED };
+
+    // Ranked once, and consumed from the front as slots claim players.
+    const ranked = new Map<string, number[]>();
+    for (const p of POSITIONS) {
+        ranked.set(p, pool
+            .filter(r => (r.position ?? '').toUpperCase() === p && r.proj_points != null)
+            .map(r => Number(r.proj_points))
+            .sort((a, b) => b - a));
+    }
+    const taken: Record<string, number> = {};
+    for (const p of POSITIONS) taken[p] = 0;
+
+    const bySlot = new Map<string, number>();
+    for (const raw of slots) {
+        const slot = raw.toUpperCase();
+        bySlot.set(slot, (bySlot.get(slot) ?? 0) + 1);
+    }
+
+    const accepts = (slot: string) => POSITIONS.filter(p => eligible(slot, p));
+
+    const dedicated: [string, number][] = [];
+    const flex: [string, number][] = [];
+    for (const [slot, n] of bySlot) {
+        (accepts(slot).length === 1 ? dedicated : flex).push([slot, n]);
+    }
+    flex.sort((a, b) => accepts(a[0]).length - accepts(b[0]).length);
+
+    for (const [slot, n] of dedicated) {
+        const p = accepts(slot)[0];
+        if (!p) continue;
+        taken[p] += n * teams;
+    }
+    for (const [slot, n] of flex) {
+        const ok = accepts(slot);
+        for (let i = 0; i < n * teams; i++) {
+            // The best player still unclaimed at any position this slot takes.
+            let best: string | null = null, bestPts = -Infinity;
+            for (const p of ok) {
+                const list = ranked.get(p)!;
+                const next = list[taken[p]];
+                if (next != null && next > bestPts) { bestPts = next; best = p; }
+            }
+            if (!best) break;
+            taken[best]++;
+        }
+    }
+
+    for (const p of POSITIONS) {
+        // Never past the pool: a league can field more slots than there are
+        // priced players at a position, and a baseline off the end of the
+        // list is a baseline of nothing.
+        counts[p] = Math.min(taken[p], (ranked.get(p) ?? []).length) || 0;
+    }
+    return counts;
+}
 
 /**
  * Kickers and defences are kept out of the combined list.
@@ -177,16 +268,21 @@ export interface Projected {
  * quarterback to be worth a claim, which is the whole reason you would not
  * claim one.
  */
-export function replacementBaseline(pool: Projected[]): Map<string, number> {
+export function replacementBaseline(
+    pool: Projected[],
+    started: Record<string, number> = STARTED,
+): Map<string, number> {
     const baseline = new Map<string, number>();
-    for (const position of Object.keys(STARTED)) {
+    for (const position of Object.keys(started)) {
+        const count = started[position];
+        if (!count || count < 1) continue;
         const projs = pool
             .filter(p => (p.position ?? '').toUpperCase() === position
                 && p.proj_points != null)
             .map(p => Number(p.proj_points))
             .sort((a, b) => b - a);
         if (projs.length === 0) continue;
-        baseline.set(position, projs[Math.min(STARTED[position] - 1, projs.length - 1)]);
+        baseline.set(position, projs[Math.min(count - 1, projs.length - 1)]);
     }
     return baseline;
 }
