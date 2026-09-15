@@ -51,6 +51,7 @@ function LuckNote({ row }: { row: PowerRow }) {
 
 export function PowerTable({
     rows, unranked, myKey, trials, horizon, remaining, odds, spots, onSpots, spotsKnown,
+    realSchedule = false,
 }: {
     rows: PowerRow[]; unranked?: PowerGap[]; myKey: string | null; trials: number;
     horizon: Horizon;
@@ -63,6 +64,15 @@ export function PowerTable({
     onSpots: (n: number) => void;
     /** True when the platform said, rather than the page assuming. */
     spotsKnown: boolean;
+    /**
+     * True when the odds played the league's own fixtures rather than a
+     * schedule drawn at random.
+     *
+     * Said on the page rather than kept internal, because the two are
+     * different claims and a reader deciding whether to trust a playoff
+     * number is entitled to know which one produced it.
+     */
+    realSchedule?: boolean;
 }) {
     const [open, setOpen] = useState<string | null>(null);
     if (rows.length === 0) return null;
@@ -423,11 +433,25 @@ export function PowerTable({
                                 rate above. Pairing rather than carrying each team&rsquo;s
                                 rate forward on its own is what stops all twelve of them
                                 finishing 9&ndash;5: a win here is a loss there, which is
-                                the only way a finishing place means anything. The
-                                schedule itself is drawn at random, because whose
-                                remaining fixtures are soft is the thing a ranking by
-                                roster is trying not to measure — your real one is on
-                                your platform.
+                                the only way a finishing place means anything.
+                                {realSchedule ? (
+                                    <>
+                                        {' '}The weeks played are your league&rsquo;s
+                                        own fixtures, read from your platform — so a
+                                        hard run home shows up here rather than being
+                                        averaged away. Whose schedule is soft is the
+                                        one thing the ranking above refuses to know;
+                                        this is where it is allowed to matter.
+                                    </>
+                                ) : (
+                                    <>
+                                        {' '}Your platform would not give a complete
+                                        fixture list for those weeks, so the schedule
+                                        is drawn at random instead — which is every
+                                        possible schedule averaged, and so understates
+                                        both the hardest and the easiest run home.
+                                    </>
+                                )}
                             </>
                         ) : (
                             <>

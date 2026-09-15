@@ -11,6 +11,11 @@ import { bestLineup, type TradeRosterPlayer } from '@/lib/trade';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
 import { HorizonToggle } from '@/components/redraft/HorizonToggle';
 import { PowerTable } from './PowerTable';
+import { Earned } from './Earned';
+import { RunHome } from './RunHome';
+import {
+    allPlay, pairingTable, scheduleStrength, scheduleUsable,
+} from '@/lib/leagueSchedule';
 
 const SEASON = 2026;
 /** Where the regular season ends when the platform will not say. */
@@ -201,11 +206,77 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
      * finish 9-5; pairing conserves the wins, so a finishing position means
      * something.
      */
+    /**
+     * The league's own fixtures, and whether they can be trusted as a set.
+     *
+     * A fixture list is used only if every week in the range pairs every
+     * team exactly once. Anything short of that — Sleeper leagues whose
+     * future weeks come back without matchup ids, a payload that arrived
+     * half-formed — falls back to the random pairing, because simulating
+     * the weeks that happened to arrive and dropping the rest produces a
+     * playoff number that is specific, confident and a fraction of a season.
+     */
+    const games = league.snapshot?.games ?? null;
+    const firstAhead = (week ?? 1);
+    const lastWeek = firstAhead + remaining - 1;
+    const schedule = useMemo(() => {
+        if (!games?.length || result.rows.length < 2) return null;
+        const keys = result.rows.map(r => r.key);
+        if (remaining > 0 && scheduleUsable(games, keys, firstAhead, lastWeek)) {
+            return { pairs: pairingTable(games, keys, firstAhead, lastWeek), real: true };
+        }
+        return { pairs: null, real: false };
+    }, [games, result.rows, remaining, firstAhead, lastWeek]);
+
+    /**
+     * How often each roster is still playing in January.
+     *
+     * Every remaining week is played rather than assumed, on the league's
+     * own fixtures where the platform gave a complete list and on a
+     * schedule drawn at random where it did not. The two are different
+     * claims and the page says which it used: a random schedule is every
+     * fixture list averaged, so it understates exactly the best and worst
+     * runs home an owner is asking about.
+     *
+     * Either way the teams are paired rather than carried forward
+     * independently. Carrying each rate forward on its own, which is what
+     * the projected record does, lets every team in the league finish 9-5;
+     * pairing conserves the wins, so a finishing position means something.
+     */
     const odds = useMemo(
         () => (remaining > 0 && result.rows.length > 1
-            ? playoffOdds(result.rows, remaining, cut)
+            ? playoffOdds(result.rows, remaining, cut, TRIALS / 2, 41,
+                schedule?.pairs ?? null)
             : null),
-        [result.rows, remaining, cut]);
+        [result.rows, remaining, cut, schedule]);
+
+    /** What each week's scores were worth against the whole league. */
+    const earned = useMemo(() => {
+        if (!games?.length || result.rows.length < 2) return null;
+        const play = allPlay(games, result.rows.map(r => r.key));
+        const rows = result.rows
+            .map(r => ({ key: r.key, name: r.name, play: play.get(r.key)! }))
+            .filter(r => r.play && r.play.played > 0);
+        return rows.length > 1 ? rows : null;
+    }, [games, result.rows]);
+
+    /** The rosters left to play, ranked hardest first. */
+    const runHome = useMemo(() => {
+        if (!games?.length || result.rows.length < 2 || remaining <= 0) return null;
+        const sos = scheduleStrength(
+            result.rows.map(r => ({ key: r.key, expected: r.expected })),
+            games, firstAhead, lastWeek);
+        const rows = result.rows
+            .map(r => ({ key: r.key, name: r.name, sos: sos.get(r.key)! }))
+            .filter(r => r.sos && r.sos.opponents.length > 0);
+        return rows.length > 1 ? rows : null;
+    }, [games, result.rows, remaining, firstAhead, lastWeek]);
+
+    const weeksAhead = useMemo(() => {
+        const ws: number[] = [];
+        for (let w = firstAhead; w <= lastWeek; w++) ws.push(w);
+        return ws;
+    }, [firstAhead, lastWeek]);
 
     if (!league.connection || !league.connection.teamKey) {
         return (
@@ -238,11 +309,26 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
                     {loading ? 'Reading every roster in the league…' : 'Waiting for rosters.'}
                 </p>
             ) : (
-                <PowerTable rows={result.rows} unranked={result.unranked}
-                    myKey={league.connection.teamKey ?? null} trials={TRIALS}
-                    horizon={horizon} remaining={remaining}
-                    odds={odds} spots={cut} onSpots={setSpots}
-                    spotsKnown={league.snapshot?.playoffTeams != null} />
+                <>
+                    <PowerTable rows={result.rows} unranked={result.unranked}
+                        myKey={league.connection.teamKey ?? null} trials={TRIALS}
+                        horizon={horizon} remaining={remaining}
+                        odds={odds} spots={cut} onSpots={setSpots}
+                        realSchedule={schedule?.real ?? false}
+                        spotsKnown={league.snapshot?.playoffTeams != null} />
+                    {(earned || runHome) && (
+                        <div className="space-y-6 pt-2 border-t border-white/[0.06]">
+                            {earned && (
+                                <Earned rows={earned}
+                                    myKey={league.connection.teamKey ?? null} />
+                            )}
+                            {runHome && (
+                                <RunHome rows={runHome} weeks={weeksAhead}
+                                    myKey={league.connection.teamKey ?? null} />
+                            )}
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
