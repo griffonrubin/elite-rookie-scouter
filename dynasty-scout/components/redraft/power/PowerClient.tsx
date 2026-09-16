@@ -186,6 +186,29 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
                         odds={odds} spots={cut} onSpots={setSpots}
                         realSchedule={season.value?.realSchedule ?? false}
                         spotsKnown={league.snapshot?.playoffTeams != null} />
+                    {/**
+                      * Once the regular season is over, three of the four
+                      * panels below have nothing to say — a run home with no
+                      * weeks in it is not a run home, and a Sunday that
+                      * cannot change a seeding is not worth anything.
+                      *
+                      * That is correct, and vanishing is not. A page that
+                      * drops three sections between one Sunday and the next,
+                      * with nothing where they were, is indistinguishable
+                      * from a page that has broken — which is precisely the
+                      * fault this app has shipped before. So it says so.
+                      */}
+                    {horizon === 'season' && remaining <= 0 && (
+                        <p className="text-[11px] text-muted-foreground/45 pt-3
+                                      border-t border-white/[0.06] max-w-[660px]">
+                            The regular season is over, so there is no run home left
+                            to rank and no week left to weigh — those panels are gone
+                            because their question has been answered, not because
+                            anything failed. The ranking above is still a ranking:
+                            it is what these rosters are worth from here, which is
+                            the question a playoff matchup asks.
+                        </p>
+                    )}
                     {(earned || runHome || (odds && horizon === 'season')) && (
                         <div className="space-y-6 pt-2 border-t border-white/[0.06]">
                             {/* The week first, because it is the only one of

@@ -18,6 +18,11 @@
  * page nobody happened to be working on.
  *
  * Both widths, because a panel that collapses on a phone is also missing.
+ *
+ * Mid-season, deliberately: the fixture is week eight with six to play.
+ * Several of these panels are about weeks that are left, and once the
+ * regular season is over they correctly have nothing to say — that state
+ * is a different claim and season_end_check makes it.
  */
 import { chromium } from 'playwright-core';
 import fs from 'fs';
