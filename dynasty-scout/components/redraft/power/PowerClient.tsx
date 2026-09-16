@@ -2,27 +2,20 @@
 
 import React, { useMemo, useState } from 'react';
 import { RedraftPlayer } from '@/lib/types';
-import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
-import { SimPlayer } from '@/lib/startSit';
-import { useStartSitData } from '@/lib/useStartSit';
-import { simInputFor, simPlayerFrom, type Horizon } from '@/lib/simInput';
-import { playoffOdds, powerRank, PowerResult, PowerTeam } from '@/lib/power';
-import { bestLineup, type TradeRosterPlayer } from '@/lib/trade';
+import { useLeagueSync } from '@/lib/useLeagueSync';
+import type { Horizon } from '@/lib/simInput';
+import { playoffOdds, type PowerResult } from '@/lib/power';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
 import { HorizonToggle } from '@/components/redraft/HorizonToggle';
 import { PowerTable } from './PowerTable';
 import { Earned } from './Earned';
 import { RunHome } from './RunHome';
 import { AtStake } from './AtStake';
-import {
-    allPlay, pairingTable, scheduleStrength, scheduleUsable,
-} from '@/lib/leagueSchedule';
+import { allPlay, pairingTable, scheduleStrength } from '@/lib/leagueSchedule';
 import { useLeagueFixtures } from '@/lib/useLeagueFixtures';
+import { DEFAULT_PLAYOFF_WEEK, useSeasonOdds } from '@/lib/useSeasonOdds';
 
 const SEASON = 2026;
-/** Where the regular season ends when the platform will not say. */
-const DEFAULT_PLAYOFF_WEEK = 15;
-const DEFAULT_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF'];
 
 /**
  * Weeks simulated per roster.
@@ -45,10 +38,6 @@ const TRIALS = 20000;
  */
 export function PowerClient({ players }: { players: RedraftPlayer[] }) {
     const league = useLeagueSync(players);
-    /** What this league pays per catch; every stored number is full PPR. */
-    const scoring = league.snapshot?.scoring ?? null;
-    /** Stable key, so the memo below re-runs when the scoring lands. */
-    const scoringKey = `${scoring?.reception ?? 1}:${scoring?.teReceptionBonus ?? 0}`;
     /**
      * Rest of season by default, which is what a power ranking is.
      *
@@ -61,129 +50,23 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
     const [horizon, setHorizon] = useState<Horizon>('season');
 
     /**
-     * Every team's lineup and its whole roster, as our own player ids.
+     * One run of the league's season, shared with every page that asks.
      *
-     * Both, because the two horizons want different ones. This week the
-     * lineup an owner has actually set is the lineup they will field, holes
-     * and mistakes included. Over the rest of the season it is not: the
-     * flex they left empty in week one will not be empty in week nine, and
-     * ranking a roster below a worse one because somebody forgot to set it
-     * this Sunday is a fact about one afternoon.
+     * This used to be six memos here — rosters, slots, ids, the fetch, the
+     * round robin, the odds — and the Start/Sit page needed the last of
+     * them. Copying them there would have been two pages quoting different
+     * numbers for one thing, so the whole pipeline moved to a hook with a
+     * cache behind it and both pages read the same object.
      */
-    const teams = useMemo(() => {
-        const snap = league.snapshot;
-        if (!snap) return null;
-        const byPlatformId = new Map(players.map(p => [
-            String(league.connection?.platform === 'espn' ? p.espn_nfl_id : p.sleeper_id), p]));
-        return snap.teams.map(t => {
-            const lineup = t.lineupSlots?.length
-                ? t.lineupSlots.map(s => s.playerId)
-                : t.slots.filter(s => s.starting).map(s => s.playerId);
-            const filled = lineup.filter((pid): pid is string => !!pid);
-            const ids = filled
-                .map(pid => byPlatformId.get(String(pid))?.id ?? null)
-                .filter((id): id is number => id != null);
-            const roster: TradeRosterPlayer[] = [];
-            let unmatched = 0;
-            for (const s of t.slots) {
-                const hit = byPlatformId.get(String(s.playerId));
-                if (!hit) { unmatched++; continue; }
-                roster.push({
-                    id: hit.id,
-                    name: hit.full_name ?? String(hit.id),
-                    position: hit.position ?? '',
-                    startable: true,
-                });
-            }
-            // Three counts, because they come apart: slots the format gives
-            // everyone, players the owner has put in them, and players we
-            // managed to price. A team starting eight of nine is a fact
-            // about that team; eight of nine priced is a fact about us.
-            return {
-                key: t.key, name: t.name, ids, roster, unmatched,
-                filled: filled.length, slots: lineup.length, record: t.record,
-            };
-        });
-    }, [league.snapshot, league.connection?.platform, players]);
-
-    const slots = useMemo(() => {
-        const rp = league.snapshot?.rosterPositions;
-        if (!rp?.length) return DEFAULT_SLOTS;
-        return rp.filter(s => !BENCH_SLOTS.has(s.toUpperCase()));
-    }, [league.snapshot?.rosterPositions]);
-
-    const needed = useMemo(() => {
-        const ids = new Set<number>();
-        for (const t of teams ?? []) {
-            for (const id of t.ids) ids.add(id);
-            for (const p of t.roster) ids.add(p.id);
-        }
-        return [...ids];
-    }, [teams]);
-
+    const season = useSeasonOdds(league, players, { season: SEASON, horizon });
+    const result: PowerResult = season.value?.result ?? { rows: [], unranked: [] };
+    const remaining = season.value?.remaining
+        ?? Math.max(0, (league.snapshot?.playoffWeekStart ?? DEFAULT_PLAYOFF_WEEK)
+            - (league.week ?? 1));
     const week = league.week;
-    // One hook, one cache: every In Season page asks about the same league,
-    // so the page a reader lands on second only pays for the ids the first
-    // one did not already fetch. It also chunks to the endpoint's own limit,
-    // which is the bug four hand-rolled copies of this produced.
-    const { data, loading, failed } = useStartSitData(needed, week);
-
-    const ready = needed.length > 0 && data.size > 0 && !failed;
-
-    const result: PowerResult = useMemo(() => {
-        if (!ready || !teams) return { rows: [], unranked: [] };
-        const byId = new Map(players.map(p => [p.id, p]));
-        const cache = new Map<number, SimPlayer | null>();
-        const sim = (id: number): SimPlayer | null => {
-            if (cache.has(id)) return cache.get(id)!;
-            const p = byId.get(id);
-            const v = p ? simPlayerFrom(simInputFor(p, data.get(id), SEASON, horizon, scoring)) : null;
-            cache.set(id, v);
-            return v;
-        };
-        const meanOf = (id: number) => sim(id)?.outcome.mean ?? -Infinity;
-        const ranked: PowerTeam[] = teams.map(t => {
-            // Over a season, the best lineup this roster can field — which
-            // is the roster's strength rather than one Sunday's decisions.
-            const ids = horizon === 'season'
-                ? bestLineup(slots, t.roster, meanOf)
-                    .filter((id): id is number => id != null)
-                : t.ids;
-            /**
-             * Two different shortfalls, and the table words them differently.
-             *
-             * A roster carrying no kicker fills eight of nine slots — a fact
-             * about that team, and the reason its row is low. A roster with
-             * players we could not match is a gap in our own data, which
-             * understates it. Over a season the lineup is ours to pick, so a
-             * short one means the roster is short; `filled` is set to what
-             * the roster can actually field and the warning about pricing is
-             * reserved for the case that really is about us.
-             */
-            const filled = horizon === 'season'
-                ? (t.unmatched > 0 ? slots.length : ids.length)
-                : t.filled;
-            return {
-                key: t.key, name: t.name, record: t.record,
-                filled,
-                slots: horizon === 'season' ? slots.length : t.slots,
-                lineup: ids.map(sim).filter((s): s is SimPlayer => s != null),
-            };
-        });
-        return powerRank(ranked, TRIALS);
-    }, [ready, teams, data, players, horizon, slots, scoringKey]);
-
-    /**
-     * Regular-season weeks still to play.
-     *
-     * The playoffs are the deadline a projected record is measured against,
-     * so weeks seventeen and eighteen do not count — by then the question
-     * has been answered.
-     */
-    const remaining = useMemo(() => {
-        const playoffs = league.snapshot?.playoffWeekStart ?? DEFAULT_PLAYOFF_WEEK;
-        return Math.max(0, playoffs - (week ?? 1));
-    }, [league.snapshot?.playoffWeekStart, week]);
+    const loading = season.loading;
+    const failed = season.failed;
+    const ready = season.value != null;
 
     /**
      * Where the cut is.
@@ -194,63 +77,33 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
      * says which number it used.
      */
     const [spots, setSpots] = useState<number | null>(null);
-    const cut = spots
+    const cut = spots ?? season.value?.cut
         ?? league.snapshot?.playoffTeams
-        ?? Math.max(2, Math.round((teams?.length ?? 12) / 2));
+        ?? Math.max(2, Math.round((league.snapshot?.teams.length ?? 12) / 2));
 
-    /**
-     * How often each roster is still playing in January.
-     *
-     * Every remaining week is played rather than assumed — the teams are
-     * shuffled into pairs and each pair settled on the head-to-head rate the
-     * round robin already produced. Carrying each rate forward on its own,
-     * which is what the projected record does, lets every team in the league
-     * finish 9-5; pairing conserves the wins, so a finishing position means
-     * something.
-     */
-    /**
-     * The league's own fixtures, and whether they can be trusted as a set.
-     *
-     * A fixture list is used only if every week in the range pairs every
-     * team exactly once. Anything short of that — Sleeper leagues whose
-     * future weeks come back without matchup ids, a payload that arrived
-     * half-formed — falls back to the random pairing, because simulating
-     * the weeks that happened to arrive and dropping the rest produces a
-     * playoff number that is specific, confident and a fraction of a season.
-     */
     const games = useLeagueFixtures(league);
-    const firstAhead = (week ?? 1);
+    const firstAhead = week ?? 1;
     const lastWeek = firstAhead + remaining - 1;
-    const schedule = useMemo(() => {
-        if (!games?.length || result.rows.length < 2) return null;
-        const keys = result.rows.map(r => r.key);
-        if (remaining > 0 && scheduleUsable(games, keys, firstAhead, lastWeek)) {
-            return { pairs: pairingTable(games, keys, firstAhead, lastWeek), real: true };
-        }
-        return { pairs: null, real: false };
-    }, [games, result.rows, remaining, firstAhead, lastWeek]);
 
     /**
-     * How often each roster is still playing in January.
+     * The odds the table shows.
      *
-     * Every remaining week is played rather than assumed, on the league's
-     * own fixtures where the platform gave a complete list and on a
-     * schedule drawn at random where it did not. The two are different
-     * claims and the page says which it used: a random schedule is every
-     * fixture list averaged, so it understates exactly the best and worst
-     * runs home an owner is asking about.
-     *
-     * Either way the teams are paired rather than carried forward
-     * independently. Carrying each rate forward on its own, which is what
-     * the projected record does, lets every team in the league finish 9-5;
-     * pairing conserves the wins, so a finishing position means something.
+     * Straight from the shared run where the reader has not moved the cut,
+     * and re-played here where they have — the cut is the only input they
+     * can change, and re-ranking twelve rosters to answer it would be
+     * paying for the expensive half of the computation to change the cheap
+     * one.
      */
-    const odds = useMemo(
-        () => (remaining > 0 && result.rows.length > 1
-            ? playoffOdds(result.rows, remaining, cut, TRIALS / 2, 41,
-                schedule?.pairs ?? null)
-            : null),
-        [result.rows, remaining, cut, schedule]);
+    const odds = useMemo(() => {
+        if (!season.value) return null;
+        if (spots == null || spots === season.value.cut) return season.value.odds;
+        if (remaining <= 0 || result.rows.length < 2) return null;
+        const keys = result.rows.map(r => r.key);
+        const pairs = season.value.realSchedule && games?.length
+            ? pairingTable(games, keys, firstAhead, lastWeek)
+            : null;
+        return playoffOdds(result.rows, remaining, cut, TRIALS / 2, 41, pairs);
+    }, [season.value, spots, cut, remaining, result.rows, games, firstAhead, lastWeek]);
 
     /** What each week's scores were worth against the whole league. */
     const earned = useMemo(() => {
@@ -331,7 +184,7 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
                         myKey={league.connection.teamKey ?? null} trials={TRIALS}
                         horizon={horizon} remaining={remaining}
                         odds={odds} spots={cut} onSpots={setSpots}
-                        realSchedule={schedule?.real ?? false}
+                        realSchedule={season.value?.realSchedule ?? false}
                         spotsKnown={league.snapshot?.playoffTeams != null} />
                     {(earned || runHome || (odds && horizon === 'season')) && (
                         <div className="space-y-6 pt-2 border-t border-white/[0.06]">
@@ -342,7 +195,7 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
                                 <AtStake rows={result.rows} odds={odds}
                                     myKey={league.connection.teamKey ?? null}
                                     opponentOf={thisWeekOpponents} week={week}
-                                    realSchedule={schedule?.real ?? false} />
+                                    realSchedule={season.value?.realSchedule ?? false} />
                             )}
                             {earned && (
                                 <Earned rows={earned}
