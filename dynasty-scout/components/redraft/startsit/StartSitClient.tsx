@@ -16,6 +16,8 @@ import { SlotBoard } from './SlotBoard';
 import { MatchupChart } from './MatchupChart';
 import { formatDelta, optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
 import { LeagueConnect } from './LeagueConnect';
+import { WeekStakes } from './WeekStakes';
+import { useSeasonOdds } from '@/lib/useSeasonOdds';
 import { SwapPreview } from './SwapPreview';
 import { PlayerDetail } from './PlayerDetail';
 import { MatchupBySlot, SlotPair } from './MatchupBySlot';
@@ -332,6 +334,22 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         return Math.max(24, Math.ceil(Math.max(0, ...all) / 5) * 5);
     }, [league.me.starters, league.me.bench, outcomeFor]);
 
+    /**
+     * The league's season, for the one number this page cannot derive on
+     * its own: what winning here is worth.
+     *
+     * Deferred and shared. It prices every roster in the league, which
+     * means fetching every rostered player — a payload this page has no
+     * other use for — so it is asked for after the lineup has rendered and
+     * the block below simply appears when it is ready. The run itself is
+     * the Power page's, cached, so a reader who has been there pays
+     * nothing and the two pages cannot quote different numbers.
+     */
+    const season = useSeasonOdds(league, players, { season: SEASON });
+    const myOdds = league.connection?.teamKey
+        ? season.value?.odds?.get(league.connection.teamKey) ?? null
+        : null;
+
     if (!league.connection || !league.connection.teamKey) {
         return <LeagueConnect league={league} />;
     }
@@ -394,6 +412,11 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                         mineLabel={league.me.team?.name ?? 'You'}
                                         theirsLabel={league.opponent.team?.name ?? 'Them'} />
                                 </div>
+                            )}
+                            {matchup && (
+                                <WeekStakes odds={myOdds} winProb={matchup.winProb}
+                                    bestGain={bestBall ? null : best?.gain ?? null}
+                                    week={league.week} />
                             )}
                             {best && !bestBall && (
                                 <div className="mt-3 pt-3 border-t border-white/[0.07]">

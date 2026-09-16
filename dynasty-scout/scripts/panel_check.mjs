@@ -118,23 +118,75 @@ for (const [width, label] of [[1100, 'desktop'], [390, 'a phone']]) {
     await page.close();
 }
 
-step(3, 'the two orderings a reader is relying on');
+step(3, 'the three orderings a reader is relying on');
+/**
+ * Selected by panel rather than by document order.
+ *
+ * This step used to read `section:first-of-type`, and when a third panel
+ * was added above the other two it went on passing — measuring the new
+ * panel's numbers against the old panel's claim. A check that passes while
+ * testing something other than what it says is worse than one that fails,
+ * so each panel is now addressed by name.
+ */
 const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
 await page.goto('http://localhost:4598/', { waitUntil: 'networkidle' });
-const luck = await page.evaluate(() => Array.from(
-    document.querySelectorAll('section:first-of-type li'),
-    li => parseFloat((li.lastElementChild?.textContent ?? '')
-        .replace('\u2212', '-').replace(/[^0-9.\-]/g, ''))));
+
+const numbersIn = (panel, selector) => page.evaluate(([p, sel]) => Array.from(
+    document.querySelectorAll(`[data-panel="${p}"] li`),
+    li => {
+        const el = sel ? li.querySelector(sel) : li.lastElementChild;
+        const text = (el?.textContent ?? '').replace('\u2212', '-');
+        return parseFloat(text.replace(/[^0-9.\-]/g, ''));
+    }), [panel, selector]);
+
+const luck = await numbersIn('earned', null);
 assert('the luck list runs from flattered to robbed',
     luck.length === 12 && luck.every((v, i) => i === 0 || v <= luck[i - 1] + 1e-9),
     luck.map(v => v.toFixed(1)).join(' '));
 
-const ranks = await page.evaluate(() => Array.from(
-    document.querySelectorAll('section:last-of-type li'),
-    li => parseInt((li.querySelector('[data-rank]')?.textContent ?? '').trim(), 10)));
+const ranks = await numbersIn('run-home', '[data-rank]');
 assert('the run home runs from hardest to easiest',
     ranks.length === 12 && ranks.every((v, i) => i === 0 || v >= ranks[i - 1]),
     ranks.join(' '));
+
+const stakes = await numbersIn('at-stake', null);
+assert('the week runs from most riding on it to least',
+    stakes.length === 12 && stakes.every((v, i) => i === 0 || v <= stakes[i - 1] + 1e-9),
+    stakes.map(v => String(v)).join(' '));
+assert('and the three panels are three different lists',
+    new Set([luck.join(), ranks.join(), stakes.join()]).size === 3);
+
+/**
+ * The dumbbell's two ends have to be countable even when they coincide.
+ * A team with nothing riding on the week draws both markers in the same
+ * place, and without a ring in the surface colour that reads as one
+ * marker — which is the only case where the panel has something
+ * surprising to say.
+ */
+const overlapping = await page.evaluate(() => Array.from(
+    document.querySelectorAll('[data-panel="at-stake"] li'),
+    li => {
+        const dots = li.querySelectorAll('[data-end]');
+        if (dots.length !== 2) return null;
+        const [a, b] = [...dots].map(d => d.getBoundingClientRect());
+        return { gap: Math.abs(a.left - b.left), ring: getComputedStyle(dots[0]).boxShadow };
+    }).filter(Boolean));
+assert('every row draws two ends', overlapping.length === 12,
+    String(overlapping.length));
+assert('and each end carries a ring, so a nil-stake week still reads as two',
+    // Non-vacuous by construction: an empty list made the same assertion
+    // pass while measuring nothing, which is how it read the first time.
+    overlapping.length === 12 && overlapping.every(d => d.ring && d.ring !== 'none'),
+    overlapping[0]?.ring?.slice(0, 44) ?? 'none');
+/**
+ * And the ends have to actually coincide somewhere, or the ring is
+ * guarding a case this fixture never produces. The fixture puts one team
+ * through and one out on purpose, so two rows should have almost nothing
+ * riding on the week.
+ */
+const coincident = overlapping.filter(d => d.gap < 6).length;
+assert('the fixture exercises the overlapping case the ring is for',
+    coincident >= 1, `${coincident} rows with their ends within 6px`);
 await page.close();
 
 await browser.close();

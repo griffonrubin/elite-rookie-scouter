@@ -62,7 +62,7 @@ export function Earned({ rows, myKey }: {
     const coinFlip = 1.28 * Math.sqrt(weeks) / 2;
 
     return (
-        <section className="space-y-2">
+        <section data-panel="earned" className="space-y-2">
             <header className="flex items-baseline justify-between gap-3 flex-wrap">
                 <h3 className="text-[12px] font-semibold tracking-tight">
                     Earned, or not

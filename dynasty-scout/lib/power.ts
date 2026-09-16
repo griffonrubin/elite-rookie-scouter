@@ -377,6 +377,42 @@ export interface PlayoffOdds {
     seedHigh: number;
     /** Median final win total. */
     wins: number;
+    /**
+     * The same odds, among only the seasons where this team won — or lost —
+     * the first of its remaining weeks.
+     *
+     * What this Sunday is actually worth, which is the question a start/sit
+     * decision is downstream of and which nothing on the page could answer.
+     * Four points of playoff odds says the lineup barely matters; twenty
+     * says it is the week the season turns on, and the two feel identical
+     * while you are setting it.
+     *
+     * Read off the same run rather than re-simulated with the result forced,
+     * for two reasons. It is one simulation instead of twenty-four. And it
+     * cannot disagree with the headline: the odds above are these two
+     * averaged by how often each happens, by construction rather than by
+     * both being roughly right.
+     *
+     * Null for a team with no fixture that week, which in an odd league is
+     * somebody every week.
+     */
+    oddsIfWin: number | null;
+    oddsIfLose: number | null;
+    /**
+     * How often this team wins that week, on the round-robin rate.
+     *
+     * Carried so the two conditionals can be read as the arithmetic they
+     * are — the headline is these two weighted by this — and so a reader
+     * can tell a twenty-point swing they will probably collect from a
+     * twenty-point swing they probably will not.
+     *
+     * Not the number the Start/Sit page shows. That one is simulated from
+     * the two actual lineups against this week's opponents, lines and byes,
+     * and is the better estimate of this Sunday; this one is the rate the
+     * rest of this table is built on, and using anything else here would
+     * make the three numbers in this row stop adding up.
+     */
+    winsThisWeek: number | null;
 }
 
 export function playoffOdds(
@@ -426,11 +462,22 @@ export function playoffOdds(
     for (let i = 0; i < n; i++) order[i] = i;
     const wins = new Float64Array(n);
     const rank = new Int32Array(n);
+    /**
+     * This week's result per team, and what became of the seasons either
+     * way. -1 is a team with no fixture this week.
+     */
+    const firstResult = new Int8Array(n);
+    const wonFirst = new Int32Array(n);
+    const madeAfterWin = new Int32Array(n);
+    const lostFirst = new Int32Array(n);
+    const madeAfterLoss = new Int32Array(n);
 
     const real = pairs != null && pairs.length >= n * remaining;
     for (let t = 0; t < trials; t++) {
         for (let i = 0; i < n; i++) wins[i] = startWins[i];
+        firstResult.fill(-1);
         for (let w = 0; w < remaining; w++) {
+            const first = w === 0;
             if (real) {
                 // The fixture list. Each pair is settled once — the team
                 // with the lower index owns the game — or a league would
@@ -438,8 +485,12 @@ export function playoffOdds(
                 for (let a = 0; a < n; a++) {
                     const b = pairs![w * n + a];
                     if (b < 0 || b <= a) continue;
-                    if (rng() < beat[a * n + b]) wins[a]++;
-                    else wins[b]++;
+                    const aWon = rng() < beat[a * n + b];
+                    if (aWon) wins[a]++; else wins[b]++;
+                    if (first) {
+                        firstResult[a] = aWon ? 1 : 0;
+                        firstResult[b] = aWon ? 0 : 1;
+                    }
                 }
                 continue;
             }
@@ -453,8 +504,12 @@ export function playoffOdds(
             for (let p = 0; p + 1 < n; p += 2) {
                 const a = order[p];
                 const b = order[p + 1];
-                if (rng() < beat[a * n + b]) wins[a]++;
-                else wins[b]++;
+                const aWon = rng() < beat[a * n + b];
+                if (aWon) wins[a]++; else wins[b]++;
+                if (first) {
+                    firstResult[a] = aWon ? 1 : 0;
+                    firstResult[b] = aWon ? 0 : 1;
+                }
             }
         }
         for (let i = 0; i < n; i++) rank[i] = i;
@@ -464,13 +519,29 @@ export function playoffOdds(
             const i = arr[place];
             seeds[i].push(place + 1);
             winTotals[i].push(wins[i]);
-            if (place < cut) made[i]++;
+            const through = place < cut;
+            if (through) made[i]++;
+            if (firstResult[i] === 1) {
+                wonFirst[i]++; if (through) madeAfterWin[i]++;
+            } else if (firstResult[i] === 0) {
+                lostFirst[i]++; if (through) madeAfterLoss[i]++;
+            }
         }
     }
 
     const at = (xs: number[], q: number) =>
         xs.slice().sort((a, b) => a - b)[Math.min(xs.length - 1,
             Math.max(0, Math.floor(q * xs.length)))];
+    /**
+     * A conditional rate needs enough seasons under it to be a rate.
+     *
+     * A team that wins this week in nineteen trials out of ten thousand has
+     * a conditional number and not an estimate, and printing it beside a
+     * headline the reader trusts is worse than printing nothing.
+     */
+    const MIN_CONDITIONAL = 200;
+    const share = (made_: number, of: number) =>
+        of >= MIN_CONDITIONAL ? made_ / of : null;
     for (let i = 0; i < n; i++) {
         out.set(rows[i].key, {
             key: rows[i].key,
@@ -479,6 +550,11 @@ export function playoffOdds(
             seedLow: at(seeds[i], 0.1),
             seedHigh: at(seeds[i], 0.9),
             wins: at(winTotals[i], 0.5),
+            oddsIfWin: share(madeAfterWin[i], wonFirst[i]),
+            oddsIfLose: share(madeAfterLoss[i], lostFirst[i]),
+            winsThisWeek: wonFirst[i] + lostFirst[i] > 0
+                ? wonFirst[i] / (wonFirst[i] + lostFirst[i])
+                : null,
         });
     }
     return out;

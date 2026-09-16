@@ -18,7 +18,11 @@ import { tmpdir } from 'os';
 import path from 'path';
 import { Earned } from '../components/redraft/power/Earned';
 import { RunHome } from '../components/redraft/power/RunHome';
-import { allPlay, scheduleStrength, type LeagueGame } from '../lib/leagueSchedule';
+import { AtStake } from '../components/redraft/power/AtStake';
+import {
+    allPlay, pairingTable, scheduleStrength, type LeagueGame,
+} from '../lib/leagueSchedule';
+import { playoffOdds, type PowerRow } from '../lib/power';
 
 const NAMES: Record<string, string> = {
     '1': 'Regulators', '2': 'Pain Train', '3': 'Ducks on the Pond',
@@ -66,6 +70,38 @@ const sos = scheduleStrength(
 const weeksAhead = Array.from({ length: AHEAD }, (_, i) => PLAYED + 1 + i);
 const MY = '4';
 
+/**
+ * Playoff odds for the at-stake panel, off the same fixture list.
+ *
+ * Records are spread deliberately — one team through, one out, the rest in
+ * the middle — because a fixture where every team is level would draw
+ * twelve dumbbells of the same length and prove nothing about the panel
+ * that is meant to separate them.
+ */
+const h2h = (me: number, them: number) => {
+    const lo = (p: number) => Math.log(p / (1 - p));
+    return 1 / (1 + Math.exp(-(lo(me) - lo(them))));
+};
+const rate = Object.fromEntries(KEYS.map((k, i) => [k, 0.70 - i * 0.035]));
+const record = (i: number) => i === 0 ? { wins: 7, losses: 1 }
+    : i === 11 ? { wins: 1, losses: 7 }
+    : { wins: 4, losses: 4 };
+const oddsRows: PowerRow[] = KEYS.map((k, i) => ({
+    key: k, name: NAMES[k], winRate: rate[k], expected: EXPECTED[k],
+    rank: i + 1, tied: false, pointsRank: null, recordRank: null, luckGap: null,
+    record: { ...record(i), ties: 0, pointsFor: 900, pointsAgainst: 900 },
+    against: Object.fromEntries(KEYS.filter(o => o !== k)
+        .map(o => [o, h2h(rate[k], rate[o])])),
+    priced: 9, filled: 9, slots: 9,
+}));
+const odds = playoffOdds(oddsRows, AHEAD, 6, 20000, 41,
+    pairingTable(games, KEYS, PLAYED + 1, PLAYED + AHEAD));
+const week9 = new Map<string, string>();
+for (const g of games) {
+    if (g.week !== PLAYED + 1) continue;
+    week9.set(g.home, g.away); week9.set(g.away, g.home);
+}
+
 const css = readdirSync('.next/static/chunks')
     .filter(f => f.endsWith('.css'))
     .map(f => `<link rel="stylesheet" href="/_css/${f}">`).join('\n');
@@ -76,6 +112,10 @@ ${css}
 <style>body{background:#060a10;margin:0;padding:18px;
   font-family:system-ui,-apple-system,sans-serif}</style>
 </head><body><div class="space-y-6" style="max-width:920px">
+${renderToStaticMarkup(React.createElement(AtStake, {
+    rows: KEYS.map(k => ({ key: k, name: NAMES[k] })),
+    odds, myKey: MY, opponentOf: week9, week: PLAYED + 1, realSchedule: true,
+}))}
 ${renderToStaticMarkup(React.createElement(Earned, {
     rows: KEYS.map(k => ({ key: k, name: NAMES[k], play: play.get(k)! })),
     myKey: MY,
