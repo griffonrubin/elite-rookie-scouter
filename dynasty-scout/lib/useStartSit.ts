@@ -132,7 +132,24 @@ export function useStartSitData(
                 if (cancelled) return;
                 for (const r of rs) {
                     for (const p of r.players ?? []) {
-                        cache.set(keyOf(p.id, week), { player: p, detail });
+                        /**
+                         * Never downgrade a row that already carries the box
+                         * score.
+                         *
+                         * `missing` keeps a slim request from re-fetching
+                         * what is already held, but two requests started
+                         * together both see an empty cache: the page's own
+                         * detailed fetch for its two rosters, and the
+                         * league-wide slim one behind the season odds. They
+                         * overlap on every player in those two rosters, and
+                         * whichever lands second used to win — so a slim
+                         * reply arriving late stripped the game logs out
+                         * from under a page that had already rendered them.
+                         */
+                        const key = keyOf(p.id, week);
+                        const prev = cache.get(key);
+                        if (prev && prev.detail && !detail) continue;
+                        cache.set(key, { player: p, detail });
                     }
                 }
                 setData(collect(wanted, week, detail));

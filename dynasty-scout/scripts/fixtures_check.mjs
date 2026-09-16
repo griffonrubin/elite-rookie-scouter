@@ -59,8 +59,10 @@ const schedule = {};
 }
 /** Sleeper's shape: one row per roster, two rows sharing a matchup_id. */
 function matchupsFor(week) {
-    const starters = new Map(
-        (F.matchups[LEAGUE_ID] ?? []).map(m => [m.roster_id, m]));
+    // Every roster's own lineup. The matchup fixture carries three of them,
+    // and a team with no starters has no matchup for the page to simulate —
+    // which silently removed the half of Start/Sit this check is about.
+    const starters = new Map(F.rosters[LEAGUE_ID].map(r => [r.roster_id, r]));
     const rows = [];
     schedule[week].forEach(([a, b], i) => {
         for (const id of [a, b]) {
@@ -88,6 +90,8 @@ const browser = await chromium.launch({
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 1100 } });
 
 let weekCalls = [];
+/** Ids asked for with the full box score, so a re-fetch is visible. */
+let detailCalls = [];
 await ctx.route('**/api/sleeper/**', route => {
     const u = new URL(route.request().url()).pathname.replace('/api/sleeper', '');
     const j = o => route.fulfill({
@@ -113,6 +117,14 @@ await ctx.route('https://api.sleeper.app/**', r => r.abort());
 
 const page = await ctx.newPage();
 page.setDefaultTimeout(40000);
+page.on('request', r => {
+    const u = r.url();
+    if (!u.includes('/api/redraft/startsit')) return;
+    const q = new URL(u).searchParams;
+    if (q.get('detail') === '1') {
+        detailCalls.push((q.get('ids') ?? '').split(',').filter(Boolean).length);
+    }
+});
 const errs = [];
 page.on('pageerror', e => errs.push(e.message));
 if (process.env.DEBUG_FX) {
@@ -158,24 +170,94 @@ async function connect() {
         .click({ timeout: 30000 });
 }
 
-step(1, 'Start/Sit asks for this week and no other');
-await page.goto(`${BASE}/redraft/start-sit`, { waitUntil: 'domcontentloaded' });
+step(1, 'the Waiver Wire asks for this week and no other');
+/**
+ * A page that never mentions a schedule must not pay for one.
+ *
+ * This assertion used to be made of Start/Sit, and it stopped being true
+ * the day Start/Sit began pricing a lineup decision against the season —
+ * it reads a fixture list now, legitimately. Keeping the old claim would
+ * have left a check passing on a four-second timeout rather than on the
+ * behaviour, which is a check that lies as soon as the page gets slower.
+ * So it moves to a page for which it is still true.
+ */
+await page.goto(`${BASE}/in-season/waivers`, { waitUntil: 'domcontentloaded' });
 await connect();
-await page.waitForTimeout(4000);
-const beforeNav = weekCalls.slice();
-assert('only the current week is fetched',
-    beforeNav.length > 0 && beforeNav.every(w => w === WEEK),
-    `weeks ${[...new Set(beforeNav)].join(',')} over ${beforeNav.length} calls`);
-
-step(2, 'Power Rankings asks for the whole regular season');
-weekCalls = [];
-await page.getByRole('link', { name: 'Power Rankings' }).first().click();
 await page.waitForTimeout(9000);
-const got = [...new Set(weekCalls)].sort((a, b) => a - b);
+const onWaivers = weekCalls.slice();
+assert('only the current week is fetched',
+    onWaivers.length > 0 && onWaivers.every(w => w === WEEK),
+    `weeks ${[...new Set(onWaivers)].join(',')} over ${onWaivers.length} calls`);
+
+step(2, 'Start/Sit buys the season, because it now reads one');
+weekCalls = [];
+await page.getByRole('link', { name: 'Start/Sit' }).first().click();
+await page.waitForTimeout(12000);
+let got = [...new Set(weekCalls)].sort((a, b) => a - b);
 assert('every regular-season week is read',
     got.length === PLAYOFFS - 1 && got[0] === 1 && got[got.length - 1] === PLAYOFFS - 1,
     `weeks ${got[0]}–${got[got.length - 1]}, ${got.length} of ${PLAYOFFS - 1}`);
 assert('and no playoff week is', !got.some(w => w >= PLAYOFFS));
+
+step('2b', 'and it says what the week is worth');
+/**
+ * The three numbers have to be a set: what you are if you win, what you
+ * are if you lose, and where you actually stand — which must sit between
+ * them, because it is those two weighted by a probability.
+ */
+await page.getByText(/is worth/i).first().waitFor({ timeout: 40000 });
+const stakes = await page.locator('body').innerText();
+const num = (re) => {
+    const m = stakes.match(re);
+    return m ? Number(m[1]) : NaN;
+};
+const ifWin = num(/If you win\s*\n?\s*(\d+)%/i);
+const ifLose = num(/If you lose\s*\n?\s*(\d+)%/i);
+const stand = num(/As things stand[^\n]*\n?\s*(\d+)%/i);
+const worth = num(/is worth\s*\n?\s*(\d+) pts of playoff odds/i);
+console.log(`      win ${ifWin}% · lose ${ifLose}% · now ${stand}% · worth ${worth}`);
+assert('winning is better than losing', ifWin > ifLose, `${ifWin} vs ${ifLose}`);
+assert('where you stand is between the two',
+    stand >= ifLose && stand <= ifWin, `${ifLose} ≤ ${stand} ≤ ${ifWin}`);
+assert('and the stake is the gap between them',
+    Math.abs(worth - (ifWin - ifLose)) <= 1,
+    `${worth} against ${ifWin - ifLose}`);
+
+step('2c', 'the detailed rows survive the league-wide fetch');
+/**
+ * Two fetches race on this page: its own two rosters with full box scores,
+ * and — behind the season odds — every roster in the league without them.
+ * Both start from an empty cache and overlap on every player the page is
+ * about, so whichever lands second wins, and a slim reply arriving late
+ * strips the box scores out from under a page that has already drawn them.
+ *
+ * Asserted through the cache rather than through the DOM, which is the
+ * only reliable signal here: if the detailed rows were downgraded, coming
+ * back to this page has to buy them again, and that second request is
+ * visible. A DOM assertion on the box score passed against the bug,
+ * because the columns are drawn from the position rather than from the
+ * data and appear either way.
+ */
+const detailBefore = detailCalls.length;
+await page.getByRole('link', { name: 'Waiver Wire' }).first().click();
+await page.waitForTimeout(3000);
+await page.getByRole('link', { name: 'Start/Sit' }).first().click();
+await page.getByText(/is worth/i).first().waitFor({ timeout: 40000 });
+await page.waitForTimeout(3000);
+assert('coming back does not have to buy them again',
+    detailCalls.length === detailBefore,
+    detailCalls.length === detailBefore
+        ? `${detailBefore} detailed requests, none repeated`
+        : `${detailCalls.length - detailBefore} re-fetched — a slim reply `
+          + 'overwrote the detailed rows');
+
+step('2d', 'Power Rankings reuses what Start/Sit already bought');
+weekCalls = [];
+await page.getByRole('link', { name: 'Power Rankings' }).first().click();
+await page.waitForTimeout(9000);
+got = [...new Set(weekCalls)].sort((a, b) => a - b);
+assert('the schedule is not bought twice', got.length === 0,
+    `${weekCalls.length} refetched`);
 
 step(3, 'both panels are on the page, with something to say');
 await page.getByRole('heading', { name: /earned, or not/i }).waitFor({ timeout: 30000 });
@@ -194,9 +276,9 @@ const labels = await page.locator('li span[title^="Week"]').evaluateAll(
     els => [...new Set(els.map(e => e.textContent.trim()))]);
 assert('every team has its own label', labels.length === 12, labels.join(' '));
 
-step(4, 'a second visit does not buy the schedule twice');
+step(4, 'and a round trip does not buy it a third time');
 weekCalls = [];
-await page.getByRole('link', { name: 'Waiver Wire' }).first().click();
+await page.getByRole('link', { name: 'Team Analysis' }).first().click();
 await page.waitForTimeout(3000);
 await page.getByRole('link', { name: 'Power Rankings' }).first().click();
 await page.getByRole('heading', { name: /the run home/i }).waitFor({ timeout: 30000 });
