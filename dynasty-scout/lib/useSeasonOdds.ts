@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useStartSitData } from '@/lib/useStartSit';
 import { useLeagueFixtures } from '@/lib/useLeagueFixtures';
 import { idsIn, leagueRosters, lineupSlotsOf } from '@/lib/leagueRosters';
-import { seasonOdds, type SeasonOdds } from '@/lib/seasonOdds';
+import { seasonOdds, type SeasonInput, type SeasonOdds } from '@/lib/seasonOdds';
 import type { LeagueSyncState } from '@/lib/useLeagueSync';
 import type { Horizon } from '@/lib/simInput';
 import type { RedraftPlayer } from '@/lib/types';
@@ -39,6 +39,16 @@ export function clearSeasonOddsCache() {
 export interface SeasonOddsState extends Partial<SeasonOdds> {
     /** Null until every roster has been priced. */
     value: SeasonOdds | null;
+    /**
+     * Exactly what the run above was given.
+     *
+     * Handed back so a caller pricing a variant — a waiver claim, a trade —
+     * re-runs the same league rather than assembling its own. The player
+     * rows in particular are league-wide and fetched by this hook; a page
+     * that built its own `SeasonInput` from whatever it happened to have
+     * would be ranking a league most of whose rosters it could not price.
+     */
+    input: SeasonInput | null;
     loading: boolean;
     failed: boolean;
     /** The week being played next. */
@@ -72,31 +82,46 @@ export function useSeasonOdds(
 
     const ready = enabled && !!teams && needed.length > 0 && data.size > 0 && !failed;
 
-    const value = useMemo(() => {
+    const input: SeasonInput | null = useMemo(() => {
         if (!ready || !teams) return null;
-        /**
-         * Keyed on everything that can move the answer, so a second page
-         * reuses the run rather than repeating it — and so a reader who
-         * changes the playoff cut gets a new one rather than a stale one.
-         */
-        const key = [
-            league.connection?.platform, league.connection?.id, week, horizon,
-            scoringKey, cut, remaining, needed.length, data.size,
-            games?.length ?? 0,
-        ].join('|');
-        if (last?.key === key) return last.value;
-        const computed = seasonOdds({
+        return {
+            teams, slots, players, data, season, horizon, scoring, games,
+            week, remaining, cut,
+        };
+    }, [ready, teams, slots, players, data, season, horizon, scoring, games,
+        week, remaining, cut]);
+
+    /**
+     * The cache is read during render and written after it.
+     *
+     * Assigning a module-level variable while rendering is a side effect in
+     * the middle of a pure function — it works until a render is discarded
+     * or replayed, and then the cache holds a result nobody is showing.
+     * Reading it in render is fine; the write belongs in an effect.
+     */
+    const key = [
+        league.connection?.platform, league.connection?.id, week, horizon,
+        scoringKey, cut, remaining, needed.length, data.size, games?.length ?? 0,
+    ].join('|');
+    const cached = last?.key === key ? last.value : null;
+
+    const value = useMemo(() => {
+        if (cached) return cached;
+        if (!ready || !teams) return null;
+        return seasonOdds({
             teams, slots, players, data, season, horizon, scoring, games,
             week, remaining, cut,
         });
-        last = { key, value: computed };
-        return computed;
-    }, [ready, teams, slots, players, data, season, horizon, scoring, games,
-        week, remaining, cut, scoringKey, league.connection?.platform,
-        league.connection?.id, needed.length]);
+    }, [cached, ready, teams, slots, players, data, season, horizon, scoring,
+        games, week, remaining, cut]);
+
+    useEffect(() => {
+        if (value) last = { key, value };
+    }, [key, value]);
 
     return {
         value,
+        input,
         loading: enabled && (loading || (!value && !failed)),
         failed,
         week,

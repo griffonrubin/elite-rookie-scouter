@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { DIVERGING, MARK } from '@/lib/vizTokens';
 import { SEASON_GAMES, type WaiverRow } from '@/lib/waiverRank';
 import type { AddDrop } from '@/lib/waiverPlan';
+import { CLAIM_NOISE, type ClaimWorth } from '@/lib/seasonOdds';
 import { MatchupChip } from '@/components/redraft/startsit/DefenceProfile';
 import { SchedChip } from '@/components/redraft/SchedChip';
 import type { DefenceCell } from '@/lib/defence';
@@ -40,6 +41,12 @@ export interface WireRowData {
      */
     rest: SosRow | null;
     playoffs: SosRow | null;
+    /**
+     * What this claim does to the season, for the few claims worth the
+     * arithmetic. Absent on the rest rather than zero — not priced and not
+     * worth anything are different claims.
+     */
+    worth?: ClaimWorth | null;
     /**
      * Whose absence this man was measured covering, where he was.
      *
@@ -80,8 +87,18 @@ function InheritChip({ from }: { from: InheritanceOut['from'] }) {
     );
 }
 
-function Net({ plan }: { plan: AddDrop }) {
+function Net({ plan, worth }: { plan: AddDrop; worth?: ClaimWorth | null }) {
     const good = plan.net > 0.05;
+    /**
+     * What the points are worth to the season, where this claim was one of
+     * the few priced.
+     *
+     * Shown to the nearest point and withheld below the floor, because
+     * playoff odds are a step function of wins and the same claim moves by
+     * up to four points across seeds — "about ten" is the honest claim and
+     * "10.4" is a decimal the next run would change.
+     */
+    const pts = worth ? worth.delta * 100 : null;
     return (
         <span className="block text-right">
             <span className="block text-[11px] font-bold tabular-nums"
@@ -95,6 +112,29 @@ function Net({ plan }: { plan: AddDrop }) {
                         ? 'open spot'
                         : `drop ${plan.dropName ?? 'somebody'}`}
             </span>
+            {/**
+              * Shown only when the claim clears the floor, and nothing at
+              * all when it does not.
+              *
+              * Most claims do not clear it. A point or two a week is what a
+              * waiver upgrade is worth in a normal league, and a point or
+              * two a week moves a season by less than the simulation moves
+              * between seeds — so a line reading "under 5 pts odds" on
+              * twenty-nine rows out of thirty is a column of null results
+              * dressed as a measurement. The line appearing at all is the
+              * signal: this is a claim worth spending on.
+              */}
+            {pts != null && Math.abs(pts) >= CLAIM_NOISE * 100 && (
+                <span className="block text-[9px] font-semibold tabular-nums"
+                    style={{ color: '#93C5FD' }}
+                    title={`Claiming him takes your season from `
+                        + `${Math.round(worth!.before * 100)}% to make the playoffs to `
+                        + `${Math.round(worth!.after * 100)}%. Shown only above `
+                        + `${CLAIM_NOISE * 100} points, because below that the `
+                        + `simulation moves by as much between seeds.`}>
+                    {pts > 0 ? '+' : '−'}{Math.abs(Math.round(pts))} pts of season
+                </span>
+            )}
         </span>
     );
 }
@@ -106,7 +146,7 @@ export function WireRow({ data, cells, of, isOpen, onToggle }: {
     isOpen: boolean;
     onToggle: () => void;
 }) {
-    const { row: r, week, plan, rest, playoffs, inherits } = data;
+    const { row: r, week, plan, rest, playoffs, inherits, worth } = data;
     const perWeek = r.proj_points != null ? r.proj_points / SEASON_GAMES : null;
     const gap = r.over_replacement;
 
@@ -186,7 +226,7 @@ export function WireRow({ data, cells, of, isOpen, onToggle }: {
 
             {/* What it does to you. The only column that knows your roster. */}
             <span className="col-span-2 row-start-3 sm:col-span-1 sm:col-start-4 sm:row-start-1">
-                {plan ? <Net plan={plan} /> : (
+                {plan ? <Net plan={plan} worth={worth} /> : (
                     <span className="block text-[9px] text-muted-foreground/30 text-right">
                         connect a team
                     </span>

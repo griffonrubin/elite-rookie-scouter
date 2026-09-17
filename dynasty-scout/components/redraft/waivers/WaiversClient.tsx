@@ -12,6 +12,9 @@ import { useSchedule } from '@/lib/useSchedule';
 import { useInheritance } from '@/lib/useSuccessors';
 import { schedFor } from '@/components/redraft/SchedChip';
 import { planClaims, rosterVsWire } from '@/lib/waiverPlan';
+import { useSeasonOdds } from '@/lib/useSeasonOdds';
+import { useClaimWorth } from '@/lib/useClaimWorth';
+import { CLAIM_NOISE } from '@/lib/seasonOdds';
 import type { TradeRosterPlayer } from '@/lib/trade';
 import { SEASON_GAMES, type PositionShape, type WaiverRow } from '@/lib/waiverRank';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
@@ -336,6 +339,54 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
     }, [rows, data, myRoster, slots, sort, rosterSize, outcomeOf, schedule,
         inheritance.byPlayer]);
 
+    /**
+     * The league's season, so a claim can be priced in it.
+     *
+     * The same shared run the Power and Start/Sit pages read, cached — so
+     * the odds a claim moves are the odds those pages print, and this page
+     * pays nothing for them if a reader has been to either.
+     */
+    const season = useSeasonOdds(league, players, { season: SEASON });
+    const myKey = league.connection?.teamKey ?? null;
+    const baseline = myKey ? season.value?.odds?.get(myKey)?.odds ?? null : null;
+
+    /**
+     * The inputs the shared run used, not this page's own.
+     *
+     * The first version assembled a `SeasonInput` here out of what this
+     * page had to hand — which is the waiver candidates and my roster, not
+     * the eleven other rosters in the league. `seasonOdds` then ranked a
+     * league it could price a fraction of, and every claim came back
+     * unpriced. The hook fetches league-wide rows; it hands them back.
+     */
+    const seasonInput = season.input;
+
+    /**
+     * The best few claims, each as the roster it would leave you with.
+     *
+     * Ordered by what they gain in points, which is the order this page
+     * already ranks by — more points a week is never fewer points of
+     * playoff odds for the same team, so the best claim by odds is inside
+     * the best few by points.
+     */
+    const toPrice = useMemo(() => {
+        if (!myRoster.length) return [];
+        return shown
+            .filter(d => d.plan && d.plan.net > 0)
+            .sort((a, b) => (b.plan?.net ?? 0) - (a.plan?.net ?? 0))
+            .slice(0, 4)
+            .map(d => ({
+                id: d.row.id,
+                roster: [
+                    ...myRoster.filter(p => p.id !== d.plan!.dropId),
+                    { id: d.row.id, name: d.row.full_name,
+                      position: d.row.position ?? '', startable: true },
+                ],
+            }));
+    }, [shown, myRoster]);
+
+    const claims = useClaimWorth(seasonInput, myKey, baseline, toPrice);
+
     /** And the summary that answers "is any of this better than what I have". */
     const versus = useMemo(() => {
         if (!myRoster.length || !data.size) return [];
@@ -420,6 +471,31 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
                 <p className="text-[10px] text-muted-foreground/45 leading-snug
                               max-w-[760px] mb-2">
                     {sortNote}
+                    {/**
+                      * Said once, because the line it explains is deliberately
+                      * absent from most rows and an absence explains nothing
+                      * by itself.
+                      */}
+                    {claims.byPlayer.size > 0 && (() => {
+                        const big = [...claims.byPlayer.values()]
+                            .filter(w => Math.abs(w.delta) >= CLAIM_NOISE).length;
+                        return (
+                            <>
+                                {' '}The best {claims.byPlayer.size} claim
+                                {claims.byPlayer.size === 1 ? '' : 's'} here also
+                                had the rest of your season played out with and
+                                without {claims.byPlayer.size === 1 ? 'him' : 'them'}.
+                                {big > 0
+                                    ? ' Where that moved your playoff odds by enough'
+                                      + ' to be worth saying, the row says so.'
+                                    : ' None of them moved your playoff odds by more'
+                                      + ` than ${Math.round(CLAIM_NOISE * 100)} points,`
+                                      + ' which is the usual answer: a point or two a'
+                                      + ' week is what a waiver upgrade is worth, and a'
+                                      + ' point or two a week does not decide a season.'}
+                            </>
+                        );
+                    })()}
                 </p>
 
                 {/*
@@ -469,7 +545,9 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
                         <ul className="space-y-0.5">
                             {shown.map(d => (
                                 <li key={d.row.id}>
-                                    <WireRow data={d} cells={defence.cells} of={defence.of}
+                                    <WireRow
+                                        data={{ ...d, worth: claims.byPlayer.get(d.row.id) }}
+                                        cells={defence.cells} of={defence.of}
                                         isOpen={open === d.row.id}
                                         onToggle={() =>
                                             setOpen(open === d.row.id ? null : d.row.id)} />
