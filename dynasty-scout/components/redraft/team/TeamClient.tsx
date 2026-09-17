@@ -3,6 +3,10 @@
 import React, { useMemo, useState } from 'react';
 import { RedraftPlayer } from '@/lib/types';
 import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
+import { useSeasonOdds } from '@/lib/useSeasonOdds';
+import { useLeagueFixtures } from '@/lib/useLeagueFixtures';
+import { allPlay, scheduleStrength } from '@/lib/leagueSchedule';
+import { SeasonStrip } from './SeasonStrip';
 import { SimPlayer } from '@/lib/startSit';
 import { useStartSitData } from '@/lib/useStartSit';
 import { simInputFor, simPlayerFrom, type Horizon } from '@/lib/simInput';
@@ -63,6 +67,39 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
     const [horizon, setHorizon] = useState<Horizon>('season');
 
     const myKey = league.connection?.teamKey ?? null;
+
+    /**
+     * Your season, from the run the other pages share.
+     *
+     * Every number in the strip below exists on Power Rankings, for all
+     * twelve teams. That page answers "who is good"; this one is asked a
+     * different question by somebody who already knows which team is
+     * theirs, and making them find their own row in a table of twelve to
+     * answer it is making them do the work. Read off the same cached run,
+     * so none of it can disagree with the page that produced it.
+     */
+    const season = useSeasonOdds(league, players, { season: SEASON });
+    const seasonGames = useLeagueFixtures(league);
+    const myOdds = myKey ? season.value?.odds?.get(myKey) ?? null : null;
+
+    const myPlay = useMemo(() => {
+        const keys = season.value?.result.rows.map(r => r.key) ?? [];
+        if (!seasonGames?.length || !myKey || keys.length < 2) return null;
+        return allPlay(seasonGames, keys).get(myKey) ?? null;
+    }, [seasonGames, season.value?.result.rows, myKey]);
+
+    const mySos = useMemo(() => {
+        const rows = season.value?.result.rows;
+        const rem = season.value?.remaining ?? 0;
+        if (!seasonGames?.length || !myKey || !rows || rows.length < 2 || rem <= 0) {
+            return null;
+        }
+        const first = league.week ?? 1;
+        return scheduleStrength(
+            rows.map(r => ({ key: r.key, expected: r.expected })),
+            seasonGames, first, first + rem - 1).get(myKey) ?? null;
+    }, [seasonGames, season.value?.result.rows, season.value?.remaining,
+        myKey, league.week]);
 
     const teams = useMemo(() => {
         const snap = league.snapshot;
@@ -253,6 +290,11 @@ export function TeamClient({ players }: { players: RedraftPlayer[] }) {
     return (
         <div className="space-y-4">
             <LeagueConnect league={league} compact />
+            <SeasonStrip odds={myOdds} play={myPlay} sos={mySos}
+                teams={season.value?.result.rows.length ?? 0}
+                week={league.week} remaining={season.value?.remaining ?? 0}
+                cut={season.value?.cut ?? 0}
+                name={league.snapshot?.teams.find(t => t.key === myKey)?.name ?? null} />
             {profiles.length > 0 && (
                 <TeamShape profiles={profiles} myKey={myKey} />
             )}
