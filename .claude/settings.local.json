@@ -160,7 +160,25 @@
       "mcp__plugin_playwright_playwright__browser_snapshot",
       "mcp__claude_ai_Vercel__get_deployment_build_logs",
       "mcp__plugin_playwright_playwright__browser_close",
-      "Bash(sqlite3 dynasty_scout.db \".tables\")"
+      "Bash(sqlite3 dynasty_scout.db \".tables\")",
+      "Bash(git --no-pager log -3 --format='--- %H%n%B')",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git --no-pager log --oneline -1)",
+      "Bash(git push *)",
+      "Bash(git --no-pager log --oneline HEAD..origin/main)",
+      "Bash(git --no-pager diff --stat HEAD...origin/main -- dynasty-scout/components/ui/hover-card.tsx dynasty-scout/scripts/portability_check.mjs)",
+      "Bash(git rebase *)",
+      "Bash(git --no-pager log --oneline -3)",
+      "Bash(git --no-pager diff --stat)",
+      "Bash(git --no-pager diff .claude/settings.local.json)",
+      "Bash(git -c rebase.autoStash=true rebase origin/main)",
+      "Bash(node scripts/portability_check.mjs)",
+      "Bash(echo \"check EXIT: $?\")",
+      "Bash(git fetch *)",
+      "Bash(git --no-pager log --oneline -1 origin/main)",
+      "Bash(git --no-pager log --oneline origin/main..origin/claude/admiring-dhawan-4218da)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
