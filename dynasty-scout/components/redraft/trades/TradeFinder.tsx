@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { POSITION_RAW } from '@/lib/constants';
 import { DIVERGING } from '@/lib/vizTokens';
@@ -119,25 +119,69 @@ export function TradeFinder({
                     </label>
                 )}
             </div>
-            <p className="text-[11px] text-muted-foreground/55 max-w-[820px] mb-2">
+            {offers.length === 0 ? (
+                /* Nothing found is the usual answer, and it used to cost the
+                   top of the page three paragraphs to say so — about three
+                   hundred pixels on a laptop and nearer five hundred on a
+                   phone, all of it above the rosters and the verdict. The
+                   reasoning is good and worth keeping; it is just not worth
+                   the best space on the screen when the finding is that
+                   there is no finding. So it says the one sentence and holds
+                   the rest behind a disclosure, where a reader who wants to
+                   know why can have all of it. */
+                <div className="text-[11px] text-muted-foreground/55">
+                    <span>Nothing improves both lineups right now.</span>
+                    <details className="inline-block align-baseline ml-1.5 group">
+                        <summary className="inline-flex items-center gap-0.5 cursor-pointer
+                                            list-none text-[10px] text-muted-foreground/45
+                                            hover:text-foreground/70">
+                            why not
+                            <ChevronDown className="w-3 h-3 transition-transform
+                                                    group-open:rotate-180"
+                                aria-hidden="true" />
+                        </summary>
+                        <div className="mt-2 space-y-2 max-w-[820px]">
+                            <p>
+                Nothing here improves both lineups. That is the usual answer in a
+                league where everybody starts what they hold — a one-for-one moves
+                exactly as much onto one side as it takes off the other, so a trade
+                that helps both needs somebody to be holding a player they cannot
+                start. Come back when an injury or a bye has made one.
+                            </p>
+                            <p>
                 Every one-for-one and two-for-one against {others.length}{' '}
                 {others.length === 1 ? 'roster' : 'rosters'}, keeping the ones where
                 both starting lineups improve. Ranked on the <em>smaller</em> of the two
                 gains: an offer worth eight points to you and a tenth of one to them is
                 not a deal, it is a message that goes unanswered.
-            </p>
-
-            {offers.length === 0 ? (
-                <p className="text-[12px] text-muted-foreground/55 py-3 max-w-[660px]">
-                    Nothing here improves both lineups. That is the usual answer in a
-                    league where everybody starts what they hold — a one-for-one moves
-                    exactly as much onto one side as it takes off the other, so a trade
-                    that helps both needs somebody to be holding a player they cannot
-                    start. Come back when an injury or a bye has made one.
-                </p>
+                            </p>
+                            <p className="text-[10px] text-muted-foreground/40 leading-snug">
+                Priced on the best lineup each side could field, a week at a time, with
+                no simulation — the lineup is a function of the projections and thirty
+                thousand Monte Carlo runs per offer would take a minute to say the same
+                thing. Click one to load it into the analyser below, where it gets the
+                full round robin and the rest of the league&rsquo;s reaction to it. Two
+                names for one shrinks your roster and grows theirs, so those are only
+                offered where the league has room. The playoff rank under each name is
+                that player&rsquo;s own position against his own remaining opponents
+                across the weeks that decide a season — a deal even on points that
+                moves you from the hardest of those schedules to the easiest is not an
+                even deal.
+                            </p>
+                        </div>
+                    </details>
+                </div>
             ) : (
+                <>
+                    <p className="text-[11px] text-muted-foreground/55 max-w-[820px] mb-2">
+                Every one-for-one and two-for-one against {others.length}{' '}
+                {others.length === 1 ? 'roster' : 'rosters'}, keeping the ones where
+                both starting lineups improve. Ranked on the <em>smaller</em> of the two
+                gains: an offer worth eight points to you and a tenth of one to them is
+                not a deal, it is a message that goes unanswered.
+                    </p>
                 <ul className="space-y-0.5">
-                    {offers.map((o, i) => {
+                    {offers.map((o) => {
                         const them = profiles.find(p => p.key === o.teamKey);
                         const why = me && them
                             ? offerReason(o, me.positionRank, them.positionRank,
@@ -199,10 +243,8 @@ export function TradeFinder({
                         );
                     })}
                 </ul>
-            )}
-
-            <p className="text-[10px] text-muted-foreground/40 mt-2 leading-snug
-                          max-w-[860px]">
+                    <p className="text-[10px] text-muted-foreground/40 mt-2 leading-snug
+                                  max-w-[860px]">
                 Priced on the best lineup each side could field, a week at a time, with
                 no simulation — the lineup is a function of the projections and thirty
                 thousand Monte Carlo runs per offer would take a minute to say the same
@@ -214,7 +256,9 @@ export function TradeFinder({
                 across the weeks that decide a season — a deal even on points that
                 moves you from the hardest of those schedules to the easiest is not an
                 even deal.
-            </p>
+                    </p>
+                </>
+            )}
         </section>
     );
 }

@@ -5,6 +5,7 @@ import { cn, ordinal } from '@/lib/utils';
 import type { Horizon } from '@/lib/simInput';
 import { DIVERGING, MARK } from '@/lib/vizTokens';
 import { ODDS_NOISE, TRADE_NOISE, type LineupChange, type TradeEffect } from '@/lib/trade';
+import { callFor, oddsCallFor, pp } from '@/lib/tradeCall';
 
 /**
  * What the trade does, for both sides and then for everybody else.
@@ -61,8 +62,6 @@ function DeltaBar({ before, after, span = 0.25 }: {
     );
 }
 
-const pp = (d: number) => `${d > 0 ? '+' : d < 0 ? '−' : ''}${Math.abs(d * 100).toFixed(1)}`;
-
 /**
  * The odds journey, on the whole scale rather than around even.
  *
@@ -99,51 +98,6 @@ function OddsBar({ before, after }: { before: number; after: number }) {
             }} />
         </span>
     );
-}
-
-/**
- * The verdict, in playoff odds where the season is being played out.
- *
- * Deliberately different wording from the win-rate call, because it is a
- * different claim: a roster getting better and an owner getting closer to
- * January are not the same thing, and the gap between them is the most
- * useful thing this page knows. A team already in or already out converts
- * a real improvement into nothing at all, and saying so is worth more than
- * a compliment about the roster.
- */
-function oddsCallFor(delta: number, after: number): { text: string; colour: string } {
-    if (Math.abs(delta) < ODDS_NOISE) {
-        return {
-            text: after >= 0.9 ? 'already in either way'
-                : after <= 0.1 ? 'not enough to matter from here'
-                : 'no real change to your season',
-            colour: 'rgba(255,255,255,0.45)',
-        };
-    }
-    const big = Math.abs(delta) >= 0.05;
-    return delta > 0
-        ? { text: big ? 'a materially better season' : 'a slightly better season',
-            colour: '#93C5FD' }
-        : { text: big ? 'a materially worse season' : 'a slightly worse season',
-            colour: '#FCA5A5' };
-}
-
-/** The verdict in words, because a signed number needs a direction named. */
-function callFor(delta: number): { text: string; colour: string } {
-    if (Math.abs(delta) < TRADE_NOISE) {
-        return { text: 'no real change', colour: 'rgba(255,255,255,0.45)' };
-    }
-    const big = Math.abs(delta) >= 0.03;
-    if (delta > 0) {
-        return {
-            text: big ? 'clearly better off' : 'a little better off',
-            colour: '#93C5FD',
-        };
-    }
-    return {
-        text: big ? 'clearly worse off' : 'a little worse off',
-        colour: '#FCA5A5',
-    };
 }
 
 function TraderRow({ e, mine, span }: {
