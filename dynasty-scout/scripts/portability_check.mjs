@@ -79,19 +79,23 @@ const packageOf = (spec) => {
 };
 
 /**
- * Scripts only, and deliberately.
+ * Everything tsconfig typechecks — `**\/*.ts`, `**\/*.tsx`, `**\/*.mts` —
+ * because that is the same net `next build` resolves imports through, so an
+ * undeclared package in any of them fails the build and not just a script.
  *
- * The hazard being guarded is a check script dragging a tool dependency
- * into the app's typecheck, which is what happened. App code is a
- * different case: `components/ui/hover-card.tsx` imports
- * `@radix-ui/react-hover-card`, which package.json does not list and which
- * resolves anyway because npm hoists it out of the `radix-ui` umbrella —
- * fragile, worth fixing, and it demonstrably does build on a clean
- * checkout, so failing it here would be a check telling a lie to make a
- * point.
+ * `.mjs` stays outside, deliberately. A browser check written as `.mjs` may
+ * import Playwright, which is undeclared on purpose; tsconfig never looks at
+ * those files, so the app build never tries to resolve them.
+ *
+ * This was scripts/-only for a while, because `components/ui/hover-card.tsx`
+ * imported `@radix-ui/react-hover-card` — undeclared, and resolving only
+ * because npm hoists it out of the `radix-ui` umbrella. A clean checkout did
+ * build, so failing it here would have been a check telling a lie to make a
+ * point. That import now goes through the umbrella like every other
+ * `components/ui/*` file, so app code passes on its own merits and the scope
+ * can finally include it.
  */
-const typechecked = files.filter(f =>
-    f.startsWith('scripts/') && /\.(ts|tsx|mts)$/.test(f));
+const typechecked = files.filter(f => /\.(ts|tsx|mts)$/.test(f));
 let undeclared = 0;
 for (const f of typechecked) {
     let text;
@@ -100,19 +104,32 @@ for (const f of typechecked) {
     // Anchored to a statement at the start of a line, because "choose from
     // 'available'" in a comment is prose and the first draft of this check
     // reported four of those and one real finding.
+    //
+    // The clause between `import` and `from` spans newlines, because most of
+    // the app's imports are multi-line and the same-line-only version of this
+    // pattern read every component in the repo without once seeing `recharts`
+    // or `@dnd-kit/core`. Widening the scope without widening this would have
+    // been the more expensive mistake: a check that passes because it is not
+    // looking. The clause admits only the characters an import clause is made
+    // of — no slash, so a `//` comment between the braces ends the match
+    // rather than being swallowed into it.
     for (const m of text.matchAll(
-        /^\s*(?:import|export)[^'"\n]*?\bfrom\s*['"]([^'"\n]+)['"]/gm)) specs.add(m[1]);
+        /^[ \t]*(?:import|export)\b[A-Za-z0-9_$*,{}\s]*?\bfrom\s*['"]([^'"\n]+)['"]/gm)) specs.add(m[1]);
     for (const m of text.matchAll(
         /^\s*import\s*['"]([^'"\n]+)['"]/gm)) specs.add(m[1]);
     for (const m of text.matchAll(
         /\bawait\s+import\s*\(\s*['"]([^'"\n]+)['"]\s*\)/g)) specs.add(m[1]);
+    // lib/db.ts picks its driver at runtime and loads it through require().
+    for (const m of text.matchAll(
+        /\brequire\s*\(\s*['"]([^'"\n]+)['"]\s*\)/g)) specs.add(m[1]);
     for (const spec of specs) {
         if (spec.startsWith('.') || spec.startsWith('@/') || spec.startsWith('/')) continue;
         const name = packageOf(spec.replace(/^node:/, ''));
         if (BUILTIN.has(name) || declared.has(name)) continue;
         console.log(`  FAIL ${f}  imports '${spec}', which package.json does not list`);
-        console.log('       it resolves here and on no clean checkout — '
-            + 'move the file to .mjs, or declare the dependency');
+        console.log('       it resolves here by hoisting and on no clean checkout — declare it, '
+            + 'import it from a package that is declared, or, for a check script, '
+            + 'move the file to .mjs');
         undeclared++;
     }
 }
