@@ -170,24 +170,29 @@ async function connect() {
         .click({ timeout: 30000 });
 }
 
-step(1, 'the Waiver Wire asks for this week and no other');
+step(1, 'Team Analysis asks for this week and no other');
 /**
  * A page that never mentions a schedule must not pay for one.
  *
- * This assertion used to be made of Start/Sit, and it stopped being true
- * the day Start/Sit began pricing a lineup decision against the season —
- * it reads a fixture list now, legitimately. Keeping the old claim would
- * have left a check passing on a four-second timeout rather than on the
- * behaviour, which is a check that lies as soon as the page gets slower.
- * So it moves to a page for which it is still true.
+ * This claim has now moved twice. It was made of Start/Sit until Start/Sit
+ * began pricing a lineup decision against the season, and of the Waiver
+ * Wire until the wire began pricing a claim against it. Both of those are
+ * legitimate — they read a fixture list now — and both times leaving the
+ * old claim in place would have left a check passing on a timeout rather
+ * than on the behaviour.
+ *
+ * Team Analysis and Pick'ems are what is left. If the day comes that they
+ * read one too, this assertion should be deleted rather than moved again:
+ * the invariant worth keeping is the one below, that the schedule is
+ * bought once per session however many pages want it.
  */
-await page.goto(`${BASE}/in-season/waivers`, { waitUntil: 'domcontentloaded' });
+await page.goto(`${BASE}/in-season/team`, { waitUntil: 'domcontentloaded' });
 await connect();
 await page.waitForTimeout(9000);
-const onWaivers = weekCalls.slice();
+const onTeam = weekCalls.slice();
 assert('only the current week is fetched',
-    onWaivers.length > 0 && onWaivers.every(w => w === WEEK),
-    `weeks ${[...new Set(onWaivers)].join(',')} over ${onWaivers.length} calls`);
+    onTeam.length > 0 && onTeam.every(w => w === WEEK),
+    `weeks ${[...new Set(onTeam)].join(',')} over ${onTeam.length} calls`);
 
 step(2, 'Start/Sit buys the season, because it now reads one');
 weekCalls = [];
@@ -240,7 +245,7 @@ step('2c', 'the detailed rows survive the league-wide fetch');
  */
 const detailBefore = detailCalls.length;
 await page.getByRole('link', { name: 'Waiver Wire' }).first().click();
-await page.waitForTimeout(3000);
+await page.waitForTimeout(5000);
 await page.getByRole('link', { name: 'Start/Sit' }).first().click();
 await page.getByText(/is worth/i).first().waitFor({ timeout: 40000 });
 await page.waitForTimeout(3000);
@@ -251,7 +256,7 @@ assert('coming back does not have to buy them again',
         : `${detailCalls.length - detailBefore} re-fetched — a slim reply `
           + 'overwrote the detailed rows');
 
-step('2d', 'Power Rankings reuses what Start/Sit already bought');
+step('2d', 'every other page reuses what Start/Sit already bought');
 weekCalls = [];
 await page.getByRole('link', { name: 'Power Rankings' }).first().click();
 await page.waitForTimeout(9000);

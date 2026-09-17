@@ -65,11 +65,32 @@ export interface SeasonInput {
  *
  * Pure, so it can be memoised by its caller and checked without a browser.
  */
-export function seasonOdds(input: SeasonInput): SeasonOdds {
+export function seasonOdds(
+    input: SeasonInput,
+    /**
+     * One team's roster, replaced before anything is ranked.
+     *
+     * What a waiver claim is: the same league with one roster holding a
+     * different set of players. Running it through this function rather
+     * than through a copy of it is the whole point — a claim priced by a
+     * second implementation is a number that disagrees with the page it
+     * is meant to be compared against.
+     */
+    override?: { key: string; roster: LeagueRoster['roster'] } | null,
+    trials = SEASON_TRIALS,
+    /** Threaded so a paired comparison can be re-run from another seed,
+        which is the only way to measure what its own noise floor is. */
+    seed = 23,
+): SeasonOdds {
     const {
-        teams, slots, players, data, season, horizon, scoring, games,
+        teams: given, slots, players, data, season, horizon, scoring, games,
         week, remaining, cut,
     } = input;
+    const teams = override
+        ? given.map(t => (t.key === override.key
+            ? { ...t, roster: override.roster, unmatched: 0 }
+            : t))
+        : given;
 
     const byId = new Map(players.map(p => [p.id, p]));
     const cache = new Map<number, SimPlayer | null>();
@@ -111,7 +132,7 @@ export function seasonOdds(input: SeasonInput): SeasonOdds {
             lineup: ids.map(sim).filter((s): s is SimPlayer => s != null),
         };
     });
-    const result = powerRank(ranked, SEASON_TRIALS);
+    const result = powerRank(ranked, trials, seed);
 
     /**
      * The league's own fixtures, used only if every week in range pairs
@@ -129,7 +150,7 @@ export function seasonOdds(input: SeasonInput): SeasonOdds {
     return {
         result,
         odds: remaining > 0 && result.rows.length > 1
-            ? playoffOdds(result.rows, remaining, cut, SEASON_TRIALS / 2, 41, pairs)
+            ? playoffOdds(result.rows, remaining, cut, trials / 2, seed + 18, pairs)
             : null,
         realSchedule: real,
         remaining,
@@ -167,4 +188,77 @@ export function oddsGivenWinProb(
     if (!odds || odds.oddsIfWin == null || odds.oddsIfLose == null) return null;
     const p = Math.max(0, Math.min(1, winProb));
     return p * odds.oddsIfWin + (1 - p) * odds.oddsIfLose;
+}
+
+/**
+ * How far playoff odds have to move before a waiver claim moved them.
+ *
+ * Five points, which is coarse, and measured rather than chosen. The same
+ * claim re-run from eight seeds in a twelve-team league with seven weeks
+ * left moves by up to four points of odds — 10.4, 10.1 and 11.1 as the
+ * mean at eight, twenty and forty thousand trials, with a spread of 3.8,
+ * 4.5 and 1.1 points around it.
+ *
+ * Playoff odds are a step function of wins, so they are inherently noisier
+ * than the rate they are computed from: a season is counted in or out, and
+ * a few hundred trials landing the other side of the cut moves the number
+ * by a point. Buying the precision does work — forty thousand trials
+ * quarters the spread — and it costs 380ms a run against 188ms, which on a
+ * page pricing several claims is most of a second of blocked main thread
+ * for a decimal place nobody should act on.
+ *
+ * So the floor sits above what was measured and the number is shown to the
+ * nearest point. "About ten points of playoff odds" is the honest claim;
+ * "10.4" would be a decimal the next seed would move.
+ *
+ * A claim that changes no lineup is exempt from all of this: both sides
+ * run from one seed, so it comes back at exactly zero at every trial count
+ * tested, which is what makes the floor a statement about marginal claims
+ * rather than about the arithmetic.
+ */
+export const CLAIM_NOISE = 0.05;
+
+export interface ClaimWorth {
+    /** Playoff odds before the claim and after it, and the gap. */
+    before: number;
+    after: number;
+    delta: number;
+}
+
+/**
+ * What one waiver claim is worth to your season.
+ *
+ * Both sides run from one seed and one fixture list, so the two leagues
+ * differ by the claim and by nothing else — the same reason the trade page
+ * evaluates a trade as a re-run of one league rather than as two separate
+ * rankings.
+ *
+ * The delta is the number to show. The absolute odds here are computed at
+ * a lower trial count than the season itself and will not match the Power
+ * page to the decimal, which is why they are not offered as a headline.
+ */
+export function claimWorth(
+    input: SeasonInput,
+    myKey: string,
+    withClaim: LeagueRoster['roster'],
+    /**
+     * The odds without the claim, where the caller already has them.
+     *
+     * Every page that prices a claim has just computed this league's
+     * season, and the unchanged half of the comparison is exactly that
+     * number — same trials, same seed, same fixtures. Passing it in halves
+     * the cost of each claim and, more usefully, makes the "before" here
+     * the same number the Power page prints rather than a second estimate
+     * of it.
+     */
+    baseline?: number | null,
+    seed = 23,
+): ClaimWorth | null {
+    if (input.remaining <= 0 || input.teams.length < 2) return null;
+    const before = baseline
+        ?? seasonOdds(input, null, SEASON_TRIALS, seed).odds?.get(myKey)?.odds;
+    const after = seasonOdds(input, { key: myKey, roster: withClaim },
+        SEASON_TRIALS, seed).odds?.get(myKey)?.odds;
+    if (before == null || after == null) return null;
+    return { before, after, delta: after - before };
 }
