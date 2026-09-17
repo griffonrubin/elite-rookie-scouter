@@ -76,7 +76,9 @@ export function seasonOdds(
      * second implementation is a number that disagrees with the page it
      * is meant to be compared against.
      */
-    override?: { key: string; roster: LeagueRoster['roster'] } | null,
+    override?: { key: string; roster: LeagueRoster['roster'] }
+        | { key: string; roster: LeagueRoster['roster'] }[]
+        | null,
     trials = SEASON_TRIALS,
     /** Threaded so a paired comparison can be re-run from another seed,
         which is the only way to measure what its own noise floor is. */
@@ -86,11 +88,19 @@ export function seasonOdds(
         teams: given, slots, players, data, season, horizon, scoring, games,
         week, remaining, cut,
     } = input;
-    const teams = override
-        ? given.map(t => (t.key === override.key
-            ? { ...t, roster: override.roster, unmatched: 0 }
-            : t))
-        : given;
+    /**
+     * One roster for a waiver claim, two for a trade — the same operation
+     * either way, which is why it takes a list. A trade that replaced only
+     * one side would price a league in which the other manager gave players
+     * away for nothing.
+     */
+    const swaps = override == null ? []
+        : Array.isArray(override) ? override : [override];
+    const byKey = new Map(swaps.map(o => [o.key, o.roster]));
+    const teams = byKey.size === 0 ? given
+        : given.map(t => (byKey.has(t.key)
+            ? { ...t, roster: byKey.get(t.key)!, unmatched: 0 }
+            : t));
 
     const byId = new Map(players.map(p => [p.id, p]));
     const cache = new Map<number, SimPlayer | null>();
@@ -237,6 +247,30 @@ export interface ClaimWorth {
  * a lower trial count than the season itself and will not match the Power
  * page to the decimal, which is why they are not offered as a headline.
  */
+/**
+ * What any roster change is worth to your season.
+ *
+ * A waiver claim replaces one roster, a trade replaces two, and both are
+ * the same question asked of the same function: play the rest of the year
+ * with the change and without it, from one seed and one fixture list, and
+ * report the gap.
+ */
+export function changeWorth(
+    input: SeasonInput,
+    myKey: string,
+    overrides: { key: string; roster: LeagueRoster['roster'] }[],
+    baseline?: number | null,
+    seed = 23,
+): ClaimWorth | null {
+    if (input.remaining <= 0 || input.teams.length < 2) return null;
+    const before = baseline
+        ?? seasonOdds(input, null, SEASON_TRIALS, seed).odds?.get(myKey)?.odds;
+    const after = seasonOdds(input, overrides, SEASON_TRIALS, seed)
+        .odds?.get(myKey)?.odds;
+    if (before == null || after == null) return null;
+    return { before, after, delta: after - before };
+}
+
 export function claimWorth(
     input: SeasonInput,
     myKey: string,
@@ -254,11 +288,5 @@ export function claimWorth(
     baseline?: number | null,
     seed = 23,
 ): ClaimWorth | null {
-    if (input.remaining <= 0 || input.teams.length < 2) return null;
-    const before = baseline
-        ?? seasonOdds(input, null, SEASON_TRIALS, seed).odds?.get(myKey)?.odds;
-    const after = seasonOdds(input, { key: myKey, roster: withClaim },
-        SEASON_TRIALS, seed).odds?.get(myKey)?.odds;
-    if (before == null || after == null) return null;
-    return { before, after, delta: after - before };
+    return changeWorth(input, myKey, [{ key: myKey, roster: withClaim }], baseline, seed);
 }

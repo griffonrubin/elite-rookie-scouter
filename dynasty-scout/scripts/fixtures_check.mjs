@@ -170,39 +170,56 @@ async function connect() {
         .click({ timeout: 30000 });
 }
 
-step(1, 'Team Analysis asks for this week and no other');
 /**
- * A page that never mentions a schedule must not pay for one.
+ * There was an assertion here that a page which never mentions a schedule
+ * must not pay for one. It was made of Start/Sit, then of the Waiver Wire,
+ * then of Team Analysis, and each move was because that page had
+ * legitimately begun reading a fixture list. Team Analysis now reads one
+ * too — it shows your own season at the top — so the claim has no page
+ * left that it is true of, and moving it a fourth time would be looking
+ * for somewhere it still passes rather than for something worth
+ * asserting.
  *
- * This claim has now moved twice. It was made of Start/Sit until Start/Sit
- * began pricing a lineup decision against the season, and of the Waiver
- * Wire until the wire began pricing a claim against it. Both of those are
- * legitimate — they read a fixture list now — and both times leaving the
- * old claim in place would have left a check passing on a timeout rather
- * than on the behaviour.
- *
- * Team Analysis and Pick'ems are what is left. If the day comes that they
- * read one too, this assertion should be deleted rather than moved again:
- * the invariant worth keeping is the one below, that the schedule is
- * bought once per session however many pages want it.
+ * Deleted rather than moved, as the last move said it should be. What
+ * survives is the invariant that actually protects the reader: the
+ * schedule is bought once a session, however many pages want it — asserted
+ * below, twice, from two different directions.
  */
+step(1, 'the season is bought once, on whichever page is opened first');
 await page.goto(`${BASE}/in-season/team`, { waitUntil: 'domcontentloaded' });
 await connect();
-await page.waitForTimeout(9000);
-const onTeam = weekCalls.slice();
-assert('only the current week is fetched',
-    onTeam.length > 0 && onTeam.every(w => w === WEEK),
-    `weeks ${[...new Set(onTeam)].join(',')} over ${onTeam.length} calls`);
+await page.waitForTimeout(12000);
+const firstPage = [...new Set(weekCalls)].sort((a, b) => a - b);
+const times = new Map();
+for (const w of weekCalls) times.set(w, (times.get(w) ?? 0) + 1);
+assert('every regular-season week is read',
+    firstPage.length === PLAYOFFS - 1
+    && firstPage[0] === 1 && firstPage[firstPage.length - 1] === PLAYOFFS - 1,
+    `weeks ${firstPage[0]}–${firstPage[firstPage.length - 1]}, `
+    + `${firstPage.length} of ${PLAYOFFS - 1}`);
+/**
+ * Once each, except this week.
+ *
+ * The snapshot asks for the current week on its own — it needs this
+ * week's opponent whether or not anything wants a fixture list — so week
+ * eight is fetched twice and every other week once. Asserting a flat
+ * count of fourteen fails on that overlap, which is legitimate; what is
+ * worth catching is a second pass over the whole season, and that shows
+ * up as a week other than this one being asked for twice.
+ */
+const repeated = [...times.entries()].filter(([w, n]) => n > 1 && w !== WEEK);
+assert('and no week is read twice, bar the one the snapshot needs anyway',
+    repeated.length === 0 && (times.get(WEEK) ?? 0) <= 2,
+    repeated.length
+        ? `weeks ${repeated.map(([w, n]) => `${w}×${n}`).join(', ')} repeated`
+        : `${weekCalls.length} calls, week ${WEEK} twice`);
+assert('and no playoff week is', !firstPage.some(w => w >= PLAYOFFS));
 
-step(2, 'Start/Sit buys the season, because it now reads one');
+step(2, 'and Start/Sit, which reads one too, does not buy it again');
 weekCalls = [];
 await page.getByRole('link', { name: 'Start/Sit' }).first().click();
 await page.waitForTimeout(12000);
-let got = [...new Set(weekCalls)].sort((a, b) => a - b);
-assert('every regular-season week is read',
-    got.length === PLAYOFFS - 1 && got[0] === 1 && got[got.length - 1] === PLAYOFFS - 1,
-    `weeks ${got[0]}–${got[got.length - 1]}, ${got.length} of ${PLAYOFFS - 1}`);
-assert('and no playoff week is', !got.some(w => w >= PLAYOFFS));
+assert('nothing is refetched', weekCalls.length === 0, `${weekCalls.length} calls`);
 
 step('2b', 'and it says what the week is worth');
 /**
@@ -260,7 +277,7 @@ step('2d', 'every other page reuses what Start/Sit already bought');
 weekCalls = [];
 await page.getByRole('link', { name: 'Power Rankings' }).first().click();
 await page.waitForTimeout(9000);
-got = [...new Set(weekCalls)].sort((a, b) => a - b);
+const got = [...new Set(weekCalls)].sort((a, b) => a - b);
 assert('the schedule is not bought twice', got.length === 0,
     `${weekCalls.length} refetched`);
 

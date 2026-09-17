@@ -94,6 +94,8 @@ const PAGES = [
         /the run home/i,
     ]],
     ['Team Analysis', 'team', [
+        /’s season|your season/i,
+        /still playing in january/i,
         /where this roster stands in the league/i,
         /where the points come from/i,
         /what sort of team it is/i,

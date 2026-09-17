@@ -19,7 +19,8 @@
  * implementation that scaled odds off the points gained would pass "the
  * number moved" and fail this.
  */
-import { claimWorth, CLAIM_NOISE, type SeasonInput } from '../lib/seasonOdds';
+import { changeWorth, claimWorth, CLAIM_NOISE, type SeasonInput }
+    from '../lib/seasonOdds';
 import { pairingTable, type LeagueGame } from '../lib/leagueSchedule';
 import type { LeagueRoster } from '../lib/leagueRosters';
 import type { RedraftPlayer } from '../lib/types';
@@ -163,6 +164,46 @@ assert('and is not so loose it hides a real claim',
     CLAIM_NOISE < withStar.delta / 5,
     `${(CLAIM_NOISE * 100).toFixed(1)} against a `
     + `${(withStar.delta * 100).toFixed(0)}-point claim`);
+
+step('4b', 'a trade replaces both rosters, or it is not a trade');
+/**
+ * The same machinery prices a trade, and the way to get a trade wrong is
+ * to replace only your side.
+ *
+ * I expected that to overstate the gain — they hand their best player over
+ * and keep everything — and it understates it. A trade does two things to
+ * your season: it changes your roster, and it changes a rival's. Taking
+ * their best back means they are worse for the rest of the year, and a
+ * league with one fewer strong team is a league you finish higher in.
+ * Pricing only your own side misses the second half, and the second half
+ * is most of three points of playoff odds here.
+ *
+ * Which is the assertion: both sides must be worth more than one, and the
+ * gap is the rival getting weaker.
+ */
+const partner = level.find(t => t.key === '2')!;
+const theirBest = partner.roster[1];
+const myWorst = mine.roster[8];
+const myAfter = [...mine.roster.filter(p => p.id !== myWorst.id), theirBest];
+const theirAfter = [...partner.roster.filter(p => p.id !== theirBest.id), myWorst];
+
+const bothSides = changeWorth(inputFor(level), MY, [
+    { key: MY, roster: myAfter },
+    { key: partner.key, roster: theirAfter },
+])!;
+const oneSide = changeWorth(inputFor(level), MY, [{ key: MY, roster: myAfter }])!;
+console.log(`      both sides ${(bothSides.delta * 100).toFixed(1)} points`
+    + ` · only mine ${(oneSide.delta * 100).toFixed(1)}`);
+assert('the trade is worth something', bothSides.delta > CLAIM_NOISE,
+    `${(bothSides.delta * 100).toFixed(1)} points`);
+assert('and replacing only my side is not the same answer',
+    Math.abs(bothSides.delta - oneSide.delta) > 0.01,
+    `${(bothSides.delta * 100).toFixed(1)} against `
+    + `${(oneSide.delta * 100).toFixed(1)}`);
+assert('and it understates it, because it misses the rival getting worse',
+    bothSides.delta > oneSide.delta,
+    `${(bothSides.delta * 100).toFixed(1)} against `
+    + `${(oneSide.delta * 100).toFixed(1)} — the difference is their roster`);
 
 step(5, 'a season already over has no claim to price');
 const over = claimWorth({ ...inputFor(level), remaining: 0 }, MY,
