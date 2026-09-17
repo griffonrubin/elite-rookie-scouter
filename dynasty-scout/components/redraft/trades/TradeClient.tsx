@@ -9,6 +9,9 @@ import { useStartSitData } from '@/lib/useStartSit';
 import { simInputFor, simPlayerFrom, type Horizon } from '@/lib/simInput';
 import { evaluateTrade, TradeResult, TradeRosterPlayer, TradeTeam } from '@/lib/trade';
 import { pairingTable, scheduleUsable } from '@/lib/leagueSchedule';
+import { useSeasonOdds } from '@/lib/useSeasonOdds';
+import { useClaimWorth } from '@/lib/useClaimWorth';
+import { offerKey } from '@/lib/tradeFinder';
 import { useLeagueFixtures } from '@/lib/useLeagueFixtures';
 import { LeagueConnect } from '@/components/redraft/startsit/LeagueConnect';
 import { HorizonToggle } from '@/components/redraft/HorizonToggle';
@@ -267,6 +270,46 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
             : null;
     }, [games, teams, remaining, firstAhead, lastWeek]);
 
+    /**
+     * The best few suggested offers, priced in the season they change.
+     *
+     * Points a week is what the two managers are bargaining over; what
+     * that is worth to you is a different question, and the one that
+     * decides which of six suggestions to send. Both sides of each offer
+     * are replaced, because a trade also changes a rival's roster and
+     * leaving that out understates it — a weaker contender is a league you
+     * finish higher in.
+     */
+    const [finderOffers, setFinderOffers] = useState<Offer[]>([]);
+    const season = useSeasonOdds(league, players, { season: SEASON });
+    const baseline = myKey ? season.value?.odds?.get(myKey)?.odds ?? null : null;
+
+    const toPrice = useMemo(() => {
+        if (!myKey || !teams || finderOffers.length === 0) return [];
+        const byKey = new Map(teams.map(t => [t.key, t]));
+        const mine = byKey.get(myKey);
+        if (!mine) return [];
+        return finderOffers.slice(0, 3).map(o => {
+            const them = byKey.get(o.teamKey);
+            if (!them) return null;
+            const gave = new Set(o.give);
+            const got = new Set(o.get);
+            const arriving = them.roster.filter(p => got.has(p.id));
+            const leaving = mine.roster.filter(p => gave.has(p.id));
+            return {
+                id: offerKey(o),
+                overrides: [
+                    { key: myKey,
+                      roster: [...mine.roster.filter(p => !gave.has(p.id)), ...arriving] },
+                    { key: o.teamKey,
+                      roster: [...them.roster.filter(p => !got.has(p.id)), ...leaving] },
+                ],
+            };
+        }).filter((x): x is NonNullable<typeof x> => x != null);
+    }, [finderOffers, teams, myKey]);
+
+    const offerWorth = useClaimWorth(season.input, myKey, baseline, toPrice, 3);
+
     const result: TradeResult | null = useMemo(() => {
         if (!ready || !teams || !me || !them) return null;
         if (giving.size === 0 && theirGive.size === 0) return null;
@@ -338,6 +381,8 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                         not, which is the one nobody makes. */}
                     {me && teams && (
                         <TradeFinder
+                            worth={offerWorth.byPlayer}
+                            onOffers={setFinderOffers}
                             myRoster={me.roster}
                             teams={finderTeams}
                             slots={slots} meanOf={finderMean}

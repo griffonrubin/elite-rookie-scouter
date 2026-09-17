@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { POSITION_RAW } from '@/lib/constants';
 import { DIVERGING } from '@/lib/vizTokens';
 import { findTrades, offerReason, type FinderTeam, type Offer } from '@/lib/tradeFinder';
+import { CLAIM_NOISE, type ClaimWorth } from '@/lib/seasonOdds';
+import { offerKey } from '@/lib/tradeFinder';
 import type { TradeRosterPlayer } from '@/lib/trade';
 import type { TeamProfile } from '@/lib/teamProfile';
 import type { SosRow } from '@/lib/schedule';
@@ -65,7 +67,7 @@ function Side({ ids, nameOf, positionOf, teamOf, playoffs, tone }: {
 
 export function TradeFinder({
     myRoster, teams, slots, meanOf, nameOf, positionOf, teamOf, playoffs,
-    profiles, myKey, rosterSize, onPick, partnerKey,
+    profiles, myKey, rosterSize, onPick, partnerKey, worth, onOffers,
 }: {
     myRoster: TradeRosterPlayer[];
     teams: FinderTeam[];
@@ -85,6 +87,13 @@ export function TradeFinder({
     onPick: (offer: Offer) => void;
     /** Narrow to one partner, following the analyser's own selector. */
     partnerKey: string | null;
+    /**
+     * What each of the best few offers does to your season, where the page
+     * has priced them. Keyed by the offer's own identity.
+     */
+    worth?: Map<string | number, ClaimWorth>;
+    /** Report the offers, so the page above can price the best few. */
+    onOffers?: (offers: Offer[]) => void;
 }) {
     const [only, setOnly] = useState(false);
     const others = useMemo(
@@ -97,6 +106,14 @@ export function TradeFinder({
             ? findTrades({ roster: myRoster, slots, meanOf }, others, rosterSize, 12)
             : []),
         [myRoster, others, slots, meanOf, rosterSize]);
+
+    /**
+     * Handed up rather than priced here, because pricing one needs the
+     * whole league's season and this component is given a roster and a
+     * list of opponents. The page above has the run; it prices the best
+     * few and hands the answers back.
+     */
+    useEffect(() => { onOffers?.(offers); }, [offers, onOffers]);
 
     const me = profiles.find(p => p.key === myKey);
     const of = profiles.length;
@@ -185,6 +202,38 @@ export function TradeFinder({
                                                          text-muted-foreground/50">
                                             +{o.theirGain.toFixed(1)} them
                                         </span>
+                                        {/**
+                                          * What it does to your season, for
+                                          * the few offers that were priced,
+                                          * and only when it clears the floor.
+                                          *
+                                          * Points a week is what both sides
+                                          * are bargaining over; this is what
+                                          * it is worth to you, which is a
+                                          * different question and the one
+                                          * that decides which of six
+                                          * suggestions to actually send.
+                                          */}
+                                        {(() => {
+                                            const w = worth?.get(offerKey(o));
+                                            if (!w) return null;
+                                            const pts = w.delta * 100;
+                                            if (Math.abs(pts) < CLAIM_NOISE * 100) {
+                                                return null;
+                                            }
+                                            return (
+                                                <span className="block text-[9px]
+                                                                 font-semibold tabular-nums"
+                                                    style={{ color: '#93C5FD' }}
+                                                    title={`Sending this takes your season `
+                                                        + `from ${Math.round(w.before * 100)}% `
+                                                        + `to make the playoffs to `
+                                                        + `${Math.round(w.after * 100)}%.`}>
+                                                    {pts > 0 ? '+' : '−'}
+                                                    {Math.abs(Math.round(pts))} pts of season
+                                                </span>
+                                            );
+                                        })()}
                                     </span>
                                     {why && (
                                         <span className="col-span-2 sm:col-start-2

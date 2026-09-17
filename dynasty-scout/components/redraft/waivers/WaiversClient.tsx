@@ -370,20 +370,23 @@ export function WaiversClient({ players }: { players: RedraftPlayer[] }) {
      * the best few by points.
      */
     const toPrice = useMemo(() => {
-        if (!myRoster.length) return [];
+        if (!myRoster.length || !myKey) return [];
         return shown
             .filter(d => d.plan && d.plan.net > 0)
             .sort((a, b) => (b.plan?.net ?? 0) - (a.plan?.net ?? 0))
             .slice(0, 4)
             .map(d => ({
                 id: d.row.id,
-                roster: [
-                    ...myRoster.filter(p => p.id !== d.plan!.dropId),
-                    { id: d.row.id, name: d.row.full_name,
-                      position: d.row.position ?? '', startable: true },
-                ],
+                overrides: [{
+                    key: myKey!,
+                    roster: [
+                        ...myRoster.filter(p => p.id !== d.plan!.dropId),
+                        { id: d.row.id, name: d.row.full_name,
+                          position: d.row.position ?? '', startable: true },
+                    ],
+                }],
             }));
-    }, [shown, myRoster]);
+    }, [shown, myRoster, myKey]);
 
     const claims = useClaimWorth(seasonInput, myKey, baseline, toPrice);
 
