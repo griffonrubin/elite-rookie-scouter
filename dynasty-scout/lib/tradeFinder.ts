@@ -44,6 +44,19 @@ export interface Offer {
     unevenCount: boolean;
 }
 
+/**
+ * A stable identity for an offer.
+ *
+ * The same trade found on two renders has to be the same key, or a price
+ * computed for it lands on nothing. Built from the partner and both sides
+ * rather than from the list position, which moves when the list is
+ * re-sorted or filtered to one manager.
+ */
+export function offerKey(o: Pick<Offer, 'teamKey' | 'give' | 'get'>): string {
+    return `${o.teamKey}:${[...o.give].sort((a, b) => a - b).join('.')}`
+        + `>${[...o.get].sort((a, b) => a - b).join('.')}`;
+}
+
 export interface FinderInput {
     roster: TradeRosterPlayer[];
     slots: string[];

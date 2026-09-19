@@ -1,11 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { claimWorth, type ClaimWorth, type SeasonInput } from '@/lib/seasonOdds';
+import { changeWorth, type ClaimWorth, type SeasonInput } from '@/lib/seasonOdds';
 import type { LeagueRoster } from '@/lib/leagueRosters';
 
 /**
- * What the best few waiver claims are worth to your season.
+ * What the best few roster changes are worth to your season.
+ *
+ * A waiver claim replaces one roster and a trade replaces two, so an item
+ * carries its own list of replacements rather than a single roster. The
+ * pricing is identical either way, which is the point: a claim and an
+ * offer come back on one scale and can be compared.
  *
  * Priced after the page has drawn, a claim at a time, and only for the few
  * the page is actually recommending. Each one is a full re-run of the
@@ -25,8 +30,8 @@ import type { LeagueRoster } from '@/lib/leagueRosters';
  */
 
 export interface ClaimValues {
-    /** Player id to what claiming him is worth. */
-    byPlayer: Map<number, ClaimWorth>;
+    /** The item's own id to what making that change is worth. */
+    byPlayer: Map<string | number, ClaimWorth>;
     /** True while more are still being priced. */
     pricing: boolean;
 }
@@ -35,11 +40,17 @@ export function useClaimWorth(
     input: SeasonInput | null,
     myKey: string | null,
     baseline: number | null | undefined,
-    /** The claims to price, best first, each already resolved to a roster. */
-    claims: { id: number; roster: LeagueRoster['roster'] }[],
+    /**
+     * The changes to price, best first, each already resolved to the
+     * rosters it would leave behind. One entry for a waiver claim, two for
+     * a trade.
+     */
+    claims: { id: string | number;
+              overrides: { key: string; roster: LeagueRoster['roster'] }[] }[],
     limit = 4,
 ): ClaimValues {
-    const [byPlayer, setByPlayer] = useState<Map<number, ClaimWorth>>(new Map());
+    const [byPlayer, setByPlayer] =
+        useState<Map<string | number, ClaimWorth>>(new Map());
     const [pricing, setPricing] = useState(false);
     /** Identity of the request, so a stale run cannot publish its answer. */
     const run = useRef(0);
@@ -62,7 +73,7 @@ export function useClaimWorth(
         // somebody else's state.
         let cancelled = false;
         setPricing(true);
-        const found = new Map<number, ClaimWorth>();
+        const found = new Map<string | number, ClaimWorth>();
         let i = 0;
         let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -73,7 +84,7 @@ export function useClaimWorth(
                 return;
             }
             const c = wanted[i++];
-            const worth = claimWorth(input, myKey, c.roster, baseline);
+            const worth = changeWorth(input, myKey, c.overrides, baseline);
             if (worth) found.set(c.id, worth);
             // A new Map each time, so the page shows each claim as it lands
             // rather than all of them at the end.
