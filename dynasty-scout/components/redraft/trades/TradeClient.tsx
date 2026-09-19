@@ -7,7 +7,7 @@ import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
 import { SimPlayer } from '@/lib/startSit';
 import { useStartSitData } from '@/lib/useStartSit';
 import { simInputFor, simPlayerFrom, type Horizon } from '@/lib/simInput';
-import { evaluateTrade, TradeResult, TradeRosterPlayer, TradeTeam } from '@/lib/trade';
+import { evaluateTrade, replacementCost, TradeResult, TradeRosterPlayer, TradeTeam } from '@/lib/trade';
 import { pairingTable, scheduleUsable } from '@/lib/leagueSchedule';
 import { useSeasonOdds } from '@/lib/useSeasonOdds';
 import { useClaimWorth } from '@/lib/useClaimWorth';
@@ -232,6 +232,28 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
     const partnerKey = partner ?? urlTrade.partner ?? defaultPartner;
     const me = teams?.find(t => t.key === myKey) ?? null;
     const them = teams?.find(t => t.key === partnerKey) ?? null;
+
+    /**
+     * What each roster would lose by giving each of its players up.
+     *
+     * Only the two rosters on screen, because that is all anybody reads and
+     * doing the whole league would be twelve rebuilds for ten answers nobody
+     * asked for. Keyed by team so switching partner does not recompute mine.
+     */
+    const costs = useMemo(() => {
+        const numeric = (id: number) => simOf(id)?.outcome.mean ?? 0;
+        const out = new Map<string, Map<number, number>>();
+        for (const t of [me, them]) {
+            if (t && !out.has(t.key)) {
+                out.set(t.key, replacementCost(slots, t.roster, numeric));
+            }
+        }
+        return out;
+    }, [me, them, slots, simOf]);
+    const costFor = (key: string | undefined) => {
+        const table = key ? costs.get(key) : undefined;
+        return table ? (id: number) => table.get(id) ?? null : undefined;
+    };
 
     /**
      * Every roster's positional standing, so an offer can say why it exists.
@@ -549,6 +571,7 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 subtitle="pick who you would send"
                                 roster={me.roster} starting={me.starting}
                                 selected={giving} meanOf={meanOf} horizon={horizon}
+                                costOf={costFor(me.key)}
                                 onToggle={toggle(giving, setMyGive)} />
                         )}
                         {them && (
@@ -557,6 +580,7 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 subtitle="pick who you would want"
                                 roster={them.roster} starting={them.starting}
                                 selected={getting} meanOf={meanOf} horizon={horizon}
+                                costOf={costFor(them.key)}
                                 onToggle={toggle(getting, setTheirGive)} />
                         )}
                     </div>

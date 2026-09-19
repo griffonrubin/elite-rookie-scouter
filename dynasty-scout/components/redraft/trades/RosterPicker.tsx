@@ -18,7 +18,8 @@ import type { Horizon } from '@/lib/simInput';
 const GROUPS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST'];
 
 export function RosterPicker({
-    title, subtitle, roster, starting, selected, onToggle, meanOf, disabled, horizon,
+    title, subtitle, roster, starting, selected, onToggle, meanOf, costOf,
+    disabled, horizon,
 }: {
     title: string;
     subtitle?: string;
@@ -28,6 +29,12 @@ export function RosterPicker({
     selected: Set<number>;
     onToggle: (id: number) => void;
     meanOf: (id: number) => number | null;
+    /**
+     * What the lineup loses a week if this player goes — the number that
+     * actually answers "who can I spare", where the points beside his name
+     * only say how good he is.
+     */
+    costOf?: (id: number) => number | null;
     disabled?: boolean;
     /** Which week the numbers beside the names describe. */
     horizon: Horizon;
@@ -68,6 +75,7 @@ export function RosterPicker({
                         {players.map(p => {
                             const on = selected.has(p.id);
                             const mean = meanOf(p.id);
+                            const cost = costOf ? costOf(p.id) : null;
                             return (
                                 <li key={p.id}>
                                     <button type="button" disabled={disabled}
@@ -79,7 +87,7 @@ export function RosterPicker({
                                         onClick={() => onToggle(p.id)}
                                         className={cn(`w-full grid items-center gap-x-2
                                             px-1.5 py-1 rounded text-left text-[11px]
-                                            grid-cols-[minmax(0,1fr)_22px_38px]
+                                            grid-cols-[minmax(0,1fr)_22px_38px_34px]
                                             transition-colors
                                             disabled:opacity-40 disabled:cursor-default`,
                                             on ? 'bg-white/[0.09]' : 'hover:bg-white/[0.05]')}
@@ -114,6 +122,34 @@ export function RosterPicker({
                                                 : 'Expected points this week'}>
                                             {mean == null ? '—' : mean.toFixed(1)}
                                         </span>
+                                        {/* What it would cost to lose him.
+                                            Dimmed to nothing when the answer
+                                            is nothing, so a roster's spare
+                                            parts read as blanks and the eye
+                                            goes to them. */}
+                                        <span className="text-[10px] tabular-nums
+                                                         text-right"
+                                            style={{
+                                                color: cost == null
+                                                    ? 'rgba(255,255,255,0.15)'
+                                                    : cost < 0.05
+                                                        ? 'rgba(255,255,255,0.18)'
+                                                        : cost >= 3
+                                                            ? DIVERGING.negative
+                                                            : 'rgba(255,255,255,0.45)',
+                                            }}
+                                            title={cost == null
+                                                ? 'No lineup cost could be worked out'
+                                                : cost < 0.05
+                                                    ? 'Costs your lineup nothing — the '
+                                                      + 'bench covers him, so he is the '
+                                                      + 'cheapest thing here to offer'
+                                                    : `Losing him costs your lineup `
+                                                      + `${cost.toFixed(1)} points a week `
+                                                      + `once the next man takes the slot`}>
+                                            {cost == null ? '' : cost < 0.05
+                                                ? '·' : cost.toFixed(1)}
+                                        </span>
                                     </button>
                                 </li>
                             );
@@ -122,13 +158,16 @@ export function RosterPicker({
                 </div>
             ))}
             <p className="text-[9px] text-muted-foreground/30 mt-2">
-                ST is in the lineup as the owner has it set now. The number beside
-                each name is expected points {horizon === 'season'
+                ST is in the lineup as the owner has it set now. The first number
+                is expected points {horizon === 'season'
                     ? 'in a typical week from here'
                     : 'this Sunday'}, and it is what sorts every group. Not a
                 ranking of players in the abstract: what a trade costs you is a
                 place in your own lineup, so the order is the order they would
-                take those places in.
+                take those places in.{costOf && ' The second is what this lineup '
+                    + 'loses a week if he goes, once the next man takes the slot — '
+                    + 'a dot means nothing at all, which is what the easiest player '
+                    + 'to trade away looks like.'}
             </p>
         </section>
     );

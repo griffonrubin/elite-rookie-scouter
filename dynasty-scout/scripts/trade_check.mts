@@ -17,7 +17,7 @@
 import { buildOutcome, type SimPlayer } from '../lib/startSit';
 import { POWER_NOISE } from '../lib/power';
 import {
-    bestLineup, evaluateTrade, TRADE_NOISE,
+    bestLineup, evaluateTrade, replacementCost, TRADE_NOISE,
     type TradeRosterPlayer, type TradeTeam,
 } from '../lib/trade';
 
@@ -324,6 +324,68 @@ assert('two for one still resolves', two.effects.length === teams.length);
 assert('both departures are accounted for',
     two.changes.find(c => c.key === 't2')!.after
         .every(id => id !== wrOf('t2', 3).id && id !== teOf('t2', 1).id));
+
+step(10, 'what a player costs to lose, which is not what he scores');
+/**
+ * The roster list used to answer "who can I spare" with a points column,
+ * which answers a different question. Nobody trades into a vacuum: the slot
+ * is refilled, so what you give up is the gap to the next man and not the
+ * man. These fixtures are built so the two answers differ visibly.
+ */
+const rc = roster(1);
+const meanOfRc = (id: number) => simOf(id)!.outcome.mean;
+const cost = replacementCost(SLOTS, rc, meanOfRc);
+const named10 = (n: string) => rc.find(p => p.name === n)!;
+const costOf = (n: string) => cost.get(named10(n).id)!;
+const meanOf10 = (n: string) => meanOfRc(named10(n).id);
+const startingIds = new Set(bestLineup(SLOTS, rc, meanOfRc)
+    .filter((id): id is number => id != null));
+
+assert('every player on the roster gets a number', cost.size === rc.length);
+assert('nobody costs a negative amount to lose',
+    [...cost.values()].every(v => v >= 0));
+assert('nobody costs more to lose than he scores',
+    rc.every(p => cost.get(p.id)! <= meanOfRc(p.id) + 1e-9));
+
+// The whole point of the column: a bench player the lineup never uses is
+// free to trade, and the points column buries him at the bottom looking
+// like the least you have to offer.
+const spare = rc.filter(p => !startingIds.has(p.id));
+assert('a player the lineup does not use costs nothing',
+    spare.every(p => cost.get(p.id)! < 1e-9),
+    spare.map(p => `${p.name}:${cost.get(p.id)!.toFixed(2)}`).join(' '));
+assert('and there is more than one of him to find', spare.length >= 4);
+
+// A slot with nobody behind it costs the whole player, because there is no
+// next man: the lineup simply goes a man short.
+assert('the only kicker costs his entire week',
+    Math.abs(costOf('K8') - meanOf10('K8')) < 1e-9,
+    `${costOf('K8').toFixed(2)} vs ${meanOf10('K8').toFixed(2)}`);
+
+// Two quarterbacks, so the first one costs exactly the gap to the second.
+assert('a backed-up starter costs the gap to his backup',
+    Math.abs(costOf('QB19') - (meanOf10('QB19') - meanOf10('QB9'))) < 1e-9,
+    costOf('QB19').toFixed(2));
+
+/**
+ * And the reason this is a rebuild rather than a look at the next man in
+ * the same position. Losing the best back promotes the flex back into a
+ * starting slot, and the flex then falls to a receiver — so the cost is the
+ * whole shape shifting, which is strictly more than the gap to the next
+ * back.
+ */
+const naiveGap = meanOf10('RB15') - meanOf10('RB12');
+assert('losing a back costs more than the gap to the next back',
+    costOf('RB15') > naiveGap + 1e-9,
+    `cost ${costOf('RB15').toFixed(2)} vs same-position gap ${naiveGap.toFixed(2)}`);
+assert('the flex man himself costs only the gap to the next flex',
+    costOf('RB8') < costOf('RB15'),
+    `${costOf('RB8').toFixed(2)} vs ${costOf('RB15').toFixed(2)}`);
+assert('a better starter costs more than a worse one at the same position',
+    costOf('RB15') > costOf('RB12'),
+    `${costOf('RB15').toFixed(2)} vs ${costOf('RB12').toFixed(2)}`);
+console.log('      ' + rc.map(p =>
+    `${p.name}:${cost.get(p.id)!.toFixed(1)}`).join(' '));
 
 console.log(`\n${fails.length ? fails.length + ' FAILED: ' + fails.join(', ') : 'every step passed'}`);
 process.exit(fails.length ? 1 : 0);

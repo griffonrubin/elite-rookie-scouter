@@ -84,6 +84,52 @@ export function bestLineup(
     return filled;
 }
 
+/**
+ * What losing each player would actually cost this roster, a point a week.
+ *
+ * The number beside a name on the roster list is what he scores, and that is
+ * not the question being asked of it. Nobody trades a player away into a
+ * vacuum: the slot he leaves gets filled by whoever is next, so what you give
+ * up is the gap between them, not the man. A twelve-point receiver behind
+ * another twelve-point receiver costs nothing to lose, and the fourth back on
+ * a roster that starts two has been free all along — those are precisely the
+ * players worth offering, and a list sorted by points buries them at the
+ * bottom looking like the least you have.
+ *
+ * Computed by rebuilding the best lineup without him and taking the
+ * difference, so it prices the whole shape rather than one slot: losing a
+ * flex-eligible back can pull a receiver out of the flex and a tight end in
+ * behind him, and only a rebuild sees that.
+ *
+ * Cheap enough to do for everybody — a rebuild is a pass over the roster per
+ * slot, and a fifteen-man roster in a nine-slot league is a few thousand
+ * comparisons with no simulation anywhere in it.
+ */
+export function replacementCost(
+    slots: string[],
+    roster: TradeRosterPlayer[],
+    meanOf: (id: number) => number,
+): Map<number, number> {
+    // An unpriced player scores nothing rather than minus infinity here: he
+    // is already reported separately, and letting him poison the arithmetic
+    // would put a nonsense number against every other name on the roster.
+    const val = (id: number | null) => {
+        if (id == null) return 0;
+        const m = meanOf(id);
+        return Number.isFinite(m) ? m : 0;
+    };
+    const total = (ids: (number | null)[]) =>
+        ids.reduce((sum: number, id) => sum + val(id), 0);
+
+    const base = total(bestLineup(slots, roster, meanOf));
+    const out = new Map<number, number>();
+    for (const p of roster) {
+        const without = roster.filter(q => q.id !== p.id);
+        out.set(p.id, Math.max(0, base - total(bestLineup(slots, without, meanOf))));
+    }
+    return out;
+}
+
 /** One direction of a trade: who leaves this team. */
 export interface TradeSide {
     teamKey: string;
