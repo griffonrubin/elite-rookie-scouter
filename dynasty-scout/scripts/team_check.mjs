@@ -506,11 +506,23 @@ if (await worth.count() === 0) {
         .evaluateAll(els => els.map(e => e.textContent?.replace(/\s+/g, ' ').trim() ?? ''));
     for (const v of verdictRows) console.log('      ' + v.slice(0, 110));
     const mineRow = verdictRows.find(v => /— you/.test(v)) ?? '';
-    const delta = parseFloat((mineRow.match(/([−+-][\d.]+) pts of win rate/) || [])[1]
+    /**
+     * Whatever unit the verdict is quoting.
+     *
+     * It says "pts of playoff odds" where the league's season could be
+     * simulated and "pts of win rate" where it could not, and this used to
+     * match only the second — so once the odds arrived the number stopped
+     * parsing, the assertion compared NaN, and a check that reads a page it
+     * no longer understands is not a check. The unit is the page's
+     * business; the sign is this test's.
+     */
+    const unit = /pts of (playoff odds|win rate)/.exec(mineRow)?.[1] ?? null;
+    const delta = parseFloat((mineRow.match(/([−+-][\d.]+) pts of /) || [])[1]
         ?.replace('−', '-') ?? 'NaN');
     assert('the verdict names me', /— you/.test(mineRow), mineRow.slice(0, 60));
+    assert('in a unit the page actually prints', unit != null, String(unit));
     assert('and giving a starter away for nothing makes me worse',
-        delta < 0, String(delta));
+        delta < 0, `${delta} pts of ${unit}`);
     // Clicking anything must hand control back to the reader.
     await page.locator('button[data-player-id]').nth(6).click();
     await page.waitForTimeout(2500);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStartSitData } from '@/lib/useStartSit';
 import { useLeagueFixtures } from '@/lib/useLeagueFixtures';
 import { idsIn, leagueRosters, lineupSlotsOf } from '@/lib/leagueRosters';
@@ -80,7 +80,18 @@ export function useSeasonOdds(
     const scoring = snapshot?.scoring ?? null;
     const scoringKey = `${scoring?.reception ?? 1}:${scoring?.teReceptionBonus ?? 0}`;
 
-    const ready = enabled && !!teams && needed.length > 0 && data.size > 0 && !failed;
+    /**
+     * Every roster is priced, or none is.
+     *
+     * `data.size > 0` alone is true the moment the first chunk of a
+     * hundred and seventy players lands, and the run that follows ranks
+     * twelve teams off the third of the league it can see — then does it
+     * again for the next chunk, and again for the last. Three wrong
+     * answers and three long tasks where one right answer belongs.
+     * `loading` is false only once every chunk is in.
+     */
+    const ready = enabled && !!teams && needed.length > 0
+        && data.size > 0 && !loading && !failed;
 
     const input: SeasonInput | null = useMemo(() => {
         if (!ready || !teams) return null;
@@ -92,32 +103,48 @@ export function useSeasonOdds(
         week, remaining, cut]);
 
     /**
-     * The cache is read during render and written after it.
+     * Read during render, computed after it.
      *
-     * Assigning a module-level variable while rendering is a side effect in
-     * the middle of a pure function — it works until a render is discarded
-     * or replayed, and then the cache holds a result nobody is showing.
-     * Reading it in render is fine; the write belongs in an effect.
+     * The fetch was always deferred — the league's players arrive long
+     * after the page does — but the simulation was not: it ran inside a
+     * memo, so the render that had the data also paid for ranking twelve
+     * rosters twenty thousand times. Measured on Start/Sit, that took the
+     * wall clock from picking a team to seeing the board from 481ms to
+     * 864ms, with a 423ms task blocking the main thread in the middle of
+     * it. The board is the thing somebody came for; the season strip is
+     * not, and it has no business delaying it.
+     *
+     * So the work is handed to a macrotask. The page commits and paints
+     * with `value` still null, the simulation runs, and the strip appears
+     * when it is ready. It still costs what it costs — but it costs it
+     * after the reader has what they asked for.
      */
     const key = [
         league.connection?.platform, league.connection?.id, week, horizon,
         scoringKey, cut, remaining, needed.length, data.size, games?.length ?? 0,
     ].join('|');
     const cached = last?.key === key ? last.value : null;
-
-    const value = useMemo(() => {
-        if (cached) return cached;
-        if (!ready || !teams) return null;
-        return seasonOdds({
-            teams, slots, players, data, season, horizon, scoring, games,
-            week, remaining, cut,
-        });
-    }, [cached, ready, teams, slots, players, data, season, horizon, scoring,
-        games, week, remaining, cut]);
+    const [computed, setComputed] = useState<Cached | null>(null);
 
     useEffect(() => {
-        if (value) last = { key, value };
-    }, [key, value]);
+        if (cached || !ready || !teams) return;
+        let live = true;
+        const timer = setTimeout(() => {
+            if (!live) return;
+            const value_ = seasonOdds({
+                teams, slots, players, data, season, horizon, scoring, games,
+                week, remaining, cut,
+            });
+            last = { key, value: value_ };
+            setComputed({ key, value: value_ });
+        }, 0);
+        return () => { live = false; clearTimeout(timer); };
+        // Keyed on what can change the answer rather than on the identity of
+        // objects this hook rebuilds on every render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [key, cached, ready]);
+
+    const value = cached ?? (computed?.key === key ? computed.value : null);
 
     return {
         value,

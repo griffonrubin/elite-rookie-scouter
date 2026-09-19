@@ -338,14 +338,21 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
      * The league's season, for the one number this page cannot derive on
      * its own: what winning here is worth.
      *
-     * Deferred and shared. It prices every roster in the league, which
-     * means fetching every rostered player — a payload this page has no
-     * other use for — so it is asked for after the lineup has rendered and
-     * the block below simply appears when it is ready. The run itself is
-     * the Power page's, cached, so a reader who has been there pays
-     * nothing and the two pages cannot quote different numbers.
+     * Held back until the lineup is in hand, which is not fussiness. It
+     * prices every roster in the league, so it asks for every rostered
+     * player — three more requests to the same endpoint this page is
+     * already waiting on for its own two rosters. Fired together they
+     * queue behind each other: measured, the board went from appearing
+     * 54ms after the click to 367ms, with nothing to show for the wait
+     * but a strip further down the page. Gating on `ready` puts the two
+     * in order — the lineup somebody came for, then the season it is
+     * played in.
+     *
+     * The run itself is the Power page's, cached, so a reader who has
+     * been there pays nothing and the two pages cannot quote different
+     * numbers.
      */
-    const season = useSeasonOdds(league, players, { season: SEASON });
+    const season = useSeasonOdds(league, players, { season: SEASON, enabled: ready });
     const myOdds = league.connection?.teamKey
         ? season.value?.odds?.get(league.connection.teamKey) ?? null
         : null;

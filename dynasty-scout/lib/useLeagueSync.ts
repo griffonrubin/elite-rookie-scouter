@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { clearStartSitCache } from '@/lib/useStartSit';
 import { RedraftPlayer } from '@/lib/types';
 import {
@@ -491,9 +491,6 @@ export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {
     const [week, setWeekState] = useState<number | null>(null);
     const [nonce, setNonce] = useState(0);
 
-    const playersRef = useRef(players);
-    playersRef.current = players;
-
     useEffect(() => { setConnection(readConnection()); }, []);
 
     // The league's own week unless the user has picked another, so the page
@@ -555,6 +552,23 @@ export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {
     const oppTeam = oppKey ? snapshot?.teams.find(t => t.key === oppKey) ?? null : null;
     const platform = connection?.platform ?? 'sleeper';
 
+    /**
+     * Matched once per snapshot, not once per render.
+     *
+     * `matchSide` builds fresh arrays, and every page downstream memoises
+     * its expensive work on `league.me.starters` — a twenty-thousand-trial
+     * matchup, nine three-thousand-trial slot contests. Called in the
+     * return statement, those arrays were new on every render, so every
+     * memo keyed on them was a memo that never held: each stray re-render,
+     * from a fetch landing or a filter changing, paid for the whole
+     * simulation again. Measured on Start/Sit, four of them, at roughly
+     * 340ms each.
+     */
+    const me = useMemo(
+        () => matchSide(myTeam, players, platform), [myTeam, players, platform]);
+    const opponent = useMemo(
+        () => matchSide(oppTeam, players, platform), [oppTeam, players, platform]);
+
     const [saved, setSaved] = useState<LeagueConnection[]>([]);
     // Read once on mount: localStorage is not available during render on the
     // server, and the migration in readSaved has to run in the browser.
@@ -601,8 +615,7 @@ export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {
 
     return {
         connection, status, snapshot, week,
-        me: matchSide(myTeam, playersRef.current, platform),
-        opponent: matchSide(oppTeam, playersRef.current, platform),
+        me, opponent,
         connect, disconnect, setTeam, saved, switchTo, forget,
         setWeek: (w: number) => setWeekState(w),
         nonce,

@@ -12,6 +12,14 @@
  *   starter pair to answer a question the slot board had already answered,
  *   79% of the compute; and one whole pass ran against empty data before the
  *   fetch landed, rendering a board from nothing. 839ms in one task.
+ *
+ * The headline is the board's own clock, not the driver's. Playwright
+ * cannot observe the DOM while the main thread is busy, so a long task
+ * *after* the board renders still shows up in its wall clock — which once
+ * had this reporting 857ms for a board the page had put up at 367ms. The
+ * in-page mark is what somebody actually waited; the wall clock is kept
+ * beside it, because the gap between the two is main-thread blocking and
+ * that is worth seeing.
  */
 import { chromium } from 'playwright-core';
 import fs from 'fs';
@@ -63,10 +71,21 @@ const slotRows = () => page.locator('section')
     .locator('button[aria-expanded]');
 
 await page.addInitScript(() => {
+    window.__t0 = 0;
     window.__long = [];
     new PerformanceObserver(l => {
         for (const e of l.getEntries()) window.__long.push(Math.round(e.duration));
     }).observe({ entryTypes: ['longtask'] });
+    // When the ninth slot row is in the DOM, on the page's own clock.
+    // Polled rather than observed: a MutationObserver fires inside the
+    // long task that is the thing being measured.
+    window.__board = null;
+    setInterval(() => {
+        if (window.__board == null
+            && document.querySelectorAll('section button[aria-expanded]').length >= 9) {
+            window.__board = Math.round(performance.now() - window.__t0);
+        }
+    }, 16);
     window.__api = [];
     const of = window.fetch;
     window.fetch = async (...a) => {
@@ -84,15 +103,23 @@ await page.getByRole('button', { name: /^find$/i }).click();
 await page.getByRole('button', { name: /Den Fantasy Football League 1/ }).first().waitFor({ timeout: 20000 });
 await page.getByRole('button', { name: /Den Fantasy Football League 1/ }).first().click();
 await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().waitFor({ timeout: 20000 });
-await page.evaluate(() => { window.__long = []; window.__api = []; });
+await page.evaluate(() => {
+    window.__t0 = performance.now(); window.__long = []; window.__api = []; window.__board = null;
+});
 const t3 = Date.now();
 await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().click();
 await page.locator('section').filter({ has: page.getByRole('heading', { name: /slot by slot/i }) })
     .locator('button[aria-expanded]').nth(8).waitFor({ timeout: 40000 });
 const wall = Date.now() - t3;
-await page.waitForTimeout(500);
-const r = await page.evaluate(() => ({ long: window.__long, api: window.__api }));
-console.log(`\n      wall clock, team -> board: ${wall} ms`);
+// Long enough to catch what runs *after* the board, which is the whole
+// point of putting it there: the league-wide simulation is a second of
+// main-thread blocking and a report that stopped before it would say the
+// page cost a third of what it does.
+await page.waitForTimeout(3000);
+const r = await page.evaluate(() => (
+    { long: window.__long, api: window.__api, board: window.__board }));
+console.log(`\n      team -> board, on the page's clock: ${r.board ?? '?'} ms`);
+console.log(`      wall clock as the driver saw it: ${wall} ms`);
 console.log(`      long tasks (>50ms): ${r.long.join(', ')}`);
 console.log(`      blocked on main thread: ${r.long.reduce((s, x) => s + x, 0)} ms in ${r.long.length} tasks`);
 console.log('      api calls:');
@@ -100,11 +127,14 @@ for (const c of r.api) console.log(`        ${String(c.ms).padStart(5)} ms  ${c.
 console.log(`      unaccounted: ${wall - r.long.reduce((s,x)=>s+x,0) - r.api.reduce((s,c)=>s+c.ms,0)} ms`);
 
 // A ceiling rather than a stopwatch: the exact figure moves with the
-// machine, but three seconds is the point at which somebody stops believing
-// the click registered.
-const BUDGET_MS = 3000;
-if (wall > BUDGET_MS) {
-    console.log(`\n      OVER BUDGET — ${wall}ms against ${BUDGET_MS}ms`);
+// machine, but a second is the point at which somebody stops believing the
+// click registered, and the board has no excuse for taking one — it renders
+// off two rosters this page fetched for itself. Everything league-wide
+// comes after.
+const BUDGET_MS = 1000;
+const seen = r.board ?? wall;
+if (seen > BUDGET_MS) {
+    console.log(`\n      OVER BUDGET — ${seen}ms against ${BUDGET_MS}ms`);
     await b.close();
     process.exit(1);
 }
