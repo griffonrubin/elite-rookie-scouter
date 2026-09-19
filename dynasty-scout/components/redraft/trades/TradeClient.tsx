@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { RedraftPlayer } from '@/lib/types';
 import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
@@ -21,6 +21,9 @@ import { measureTeam, rankLeague, type TeamProfile } from '@/lib/teamProfile';
 import type { Offer } from '@/lib/tradeFinder';
 import { RosterPicker } from './RosterPicker';
 import { TradeVerdict } from './TradeVerdict';
+import { TradeSummaryBar, useOutOfView } from './TradeSummaryBar';
+import { TradeCompare, type HeldOffer } from './TradeCompare';
+import { readTrade, tradeHref } from '@/lib/tradeUrl';
 
 const SEASON = 2026;
 const TRIALS = 20000;
@@ -85,17 +88,25 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
      * server-rendered, so a useState initialiser runs where there is no
      * window and hydration keeps the server's empty answer.
      */
-    const offered = useSearchParams().get('give');
-    const [myGive, setMyGive] = useState<Set<number> | null>(null);
-    const [theirGive, setTheirGive] = useState<Set<number>>(new Set());
+    const searchParams = useSearchParams();
+    /**
+     * Everything the address bar knows about this trade.
+     *
+     * All three now, not just the players leaving: the page writes the URL
+     * back as you build, so the link it produces has to open the same trade
+     * it described. `give` alone would reopen your half of it against
+     * whoever the page happened to pick.
+     */
+    const urlTrade = useMemo(() => readTrade(searchParams), [searchParams]);
 
-    const fromUrl = useMemo(() => {
-        const ids = (offered ?? '').split(',').map(Number)
-            .filter(n => Number.isInteger(n) && n > 0);
-        return new Set(ids);
-    }, [offered]);
+    const [myGive, setMyGive] = useState<Set<number> | null>(null);
+    const [theirGive, setTheirGive] = useState<Set<number> | null>(null);
+
+    const fromUrlGive = useMemo(() => new Set(urlTrade.give), [urlTrade.give]);
+    const fromUrlGet = useMemo(() => new Set(urlTrade.get), [urlTrade.get]);
     // The reader's own picks win once they have made one.
-    const giving = myGive ?? fromUrl;
+    const giving = myGive ?? fromUrlGive;
+    const getting = theirGive ?? fromUrlGet;
 
     const myKey = league.connection?.teamKey ?? null;
 
@@ -218,7 +229,7 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
             : teams.find(t => t.key !== myKey)?.key ?? null;
     }, [teams, myKey, league.snapshot?.opponentKeyFor]);
 
-    const partnerKey = partner ?? defaultPartner;
+    const partnerKey = partner ?? urlTrade.partner ?? defaultPartner;
     const me = teams?.find(t => t.key === myKey) ?? null;
     const them = teams?.find(t => t.key === partnerKey) ?? null;
 
@@ -312,13 +323,13 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
 
     const result: TradeResult | null = useMemo(() => {
         if (!ready || !teams || !me || !them) return null;
-        if (giving.size === 0 && theirGive.size === 0) return null;
+        if (giving.size === 0 && getting.size === 0) return null;
         const asTeams: TradeTeam[] = teams.map(t => ({
             key: t.key, name: t.name, roster: t.roster, record: t.record,
         }));
         return evaluateTrade(asTeams, slots,
             { teamKey: me.key, give: [...giving] },
-            { teamKey: them.key, give: [...theirGive] },
+            { teamKey: them.key, give: [...getting] },
             simOf, TRIALS, 23,
             // Only over the rest of the season. Asked of a single week the
             // question is meaningless — one Sunday does not have playoff
@@ -327,7 +338,7 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
             horizon === 'season' && remaining > 0
                 ? { remaining, spots: cut, pairs }
                 : null);
-    }, [ready, teams, me, them, giving, theirGive, slots, simOf,
+    }, [ready, teams, me, them, giving, getting, slots, simOf,
         horizon, remaining, cut, pairs]);
 
     const nameOf = (id: number) =>
@@ -341,6 +352,105 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
             if (next.has(id)) next.delete(id); else next.add(id);
             setter(next);
         };
+
+    /**
+     * Keep the address bar holding the trade on screen.
+     *
+     * This page is the one place here where the output is meant to leave the
+     * app: the question it answers is whether to send an offer to another
+     * manager, and until now the answer lived in a URL that said nothing
+     * about it. A refresh emptied the table, and there was no way to put the
+     * exact offer in front of the person who has to accept it.
+     *
+     * Written with replace rather than push so that picking six players in a
+     * row leaves one entry in the history and the back button returns to
+     * wherever the reader came from, not through six versions of this page.
+     *
+     * And written through history rather than through the router, which is
+     * the whole reason this took two attempts. The page is force-dynamic, so
+     * `router.replace` goes back to the server for it, the server component
+     * re-renders, this component remounts, and every player you had picked
+     * is gone — the URL would fill in with the partner and then sit there
+     * saying `?with=8` for ever, because the state that would have written
+     * the rest of it had just been thrown away by the act of writing it.
+     * `history.replaceState` changes the address and nothing else, and Next
+     * still reports it through `useSearchParams`.
+     */
+    const href = tradeHref('/in-season/trades', {
+        partner: partnerKey, give: [...giving], get: [...getting],
+    });
+    useEffect(() => {
+        if (!ready) return;
+        const here = `${window.location.pathname}${window.location.search}`;
+        if (here !== href) window.history.replaceState(null, '', href);
+    }, [href, ready]);
+
+    /** The two rows the trade is actually about. */
+    const traders = result?.effects.filter(e => e.trading) ?? [];
+    const mineEffect = traders.find(e => e.key === myKey) ?? null;
+    const theirsEffect = traders.find(e => e.key !== myKey) ?? null;
+
+    /**
+     * An offer kept still while you build the next one.
+     *
+     * Dropped whenever the horizon or the week moves under it, because a
+     * verdict priced over the rest of the season and one priced over this
+     * Sunday are not two answers to the same question, and showing them in
+     * adjacent columns would invite exactly that reading.
+     */
+    const [heldRaw, setHeld] = useState<HeldOffer | null>(null);
+    // Derived rather than cleared from an effect: a hold priced over a
+    // different horizon simply is not a hold any more, and saying so here
+    // is one line where syncing it through state is a render cascade and a
+    // frame where the stale pair is on screen together.
+    const held = heldRaw
+        && heldRaw.horizon === horizon
+        && heldRaw.week === (week ?? null)
+        ? heldRaw : null;
+
+    const sameAsHeld = held != null
+        && held.partnerKey === partnerKey
+        && held.give.length === giving.size
+        && held.get.length === getting.size
+        && held.give.every(id => giving.has(id))
+        && held.get.every(id => getting.has(id));
+
+    const hold = useCallback(() => {
+        if (sameAsHeld) { setHeld(null); return; }
+        if (!result || !them) return;
+        setHeld({
+            partnerKey: them.key, partnerName: them.name,
+            give: [...giving], get: [...getting],
+            mine: mineEffect, theirs: theirsEffect,
+            horizon, week: week ?? null,
+        });
+    }, [sameAsHeld, result, them, giving, getting,
+        mineEffect, theirsEffect, horizon, week]);
+
+    const restore = useCallback(() => {
+        if (!held) return;
+        setPartner(held.partnerKey);
+        setMyGive(new Set(held.give));
+        setTheirGive(new Set(held.get));
+    }, [held]);
+
+    const clear = useCallback(() => {
+        setMyGive(new Set());
+        setTheirGive(new Set());
+    }, []);
+
+    /**
+     * The verdict panel, and whether the reader can currently see it.
+     *
+     * The bar at the foot of the page stands in for it while it is off
+     * screen and gets out of the way once it is not, so the two are never
+     * both asking to be read.
+     */
+    const [verdictEl, setVerdictEl] = useState<HTMLDivElement | null>(null);
+    const verdictOffscreen = useOutOfView(verdictEl);
+    const showDetail = useCallback(() => {
+        verdictEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, [verdictEl]);
 
     if (!league.connection || !league.connection.teamKey) {
         return (
@@ -421,9 +531,9 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 <option key={t.key} value={t.key}>{t.name}</option>
                             ))}
                         </select>
-                        {(giving.size > 0 || theirGive.size > 0) && (
+                        {(giving.size > 0 || getting.size > 0) && (
                             <button type="button"
-                                onClick={() => { setMyGive(new Set()); setTheirGive(new Set()); }}
+                                onClick={clear}
                                 className="text-[11px] px-2 py-1 rounded-lg
                                            border border-white/10 text-muted-foreground/70
                                            hover:text-foreground hover:bg-white/[0.05]">
@@ -446,16 +556,28 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 title={them.name}
                                 subtitle="pick who you would want"
                                 roster={them.roster} starting={them.starting}
-                                selected={theirGive} meanOf={meanOf} horizon={horizon}
-                                onToggle={toggle(theirGive, setTheirGive)} />
+                                selected={getting} meanOf={meanOf} horizon={horizon}
+                                onToggle={toggle(getting, setTheirGive)} />
                         )}
                     </div>
 
+                    {held && (
+                        <TradeCompare held={held} nameOf={nameOf}
+                            current={result && them ? {
+                                give: [...giving], get: [...getting],
+                                partnerName: them.name,
+                                mine: mineEffect, theirs: theirsEffect,
+                            } : null}
+                            onRestore={restore} onDrop={() => setHeld(null)} />
+                    )}
+
                     {result ? (
-                        <TradeVerdict result={result} myKey={myKey}
-                            nameOf={nameOf} positionOf={positionOf} trials={TRIALS}
-                            horizon={horizon} spots={cut} realSchedule={pairs != null}
-                            spotsKnown={league.snapshot?.playoffTeams != null} />
+                        <div ref={setVerdictEl}>
+                            <TradeVerdict result={result} myKey={myKey}
+                                nameOf={nameOf} positionOf={positionOf} trials={TRIALS}
+                                horizon={horizon} spots={cut} realSchedule={pairs != null}
+                                spotsKnown={league.snapshot?.playoffTeams != null} />
+                        </div>
                     ) : (
                         <p className="text-[12px] text-muted-foreground/50 py-2">
                             Pick a player from either roster. A one-sided offer is a
@@ -463,6 +585,20 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                             straight gift looks like.
                         </p>
                     )}
+
+                    {/* So the bar never rests on top of the last thing on the
+                        page, which on a phone is the sentence explaining the
+                        number it is showing. */}
+                    {result && <div aria-hidden="true" className="h-28 sm:h-16" />}
+
+                    <TradeSummaryBar
+                        mine={mineEffect} theirs={theirsEffect}
+                        partnerName={them?.name ?? ''}
+                        give={[...giving]} get={[...getting]} nameOf={nameOf}
+                        href={href}
+                        visible={result != null && verdictOffscreen}
+                        pinned={sameAsHeld} onPin={hold} onClear={clear}
+                        onSeeDetail={showDetail} />
                 </>
             )}
         </div>
