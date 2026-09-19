@@ -91,6 +91,23 @@ const inOffer = async () =>
         x.getAttribute('aria-pressed') === 'true').length);
 const bodyText = () => page.locator('body').innerText();
 
+/**
+ * The verdict for *this* trade, not the one before it.
+ *
+ * The heading alone stopped meaning anything once the league moved to a
+ * worker: the previous answer stays on screen, dimmed, while the new one
+ * runs, so waiting for the heading returned in 56ms with somebody else's
+ * numbers under it — and the timer that reported 56ms was reporting the
+ * speed of rendering a stale result. `aria-busy` is the page's own signal
+ * that the number showing belongs to the selection showing.
+ */
+const verdictSettled = async () => {
+    const heading = page.getByRole('heading', { name: /what it does to each side/i });
+    await heading.waitFor({ timeout: 30000 });
+    await page.locator('[aria-busy="false"]').filter({ has: heading })
+        .waitFor({ timeout: 30000 });
+};
+
 step(1, 'it states the premise before a league is connected');
 await page.goto(`${BASE}/in-season/trades`, { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(2500);
@@ -207,8 +224,7 @@ if (offers.length === 0) {
      */
     const team = offers[0].text.split(' | ')[0].trim();
     await finder.locator('ul > li button').first().click();
-    await page.getByRole('heading', { name: /what it does to each side/i })
-        .waitFor({ timeout: 30000 });
+    await verdictSettled();
     await page.waitForTimeout(1200);
     const after = await bodyText();
     assert('clicking an offer loads it into the analyser', await inOffer() >= 2,
@@ -237,7 +253,7 @@ const myBest = (await rowsIn(0).first().innerText()).split('\n')[0].trim();
  */
 const t0 = Date.now();
 await rowsIn(0).first().click();
-await page.getByRole('heading', { name: /what it does to each side/i }).waitFor({ timeout: 30000 });
+await verdictSettled();
 const ms = Date.now() - t0;
 // Settled afterwards, for the assertions below that read the rendered text.
 await page.waitForTimeout(800);

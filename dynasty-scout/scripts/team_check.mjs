@@ -486,7 +486,21 @@ if (await worth.count() === 0) {
     console.log(`      driving /in-season/trades?give=${id} (${name})`);
     await page.goto(`${BASE}/in-season/trades?give=${id}`, { waitUntil: 'domcontentloaded' });
     await page.locator('#trade-partner').waitFor({ timeout: 30000 });
-    await page.waitForTimeout(3500);
+    /**
+     * Waited for, not slept through.
+     *
+     * The analyser replays the league in a worker now, so the verdict
+     * arrives when it arrives — about two seconds after a hundred and
+     * sixty-eight players have been priced, which was longer than the
+     * three and a half this used to sleep. A fixed sleep here does not
+     * fail when the page is wrong, it fails when the page is slow.
+     * `aria-busy` is the page saying the number belongs to the selection.
+     */
+    const verdict = page.getByRole('heading', { name: /what it does to each side/i });
+    await verdict.waitFor({ timeout: 30000 });
+    await page.locator('[aria-busy="false"]').filter({ has: verdict })
+        .waitFor({ timeout: 30000 });
+    await page.waitForTimeout(400);
     const on = await page.locator('button[aria-pressed="true"][data-player-id]')
         .evaluateAll(els => els.map(e => e.getAttribute('data-player-id')));
     console.log('      already on the table: ' + (on.join(', ') || 'nobody'));
