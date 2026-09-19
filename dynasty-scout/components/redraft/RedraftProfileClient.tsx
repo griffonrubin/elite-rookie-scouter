@@ -14,6 +14,7 @@ import {
 import { hasAdvancedData } from '@/lib/redraftAdvanced';
 import { RedraftAdvancedStats } from './RedraftAdvancedStats';
 import { RedraftSourceRankings } from './RedraftSourceRankings';
+import { RankHistoryChart, type RankPoint } from '@/components/RankHistoryChart';
 import { SeasonTrendChart } from './SeasonTrendChart';
 import { VegasPanel } from './VegasPanel';
 import { Availability } from './Availability';
@@ -30,6 +31,8 @@ interface Props {
     player: RedraftPlayer & Record<string, any>;
     seasons: NflSeasonStat[];
     sourceRanks: SourceRank[];
+    /** Consensus rank per day, for the movement chart. */
+    rankHistory: RankPoint[];
     projections: Projection[];
     advanced: NflAdvancedSeason[];
     peersBySeason: Record<number, NflAdvancedSeason[]>;
@@ -106,7 +109,7 @@ const SECTIONS = [
 ];
 
 export function RedraftProfileClient({
-    player, seasons, sourceRanks, projections, advanced, peersBySeason,
+    player, seasons, sourceRanks, rankHistory, projections, advanced, peersBySeason,
     vegasTeam, vegasSchedule, teamLogos, availability, season, boardRank, prev, next,
 }: Props) {
     const pos = (player.position || '').toUpperCase();
@@ -424,6 +427,15 @@ export function RedraftProfileClient({
                         worstRank={player.worst_rank}
                         stdDev={player.std_deviation}
                     />
+                    {/* Where they have them now is half the story; the other
+                        half is which way it has been going. */}
+                    {rankHistory.length > 0 && (
+                        <div className="mt-4 rounded-xl border border-white/[0.07] p-3"
+                            style={{ background: 'var(--bg-card)' }}>
+                            <RankHistoryChart points={rankHistory}
+                                label="Consensus rank" />
+                        </div>
+                    )}
                 </section>
 
                 {/* ── Projections ── */}

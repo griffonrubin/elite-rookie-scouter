@@ -7,6 +7,7 @@ import {
 } from '@/lib/types';
 import { RedraftProfileClient } from '@/components/redraft/RedraftProfileClient';
 import { durabilityOf, type Durability } from '@/lib/durability';
+import { redraftRankHistory } from '@/lib/rankHistory';
 import { loadAttendance } from '@/lib/attendance';
 import { contingencyFor, inheritanceIndex, notable, type WeekRow } from '@/lib/successor';
 
@@ -235,10 +236,15 @@ async function getPlayer(slug: string) {
     );
     const idx = ordered.findIndex(o => o.slug === slug);
 
+    // Every consensus the board has ever computed for him, so the profile
+    // can show which way he has been going and not just where he sits.
+    const rankHistory = await redraftRankHistory(player.id);
+
     return {
         player: player as RedraftPlayer & Record<string, any>,
         seasons,
         sourceRanks,
+        rankHistory,
         projections,
         advanced,
         peersBySeason,
@@ -280,6 +286,7 @@ export default async function RedraftPlayerPage({ params }: PageProps) {
             player={data.player}
             seasons={data.seasons}
             sourceRanks={data.sourceRanks}
+            rankHistory={data.rankHistory}
             projections={data.projections}
             advanced={data.advanced}
             peersBySeason={data.peersBySeason}

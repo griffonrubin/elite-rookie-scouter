@@ -1,4 +1,5 @@
 import { query, queryOne } from '@/lib/db';
+import { dynastyRankHistory } from '@/lib/rankHistory';
 import type { Metadata } from 'next';
 import { CollegeStats, JFosterGrades, Measurables, NflScoutProfile, Ranking } from '@/lib/types';
 import Link from 'next/link';
@@ -78,6 +79,10 @@ async function getPlayer(slug: string) {
             "SELECT r.* FROM rankings r WHERE r.player_id = $1 AND r.scraped_at = (SELECT MAX(r2.scraped_at) FROM rankings r2 WHERE r2.player_id = r.player_id AND r2.source = r.source) ORDER BY r.rank_overall",
             [player.id]
         );
+
+        // The dynasty market's view of him, day by day. Separate from the
+        // rankings above, which are the frozen pre-draft scouting sources.
+        const rankHistory = await dynastyRankHistory(player.id);
 
         const measurables = await queryOne<Measurables>(
             "SELECT * FROM measurables WHERE player_id = $1",
@@ -253,7 +258,7 @@ async function getPlayer(slug: string) {
             [player.position]
         ).catch(() => [] as any[]);
 
-        return { player, stats: stats || [], rankings: rankings || [], measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [], highSchool: highSchool || null, jfosterData: jfosterData || null, nflScout: nflScout || null, rbAdvanced: rbAdvanced || null, peerRBAdv: peerRBAdv || [], peerMeasurables: peerMeasurables || [] };
+        return { player, stats: stats || [], rankings: rankings || [], rankHistory, measurables: measurables || null, speedScore, news: news || [], trustIndicator, peerCareer: peerCareer || [], peerAdvanced: peerAdvanced || [], historicalComps: historicalComps || [], epaStats: epaStats || [], dominatorStats: dominatorStats || [], prevPlayer, nextPlayer, wrAdvanced: wrAdvanced || null, peerWrAdv: peerWrAdv || [], highSchool: highSchool || null, jfosterData: jfosterData || null, nflScout: nflScout || null, rbAdvanced: rbAdvanced || null, peerRBAdv: peerRBAdv || [], peerMeasurables: peerMeasurables || [] };
     } catch (e) {
         console.error("DB Error:", e);
         return null;
