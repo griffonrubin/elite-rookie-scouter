@@ -5,8 +5,16 @@
       "schedule": "0 0 * * *"
     },
     {
+      "path": "/api/cron/dynasty-values",
+      "schedule": "0 10 * * *"
+    },
+    {
       "path": "/api/cron/redraft-projections",
       "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/redraft-sources",
+      "schedule": "30 10 * * *"
     }
   ]
 }
