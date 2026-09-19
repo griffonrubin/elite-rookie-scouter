@@ -7,7 +7,7 @@ import { BENCH_SLOTS, useLeagueSync } from '@/lib/useLeagueSync';
 import { SimPlayer } from '@/lib/startSit';
 import { useStartSitData } from '@/lib/useStartSit';
 import { simInputFor, simPlayerFrom, type Horizon } from '@/lib/simInput';
-import { evaluateTrade, replacementCost, TradeResult, TradeRosterPlayer, TradeTeam } from '@/lib/trade';
+import { replacementCost, TradeRosterPlayer } from '@/lib/trade';
 import { pairingTable, scheduleUsable } from '@/lib/leagueSchedule';
 import { useSeasonOdds } from '@/lib/useSeasonOdds';
 import { useClaimWorth } from '@/lib/useClaimWorth';
@@ -22,6 +22,7 @@ import type { Offer } from '@/lib/tradeFinder';
 import { RosterPicker } from './RosterPicker';
 import { TradeVerdict } from './TradeVerdict';
 import { TradeSummaryBar, useOutOfView } from './TradeSummaryBar';
+import { useTradeEvaluation, type TradeInput } from '@/lib/useTradeEvaluation';
 import { TradeCompare, type HeldOffer } from './TradeCompare';
 import { readTrade, tradeHref } from '@/lib/tradeUrl';
 
@@ -343,25 +344,48 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
 
     const offerWorth = useClaimWorth(season.input, myKey, baseline, toPrice, 3);
 
-    const result: TradeResult | null = useMemo(() => {
+    /**
+     * The question, packed so it can cross to a worker.
+     *
+     * Everything here is plain data on purpose — `simOf` is a closure and a
+     * closure does not clone, so the players are flattened to pairs and the
+     * worker rebuilds the lookup at its end. Null when there is nothing to
+     * ask, which is what stops the hook running the league over an empty
+     * trade.
+     */
+    const question: TradeInput | null = useMemo(() => {
         if (!ready || !teams || !me || !them) return null;
         if (giving.size === 0 && getting.size === 0) return null;
-        const asTeams: TradeTeam[] = teams.map(t => ({
-            key: t.key, name: t.name, roster: t.roster, record: t.record,
-        }));
-        return evaluateTrade(asTeams, slots,
-            { teamKey: me.key, give: [...giving] },
-            { teamKey: them.key, give: [...getting] },
-            simOf, TRIALS, 23,
+        const sims: [number, SimPlayer][] = [];
+        for (const t of teams) {
+            for (const p of t.roster) {
+                const sim = simOf(p.id);
+                // Left out rather than sent as null: the worker's lookup
+                // returns null for anybody missing, which is the same
+                // signal evaluateTrade already reads to report him unpriced.
+                if (sim) sims.push([p.id, sim]);
+            }
+        }
+        return {
+            teams: teams.map(t => ({
+                key: t.key, name: t.name, roster: t.roster, record: t.record,
+            })),
+            slots,
+            a: { teamKey: me.key, give: [...giving] },
+            b: { teamKey: them.key, give: [...getting] },
+            sims, trials: TRIALS, seed: 23,
             // Only over the rest of the season. Asked of a single week the
             // question is meaningless — one Sunday does not have playoff
             // odds — and answering it anyway would put a number on the page
             // that moves for no reason a reader could follow.
-            horizon === 'season' && remaining > 0
+            season: horizon === 'season' && remaining > 0
                 ? { remaining, spots: cut, pairs }
-                : null);
+                : null,
+        };
     }, [ready, teams, me, them, giving, getting, slots, simOf,
         horizon, remaining, cut, pairs]);
+
+    const { result, pending } = useTradeEvaluation(question);
 
     const nameOf = (id: number) =>
         teams?.flatMap(t => t.roster).find(p => p.id === id)?.name ?? String(id);
@@ -596,7 +620,10 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                     )}
 
                     {result ? (
-                        <div ref={setVerdictEl}>
+                        <div ref={setVerdictEl} aria-busy={pending}
+                            className={pending
+                                ? 'opacity-50 transition-opacity'
+                                : 'transition-opacity'}>
                             <TradeVerdict result={result} myKey={myKey}
                                 nameOf={nameOf} positionOf={positionOf} trials={TRIALS}
                                 horizon={horizon} spots={cut} realSchedule={pairs != null}
@@ -621,6 +648,7 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                         give={[...giving]} get={[...getting]} nameOf={nameOf}
                         href={href}
                         visible={result != null && verdictOffscreen}
+                        pending={pending}
                         pinned={sameAsHeld} onPin={hold} onClear={clear}
                         onSeeDetail={showDetail} />
                 </>

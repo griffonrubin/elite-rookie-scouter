@@ -90,7 +90,7 @@ function Side({ e, label, strong }: {
  */
 export function TradeSummaryBar({
     mine, theirs, partnerName, give, get, nameOf, href,
-    visible, pinned, onPin, onClear, onSeeDetail,
+    visible, pending, pinned, onPin, onClear, onSeeDetail,
 }: {
     mine: TradeEffect | null;
     theirs: TradeEffect | null;
@@ -101,6 +101,8 @@ export function TradeSummaryBar({
     /** The page's own address with this trade in it, for the copy button. */
     href: string;
     visible: boolean;
+    /** True while the league is being replayed for the current selection. */
+    pending: boolean;
     pinned: boolean;
     onPin: () => void;
     onClear: () => void;
@@ -153,8 +155,10 @@ export function TradeSummaryBar({
                 {/* The verdict. Announced, because it changes under the
                     reader's hands and a screen reader would otherwise have
                     no idea that anything had happened. */}
-                <span className="flex items-center gap-x-4 gap-y-1 flex-wrap min-w-0"
-                    aria-live="polite" aria-atomic="true">
+                <span className={cn(`flex items-center gap-x-4 gap-y-1 flex-wrap
+                                     min-w-0 transition-opacity`,
+                        pending && 'opacity-40')}
+                    aria-live="polite" aria-atomic="true" aria-busy={pending}>
                     <Side e={mine} label="you" strong />
                     <Side e={theirs} label="them" />
                     {/* Shown at every width, and it was not at first. This
@@ -162,6 +166,12 @@ export function TradeSummaryBar({
                         sending, and hiding it on a phone hides it from most
                         of the people reading. It wraps to its own row down
                         there rather than going away. */}
+                    {pending && (
+                        <span className="text-[10px] text-muted-foreground/50"
+                            role="status">
+                            replaying the league&hellip;
+                        </span>
+                    )}
                     {reply && (
                         <span className="text-[10px] basis-full lg:basis-auto"
                             style={{ color: reply.colour }}>
