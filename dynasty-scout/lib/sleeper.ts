@@ -255,6 +255,14 @@ export interface SleeperLeagueDetail {
         /** 1 in a best-ball league, where the platform scores your optimal
             lineup and there is no lineup to set. */
         best_ball?: number;
+        /**
+         * How many divisions the league is split into, where it has any.
+         *
+         * Read so the pages can say the odds do not model it. Seeding in a
+         * division league is not the best N records, and which rule it is
+         * is a setting this cannot verify — so it is reported, not used.
+         */
+        divisions?: number;
     } | null;
     /**
      * What the league pays for each thing a player does.

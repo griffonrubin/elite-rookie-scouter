@@ -117,6 +117,24 @@ export interface LeagueSnapshot {
      * reader move it rather than quietly assuming.
      */
     playoffTeams?: number | null;
+    /**
+     * How many divisions the league is split into, where it says.
+     *
+     * Read and reported rather than modelled, which is the honest state
+     * of this. Where a league has divisions the seeding usually is not
+     * "the best six records": division winners take the top seeds, so a
+     * team leading a weak division can be through on a record that would
+     * miss in a single table, and a strong second-place team can miss on
+     * one that would walk it. The simulation here plays a single table.
+     *
+     * Modelling it properly needs to know which rule the league uses, and
+     * that is a platform setting this has no way to verify — so rather
+     * than guess a rule and print confident odds off it, the pages say
+     * the odds assume one table and that divisions would change them.
+     * A stated assumption a reader can correct for beats a number that
+     * looks like it knew.
+     */
+    divisions?: number | null;
     /** True in a best-ball league: the platform scores the optimal lineup
         itself, so there is no start/sit call to make. */
     bestBall?: boolean;
@@ -388,6 +406,11 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         rosterPositions: league?.roster_positions ?? null,
         playoffWeekStart: league?.settings?.playoff_week_start ?? null,
         playoffTeams: league?.settings?.playoff_teams ?? null,
+        // Absent on every league that has none, and on any platform that
+        // does not report it — which reads the same as "one table" and is
+        // the right thing for it to read as.
+        divisions: typeof league?.settings?.divisions === 'number'
+            && league.settings.divisions > 1 ? league.settings.divisions : null,
         bestBall: league?.settings?.best_ball === 1,
         scoring: scoringFrom(league?.scoring_settings),
         /**
@@ -462,6 +485,7 @@ async function fetchEspn(conn: LeagueConnection, week: number): Promise<LeagueSn
         leagueName: d.name ?? null, week: d.week ?? week, teams, opponentKeyFor,
         playoffWeekStart: d.playoffWeekStart ?? null,
         playoffTeams: d.playoffTeams ?? null,
+        divisions: d.divisions ?? null,
         /**
          * The two facts about a league that change every number in the app,
          * which this path was silently not carrying.

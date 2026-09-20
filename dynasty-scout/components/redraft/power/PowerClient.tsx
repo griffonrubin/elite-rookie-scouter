@@ -12,6 +12,7 @@ import { Earned } from './Earned';
 import { RunHome } from './RunHome';
 import { AtStake } from './AtStake';
 import { Rooting } from './Rooting';
+import { DivisionsNote } from '../DivisionsNote';
 import { allPlay, pairingTable, scheduleStrength } from '@/lib/leagueSchedule';
 import { useLeagueFixtures } from '@/lib/useLeagueFixtures';
 import { DEFAULT_PLAYOFF_WEEK, useSeasonOdds } from '@/lib/useSeasonOdds';
@@ -221,6 +222,10 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
                                     opponentOf={thisWeekOpponents} week={week}
                                     realSchedule={season.value?.realSchedule ?? false} />
                             )}
+                            {/* Said once, above the panels that spend the
+                                odds, rather than repeated under each. */}
+                            <DivisionsNote
+                                divisions={league.snapshot?.divisions} />
                             {/* Straight after your own game, because it is the
                                 same Sunday and the same question — what is
                                 still in play — asked about the games you do

@@ -17,6 +17,7 @@ import { MatchupChart } from './MatchupChart';
 import { formatDelta, optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
 import { LeagueConnect } from './LeagueConnect';
 import { WeekStakes } from './WeekStakes';
+import { DivisionsNote } from '../DivisionsNote';
 import { useSeasonOdds } from '@/lib/useSeasonOdds';
 import { SwapPreview } from './SwapPreview';
 import { PlayerDetail } from './PlayerDetail';
@@ -425,6 +426,13 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                     bestGain={bestBall ? null : best?.gain ?? null}
                                     week={league.week} />
                             )}
+                            {/* The block above prices this week in playoff
+                                odds, so it inherits whatever those do not
+                                model. */}
+                            {myOdds && <DivisionsNote
+                                divisions={league.snapshot?.divisions}
+                                className="mt-2 text-[10px] text-muted-foreground/45
+                                           leading-relaxed" />}
                             {best && !bestBall && (
                                 <div className="mt-3 pt-3 border-t border-white/[0.07]">
                                     {best.changes.length === 0 ? (
