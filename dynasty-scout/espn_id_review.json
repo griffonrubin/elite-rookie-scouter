@@ -568,5 +568,11 @@
         "school": "Duke Blue Devils"
       }
     ]
+  },
+  {
+    "player_id": 1931,
+    "name": "Bryant Wesco",
+    "reason": "Not found in ESPN. May need CFB Reference fallback.",
+    "candidates": []
   }
 ]

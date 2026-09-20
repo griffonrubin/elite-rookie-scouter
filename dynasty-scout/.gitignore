@@ -40,6 +40,9 @@ yarn-error.log*
 *.db
 *.db-shm
 *.db-wal
+# Timestamped copies from scripts/backup_db.py. The .db itself is tracked
+# deliberately; its backups are 16MB each and one lands per refresh run.
+*.db.bak.*
 
 # Python cache
 __pycache__/

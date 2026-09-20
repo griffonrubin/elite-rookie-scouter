@@ -41,7 +41,7 @@ def get_espn_candidates(name):
         print(f"Error fetching {name}: {e}")
         return []
 
-def run_seeder(force=False):
+def run_seeder(force=False, draft_year=None):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     
@@ -61,8 +61,17 @@ def run_seeder(force=False):
         FROM players p
     """
     
+    # Scoped to a class by default. Without it this sweeps every player
+    # missing an id, which includes the twelve hundred redraft veterans who
+    # have no college id and do not need one — one ESPN search each, for
+    # nothing.
+    where = []
     if not force:
-        sql += " WHERE p.espn_college_id IS NULL AND p.cfbref_id IS NULL"
+        where.append("p.espn_college_id IS NULL AND p.cfbref_id IS NULL")
+    if draft_year:
+        where.append(f"p.draft_year = {int(draft_year)}")
+    if where:
+        sql += " WHERE " + " AND ".join(where)
         
     cur.execute(sql)
     players = cur.fetchall()
@@ -99,7 +108,33 @@ def run_seeder(force=False):
             print(f"[{matched}] Assigned ESPN ID {new_id} to {p_name}")
             
         elif len(matches) > 1:
-            # Ambiguous
+            # Ambiguous by name — try the school before giving up.
+            #
+            # ESPN names a school "Ohio State Buckeyes" where the board says
+            # "Ohio State", so this compares on the shorter one being a
+            # prefix of the longer. Without it the second and third players
+            # in the 2027 class were flagged for manual review and went
+            # without a single college stat, purely because four people
+            # called Jeremiah Smith play college football.
+            #
+            # Only a single surviving candidate counts. Two schools that both
+            # match is exactly the case a human should look at.
+            by_school = []
+            if p_school:
+                want = slugify(p_school)
+                for m in matches:
+                    cand = slugify(m.get("school") or "")
+                    if want and cand and (cand.startswith(want) or want.startswith(cand)):
+                        by_school.append(m)
+            if len(by_school) == 1:
+                new_id = by_school[0]["id"]
+                cur.execute("UPDATE players SET espn_college_id = ? WHERE id = ?",
+                            (new_id, p_id))
+                matched += 1
+                print(f"[{matched}] Assigned ESPN ID {new_id} to {p_name} "
+                      f"(by school: {by_school[0].get('school')})")
+                continue
+
             flagged += 1
             review_log.append({
                 "player_id": p_id,
@@ -124,8 +159,26 @@ def run_seeder(force=False):
     conn.commit()
     conn.close()
     
+    # Merged, not replaced.
+    #
+    # A run scoped to one class only knows about that class, and writing its
+    # findings over the whole file silently discarded every other year's —
+    # a --draft-year 2027 run deleted 568 lines of 2026 review entries that
+    # nothing else regenerates without re-scanning the entire player table.
+    # Entries for the players this run actually looked at are refreshed;
+    # everybody else's are left alone.
+    previous = []
+    if os.path.exists(REVIEW_FILE):
+        try:
+            with open(REVIEW_FILE) as f:
+                previous = json.load(f)
+        except (ValueError, OSError):
+            previous = []
+    seen_now = {e["player_id"] for e in review_log}
+    merged = [e for e in previous
+              if e.get("player_id") not in seen_now] + review_log
     with open(REVIEW_FILE, 'w') as f:
-        json.dump(review_log, f, indent=2)
+        json.dump(merged, f, indent=2)
         
     print("\nESPN ID Seeding Complete:")
     print(f"  Matched:         {matched}")
@@ -136,5 +189,7 @@ def run_seeder(force=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--force", action="store_true", help="Process all players even if already assigned")
+    parser.add_argument("--draft-year", type=int, default=None,
+                        help="Only players in this draft class")
     args = parser.parse_args()
-    run_seeder(args.force)
+    run_seeder(args.force, args.draft_year)

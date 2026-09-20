@@ -181,7 +181,7 @@ def cleanup_phantom_rows(cur, player_id, player_name, espn_seasons, dry_run=Fals
     return cleaned
 
 
-def run_scraper(dry_run=False, target_slug=None):
+def run_scraper(dry_run=False, target_slug=None, draft_year=2026):
     if dry_run:
         print("DRY RUN MODE: No database changes will be made.")
 
@@ -199,7 +199,10 @@ def run_scraper(dry_run=False, target_slug=None):
     if target_slug:
         cur.execute("SELECT id, full_name, espn_college_id FROM players WHERE slug = ?", (target_slug,))
     else:
-        cur.execute("SELECT id, full_name, espn_college_id FROM players WHERE draft_year = 2026")
+        # Parameterised rather than pinned to 2026: the same pipeline
+        # has to fill in the 2027 class, and every class after it.
+        cur.execute("SELECT id, full_name, espn_college_id FROM players "
+                    "WHERE draft_year = ?", (draft_year,))
     players = cur.fetchall()
 
     processed = 0
@@ -347,7 +350,10 @@ def run_scraper(dry_run=False, target_slug=None):
 if __name__ == "__main__":
     is_dry = '--dry-run' in sys.argv
     target = None
+    year = 2026
     for arg in sys.argv[1:]:
-        if not arg.startswith('--'):
+        if arg.startswith('--draft-year='):
+            year = int(arg.split('=', 1)[1])
+        elif not arg.startswith('--'):
             target = arg
-    run_scraper(dry_run=is_dry, target_slug=target)
+    run_scraper(dry_run=is_dry, target_slug=target, draft_year=year)

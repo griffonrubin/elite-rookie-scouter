@@ -58,12 +58,18 @@ const SECTIONS: readonly Section[] = [
     accent: 'var(--primary)',
     glow: 'rgba(249,115,22,0.4)',
     root: '/',
-    owns: ['/horizontal', '/compare', '/tier-builder', '/rankings', '/players', '/teams'],
+    owns: ['/horizontal', '/compare', '/tier-builder', '/rankings', '/players',
+      '/teams', '/trade-calculator'],
     nav: [
       { href: '/',             label: 'Board'    },
       { href: '/horizontal',   label: 'By Round' },
       { href: '/compare',      label: 'Compare'  },
       { href: '/tier-builder', label: 'Tiers'    },
+      // Priced on market value rather than on a league, which is the only
+      // way to answer it when somebody texts you an offer and you have no
+      // roster in front of you. In Season's analyser is the better tool
+      // once there is a league to replay.
+      { href: '/trade-calculator', label: 'Trade Calc' },
     ],
   },
   {

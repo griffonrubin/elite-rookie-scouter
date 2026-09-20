@@ -107,7 +107,7 @@ def fetch_recruiting_class(key, year):
 
 # ── Main pipeline ──────────────────────────────────────────────────────────
 
-def run():
+def run(draft_year=2026):
     key = get_api_key()
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
@@ -115,7 +115,8 @@ def run():
     conn.commit()
 
     # Build player lookup maps
-    cur.execute("SELECT id, full_name, position FROM players WHERE draft_year=2026")
+    cur.execute("SELECT id, full_name, position FROM players WHERE draft_year=?",
+                (draft_year,))
     all_players = cur.fetchall()
     name_to_id = {normalize(r[1]): r[0] for r in all_players}
 
@@ -124,9 +125,9 @@ def run():
         SELECT DISTINCT cs.school, cs.season, p.id, p.full_name
         FROM college_stats cs
         JOIN players p ON p.id = cs.player_id
-        WHERE p.draft_year = 2026
+        WHERE p.draft_year = ?
         ORDER BY cs.season
-    """)
+    """, (draft_year,))
     player_seasons = cur.fetchall()
     years = sorted(set(r[1] for r in player_seasons))
     print(f"Seasons to process: {years}")
@@ -177,7 +178,10 @@ def run():
     print("\n[3/3] Fetching recruiting data...")
     rec_updated = 0
     # 2026 players enrolled 2022-2025 (at earliest as freshmen)
-    for rec_year in range(2021, 2026):
+    # A class drafting in year Y was recruited across roughly Y-5..Y-1;
+    # hardcoding 2021-2025 was right for 2026 and misses every 2027
+    # prospect who signed in 2026.
+    for rec_year in range(draft_year - 5, draft_year):
         try:
             recruits = fetch_recruiting_class(key, rec_year)
         except Exception as e:
@@ -214,7 +218,8 @@ def run():
         "SELECT COUNT(*) FROM college_stats WHERE sp_rating IS NOT NULL"
     ).fetchone()[0]
     rec_count = cur.execute(
-        "SELECT COUNT(*) FROM players WHERE recruiting_composite IS NOT NULL AND draft_year=2026"
+        "SELECT COUNT(*) FROM players WHERE recruiting_composite IS NOT NULL AND draft_year=?",
+        (draft_year,)
     ).fetchone()[0]
 
     print(f"\n=== CFBD Summary ===")
@@ -228,17 +233,21 @@ def run():
                cs.season, cs.sp_rating, cs.epa_per_play
         FROM players p
         JOIN college_stats cs ON cs.player_id = p.id
-        WHERE p.draft_year=2026 AND cs.epa_per_play IS NOT NULL
+        WHERE p.draft_year=? AND cs.epa_per_play IS NOT NULL
         ORDER BY cs.epa_per_play DESC LIMIT 10
-    """).fetchall()
+    """, (draft_year,)).fetchall()
     if sample:
         print("\nTop 10 by EPA/play (most recent available season):")
         for r in sample:
             sp_str = f"{r[5]:.1f}" if r[5] else "N/A"
-        print(f"  {r[1]:3} {r[0]:28} {r[4]} | SP+={sp_str} EPA={r[6]:.4f} stars={r[2]}")
+            # Inside the loop. Dedented it printed the last row only, so a
+            # "Top 10" summary showed one player.
+            print(f"  {r[1]:3} {r[0]:28} {r[4]} | "
+                  f"SP+={sp_str} EPA={r[6]:.4f} stars={r[2]}")
 
     conn.close()
 
 
 if __name__ == "__main__":
-    run()
+    import sys
+    run(int(sys.argv[1]) if len(sys.argv) > 1 else 2026)

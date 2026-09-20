@@ -24,3 +24,21 @@ REQUEST_DELAY = 2
 
 # API Key Placeholder
 CFBD_API_KEY = os.getenv("CFBD_API_KEY", "")
+
+
+def checkpoint_and_close(conn):
+    """
+    Fold the write-ahead log back into the database file, then close.
+
+    The app opens SQLite in WAL mode, so a scraper's committed writes can sit
+    in dynasty_scout.db-wal rather than in dynasty_scout.db. That file is
+    gitignored and the .db is tracked, so a run could commit its work, report
+    success, and ship a database file that does not contain it — which is
+    exactly what happened to the 2027 recruiting data: 32 players written,
+    0 in the committed .db.
+    """
+    try:
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    except Exception as e:
+        print(f"  ! could not checkpoint the WAL: {e}")
+    conn.close()

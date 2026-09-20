@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useCallback, useRef, useState } from 'react';
+import { RankHistoryChart, type RankPoint } from '@/components/RankHistoryChart';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -113,6 +114,8 @@ interface Props {
     player: any;
     stats: CollegeStats[];
     rankings: Ranking[];
+    /** Dynasty market rank per day, for the movement chart. */
+    rankHistory: RankPoint[];
     measurables: Measurables | null;
     speedScore: number | null;
     news: any[];
@@ -137,7 +140,7 @@ interface Props {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function PlayerProfileClient({
-    player, stats, rankings, measurables, speedScore, news, trustIndicator,
+    player, stats, rankings, rankHistory, measurables, speedScore, news, trustIndicator,
     peerCareer, peerAdvanced, historicalComps, epaStats, dominatorStats,
     prevPlayer, nextPlayer, wrAdvanced, peerWrAdv, highSchool, jfosterData, nflScout,
     rbAdvanced, peerRBAdv, peerMeasurables,
@@ -1502,6 +1505,15 @@ export function PlayerProfileClient({
                 <section id="rankings" className="scroll-mt-16 md:scroll-mt-56">
                     <SectionLabel label="Expert Rankings" />
                     <SourceRankings rankings={rankings} consensusRankSf={(player as any).rank_sf ?? player.consensus_rank ?? null} consensusRank1qb={(player as any).rank_1qb ?? null} />
+                    {/* The expert ranks above are a pre-draft snapshot and do
+                        not move. This is the dynasty market, which does. */}
+                    {rankHistory.length > 0 && (
+                        <div className="mt-4 rounded-xl border border-white/[0.07] p-3"
+                            style={{ background: 'var(--bg-card)' }}>
+                            <RankHistoryChart points={rankHistory}
+                                label="Dynasty market rank" />
+                        </div>
+                    )}
                 </section>
 
                 {/* ── ZONE 7b: Dynasty Trades ──────────────────────────────────────── */}
