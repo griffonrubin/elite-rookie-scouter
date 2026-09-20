@@ -1,4 +1,5 @@
 import { query } from '@/lib/db';
+import Link from 'next/link';
 import { DraftBoard } from '@/components/DraftBoard';
 import { Player } from '@/lib/types';
 import { TrendingUp, Users } from 'lucide-react';
@@ -6,7 +7,7 @@ import { AppHeader } from '@/components/AppHeader';
 
 export const dynamic = "force-dynamic";
 
-async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate: string | null }> {
+async function getDraftBoardData(draftYear = 2026,): Promise<{ players: Player[], lastUpdateDate: string | null }> {
   try {
     // CTEs replace 30+ correlated subqueries — each table is scanned once instead of once per player.
     const sql = `
@@ -87,7 +88,18 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
       )
       SELECT
         p.*,
-        COALESCE(cc.school, p.nfl_team) AS school,
+        -- college_career is built once a class has been through the full
+        -- pipeline; a freshly seeded one has stats but no career row yet, so
+        -- the most recent season's school stands in. That is also the right
+        -- school for a transfer, which is the season-by-season rule the
+        -- stats table already keeps.
+        COALESCE(
+          cc.school,
+          (SELECT cs2.school FROM college_stats cs2
+            WHERE cs2.player_id = p.id AND cs2.school IS NOT NULL
+            ORDER BY cs2.season DESC LIMIT 1),
+          p.nfl_team
+        ) AS school,
         c_sf.rank_overall,
         c_sf.rank_overall  AS rank_sf,
         c_1qb.rank_overall AS rank_1qb,
@@ -173,7 +185,7 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
       LEFT JOIN jfoster_grades     jg ON p.id = jg.player_id
       LEFT JOIN hc_top             hc ON p.id = hc.player_id AND hc.rn = 1
       LEFT JOIN hc_top             hc2 ON p.id = hc2.player_id AND hc2.rn = 2
-      WHERE p.draft_year = 2026
+      WHERE p.draft_year = ${draftYear}
       ORDER BY (
         -- Bayesian shrinkage: pull low-source-count players toward a neutral prior (rank 120).
         -- This prevents a single bullish source from floating a prospect to the top of the board.
@@ -184,6 +196,16 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
           ELSE (CAST(c_sf.num_sources AS FLOAT) * c_sf.avg_rank + 1.5 * 120.0)
                / (CAST(c_sf.num_sources AS FLOAT) + 1.5)
         END
+      ) ASC NULLS LAST,
+      -- Then the class's own big board, which is all a class has before the
+      -- dynasty sources start ranking it. The 2027 prospects carry an MDDB
+      -- consensus rank and no SF consensus at all, so without this they come
+      -- back in whatever order the join produced.
+      (
+        SELECT r.rank_overall FROM rankings r
+         WHERE r.player_id = p.id
+           AND r.source = 'MDDB Consensus ' || p.draft_year
+         ORDER BY r.scraped_at DESC LIMIT 1
       ) ASC NULLS LAST
     `;
     const players = await query<Player>(sql, []);
@@ -218,14 +240,36 @@ async function getDraftBoardData(): Promise<{ players: Player[], lastUpdateDate:
   }
 }
 
-export default async function Home() {
-  const { players, lastUpdateDate } = await getDraftBoardData();
+export default async function Home(
+  { searchParams }: { searchParams: Promise<{ class?: string }> },
+) {
+  // Which draft class the board is showing. 2026 stays the default, because
+  // it is the class this app was built around and every link into it assumes
+  // no parameter.
+  const asked = Number((await searchParams)?.class);
+  const draftYear = asked === 2027 ? 2027 : 2026;
+  const { players, lastUpdateDate } = await getDraftBoardData(draftYear);
   const rankedCount = players.filter(p => (p as any).rank_overall != null).length;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader>
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          {/* Which class the board is. A link rather than a control, so the
+              two boards are two addresses and either can be sent to
+              somebody. */}
+          <div className="inline-flex rounded-lg border border-white/10 overflow-hidden">
+            {([2026, 2027] as const).map(y => (
+              <Link key={y} href={y === 2026 ? '/' : `/?class=${y}`}
+                prefetch={false}
+                aria-current={draftYear === y ? 'page' : undefined}
+                className={`px-2 py-0.5 font-semibold ${draftYear === y
+                  ? 'bg-white/[0.10] text-foreground'
+                  : 'text-muted-foreground/60 hover:text-foreground'}`}>
+                {y}
+              </Link>
+            ))}
+          </div>
           <div className="flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5" />
             <span className="text-foreground font-semibold">{players.length}</span> players
