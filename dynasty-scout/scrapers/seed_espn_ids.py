@@ -159,8 +159,26 @@ def run_seeder(force=False, draft_year=None):
     conn.commit()
     conn.close()
     
+    # Merged, not replaced.
+    #
+    # A run scoped to one class only knows about that class, and writing its
+    # findings over the whole file silently discarded every other year's —
+    # a --draft-year 2027 run deleted 568 lines of 2026 review entries that
+    # nothing else regenerates without re-scanning the entire player table.
+    # Entries for the players this run actually looked at are refreshed;
+    # everybody else's are left alone.
+    previous = []
+    if os.path.exists(REVIEW_FILE):
+        try:
+            with open(REVIEW_FILE) as f:
+                previous = json.load(f)
+        except (ValueError, OSError):
+            previous = []
+    seen_now = {e["player_id"] for e in review_log}
+    merged = [e for e in previous
+              if e.get("player_id") not in seen_now] + review_log
     with open(REVIEW_FILE, 'w') as f:
-        json.dump(review_log, f, indent=2)
+        json.dump(merged, f, indent=2)
         
     print("\nESPN ID Seeding Complete:")
     print(f"  Matched:         {matched}")
