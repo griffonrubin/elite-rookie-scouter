@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useStartSitData } from '@/lib/useStartSit';
 import { useLeagueFixtures } from '@/lib/useLeagueFixtures';
 import { idsIn, leagueRosters, lineupSlotsOf } from '@/lib/leagueRosters';
-import { seasonOdds, type SeasonInput, type SeasonOdds } from '@/lib/seasonOdds';
+import { type SeasonInput, type SeasonOdds } from '@/lib/seasonOdds';
+import { epochOf, runSeason, warmSeasonWorker } from '@/lib/seasonWorkerClient';
 import type { LeagueSyncState } from '@/lib/useLeagueSync';
 import type { Horizon } from '@/lib/simInput';
 import type { RedraftPlayer } from '@/lib/types';
@@ -103,21 +104,20 @@ export function useSeasonOdds(
         week, remaining, cut]);
 
     /**
-     * Read during render, computed after it.
+     * Read during render, computed off the thread entirely.
      *
      * The fetch was always deferred — the league's players arrive long
      * after the page does — but the simulation was not: it ran inside a
      * memo, so the render that had the data also paid for ranking twelve
-     * rosters twenty thousand times. Measured on Start/Sit, that took the
-     * wall clock from picking a team to seeing the board from 481ms to
-     * 864ms, with a 423ms task blocking the main thread in the middle of
-     * it. The board is the thing somebody came for; the season strip is
-     * not, and it has no business delaying it.
+     * rosters twenty thousand times. On Start/Sit that is about 780ms, and
+     * it sat in front of the slot board somebody had come to read.
      *
-     * So the work is handed to a macrotask. The page commits and paints
-     * with `value` still null, the simulation runs, and the strip appears
-     * when it is ready. It still costs what it costs — but it costs it
-     * after the reader has what they asked for.
+     * Now the league goes to a worker. The page commits and paints with
+     * `value` still null, the run happens where it cannot drop a frame,
+     * and the strip appears when the answer comes back. Sending it also
+     * leaves the league with the worker, which is what makes the waiver
+     * and trade pages able to price a change against it for the cost of
+     * the rosters that changed.
      */
     const key = [
         league.connection?.platform, league.connection?.id, week, horizon,
@@ -126,23 +126,20 @@ export function useSeasonOdds(
     const cached = last?.key === key ? last.value : null;
     const [computed, setComputed] = useState<Cached | null>(null);
 
+    // Built while the league is still being fetched rather than after it,
+    // so the worker's own chunk loads inside a wait that already exists.
+    useEffect(() => { if (enabled) warmSeasonWorker(); }, [enabled]);
+
     useEffect(() => {
-        if (cached || !ready || !teams) return;
+        if (cached || !ready || !input) return;
         let live = true;
-        const timer = setTimeout(() => {
+        runSeason(epochOf(input), input).then(value_ => {
             if (!live) return;
-            const value_ = seasonOdds({
-                teams, slots, players, data, season, horizon, scoring, games,
-                week, remaining, cut,
-            });
             last = { key, value: value_ };
             setComputed({ key, value: value_ });
-        }, 0);
-        return () => { live = false; clearTimeout(timer); };
-        // Keyed on what can change the answer rather than on the identity of
-        // objects this hook rebuilds on every render.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [key, cached, ready]);
+        });
+        return () => { live = false; };
+    }, [key, cached, ready, input]);
 
     const value = cached ?? (computed?.key === key ? computed.value : null);
 

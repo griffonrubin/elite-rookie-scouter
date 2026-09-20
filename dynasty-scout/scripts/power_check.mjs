@@ -96,11 +96,20 @@ await page.getByRole('button', { name: /^find$/i }).click();
 await page.getByRole('button', { name: new RegExp(LEAGUE) }).first().waitFor({ timeout: 25000 });
 await page.getByRole('button', { name: new RegExp(LEAGUE) }).first().click();
 await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().waitFor({ timeout: 25000 });
+/**
+ * The clock stops when the table is there, not when the test wakes up.
+ *
+ * The settle wait used to sit inside this timer, so 1.5 of the seconds it
+ * reported were the test sleeping — a figure that moves when somebody
+ * changes the sleep and not when the page changes. Measured properly the
+ * table lands in about four hundred milliseconds; this was printing 2.0s.
+ */
 const t0 = Date.now();
 await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().click();
 await teamRows().first().waitFor({ timeout: 30000 });
+console.log(`      table painted ${Date.now() - t0}ms after picking a team`);
+// Settled afterwards, for the assertions below that read rendered text.
 await page.waitForTimeout(1500);
-console.log(`      table painted ${((Date.now() - t0) / 1000).toFixed(1)}s after picking a team`);
 
 step(3, 'every team in the league is ranked');
 const n = await teamRows().count();
