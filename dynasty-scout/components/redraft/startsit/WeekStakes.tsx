@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { CHART_INK, MARK } from '@/lib/vizTokens';
+import Link from 'next/link';
 import { ODDS_NOISE } from '@/lib/trade';
-import type { PlayoffOdds } from '@/lib/power';
+import { ROOT_NOISE, type PlayoffOdds } from '@/lib/power';
 import { leverageOf, oddsGivenWinProb } from '@/lib/seasonOdds';
 
 /**
@@ -32,13 +33,16 @@ import { leverageOf, oddsGivenWinProb } from '@/lib/seasonOdds';
 const LOSE = '#7DD3FC';
 const WIN = '#0284C7';
 
-export function WeekStakes({ odds, winProb, bestGain, week }: {
+export function WeekStakes({ odds, winProb, bestGain, week, myKey, nameOf }: {
     odds: PlayoffOdds | null | undefined;
     /** This page's own win probability for the week, 0..1. */
     winProb: number;
     /** Percentage points of win probability the best lineup would add. */
     bestGain?: number | null;
     week: number | null;
+    /** Mine, so the game I am playing is not offered as one to watch. */
+    myKey?: string | null;
+    nameOf?: (key: string) => string;
 }) {
     const swing = leverageOf(odds);
     if (swing == null || !odds || odds.oddsIfWin == null || odds.oddsIfLose == null) {
@@ -55,6 +59,26 @@ export function WeekStakes({ odds, winProb, bestGain, week }: {
      * one a reader would recognise.
      */
     const gainPts = bestGain != null ? (bestGain / 100) * pts : null;
+
+    /**
+     * The other game worth watching, when there is one.
+     *
+     * Power Rankings has the whole list; this is the one line that belongs
+     * on a Sunday, because Sunday is when somebody is on this page and not
+     * that one. Most weeks it is nothing — every other game sits inside
+     * the simulation's own noise and there is no result worth wanting —
+     * and on the weeks it is not, it is worth knowing before the games
+     * start rather than after.
+     */
+    const elsewhere = (odds.rooting ?? [])
+        .filter(g => g.home !== myKey && g.away !== myKey && g.swing != null
+            && Math.abs(g.swing) >= ROOT_NOISE)
+        .sort((a, b) => Math.abs(b.swing!) - Math.abs(a.swing!))[0] ?? null;
+    const want = elsewhere
+        ? ((elsewhere.oddsIfHome ?? 0) >= (elsewhere.oddsIfAway ?? 0)
+            ? elsewhere.home : elsewhere.away)
+        : null;
+    const elsewherePts = elsewhere ? Math.abs(Math.round(elsewhere.swing! * 100)) : 0;
 
     return (
         <div className="mt-3 pt-3 border-t border-white/[0.07]">
@@ -142,6 +166,35 @@ export function WeekStakes({ odds, winProb, bestGain, week }: {
                 the number on Power, and the better estimate of this Sunday is
                 the one here.
             </p>
+
+            {elsewhere && want && (
+                <p data-note="elsewhere"
+                    className="text-[11px] mt-2 text-muted-foreground/60">
+                    {elsewherePts > Math.abs(Math.round(pts)) ? (
+                        <>
+                            <span className="font-semibold text-foreground">
+                                A game you are not playing in matters more than
+                                yours this week.
+                            </span>{' '}
+                        </>
+                    ) : null}
+                    You want{' '}
+                    <span className="font-semibold text-foreground">
+                        {nameOf ? nameOf(want) : want}
+                    </span>{' '}
+                    to beat{' '}
+                    {nameOf
+                        ? nameOf(want === elsewhere.home ? elsewhere.away : elsewhere.home)
+                        : (want === elsewhere.home ? elsewhere.away : elsewhere.home)}
+                    {' '}— worth {elsewherePts} points of playoff odds to you,
+                    against {Math.abs(Math.round(pts))} for your own game.{' '}
+                    <Link href="/in-season/power"
+                        className="underline underline-offset-2
+                                   hover:text-foreground transition-colors">
+                        The rest of the week
+                    </Link>.
+                </p>
+            )}
 
             {gainPts != null && Math.abs(bestGain ?? 0) > 0 && (
                 <p className="text-[11px] mt-2 text-muted-foreground/60">

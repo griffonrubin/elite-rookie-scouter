@@ -481,7 +481,10 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                             {matchup && (
                                 <WeekStakes odds={myOdds} winProb={matchup.winProb}
                                     bestGain={bestBall ? null : best?.gain ?? null}
-                                    week={league.week} />
+                                    week={league.week}
+                                    myKey={league.connection?.teamKey ?? null}
+                                    nameOf={k => season.value?.result.rows
+                                        .find(r => r.key === k)?.name ?? k} />
                             )}
                             {/* The block above prices this week in playoff
                                 odds, so it inherits whatever those do not
