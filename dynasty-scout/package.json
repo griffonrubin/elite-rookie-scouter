@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "scrape:all": "py scripts/backup_db.py && py scrapers/seed_espn_ids.py && py scrapers/college_stats.py && py scrapers/combine_2026.py && py scrapers/rankings_scraper.py && py scrapers/news_agent.py && py scripts/fix_validation_errors.py && py scrapers/validate_stats.py"
+    "refresh": "py scripts/daily_refresh.py"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

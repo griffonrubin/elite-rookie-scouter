@@ -11,7 +11,17 @@ def validate():
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     
-    cur.execute("SELECT id, full_name, position, height_inches, weight_lbs FROM players")
+    # Draft prospects only.
+    #
+    # Unscoped this validated all 1,232 rows in the table, which since the
+    # redraft board landed includes twelve hundred NFL veterans. Every one
+    # of them was flagged for having no college stats and no combine status
+    # — neither of which they are supposed to have — which is most of the
+    # 2,764 "blocking errors" this reported. A validator nobody can read is
+    # a validator nobody reads.
+    cur.execute(
+        "SELECT id, full_name, position, height_inches, weight_lbs "
+        "FROM players WHERE draft_year IS NOT NULL")
     players = cur.fetchall()
     
     errors = []
@@ -141,7 +151,14 @@ def validate():
                         add_warn(pid, name, msg)
                         
     # --- Top 50 Strict Validation Checks ---
-    cur.execute("SELECT p.id, p.full_name as name FROM players p JOIN consensus_rankings cr ON cr.player_id = p.id WHERE cr.rank_overall <= 50")
+    # The rookie consensus, not the redraft one. consensus_rankings holds
+    # both, and the REDRAFT format's top 50 is fifty NFL starters whose
+    # college stats this app has never claimed to hold.
+    cur.execute(
+        "SELECT p.id, p.full_name as name FROM players p "
+        "JOIN consensus_rankings cr ON cr.player_id = p.id "
+        "WHERE cr.rank_overall <= 50 AND cr.format IN ('SF', '1QB') "
+        "AND p.draft_year IS NOT NULL")
     top_50 = cur.fetchall()
     
     # Check 1: Top 50 players must have college stats
