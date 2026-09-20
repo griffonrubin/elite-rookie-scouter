@@ -6,13 +6,21 @@
  * table appeared in 458ms with a 377ms task frozen in the middle of it.
  * In a worker it is 412ms and nothing blocks at all.
  *
+ * The lineup board is the same story on the page people actually open.
+ * Ranking nine slots against a fifteen-man bench is 154ms, the matchup
+ * another 59ms, and in the browser that was a 425ms task on every team
+ * picked and a 152ms one on every bench candidate clicked — the freeze
+ * landing precisely when somebody is trying things. Off the thread both
+ * are zero, and the board arrives about ninety milliseconds later, which
+ * is the trade and it is worth making.
+ *
  * Two things to hold, and only one of them is the speed. The other is that
  * the fallback works. A worker can fail to exist — an old browser, a
  * bundler that will not take the import, a policy that blocks the
- * constructor — and the season is not optional: a Power page with no
- * ranking is not a slower page, it is a broken one. So this runs the page
- * twice, once with `Worker` taken away, and insists on the same table both
- * times.
+ * constructor — and neither of these is optional: a Power page with no
+ * ranking is not a slower page, it is a broken one, and a Start/Sit page
+ * with no board is not a page at all. So each runs twice, once with
+ * `Worker` taken away, and has to give the same answer both times.
  */
 import { chromium } from 'playwright-core';
 import fs from 'fs';
@@ -143,6 +151,128 @@ console.log('      ' + on.order.join(' | '));
 assert('and it is the same ranking, team for team',
     on.order.length === 12 && on.order.join('|') === off.order.join('|'),
     on.order.join('|') === off.order.join('|') ? '' : off.order.join(' | '));
+
+/**
+ * The same two questions of the lineup board.
+ *
+ * Returns when the slot board is up, with the long tasks that happened
+ * between picking a team and seeing it, and the board itself read as
+ * text — because "it rendered" is not the assertion. The assertion is
+ * that the worker and this thread rank the same nine slots the same way.
+ */
+async function board({ withWorker }) {
+    const ctx = await b.newContext({ viewport: { width: 1500, height: 1400 } });
+    await ctx.route('**/api/sleeper/**', route => {
+        const u = new URL(route.request().url()).pathname.replace('/api/sleeper', '');
+        const j = o => route.fulfill({ status:200, contentType:'application/json', body: JSON.stringify(o) });
+        if (u.includes('/state/nfl')) return j({ week: 1, display_week: 1 });
+        if (/\/user\/[^/]+\/leagues/.test(u)) return j(F.leagues);
+        if (/\/user\/txmossad$/.test(u)) return j(F.user);
+        if (/\/user\/[^/]+$/.test(u)) return route.fulfill({ status: 404, body: 'null' });
+        let m;
+        if ((m = u.match(/\/league\/(\d+)\/rosters/))) return j(F.rosters[m[1]] ?? []);
+        if ((m = u.match(/\/league\/(\d+)\/users/))) return j(F.users[m[1]] ?? []);
+        if ((m = u.match(/\/league\/(\d+)\/matchups\/(\d+)/)))
+            return j(matchupsFor(F, m[1], Number(m[2])));
+        if ((m = u.match(/\/league\/(\d+)$/))) return j(F.leagueDetail[m[1]] ?? null);
+        return j(null);
+    });
+    await ctx.route('https://api.sleeper.app/**', r => r.abort());
+    const page = await ctx.newPage();
+    page.setDefaultTimeout(30000);
+    const errs = [];
+    page.on('pageerror', e => errs.push(e.message));
+    if (!withWorker) {
+        await page.addInitScript(() => {
+            Object.defineProperty(window, 'Worker', { value: undefined, configurable: true });
+        });
+    }
+    await page.addInitScript(() => {
+        window.__t0 = 0;
+        window.__long = [];
+        new PerformanceObserver(l => {
+            for (const e of l.getEntries()) {
+                if (e.startTime >= window.__t0) window.__long.push(Math.round(e.duration));
+            }
+        }).observe({ entryTypes: ['longtask'] });
+    });
+    await page.goto(`${BASE}/redraft/start-sit`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2000);
+    await page.getByPlaceholder(/sleeper username/i).fill('txmossad');
+    await page.getByRole('button', { name: /^find$/i }).click();
+    await page.getByRole('button', { name: new RegExp(LEAGUE) }).first().click({ timeout: 25000 });
+    await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().waitFor({ timeout: 25000 });
+    await page.evaluate(() => { window.__t0 = performance.now(); window.__long = []; });
+    const t0 = Date.now();
+    await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().click();
+    /**
+     * The slot rows, and only those. `button[aria-expanded]` is not unique
+     * to the board — bench and opponent rows open too — so it is scoped to
+     * the section whose heading says what it is.
+     */
+    const slots = page.locator('section')
+        .filter({ has: page.getByRole('heading', { name: /slot by slot/i }) })
+        .locator('button[aria-expanded]');
+    await slots.nth(8).waitFor({ timeout: 40000 });
+    const ms = Date.now() - t0;
+    await page.waitForTimeout(2500);
+    const long = await page.evaluate(() => window.__long);
+    /**
+     * The board as it reads: slot, who is in it, and the call.
+     *
+     * Compared between the two runs rather than merely counted, because
+     * the failure this is here to catch is a worker that answers — just
+     * differently from the page it replaced.
+     */
+    const rows = await slots.evaluateAll(els => els.map(
+        e => (e.textContent || '').replace(/\s+/g, ' ').trim()));
+    // Then a bench candidate, which used to freeze the page every time.
+    await page.evaluate(() => { window.__t0 = performance.now(); window.__long = []; });
+    await slots.nth(1).click();
+    await page.waitForTimeout(900);
+    const cands = page.locator('section')
+        .filter({ has: page.getByRole('heading', { name: /slot by slot/i }) })
+        .locator('button[aria-pressed]');
+    let clickLong = [];
+    const n = await cands.count();
+    if (n > 0) {
+        await page.evaluate(() => { window.__t0 = performance.now(); window.__long = []; });
+        await cands.nth(Math.min(1, n - 1)).click();
+        await page.waitForTimeout(2500);
+        clickLong = await page.evaluate(() => window.__long);
+    }
+    const picked = await page.locator('[aria-pressed="true"]').count();
+    await ctx.close();
+    return { ms, long, rows, clickLong, candidates: n, picked, errs };
+}
+
+step(3, 'the lineup board is ranked off the thread too');
+const bOn = await board({ withWorker: true });
+console.log(`      nine slots in ${bOn.ms}ms; long tasks: ${bOn.long.join(', ') || 'none'}`);
+console.log(`      clicking a candidate: ${bOn.clickLong.join(', ') || 'none'}`);
+assert('every slot is ranked', bOn.rows.length === 9, String(bOn.rows.length));
+assert('the board does not block the page',
+    bOn.long.reduce((s, x) => s + x, 0) < 150, `${bOn.long.reduce((s, x) => s + x, 0)}ms`);
+assert('a candidate was there to click', bOn.candidates > 0, String(bOn.candidates));
+assert('and clicking one previews without freezing',
+    bOn.picked === 1 && bOn.clickLong.reduce((s, x) => s + x, 0) < 100,
+    `${bOn.picked} selected, ${bOn.clickLong.reduce((s, x) => s + x, 0)}ms blocked`);
+assert('nothing blew up', bOn.errs.length === 0, bOn.errs.join(' | '));
+
+step(4, 'and without a worker it is the same board, slowly');
+const bOff = await board({ withWorker: false });
+console.log(`      nine slots in ${bOff.ms}ms; long tasks: ${bOff.long.join(', ') || 'none'}`);
+assert('every slot is still ranked', bOff.rows.length === 9, String(bOff.rows.length));
+assert('nothing blew up', bOff.errs.length === 0, bOff.errs.join(' | '));
+/**
+ * Slot for slot, call for call. A fallback that ranks a different lineup
+ * is worse than no fallback: it means two readers on two browsers are
+ * being told to start different players off the same data.
+ */
+const same = bOn.rows.length === bOff.rows.length
+    && bOn.rows.every((r, i) => r === bOff.rows[i]);
+assert('and it is the same board, slot for slot', same,
+    same ? '' : bOn.rows.find((r, i) => r !== bOff.rows[i]) ?? '');
 
 await b.close();
 console.log(fails.length ? `\n${fails.length} FAILED: ${fails.join(', ')}` : '\nevery step passed');
