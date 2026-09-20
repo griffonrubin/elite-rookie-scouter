@@ -11,6 +11,7 @@ import { PowerTable } from './PowerTable';
 import { Earned } from './Earned';
 import { RunHome } from './RunHome';
 import { AtStake } from './AtStake';
+import { Rooting } from './Rooting';
 import { allPlay, pairingTable, scheduleStrength } from '@/lib/leagueSchedule';
 import { useLeagueFixtures } from '@/lib/useLeagueFixtures';
 import { DEFAULT_PLAYOFF_WEEK, useSeasonOdds } from '@/lib/useSeasonOdds';
@@ -219,6 +220,18 @@ export function PowerClient({ players }: { players: RedraftPlayer[] }) {
                                     myKey={league.connection.teamKey ?? null}
                                     opponentOf={thisWeekOpponents} week={week}
                                     realSchedule={season.value?.realSchedule ?? false} />
+                            )}
+                            {/* Straight after your own game, because it is the
+                                same Sunday and the same question — what is
+                                still in play — asked about the games you do
+                                not control. */}
+                            {odds && horizon === 'season' && league.connection.teamKey
+                                && odds.get(league.connection.teamKey) && (
+                                <Rooting
+                                    mine={odds.get(league.connection.teamKey)!}
+                                    myKey={league.connection.teamKey}
+                                    nameOf={k => result.rows.find(r => r.key === k)?.name ?? k}
+                                    week={week} />
                             )}
                             {earned && (
                                 <Earned rows={earned}
