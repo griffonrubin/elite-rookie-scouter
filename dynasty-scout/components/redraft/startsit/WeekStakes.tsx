@@ -98,13 +98,15 @@ export function WeekStakes({ odds, winProb, bestGain, week }: {
             <dl className="mt-2 space-y-1 text-[11px]">
                 <div className="flex justify-between gap-2">
                     <dt className="text-muted-foreground/55">If you win</dt>
-                    <dd className="tabular-nums font-semibold" style={{ color: WIN }}>
+                    <dd className="tabular-nums font-semibold" style={{ color: WIN }}
+                        data-odds-win={Math.round(win)}>
                         {Math.round(win)}%
                     </dd>
                 </div>
                 <div className="flex justify-between gap-2">
                     <dt className="text-muted-foreground/55">If you lose</dt>
-                    <dd className="tabular-nums font-semibold" style={{ color: LOSE }}>
+                    <dd className="tabular-nums font-semibold" style={{ color: LOSE }}
+                        data-odds-lose={Math.round(lose)}>
                         {Math.round(lose)}%
                     </dd>
                 </div>
@@ -115,9 +117,31 @@ export function WeekStakes({ odds, winProb, bestGain, week }: {
                             {' '}· {Math.round(winProb * 100)}% to win
                         </span>
                     </dt>
-                    <dd className="tabular-nums font-semibold">{Math.round(now)}%</dd>
+                    <dd className="tabular-nums font-semibold"
+                        data-my-odds={Math.round(now)}>{Math.round(now)}%</dd>
                 </div>
             </dl>
+
+            {/*
+                Why this can read a point either side of the Power page.
+                The note is not pedantry: a reader who sees 65 here and 64
+                there has no way to tell a better estimate from a bug, and
+                the whole argument for one shared simulation is that they
+                never have to wonder which number to believe. The two
+                conditionals above are that simulation's; only the weight
+                between them is this page's, and this page knows more about
+                this Sunday than a round robin does.
+            */}
+            <p className="text-[10px] text-muted-foreground/40 mt-2 leading-snug">
+                The two figures above come from the same run Power Rankings
+                shows. What is this page&rsquo;s is the weight between them:
+                {' '}{Math.round(winProb * 100)}% comes from simulating both
+                lineups against this week&rsquo;s opponent, byes and injury
+                reports, where the season table uses its own round-robin rate.
+                So &ldquo;as things stand&rdquo; can sit a point either side of
+                the number on Power, and the better estimate of this Sunday is
+                the one here.
+            </p>
 
             {gainPts != null && Math.abs(bestGain ?? 0) > 0 && (
                 <p className="text-[11px] mt-2 text-muted-foreground/60">
