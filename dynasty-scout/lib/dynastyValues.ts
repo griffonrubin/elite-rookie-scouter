@@ -135,7 +135,22 @@ async function savePicks(
         const m = PICK_LABEL.exec(r.player.name.trim());
         if (!m) continue;
         n += 1;
-        await getDb().prepare(
+        // `query`, with an explicit RETURNING, and both halves of that
+        // matter.
+        //
+        // getDb().run() appends `RETURNING id` to any INSERT that lacks one,
+        // so it can report a lastInsertRowid. dynasty_picks is keyed on the
+        // label and has no id column, so every pick insert died in
+        // production on `column "id" does not exist` — while the player
+        // writes beside them succeeded, because those go to `rankings`,
+        // which does have an id. The cron reported 397 players saved and
+        // quietly saved no picks at all.
+        //
+        // Naming a RETURNING stops the injection. It has to go through
+        // `query` rather than `run` because better-sqlite3 refuses `.run()`
+        // on a statement that returns rows, which is how the local path
+        // would then have broken instead.
+        await query(
             `INSERT INTO dynasty_picks
                (label, season, round, slot, ${valueCol}, ${rankCol}, scraped_at)
              VALUES ($1,$2,$3,$4,$5,$6,$7)
@@ -145,9 +160,10 @@ async function savePicks(
                slot         = excluded.slot,
                ${valueCol}  = excluded.${valueCol},
                ${rankCol}   = excluded.${rankCol},
-               scraped_at   = excluded.scraped_at`,
-        ).run([r.player.name.trim(), Number(m[1]), Number(m[2]),
-            m[3] ? m[3].toLowerCase() : null, r.value, r.overallRank, today]);
+               scraped_at   = excluded.scraped_at
+             RETURNING label`,
+            [r.player.name.trim(), Number(m[1]), Number(m[2]),
+                m[3] ? m[3].toLowerCase() : null, r.value, r.overallRank, today]);
     }
     return n;
 }
