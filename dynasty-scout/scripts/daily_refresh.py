@@ -14,10 +14,16 @@ So each step runs on its own and a failure is reported rather than fatal.
 The point of a daily refresh is that most of it succeeds most days.
 
 This is the local half of keeping data fresh. The other half is the cron
-routes in vercel.json, which run against Supabase in production — and which
-have never fired, because the project has never been deployed. Until it is,
-this script is the only thing keeping anything current, so it ends by
-printing how old every source actually is rather than claiming success.
+routes in vercel.json, which run daily against Supabase and keep the
+deployed app current on their own — the dynasty values, the redraft
+sources, the projections. They do not touch this SQLite file, which is why
+the two can drift a long way apart and why this ends by printing how old
+every local source actually is rather than claiming success.
+
+The one thing no cron can do is a draft class: its board refuses
+non-browser requests, so the seeder drives Playwright, which Vercel cannot
+run. A class scraped here reaches production through
+scripts/sync_class_to_supabase.py and no other way.
 
 Run:  py scripts/daily_refresh.py
       py scripts/daily_refresh.py --class 2027    (just that class)
