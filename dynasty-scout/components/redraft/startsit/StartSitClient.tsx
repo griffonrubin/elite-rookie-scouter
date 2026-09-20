@@ -423,11 +423,29 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                         Chance you win week {league.week}
                     </h2>
                     {winPct == null ? (
+                        /*
+                         * Three reasons this can be blank, and they are not
+                         * the same thing. The rows are still arriving; the
+                         * week is being simulated; or there is genuinely no
+                         * lineup to weigh.
+                         *
+                         * The middle one arrived with the worker and was
+                         * being reported as the last: once the rows landed
+                         * `loading` went false while the board was still
+                         * being worked out, so for the half second in
+                         * between the page told somebody with a full and
+                         * legal lineup to go and set one. A page that has
+                         * moved its work off the thread has to say that it
+                         * is working, or it reads as a page that has
+                         * decided.
+                         */
                         <p className="text-[12px] text-muted-foreground/60 mt-3">
                             {loading ? 'Reading your lineup…'
                                 : league.opponent.starters.length === 0
                                     ? 'No opponent is scheduled for this week yet.'
-                                    : 'Set a lineup to see this.'}
+                                    : board.pending
+                                        ? 'Simulating the week…'
+                                        : 'Set a lineup to see this.'}
                         </p>
                     ) : (
                         <>
@@ -562,6 +580,22 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                     Best ball — the platform fills these slots for you
                                 </span>
                             );
+                            /*
+                             * "Nothing to change" and "nothing worked out
+                             * yet" are not the same sentence, and an empty
+                             * `decisions` reads as both. Before the board
+                             * moved to a worker they could not come apart —
+                             * the ranking was there in the same render or
+                             * the page had no lineup at all. Now there is
+                             * half a second in between, and saying every
+                             * slot is already right is a verdict on a
+                             * simulation that has not run.
+                             */
+                            if (board.pending || decisions.length === 0) return (
+                                <span className="text-[10px] text-muted-foreground/50">
+                                    Working out every slot…
+                                </span>
+                            );
                             const changes = decisions.filter(d => d.verdict !== 'set');
                             return (
                                 <span className="text-[10px] text-muted-foreground/50">
@@ -598,7 +632,15 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                             const outId = d?.currentId ?? null;
                             const out = outId != null
                                 ? all.find(x => x.id === outId) : undefined;
-                            if (!p || !matchup || !previewSim) return null;
+                            if (!p || !matchup) return null;
+                            // The swap is being simulated. Said rather than
+                            // shown as nothing, which reads as a click that
+                            // did not register.
+                            if (!previewSim) return (
+                                <p className="text-[11px] text-muted-foreground/50 py-2">
+                                    Simulating this swap…
+                                </p>
+                            );
                             return (
                                 <SwapPreview
                                     inName={p.full_name}

@@ -195,6 +195,37 @@ async function board({ withWorker }) {
                 if (e.startTime >= window.__t0) window.__long.push(Math.round(e.duration));
             }
         }).observe({ entryTypes: ['longtask'] });
+        /**
+         * When the page first says each of these, on its own clock.
+         *
+         * Polled rather than read at the end, because the thing being
+         * checked is what the page says *while* it is working — and by
+         * the time a driver can ask, it has stopped.
+         */
+        window.__said = {};
+        setInterval(() => {
+            try {
+                const t = document.body?.innerText || '';
+                /*
+                 * One clock reading per tick, not one per phrase.
+                 * Timestamping each check as it ran made two things that
+                 * appeared in the same render a millisecond apart, purely
+                 * in the order this loop happens to test them — which is
+                 * enough to fail an assertion that one did not precede the
+                 * other, at random, about one run in three.
+                 */
+                const now = Math.round(performance.now() - window.__t0);
+                const at = k => { if (window.__said[k] == null) window.__said[k] = now; };
+                if (/Every slot is already the one/.test(t)) at('verdict');
+                if (/Working out every slot/.test(t)) at('working');
+                if (/Set a lineup to see this/.test(t)) at('no-lineup');
+                const h = [...document.querySelectorAll('h2,h3')].find(
+                    e => /slot by slot/i.test(e.textContent || ''));
+                const n = h?.closest('section')
+                    ?.querySelectorAll('button[aria-expanded]').length ?? 0;
+                if (n >= 9) at('rows');
+            } catch { /* a page mid-render is not a finding */ }
+        }, 16);
     });
     await page.goto(`${BASE}/redraft/start-sit`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);
@@ -202,7 +233,9 @@ async function board({ withWorker }) {
     await page.getByRole('button', { name: /^find$/i }).click();
     await page.getByRole('button', { name: new RegExp(LEAGUE) }).first().click({ timeout: 25000 });
     await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().waitFor({ timeout: 25000 });
-    await page.evaluate(() => { window.__t0 = performance.now(); window.__long = []; });
+    await page.evaluate(() => {
+        window.__t0 = performance.now(); window.__long = []; window.__said = {};
+    });
     const t0 = Date.now();
     await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().click();
     /**
@@ -242,8 +275,9 @@ async function board({ withWorker }) {
         clickLong = await page.evaluate(() => window.__long);
     }
     const picked = await page.locator('[aria-pressed="true"]').count();
+    const said = await page.evaluate(() => window.__said);
     await ctx.close();
-    return { ms, long, rows, clickLong, candidates: n, picked, errs };
+    return { ms, long, rows, clickLong, candidates: n, picked, said, errs };
 }
 
 step(3, 'the lineup board is ranked off the thread too');
@@ -258,6 +292,35 @@ assert('and clicking one previews without freezing',
     bOn.picked === 1 && bOn.clickLong.reduce((s, x) => s + x, 0) < 100,
     `${bOn.picked} selected, ${bOn.clickLong.reduce((s, x) => s + x, 0)}ms blocked`);
 assert('nothing blew up', bOn.errs.length === 0, bOn.errs.join(' | '));
+
+step('3b', 'and while it is working it says so, rather than guessing');
+/**
+ * The failure this exists for, which arrived with the worker and which
+ * every other assertion here passed straight through.
+ *
+ * Moving the board off the thread opened half a second between the rows
+ * landing and the ranking existing. In that gap `decisions` is empty —
+ * and an empty board reads exactly like a board with nothing to change,
+ * so the page announced that every slot was already the one the
+ * simulation would pick, before the simulation had run. The headline did
+ * the same thing the other way, telling somebody with a full legal
+ * lineup to go and set one.
+ *
+ * Both are verdicts on work that has not happened, and neither could
+ * exist before: the ranking used to be there in the same render or the
+ * page had no lineup at all.
+ */
+console.log(`      first said at: ${JSON.stringify(bOn.said)}`);
+assert('it never tells you to set a lineup you have already set',
+    bOn.said['no-lineup'] == null,
+    bOn.said['no-lineup'] == null ? '' : `said at ${bOn.said['no-lineup']}ms`);
+assert('it says it is working while it works',
+    bOn.said.working != null && bOn.said.working < (bOn.said.rows ?? Infinity),
+    `working at ${bOn.said.working}, rows at ${bOn.said.rows}`);
+assert('and no slot is called settled before the board exists',
+    bOn.said.verdict == null || bOn.said.verdict >= (bOn.said.rows ?? 0),
+    bOn.said.verdict == null ? 'never said'
+        : `verdict at ${bOn.said.verdict}, rows at ${bOn.said.rows}`);
 
 step(4, 'and without a worker it is the same board, slowly');
 const bOff = await board({ withWorker: false });
