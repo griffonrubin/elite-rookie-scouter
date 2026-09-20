@@ -165,11 +165,23 @@ export function useLineupBoard(
             setAnswered({ input: board, result: rest });
         };
         const onError = () => {
-            // A worker that fails once will fail again, so stop trying and
-            // let the next question take the synchronous path.
+            /**
+             * Answer it here rather than abandon it.
+             *
+             * Marking the worker broken is only half the recovery: the
+             * question already in flight is never coming back, and
+             * "fall back on the next one" is no use when the next one is
+             * the same lineup nobody has changed. Without this the board
+             * sits on "Working out every slot…" for the rest of the
+             * session — the exact failure the fallback exists to
+             * prevent, reached by the one path that trips it.
+             */
             brokenRef.current = true;
             worker.terminate();
             workerRef.current = null;
+            if (id === latestBoard.current) {
+                setAnswered({ input: board, result: boardHere(board) });
+            }
         };
         worker.addEventListener('message', onMessage);
         worker.addEventListener('error', onError);
@@ -196,9 +208,24 @@ export function useLineupBoard(
             if (e.data.kind !== 'preview' || e.data.id !== latestPreview.current) return;
             setPreviewed({ input: preview, matchup: e.data.matchup });
         };
+        // The same recovery as the board's. A preview that never returns
+        // leaves "Simulating this swap…" under an open slot forever, which
+        // reads as a click that did not register.
+        const onError = () => {
+            brokenRef.current = true;
+            worker.terminate();
+            workerRef.current = null;
+            if (id === latestPreview.current) {
+                setPreviewed({ input: preview, matchup: previewHere(preview) });
+            }
+        };
         worker.addEventListener('message', onMessage);
+        worker.addEventListener('error', onError);
         worker.postMessage({ id, kind: 'preview', ...preview } satisfies LineupRequest);
-        return () => worker.removeEventListener('message', onMessage);
+        return () => {
+            worker.removeEventListener('message', onMessage);
+            worker.removeEventListener('error', onError);
+        };
     }, [preview]);
 
     return {

@@ -160,7 +160,7 @@ assert('and it is the same ranking, team for team',
  * text — because "it rendered" is not the assertion. The assertion is
  * that the worker and this thread rank the same nine slots the same way.
  */
-async function board({ withWorker }) {
+async function board({ withWorker, broken = false }) {
     const ctx = await b.newContext({ viewport: { width: 1500, height: 1400 } });
     await ctx.route('**/api/sleeper/**', route => {
         const u = new URL(route.request().url()).pathname.replace('/api/sleeper', '');
@@ -185,6 +185,31 @@ async function board({ withWorker }) {
     if (!withWorker) {
         await page.addInitScript(() => {
             Object.defineProperty(window, 'Worker', { value: undefined, configurable: true });
+        });
+    }
+    if (broken) {
+        /**
+         * A worker that exists and then fails, which is not the same
+         * absence as having no constructor at all.
+         *
+         * No constructor is decided before anything is asked; this one
+         * accepts the question and dies holding it. Nothing arrives, and
+         * unless the failure answers the question that was in flight the
+         * page waits for a reply that is never coming — "fall back on the
+         * next question" being no use when the next question is the same
+         * lineup nobody has changed.
+         */
+        await page.addInitScript(() => {
+            class DeadWorker extends EventTarget {
+                constructor() {
+                    super();
+                    setTimeout(() => this.dispatchEvent(new Event('error')), 30);
+                }
+                postMessage() { /* swallowed, as a dead worker would */ }
+                terminate() { /* nothing to stop */ }
+            }
+            Object.defineProperty(window, 'Worker', {
+                value: DeadWorker, configurable: true, writable: true });
         });
     }
     await page.addInitScript(() => {
@@ -246,7 +271,20 @@ async function board({ withWorker }) {
     const slots = page.locator('section')
         .filter({ has: page.getByRole('heading', { name: /slot by slot/i }) })
         .locator('button[aria-expanded]');
-    await slots.nth(8).waitFor({ timeout: 40000 });
+    /**
+     * A board that never arrives is a result, not a crash.
+     *
+     * The failure this file is here to catch — a worker that dies holding
+     * the question — presents as the board simply never appearing, so
+     * letting the wait throw ends the run with a stack trace instead of a
+     * report, and takes every assertion after it down too.
+     */
+    let arrived = true;
+    try {
+        await slots.nth(8).waitFor({ timeout: 40000 });
+    } catch {
+        arrived = false;
+    }
     const ms = Date.now() - t0;
     await page.waitForTimeout(2500);
     const long = await page.evaluate(() => window.__long);
@@ -257,12 +295,14 @@ async function board({ withWorker }) {
      * the failure this is here to catch is a worker that answers — just
      * differently from the page it replaced.
      */
-    const rows = await slots.evaluateAll(els => els.map(
-        e => (e.textContent || '').replace(/\s+/g, ' ').trim()));
+    const rows = arrived ? await slots.evaluateAll(els => els.map(
+        e => (e.textContent || '').replace(/\s+/g, ' ').trim())) : [];
     // Then a bench candidate, which used to freeze the page every time.
     await page.evaluate(() => { window.__t0 = performance.now(); window.__long = []; });
-    await slots.nth(1).click();
-    await page.waitForTimeout(900);
+    if (arrived) {
+        await slots.nth(1).click();
+        await page.waitForTimeout(900);
+    }
     const cands = page.locator('section')
         .filter({ has: page.getByRole('heading', { name: /slot by slot/i }) })
         .locator('button[aria-pressed]');
@@ -336,6 +376,24 @@ const same = bOn.rows.length === bOff.rows.length
     && bOn.rows.every((r, i) => r === bOff.rows[i]);
 assert('and it is the same board, slot for slot', same,
     same ? '' : bOn.rows.find((r, i) => r !== bOff.rows[i]) ?? '');
+
+step(5, 'a worker that dies holding the question still gets answered');
+/**
+ * The third state, and the one the first two miss.
+ *
+ * "No Worker at all" is decided before anything is asked, so the
+ * synchronous path is taken from the start. A worker that constructs and
+ * then fails has already been handed the question, and marking it broken
+ * does nothing for the answer nobody is going to send. The board has to
+ * arrive anyway — and be the same board.
+ */
+const bDead = await board({ withWorker: true, broken: true });
+console.log(`      nine slots in ${bDead.ms}ms with a worker that failed`);
+assert('the board arrives anyway', bDead.rows.length === 9, String(bDead.rows.length));
+assert('and it is the same board as a working one',
+    bDead.rows.length === bOn.rows.length
+    && bDead.rows.every((r, i) => r === bOn.rows[i]),
+    bDead.rows.find((r, i) => r !== bOn.rows[i]) ?? '');
 
 await b.close();
 console.log(fails.length ? `\n${fails.length} FAILED: ${fails.join(', ')}` : '\nevery step passed');
