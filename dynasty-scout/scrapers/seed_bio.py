@@ -80,13 +80,17 @@ def fetch_wiki_dob(name, position):
     return None
 
 
-def main():
+def main(draft_year=2026):
     conn = sqlite3.connect(DB_PATH, timeout=15)
     cur = conn.cursor()
 
+    # Year given rather than pinned, so a newly seeded class can be filled
+    # in with the same pass. class_bio_espn.py covers height and weight from
+    # ESPN; what is left for this one is the date of birth, which ESPN does
+    # not carry for college athletes.
     cur.execute(
         "SELECT id, full_name, position, espn_college_id, height_inches, weight_lbs, dob "
-        "FROM players WHERE draft_year = 2026"
+        "FROM players WHERE draft_year = ?", (draft_year,)
     )
     players = cur.fetchall()
     print(f"Processing {len(players)} players...")
@@ -136,4 +140,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(int(sys.argv[1]) if len(sys.argv) > 1 else 2026)
