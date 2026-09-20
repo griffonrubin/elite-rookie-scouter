@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { changeWorth, type ClaimWorth, type SeasonInput } from '@/lib/seasonOdds';
+import { type ClaimWorth, type SeasonInput } from '@/lib/seasonOdds';
+import { epochOf, runChange } from '@/lib/seasonWorkerClient';
 import type { LeagueRoster } from '@/lib/leagueRosters';
 
 /**
@@ -14,9 +15,9 @@ import type { LeagueRoster } from '@/lib/leagueRosters';
  *
  * Priced after the page has drawn, a claim at a time, and only for the few
  * the page is actually recommending. Each one is a full re-run of the
- * league's rest-of-season — about 190ms — and a waiver list is thirty rows
- * long, so pricing all of them would be six seconds of blocked main thread
- * to answer a question about twenty-five claims nobody is considering.
+ * league's rest-of-season, and a waiver list is thirty rows long, so
+ * pricing all of them would be a question about twenty-five claims nobody
+ * is considering.
  *
  * Ordered by what the claim gains in points, which is the order the page
  * already ranks by: more points a week is never fewer points of playoff
@@ -24,9 +25,11 @@ import type { LeagueRoster } from '@/lib/leagueRosters';
  * by points. That makes this a cheap way to put a scale on the list rather
  * than a different ranking of it.
  *
- * Yielded between claims so the page stays responsive: a hundred and
- * ninety milliseconds is a dropped frame, and five of them back to back is
- * a page that has stopped answering.
+ * The runs themselves happen in the season worker, one after another, so
+ * the page stays responsive throughout rather than between claims — and
+ * because the worker is already holding this league, each claim costs the
+ * rosters it changes rather than a hundred and seventy players' game logs
+ * sent again.
  */
 
 export interface ClaimValues {
@@ -75,27 +78,26 @@ export function useClaimWorth(
         setPricing(true);
         const found = new Map<string | number, ClaimWorth>();
         let i = 0;
-        let timer: ReturnType<typeof setTimeout> | null = null;
 
-        const next = () => {
+        const epoch = epochOf(input);
+        const next = async () => {
             if (cancelled || run.current !== mine) return;
             if (i >= wanted.length) {
                 setPricing(false);
                 return;
             }
             const c = wanted[i++];
-            const worth = changeWorth(input, myKey, c.overrides, baseline);
+            const worth = await runChange(
+                epoch, input, myKey, c.overrides, baseline ?? null);
+            if (cancelled || run.current !== mine) return;
             if (worth) found.set(c.id, worth);
             // A new Map each time, so the page shows each claim as it lands
             // rather than all of them at the end.
             setByPlayer(new Map(found));
-            timer = setTimeout(next, 0);
+            void next();
         };
-        timer = setTimeout(next, 0);
-        return () => {
-            cancelled = true;
-            if (timer) clearTimeout(timer);
-        };
+        void next();
+        return () => { cancelled = true; };
         // `input` is rebuilt on every render of the caller, so the effect is
         // keyed on what can actually change the answer rather than on its
         // identity — see `signature`.

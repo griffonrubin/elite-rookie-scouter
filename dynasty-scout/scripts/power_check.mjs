@@ -16,6 +16,7 @@
  */
 import { chromium } from 'playwright-core';
 import fs from 'fs';
+import { matchupsFor } from './fixtures.mjs';
 
 const F = JSON.parse(fs.readFileSync(new URL('./fixtures-real-leagues.json', import.meta.url), 'utf8'));
 const BASE = process.env.BASE ?? 'http://localhost:3090';
@@ -35,7 +36,7 @@ await ctx.route('**/api/sleeper/**', route => {
     let m;
     if ((m = u.match(/\/league\/(\d+)\/rosters/))) return j(F.rosters[m[1]] ?? []);
     if ((m = u.match(/\/league\/(\d+)\/users/))) return j(F.users[m[1]] ?? []);
-    if ((m = u.match(/\/league\/(\d+)\/matchups\//))) return j(F.matchups[m[1]] ?? []);
+    if ((m = u.match(/\/league\/(\d+)\/matchups\/(\d+)/))) return j(matchupsFor(F, m[1], Number(m[2])));
     if ((m = u.match(/\/league\/(\d+)$/))) return j(F.leagueDetail[m[1]] ?? null);
     return j(null);
 });
@@ -96,11 +97,20 @@ await page.getByRole('button', { name: /^find$/i }).click();
 await page.getByRole('button', { name: new RegExp(LEAGUE) }).first().waitFor({ timeout: 25000 });
 await page.getByRole('button', { name: new RegExp(LEAGUE) }).first().click();
 await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().waitFor({ timeout: 25000 });
+/**
+ * The clock stops when the table is there, not when the test wakes up.
+ *
+ * The settle wait used to sit inside this timer, so 1.5 of the seconds it
+ * reported were the test sleeping — a figure that moves when somebody
+ * changes the sleep and not when the page changes. Measured properly the
+ * table lands in about four hundred milliseconds; this was printing 2.0s.
+ */
 const t0 = Date.now();
 await page.getByRole('button', { name: /^Jebdaddybush$/ }).first().click();
 await teamRows().first().waitFor({ timeout: 30000 });
+console.log(`      table painted ${Date.now() - t0}ms after picking a team`);
+// Settled afterwards, for the assertions below that read rendered text.
 await page.waitForTimeout(1500);
-console.log(`      table painted ${((Date.now() - t0) / 1000).toFixed(1)}s after picking a team`);
 
 step(3, 'every team in the league is ranked');
 const n = await teamRows().count();
@@ -359,6 +369,60 @@ const backPct = parseInt(back.match(/(\d+)%/)[1], 10);
 console.log(`      ${first} beats ${oppName} ${oppPct}%; ${oppName} beats ${first} ${backPct}%`);
 assert('the two directions sum to 100', Math.abs(oppPct + backPct - 100) <= 1,
     `${oppPct} + ${backPct}`);
+
+step('8b', 'the league\'s own fixture list is the one being played');
+/**
+ * Nothing asserted this, and for a long time it was quietly false.
+ *
+ * The captured fixture carried three rosters of one week — enough to open
+ * the page on the right opponent, not enough to be a schedule — so
+ * `scheduleUsable` refused it and every run here took the degraded path:
+ * weeks drawn at random, and the panel that weighs the week saying so in
+ * as many words. Everything passed. The real branch, which is what every
+ * reader with a connected league gets, was exercised nowhere outside the
+ * model checks.
+ */
+const stake = await page.locator('[data-panel="at-stake"]').innerText();
+assert('the weeks are the league\'s own, not drawn',
+    /read from your platform/.test(stake) && !/would not give a fixture/.test(stake),
+    /would not give a fixture/.test(stake) ? 'still drawing them at random' : '');
+
+step('8c', 'and it says which of the other games you have a stake in');
+/**
+ * Two states, both correct, and the check has to accept either: a week
+ * where some other game moves your season by more than the simulation's
+ * own noise, and a week where none does. Week one of a season nobody has
+ * played is firmly the second, and saying so is the panel working rather
+ * than the panel empty — which is why the empty state is asserted to
+ * explain itself rather than merely to exist.
+ *
+ * The populated state is not reachable from this fixture: nobody has
+ * played a game, so every record is 0-0 and no race is contested at any
+ * week. It is covered instead by rooting_check.mts, which builds a league
+ * four deep on the cut line with two weeks left and asserts that a game
+ * the reader is not playing in moves them past the floor.
+ */
+const root = page.locator('[data-panel="rooting"]');
+assert('the panel is there', await root.count() === 1, String(await root.count()));
+const rootText = await root.innerText();
+console.log('      ' + rootText.split('\n').filter(Boolean)[2]?.slice(0, 120));
+const games = await root.locator('li [data-game]').count();
+if (games > 0) {
+    const named = await root.locator('li [data-game]').allInnerTexts();
+    assert('every game listed names both teams', named.every(t => / v /.test(t)),
+        String(games));
+    assert('and each has two ends to read',
+        await root.locator('li [data-end]').count() === games * 2,
+        `${await root.locator('li [data-end]').count()} ends for ${games} games`);
+    // Asserted here rather than beside the empty case, where an empty list
+    // satisfies it without checking anything.
+    assert('and none of them is your own game',
+        !named.some(t => /Jebdaddybush/.test(t)), named.join(' / '));
+} else {
+    assert('a week with nothing at stake says so, and why',
+        /less than \d+ points/.test(rootText) && /own/.test(rootText),
+        rootText.split('\n').filter(Boolean)[2]?.slice(0, 60) ?? '(nothing)');
+}
 
 step(9, 'nothing blew up');
 assert('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));

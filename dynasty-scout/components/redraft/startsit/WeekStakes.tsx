@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { CHART_INK, MARK } from '@/lib/vizTokens';
+import Link from 'next/link';
 import { ODDS_NOISE } from '@/lib/trade';
-import type { PlayoffOdds } from '@/lib/power';
+import { ROOT_NOISE, type PlayoffOdds } from '@/lib/power';
 import { leverageOf, oddsGivenWinProb } from '@/lib/seasonOdds';
 
 /**
@@ -32,13 +33,16 @@ import { leverageOf, oddsGivenWinProb } from '@/lib/seasonOdds';
 const LOSE = '#7DD3FC';
 const WIN = '#0284C7';
 
-export function WeekStakes({ odds, winProb, bestGain, week }: {
+export function WeekStakes({ odds, winProb, bestGain, week, myKey, nameOf }: {
     odds: PlayoffOdds | null | undefined;
     /** This page's own win probability for the week, 0..1. */
     winProb: number;
     /** Percentage points of win probability the best lineup would add. */
     bestGain?: number | null;
     week: number | null;
+    /** Mine, so the game I am playing is not offered as one to watch. */
+    myKey?: string | null;
+    nameOf?: (key: string) => string;
 }) {
     const swing = leverageOf(odds);
     if (swing == null || !odds || odds.oddsIfWin == null || odds.oddsIfLose == null) {
@@ -55,6 +59,26 @@ export function WeekStakes({ odds, winProb, bestGain, week }: {
      * one a reader would recognise.
      */
     const gainPts = bestGain != null ? (bestGain / 100) * pts : null;
+
+    /**
+     * The other game worth watching, when there is one.
+     *
+     * Power Rankings has the whole list; this is the one line that belongs
+     * on a Sunday, because Sunday is when somebody is on this page and not
+     * that one. Most weeks it is nothing — every other game sits inside
+     * the simulation's own noise and there is no result worth wanting —
+     * and on the weeks it is not, it is worth knowing before the games
+     * start rather than after.
+     */
+    const elsewhere = (odds.rooting ?? [])
+        .filter(g => g.home !== myKey && g.away !== myKey && g.swing != null
+            && Math.abs(g.swing) >= ROOT_NOISE)
+        .sort((a, b) => Math.abs(b.swing!) - Math.abs(a.swing!))[0] ?? null;
+    const want = elsewhere
+        ? ((elsewhere.oddsIfHome ?? 0) >= (elsewhere.oddsIfAway ?? 0)
+            ? elsewhere.home : elsewhere.away)
+        : null;
+    const elsewherePts = elsewhere ? Math.abs(Math.round(elsewhere.swing! * 100)) : 0;
 
     return (
         <div className="mt-3 pt-3 border-t border-white/[0.07]">
@@ -98,13 +122,15 @@ export function WeekStakes({ odds, winProb, bestGain, week }: {
             <dl className="mt-2 space-y-1 text-[11px]">
                 <div className="flex justify-between gap-2">
                     <dt className="text-muted-foreground/55">If you win</dt>
-                    <dd className="tabular-nums font-semibold" style={{ color: WIN }}>
+                    <dd className="tabular-nums font-semibold" style={{ color: WIN }}
+                        data-odds-win={Math.round(win)}>
                         {Math.round(win)}%
                     </dd>
                 </div>
                 <div className="flex justify-between gap-2">
                     <dt className="text-muted-foreground/55">If you lose</dt>
-                    <dd className="tabular-nums font-semibold" style={{ color: LOSE }}>
+                    <dd className="tabular-nums font-semibold" style={{ color: LOSE }}
+                        data-odds-lose={Math.round(lose)}>
                         {Math.round(lose)}%
                     </dd>
                 </div>
@@ -115,9 +141,60 @@ export function WeekStakes({ odds, winProb, bestGain, week }: {
                             {' '}· {Math.round(winProb * 100)}% to win
                         </span>
                     </dt>
-                    <dd className="tabular-nums font-semibold">{Math.round(now)}%</dd>
+                    <dd className="tabular-nums font-semibold"
+                        data-my-odds={Math.round(now)}>{Math.round(now)}%</dd>
                 </div>
             </dl>
+
+            {/*
+                Why this can read a point either side of the Power page.
+                The note is not pedantry: a reader who sees 65 here and 64
+                there has no way to tell a better estimate from a bug, and
+                the whole argument for one shared simulation is that they
+                never have to wonder which number to believe. The two
+                conditionals above are that simulation's; only the weight
+                between them is this page's, and this page knows more about
+                this Sunday than a round robin does.
+            */}
+            <p className="text-[10px] text-muted-foreground/40 mt-2 leading-snug">
+                The two figures above come from the same run Power Rankings
+                shows. What is this page&rsquo;s is the weight between them:
+                {' '}{Math.round(winProb * 100)}% comes from simulating both
+                lineups against this week&rsquo;s opponent, byes and injury
+                reports, where the season table uses its own round-robin rate.
+                So &ldquo;as things stand&rdquo; can sit a point either side of
+                the number on Power, and the better estimate of this Sunday is
+                the one here.
+            </p>
+
+            {elsewhere && want && (
+                <p data-note="elsewhere"
+                    className="text-[11px] mt-2 text-muted-foreground/60">
+                    {elsewherePts > Math.abs(Math.round(pts)) ? (
+                        <>
+                            <span className="font-semibold text-foreground">
+                                A game you are not playing in matters more than
+                                yours this week.
+                            </span>{' '}
+                        </>
+                    ) : null}
+                    You want{' '}
+                    <span className="font-semibold text-foreground">
+                        {nameOf ? nameOf(want) : want}
+                    </span>{' '}
+                    to beat{' '}
+                    {nameOf
+                        ? nameOf(want === elsewhere.home ? elsewhere.away : elsewhere.home)
+                        : (want === elsewhere.home ? elsewhere.away : elsewhere.home)}
+                    {' '}— worth {elsewherePts} points of playoff odds to you,
+                    against {Math.abs(Math.round(pts))} for your own game.{' '}
+                    <Link href="/in-season/power"
+                        className="underline underline-offset-2
+                                   hover:text-foreground transition-colors">
+                        The rest of the week
+                    </Link>.
+                </p>
+            )}
 
             {gainPts != null && Math.abs(bestGain ?? 0) > 0 && (
                 <p className="text-[11px] mt-2 text-muted-foreground/60">

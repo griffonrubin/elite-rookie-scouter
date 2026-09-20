@@ -14,9 +14,11 @@ import { OutcomeAxis, OutcomeStrip, SampleGame } from './OutcomeStrip';
 import { findProblems, LineupAlerts, SwapRow } from './LineupAlerts';
 import { SlotBoard } from './SlotBoard';
 import { MatchupChart } from './MatchupChart';
-import { formatDelta, optimalLineup, rankSlots, resolveConflicts, SlotDecision } from '@/lib/lineup';
+import { formatDelta, SlotDecision } from '@/lib/lineup';
+import { useLineupBoard, type BoardInput, type PreviewInput } from '@/lib/useLineupBoard';
 import { LeagueConnect } from './LeagueConnect';
 import { WeekStakes } from './WeekStakes';
+import { DivisionsNote } from '../DivisionsNote';
 import { useSeasonOdds } from '@/lib/useSeasonOdds';
 import { SwapPreview } from './SwapPreview';
 import { PlayerDetail } from './PlayerDetail';
@@ -108,13 +110,6 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         };
     }, [outcomeFor]);
 
-    const matchup = useMemo(() => {
-        if (!ready) return null;
-        if (league.me.starters.length === 0 || league.opponent.starters.length === 0) return null;
-        return simulateMatchup(
-            league.me.starters.map(sim), league.opponent.starters.map(sim), 20000, 11,
-            { bins: 40 });
-    }, [ready, league.me.starters, league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     /**
      * The lineup as slots, which is how it is actually set.
@@ -179,6 +174,21 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
     const bestBall = league.snapshot?.bestBall === true;
 
     /** Which candidate is open for inspection, and in which slot. */
+    /**
+     * The opponent's lineup read as slots — a different list from their
+     * starters.
+     *
+     * Their nine against your nine is what the matchup simulates and it
+     * does not care who is in which slot. The slot-for-slot pairing does,
+     * and it has to line up index for index with yours, empty slots and
+     * all. Built once here because both the board and the pairing want it
+     * and they must not disagree about who your flex is playing.
+     */
+    const oppSlotIds = useMemo(
+        () => resolveSlots(league.opponent.team, league.opponent.starters)
+            .map(s => s.playerId),
+        [resolveSlots, league.opponent.team, league.opponent.starters]);
+
     const [preview, setPreview] = useState<{ index: number; playerId: number } | null>(null);
     const [openBench, setOpenBench] = useState<number | null>(null);
     const [openOpp, setOpenOpp] = useState<number | null>(null);
@@ -196,23 +206,63 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
         };
     };
 
-    const decisions: SlotDecision[] = useMemo(() => {
-        if (!matchup || slotLineup.length === 0) return [];
+    /**
+     * The question, packed so it can cross to a worker.
+     *
+     * Everything here is plain data on purpose — `sim` is a closure and a
+     * closure does not clone, so the players are flattened to pairs and
+     * the worker rebuilds the lookup at its end. Null when there is
+     * nothing to ask, which is what stops it pricing an empty lineup.
+     */
+    const boardAsk: BoardInput | null = useMemo(() => {
+        if (!ready || slotLineup.length === 0) return null;
+        if (league.me.starters.length === 0 || league.opponent.starters.length === 0) {
+            return null;
+        }
         const all = [...league.me.starters, ...league.me.bench];
-        const posOf = (id: number) =>
-            (all.find(p => p.id === id)?.position ?? '').toUpperCase();
-        const byId = new Map(all.map(p => [p.id, p]));
-        // Resolved, not raw: scored on its own every running back slot asks
-        // for the best back on the bench, and being told to start the same
-        // man twice is how a tool tells you it cannot count.
-        const ranked = resolveConflicts(rankSlots(
-            slotLineup, posOf, id => sim(byId.get(id)!),
-            league.me.bench.map(p => p.id),
-            league.opponent.starters.map(sim), 6000));
+        const sims: [number, SimPlayer][] = [];
+        for (const p of [...all, ...league.opponent.starters]) sims.push([p.id, sim(p)]);
+        return {
+            lineup: slotLineup,
+            positions: all.map(p => [p.id, (p.position ?? '').toUpperCase()] as [number, string]),
+            benchIds: league.me.bench.map(p => p.id),
+            opponentIds: league.opponent.starters.map(p => p.id),
+            opponentSlotIds: oppSlotIds,
+            sims, trials: 6000, matchupTrials: 20000,
+        };
+    }, [ready, slotLineup, oppSlotIds, league.me.starters, league.me.bench,
+        league.opponent.starters, sim]);
+
+    /**
+     * The same lineup with one slot's occupant replaced.
+     *
+     * Its own question rather than part of the board's, because it is a
+     * click and not a load: asking for the whole board again would
+     * re-rank nine slots to answer one "what if".
+     */
+    const previewAsk: PreviewInput | null = useMemo(() => {
+        if (!preview || !boardAsk) return null;
+        return {
+            ids: slotLineup.map((s, i) =>
+                i === preview.index ? preview.playerId : s.playerId),
+            // The board's own opponent and the board's own players, so the
+            // two numbers a reader compares came off the same inputs.
+            opponentIds: boardAsk.opponentIds,
+            sims: boardAsk.sims,
+            matchupTrials: boardAsk.matchupTrials,
+        };
+    }, [preview, boardAsk, slotLineup]);
+
+    const board = useLineupBoard(boardAsk, previewAsk);
+    const matchup = board.matchup;
+
+    const decisions: SlotDecision[] = useMemo(() => (
         // The candidates stay — comparing your flex against your bench is
-        // still worth seeing — but nothing is a "change" you could make.
-        return bestBall ? ranked.map(d => ({ ...d, verdict: 'set' as const })) : ranked;
-    }, [matchup, slotLineup, league.me.bench, league.opponent.starters, data, bestBall]);   // eslint-disable-line react-hooks/exhaustive-deps
+        // still worth seeing — but in best ball nothing is a "change" you
+        // could make.
+        bestBall ? board.decisions.map(d => ({ ...d, verdict: 'set' as const }))
+            : board.decisions
+    ), [board.decisions, bestBall]);
 
     /**
      * The replacement for a starter who cannot play, from the slot board.
@@ -246,26 +296,26 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
      * the part you can still do something about. Most weeks it is zero, and
      * saying so is worth as much as naming a change.
      */
+    /**
+     * The lineup the simulation would set, and what it is worth.
+     *
+     * The single most useful number on the page is not your win
+     * probability — it is the gap between yours and the best one
+     * available, because that is the part you can still do something
+     * about. Most weeks it is zero, and saying so is worth as much as
+     * naming a change.
+     *
+     * Picked and priced in the worker; named here, where the player
+     * objects are. Re-simulating it on this thread to put a name on it
+     * would be twenty thousand seasons to look up a full name.
+     */
     const best = useMemo(() => {
-        if (!matchup || decisions.length === 0) return null;
+        const prob = board.bestProb;
+        if (!matchup || decisions.length === 0 || prob == null) return null;
         const all = [...league.me.starters, ...league.me.bench];
         const byId = new Map(all.map(p => [p.id, p]));
-        const chosen = optimalLineup(decisions);
-        const ids = decisions.map(d => chosen.get(d.index) ?? d.currentId);
-        const lineup = ids.filter((id): id is number => id != null)
-            .map(id => sim(byId.get(id)!));
-        if (lineup.length === 0) return null;
-        // Most weeks the best lineup is the one already set, and simulating
-        // it again is twenty thousand trials to re-derive a number that is
-        // already on screen — same players, same opponent, same seed, so
-        // necessarily the same answer.
-        const unchanged = ids.length === decisions.length
-            && ids.every((id, i) => id === decisions[i].currentId);
-        const prob = unchanged
-            ? matchup.winProb
-            : simulateMatchup(lineup, league.opponent.starters.map(sim), 20000, 11).winProb;
         const changes = decisions
-            .map(d => ({ d, to: chosen.get(d.index) ?? null }))
+            .map((d, i) => ({ d, to: board.bestIds[i] ?? null }))
             .filter(c => c.to != null && c.to !== c.d.currentId)
             .map(c => ({
                 slot: c.d.slot,
@@ -275,7 +325,8 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                 outId: c.d.currentId,
             }));
         return { prob, changes, gain: Math.round((prob - matchup.winProb) * 1000) / 10 };
-    }, [matchup, decisions, league.me.starters, league.me.bench, league.opponent.starters]);   // eslint-disable-line react-hooks/exhaustive-deps
+    }, [matchup, decisions, board.bestIds, board.bestProb,
+        league.me.starters, league.me.bench]);
 
     /**
      * The matchup with one slot's occupant replaced.
@@ -283,20 +334,7 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
      * Same opponent, same trial count, same seed as the headline, so the
      * difference between the two numbers is the swap rather than the dice.
      */
-    const previewSim = useMemo(() => {
-        if (!preview || !matchup || slotLineup.length === 0) return null;
-        const all = [...league.me.starters, ...league.me.bench];
-        const byId = new Map(all.map(p => [p.id, p]));
-        const ids = slotLineup.map((s, i) =>
-            i === preview.index ? preview.playerId : s.playerId);
-        const lineup = ids
-            .filter((id): id is number => id != null && byId.has(id))
-            .map(id => sim(byId.get(id)!));
-        if (lineup.length === 0) return null;
-        return simulateMatchup(lineup, league.opponent.starters.map(sim), 20000, 11,
-            { bins: 40 });
-    }, [preview, matchup, slotLineup, league.me.starters, league.me.bench,
-        league.opponent.starters, data]);   // eslint-disable-line react-hooks/exhaustive-deps
+    const previewSim = board.preview;
 
     /**
      * Your lineup against theirs, one slot at a time.
@@ -322,12 +360,14 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                 slot: s.slot,
                 mine: { player: mineP, outcome: mineO },
                 theirs: { player: theirsP, outcome: theirsO },
-                beats: mineP && theirsP
-                    ? beatsProbability(sim(mineP), sim(theirsP), 3000, 17) : null,
+                // Drawn in the worker with the rest of the board: nine
+                // three-thousand-trial pairings is not much on its own,
+                // and it is the same players it has already been sent.
+                beats: mineP && theirsP ? board.beats[i] ?? null : null,
             };
         });
     }, [ready, slotLineup, league.opponent.team, league.opponent.starters,
-        league.me.starters, league.me.bench, resolveSlots, data]);   // eslint-disable-line react-hooks/exhaustive-deps
+        league.me.starters, league.me.bench, resolveSlots, board.beats, outcomeFor]);
 
     const axisMax = useMemo(() => {
         const all = [...league.me.starters, ...league.me.bench].map(p => outcomeFor(p).outcome.ceiling);
@@ -338,14 +378,21 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
      * The league's season, for the one number this page cannot derive on
      * its own: what winning here is worth.
      *
-     * Deferred and shared. It prices every roster in the league, which
-     * means fetching every rostered player — a payload this page has no
-     * other use for — so it is asked for after the lineup has rendered and
-     * the block below simply appears when it is ready. The run itself is
-     * the Power page's, cached, so a reader who has been there pays
-     * nothing and the two pages cannot quote different numbers.
+     * Held back until the lineup is in hand, which is not fussiness. It
+     * prices every roster in the league, so it asks for every rostered
+     * player — three more requests to the same endpoint this page is
+     * already waiting on for its own two rosters. Fired together they
+     * queue behind each other: measured, the board went from appearing
+     * 54ms after the click to 367ms, with nothing to show for the wait
+     * but a strip further down the page. Gating on `ready` puts the two
+     * in order — the lineup somebody came for, then the season it is
+     * played in.
+     *
+     * The run itself is the Power page's, cached, so a reader who has
+     * been there pays nothing and the two pages cannot quote different
+     * numbers.
      */
-    const season = useSeasonOdds(league, players, { season: SEASON });
+    const season = useSeasonOdds(league, players, { season: SEASON, enabled: ready });
     const myOdds = league.connection?.teamKey
         ? season.value?.odds?.get(league.connection.teamKey) ?? null
         : null;
@@ -376,11 +423,29 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                         Chance you win week {league.week}
                     </h2>
                     {winPct == null ? (
+                        /*
+                         * Three reasons this can be blank, and they are not
+                         * the same thing. The rows are still arriving; the
+                         * week is being simulated; or there is genuinely no
+                         * lineup to weigh.
+                         *
+                         * The middle one arrived with the worker and was
+                         * being reported as the last: once the rows landed
+                         * `loading` went false while the board was still
+                         * being worked out, so for the half second in
+                         * between the page told somebody with a full and
+                         * legal lineup to go and set one. A page that has
+                         * moved its work off the thread has to say that it
+                         * is working, or it reads as a page that has
+                         * decided.
+                         */
                         <p className="text-[12px] text-muted-foreground/60 mt-3">
                             {loading ? 'Reading your lineup…'
                                 : league.opponent.starters.length === 0
                                     ? 'No opponent is scheduled for this week yet.'
-                                    : 'Set a lineup to see this.'}
+                                    : board.pending
+                                        ? 'Simulating the week…'
+                                        : 'Set a lineup to see this.'}
                         </p>
                     ) : (
                         <>
@@ -416,8 +481,18 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                             {matchup && (
                                 <WeekStakes odds={myOdds} winProb={matchup.winProb}
                                     bestGain={bestBall ? null : best?.gain ?? null}
-                                    week={league.week} />
+                                    week={league.week}
+                                    myKey={league.connection?.teamKey ?? null}
+                                    nameOf={k => season.value?.result.rows
+                                        .find(r => r.key === k)?.name ?? k} />
                             )}
+                            {/* The block above prices this week in playoff
+                                odds, so it inherits whatever those do not
+                                model. */}
+                            {myOdds && <DivisionsNote
+                                divisions={league.snapshot?.divisions}
+                                className="mt-2 text-[10px] text-muted-foreground/45
+                                           leading-relaxed" />}
                             {best && !bestBall && (
                                 <div className="mt-3 pt-3 border-t border-white/[0.07]">
                                     {best.changes.length === 0 ? (
@@ -508,6 +583,22 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                                     Best ball — the platform fills these slots for you
                                 </span>
                             );
+                            /*
+                             * "Nothing to change" and "nothing worked out
+                             * yet" are not the same sentence, and an empty
+                             * `decisions` reads as both. Before the board
+                             * moved to a worker they could not come apart —
+                             * the ranking was there in the same render or
+                             * the page had no lineup at all. Now there is
+                             * half a second in between, and saying every
+                             * slot is already right is a verdict on a
+                             * simulation that has not run.
+                             */
+                            if (board.pending || decisions.length === 0) return (
+                                <span className="text-[10px] text-muted-foreground/50">
+                                    Working out every slot…
+                                </span>
+                            );
                             const changes = decisions.filter(d => d.verdict !== 'set');
                             return (
                                 <span className="text-[10px] text-muted-foreground/50">
@@ -544,7 +635,15 @@ export function StartSitClient({ players }: { players: RedraftPlayer[] }) {
                             const outId = d?.currentId ?? null;
                             const out = outId != null
                                 ? all.find(x => x.id === outId) : undefined;
-                            if (!p || !matchup || !previewSim) return null;
+                            if (!p || !matchup) return null;
+                            // The swap is being simulated. Said rather than
+                            // shown as nothing, which reads as a click that
+                            // did not register.
+                            if (!previewSim) return (
+                                <p className="text-[11px] text-muted-foreground/50 py-2">
+                                    Simulating this swap…
+                                </p>
+                            );
                             return (
                                 <SwapPreview
                                     inName={p.full_name}

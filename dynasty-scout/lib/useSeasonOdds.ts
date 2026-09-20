@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStartSitData } from '@/lib/useStartSit';
 import { useLeagueFixtures } from '@/lib/useLeagueFixtures';
 import { idsIn, leagueRosters, lineupSlotsOf } from '@/lib/leagueRosters';
-import { seasonOdds, type SeasonInput, type SeasonOdds } from '@/lib/seasonOdds';
+import { type SeasonInput, type SeasonOdds } from '@/lib/seasonOdds';
+import { epochOf, runSeason, warmSeasonWorker } from '@/lib/seasonWorkerClient';
 import type { LeagueSyncState } from '@/lib/useLeagueSync';
 import type { Horizon } from '@/lib/simInput';
 import type { RedraftPlayer } from '@/lib/types';
@@ -80,7 +81,18 @@ export function useSeasonOdds(
     const scoring = snapshot?.scoring ?? null;
     const scoringKey = `${scoring?.reception ?? 1}:${scoring?.teReceptionBonus ?? 0}`;
 
-    const ready = enabled && !!teams && needed.length > 0 && data.size > 0 && !failed;
+    /**
+     * Every roster is priced, or none is.
+     *
+     * `data.size > 0` alone is true the moment the first chunk of a
+     * hundred and seventy players lands, and the run that follows ranks
+     * twelve teams off the third of the league it can see — then does it
+     * again for the next chunk, and again for the last. Three wrong
+     * answers and three long tasks where one right answer belongs.
+     * `loading` is false only once every chunk is in.
+     */
+    const ready = enabled && !!teams && needed.length > 0
+        && data.size > 0 && !loading && !failed;
 
     const input: SeasonInput | null = useMemo(() => {
         if (!ready || !teams) return null;
@@ -92,32 +104,44 @@ export function useSeasonOdds(
         week, remaining, cut]);
 
     /**
-     * The cache is read during render and written after it.
+     * Read during render, computed off the thread entirely.
      *
-     * Assigning a module-level variable while rendering is a side effect in
-     * the middle of a pure function — it works until a render is discarded
-     * or replayed, and then the cache holds a result nobody is showing.
-     * Reading it in render is fine; the write belongs in an effect.
+     * The fetch was always deferred — the league's players arrive long
+     * after the page does — but the simulation was not: it ran inside a
+     * memo, so the render that had the data also paid for ranking twelve
+     * rosters twenty thousand times. On Start/Sit that is about 780ms, and
+     * it sat in front of the slot board somebody had come to read.
+     *
+     * Now the league goes to a worker. The page commits and paints with
+     * `value` still null, the run happens where it cannot drop a frame,
+     * and the strip appears when the answer comes back. Sending it also
+     * leaves the league with the worker, which is what makes the waiver
+     * and trade pages able to price a change against it for the cost of
+     * the rosters that changed.
      */
     const key = [
         league.connection?.platform, league.connection?.id, week, horizon,
         scoringKey, cut, remaining, needed.length, data.size, games?.length ?? 0,
     ].join('|');
     const cached = last?.key === key ? last.value : null;
+    const [computed, setComputed] = useState<Cached | null>(null);
 
-    const value = useMemo(() => {
-        if (cached) return cached;
-        if (!ready || !teams) return null;
-        return seasonOdds({
-            teams, slots, players, data, season, horizon, scoring, games,
-            week, remaining, cut,
-        });
-    }, [cached, ready, teams, slots, players, data, season, horizon, scoring,
-        games, week, remaining, cut]);
+    // Built while the league is still being fetched rather than after it,
+    // so the worker's own chunk loads inside a wait that already exists.
+    useEffect(() => { if (enabled) warmSeasonWorker(); }, [enabled]);
 
     useEffect(() => {
-        if (value) last = { key, value };
-    }, [key, value]);
+        if (cached || !ready || !input) return;
+        let live = true;
+        runSeason(epochOf(input), input).then(value_ => {
+            if (!live) return;
+            last = { key, value: value_ };
+            setComputed({ key, value: value_ });
+        });
+        return () => { live = false; };
+    }, [key, cached, ready, input]);
+
+    const value = cached ?? (computed?.key === key ? computed.value : null);
 
     return {
         value,

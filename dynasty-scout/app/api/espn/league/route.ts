@@ -226,6 +226,18 @@ export async function GET(req: NextRequest) {
             ? Number(data.settings.scheduleSettings.playoffTeamCount)
             : null,
         /**
+         * Divisions, reported rather than modelled.
+         *
+         * ESPN names them; the seeding rule that goes with them is a
+         * separate setting, and the simulation plays a single table. The
+         * pages say so rather than printing odds that quietly assume a
+         * league has one table when it has four divisions.
+         */
+        divisions: Array.isArray(data?.settings?.scheduleSettings?.divisions)
+            && data.settings.scheduleSettings.divisions.length > 1
+            ? data.settings.scheduleSettings.divisions.length
+            : null,
+        /**
          * The shape of a lineup here, which decides replacement level.
          *
          * Sleeper leagues have sent this for a while and ESPN ones never

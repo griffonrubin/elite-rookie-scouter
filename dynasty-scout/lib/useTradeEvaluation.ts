@@ -64,6 +64,25 @@ export function useTradeEvaluation(input: TradeInput | null): Evaluation {
         workerRef.current = null;
     }, []);
 
+    /**
+     * A cleared table forgets its answer.
+     *
+     * Holding the last verdict up is right while a reader nudges the same
+     * trade — the number they are comparing against is the one that was
+     * just there. It is wrong once the table is empty, because the next
+     * player clicked is a different trade, and the old verdict rendered
+     * under this one's heading for the two seconds a run takes is not a
+     * dimmed number, it is somebody else's. Measured: after clearing and
+     * giving away my best player, the verdict appeared in 56ms and said
+     * the gift had made me better. It was the previous trade's.
+     *
+     * Adjusted during render rather than from the effect, which is the
+     * shape React documents for state that has to follow an input: it
+     * converges in the same pass, so the wrong verdict is never committed
+     * — an effect would paint it once first, which is the whole bug.
+     */
+    if (!input && answered.result !== null) setAnswered({ input: null, result: null });
+
     useEffect(() => {
         if (!input) { latest.current += 1; return; }
 
@@ -123,11 +142,8 @@ export function useTradeEvaluation(input: TradeInput | null): Evaluation {
     /**
      * The stored answer shows for as long as there is a question, which is
      * what lets a reader watch a number move rather than flash away and
-     * back.
-     *
-     * It does mean that clearing the table and starting a fresh trade shows
-     * the previous verdict for the second or two the new one takes — which
-     * is why `pending` dims it and says the league is being replayed.
+     * back — and the adjustment above is what keeps that from spilling
+     * across a clear, where there is no number to watch move.
      */
     return {
         result: input ? answered.result : null,

@@ -112,6 +112,24 @@ export interface PowerResult {
 export const POWER_NOISE = 0.015;
 
 /**
+ * How far a rooting swing has to move before it is worth printing, in
+ * rate points.
+ *
+ * Measured, and the guess going in was half of it. Eight seeds over the
+ * same twelve-team league move a single game's swing by up to 3.9 points,
+ * which is far worse than the headline's own 1.5 — for a reason worth
+ * stating rather than papering over. Each branch is drawn from roughly
+ * half the seasons, and the thing being measured is small, so this is the
+ * worst signal-to-noise of any number here.
+ *
+ * Which makes the floor the feature rather than a caveat on it. In a week
+ * where nothing is at stake every game sits inside this, and the honest
+ * report is that none of them matters — not six numbers under a point
+ * arranged as though they were a ranking.
+ */
+export const ROOT_NOISE = 0.04;
+
+/**
  * How much of a lineup has to be priced before ranking it is honest.
  *
  * Three quarters, so a single unmatched player does not remove a team from
@@ -367,6 +385,29 @@ export function seasonOutlook(
  * simulating the weeks a platform happened to return and dropping the rest
  * gives a number that is specific, confident and a fraction of a season.
  */
+/** One other game this week, and what its result does to your season. */
+export interface RootingInterest {
+    /** The two teams in the fixture. */
+    home: string;
+    away: string;
+    /**
+     * How often the home side won it, across the same seasons.
+     *
+     * On the page it is what turns two conditionals into a game somebody
+     * can read — a swing of eight points matters differently when the
+     * side you need is a coin flip than when it is a 15% shot. It is also
+     * what lets a check reconcile the two branches against the headline,
+     * which is the only thing that would notice a cross-tabulation
+     * indexed one row out.
+     */
+    homeWins: number | null;
+    /** Your playoff odds across the seasons where each of them won it. */
+    oddsIfHome: number | null;
+    oddsIfAway: number | null;
+    /** The gap between those two, which is what the game is worth to you. */
+    swing: number | null;
+}
+
 export interface PlayoffOdds {
     key: string;
     /** Share of simulated seasons finishing inside the cut. */
@@ -413,6 +454,21 @@ export interface PlayoffOdds {
      * make the three numbers in this row stop adding up.
      */
     winsThisWeek: number | null;
+    /**
+     * What every other game this week is worth to this team.
+     *
+     * The half of the question the conditionals above cannot reach. They
+     * say what winning your own game does; they are silent on the five
+     * other games being played, which is most of what a Sunday afternoon
+     * is once your own is decided. A bubble team's season can turn more
+     * on which of two rivals wins than on its own result, and until this
+     * there was nowhere to see that.
+     *
+     * It costs nothing to know: the simulation already plays every fixture
+     * of every trial, so this is the seasons it has already run, counted a
+     * second way.
+     */
+    rooting: RootingInterest[];
 }
 
 export function playoffOdds(
@@ -471,6 +527,17 @@ export function playoffOdds(
     const madeAfterWin = new Int32Array(n);
     const lostFirst = new Int32Array(n);
     const madeAfterLoss = new Int32Array(n);
+    /**
+     * Every team's season against every team's week, as two flat matrices.
+     *
+     * `watched[i * n + j]` is the seasons where j won this week, and
+     * `watchedMade` the ones of those where i finished inside the cut. A
+     * hundred and forty-four counters for a twelve-team league, touched
+     * once per team per trial — the same order of work the loop above
+     * already does, which is why this can be had for nothing.
+     */
+    const watched = new Int32Array(n * n);
+    const watchedMade = new Int32Array(n * n);
 
     const real = pairs != null && pairs.length >= n * remaining;
     for (let t = 0; t < trials; t++) {
@@ -526,6 +593,12 @@ export function playoffOdds(
             } else if (firstResult[i] === 0) {
                 lostFirst[i]++; if (through) madeAfterLoss[i]++;
             }
+            // And this team's season against everybody else's week.
+            for (let j = 0; j < n; j++) {
+                if (firstResult[j] !== 1) continue;
+                watched[i * n + j]++;
+                if (through) watchedMade[i * n + j]++;
+            }
         }
     }
 
@@ -542,9 +615,44 @@ export function playoffOdds(
     const MIN_CONDITIONAL = 200;
     const share = (made_: number, of: number) =>
         of >= MIN_CONDITIONAL ? made_ / of : null;
+    /**
+     * This week's fixtures, settled once each.
+     *
+     * Read off the first week of the pairing table rather than rebuilt, so
+     * the games listed are the games simulated. Without a real fixture
+     * list the weeks were drawn at random and there is no such thing as
+     * "this week's games" to root for, so the list is empty and the page
+     * says why rather than inventing six matchups.
+     */
+    const fixtures: [number, number][] = [];
+    if (real && remaining > 0) {
+        for (let a = 0; a < n; a++) {
+            const b = pairs![a];
+            if (b >= 0 && b > a) fixtures.push([a, b]);
+        }
+    }
+
     for (let i = 0; i < n; i++) {
+        const rooting: RootingInterest[] = fixtures.map(([a, bIdx]) => {
+            // The seasons where the home side won, and where it did not,
+            // which is the same thing as the away side winning: one game,
+            // two branches, and every trial in exactly one of them.
+            const homeWon = watched[i * n + a];
+            const awayWon = watched[i * n + bIdx];
+            const oddsIfHome = share(watchedMade[i * n + a], homeWon);
+            const oddsIfAway = share(watchedMade[i * n + bIdx], awayWon);
+            return {
+                home: rows[a].key, away: rows[bIdx].key,
+                homeWins: homeWon + awayWon > 0
+                    ? homeWon / (homeWon + awayWon) : null,
+                oddsIfHome, oddsIfAway,
+                swing: oddsIfHome == null || oddsIfAway == null
+                    ? null : oddsIfHome - oddsIfAway,
+            };
+        });
         out.set(rows[i].key, {
             key: rows[i].key,
+            rooting,
             odds: made[i] / trials,
             seed: at(seeds[i], 0.5),
             seedLow: at(seeds[i], 0.1),
