@@ -168,6 +168,14 @@ def run():
         "WHERE source LIKE 'FantasyCalc Dynasty%'").fetchone()[0]
     n_picks = cur.execute("SELECT COUNT(*) FROM dynasty_picks").fetchone()[0]
     print(f"done: {n_players} players and {n_picks} picks carry a dynasty value")
+    # Fold the write-ahead log back into the .db before closing. The app
+    # opens SQLite in WAL mode; the -wal file is gitignored and the .db is
+    # tracked, so without this a run can commit its work and still ship a
+    # database file that does not contain it.
+    try:
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    except Exception as e:
+        print(f"  ! could not checkpoint the WAL: {e}")
     conn.close()
 
 

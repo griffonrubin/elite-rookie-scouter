@@ -191,7 +191,7 @@ def run(year: int):
     total = cur.execute("SELECT COUNT(*) FROM players WHERE draft_year=?",
                         (year,)).fetchone()[0]
     print(f"  {seeded} new, {updated} already known — {total} in the {year} class")
-    conn.close()
+    config.checkpoint_and_close(conn)
 
 
 if __name__ == "__main__":
