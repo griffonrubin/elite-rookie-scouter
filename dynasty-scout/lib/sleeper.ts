@@ -263,6 +263,17 @@ export interface SleeperLeagueDetail {
          * is a setting this cannot verify — so it is reported, not used.
          */
         divisions?: number;
+        /**
+         * 0 redraft, 1 keeper, 2 dynasty.
+         *
+         * Which decides whether future draft picks are worth anything. In a
+         * redraft league they are not a tradeable asset at all — every
+         * roster is torn up in August — so offering one is noise. In the
+         * other two they are half of what gets traded.
+         */
+        type?: number;
+        /** Rounds in the rookie draft, which bounds what picks exist. */
+        draft_rounds?: number;
     } | null;
     /**
      * What the league pays for each thing a player does.
@@ -281,6 +292,35 @@ export async function getLeague(leagueId: string): Promise<SleeperLeagueDetail |
         return await get<SleeperLeagueDetail | null>(`/league/${leagueId}`);
     } catch {
         return null;
+    }
+}
+
+/**
+ * A future draft pick that has changed hands.
+ *
+ * Sleeper reports only the picks that moved, which is the compact way to say
+ * it: everything not listed is still held by the team it belongs to. Season
+ * arrives as a string.
+ */
+export interface SleeperTradedPick {
+    season: string;
+    round: number;
+    /** The roster the pick originally belongs to. */
+    roster_id: number;
+    previous_owner_id: number | null;
+    /** Who holds it now. */
+    owner_id: number;
+}
+
+export async function getTradedPicks(leagueId: string): Promise<SleeperTradedPick[]> {
+    try {
+        return (await get<SleeperTradedPick[] | null>(
+            `/league/${leagueId}/traded_picks`)) ?? [];
+    } catch {
+        // An empty list and a failed request look the same to the caller on
+        // purpose: both mean "no pick is known to have moved", and the pages
+        // say out loud that they are showing each team's own picks.
+        return [];
     }
 }
 

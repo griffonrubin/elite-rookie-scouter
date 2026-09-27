@@ -12,6 +12,7 @@
  * Team Analysis has already written still opens the roster it always did,
  * with the partner left for the page to choose as it did before.
  */
+import { parsePickId } from '@/lib/tradePicks';
 
 /** What the URL can say about a trade. */
 export interface TradeUrlState {
@@ -21,6 +22,16 @@ export interface TradeUrlState {
     give: number[];
     /** Player ids arriving from theirs. */
     get: number[];
+    /**
+     * Draft picks, as '2027-1-4' ids, each way.
+     *
+     * Separate keys from the players rather than one mixed list, because the
+     * two are different types and a single list would have to be parsed by
+     * shape. Optional on the way in, so that every link written before picks
+     * existed still opens the trade it always described.
+     */
+    givePicks?: string[];
+    getPicks?: string[];
 }
 
 /** Just enough of URLSearchParams to read one, so Next's readonly copy fits. */
@@ -45,6 +56,23 @@ export function parseIds(raw: string | null): number[] {
     return [...seen];
 }
 
+/**
+ * Pick ids from a comma-separated list, keeping only well-formed ones.
+ *
+ * Same tolerance as the player ids: a link is pasted through chat clients
+ * that append punctuation, so anything that does not parse is dropped rather
+ * than failing the whole trade.
+ */
+export function parsePickIds(raw: string | null): string[] {
+    if (!raw) return [];
+    const seen = new Set<string>();
+    for (const part of raw.split(',')) {
+        const id = part.trim();
+        if (parsePickId(id)) seen.add(id);
+    }
+    return [...seen];
+}
+
 /** Read a trade out of the query string. */
 export function readTrade(params: ParamReader): TradeUrlState {
     const partner = params.get('with');
@@ -52,6 +80,8 @@ export function readTrade(params: ParamReader): TradeUrlState {
         partner: partner && partner.length > 0 ? partner : null,
         give: parseIds(params.get('give')),
         get: parseIds(params.get('get')),
+        givePicks: parsePickIds(params.get('givePicks')),
+        getPicks: parsePickIds(params.get('getPicks')),
     };
 }
 
@@ -78,6 +108,13 @@ export function tradeQuery(state: TradeUrlState): string {
     };
     add('give', state.give);
     add('get', state.get);
+    // Sorted as strings, for the same reason the ids are sorted: picking the
+    // same two picks in a different order should produce the same link.
+    const addPicks = (key: string, ids: string[] | undefined) => {
+        if (ids?.length) parts.push(`${key}=${[...ids].sort().join(',')}`);
+    };
+    addPicks('givePicks', state.givePicks);
+    addPicks('getPicks', state.getPicks);
     return parts.join('&');
 }
 

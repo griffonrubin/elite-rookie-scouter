@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { DIVERGING } from '@/lib/vizTokens';
 import type { TradeRosterPlayer } from '@/lib/trade';
@@ -19,7 +19,7 @@ const GROUPS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST'];
 
 export function RosterPicker({
     title, subtitle, roster, starting, selected, onToggle, meanOf, costOf,
-    disabled, horizon,
+    disabled, horizon, children,
 }: {
     title: string;
     subtitle?: string;
@@ -38,14 +38,38 @@ export function RosterPicker({
     disabled?: boolean;
     /** Which week the numbers beside the names describe. */
     horizon: Horizon;
+    /**
+     * Anything else this team can put in a trade — its draft picks.
+     *
+     * Below the roster rather than inside it, because a pick is a different
+     * kind of asset: everything above has an expected-points number and
+     * changes this season, and nothing here does.
+     */
+    children?: React.ReactNode;
 }) {
+    const [filter, setFilter] = useState('');
+    /**
+     * Narrowed, but never hiding what is already in the trade.
+     *
+     * A filter that can hide a selected player is a filter that can lose the
+     * offer you are building: you type three letters, the man you put on the
+     * table a moment ago vanishes, and the table below says you are trading
+     * somebody who is nowhere on screen. Selected players stay whatever is
+     * typed, so what you can see is always the whole of your side of it.
+     */
+    const needle = filter.trim().toLowerCase();
+    const shown = needle
+        ? roster.filter(p =>
+            p.name.toLowerCase().includes(needle) || selected.has(p.id))
+        : roster;
+
     const byGroup = GROUPS.map(g => ({
         group: g,
-        players: roster
+        players: shown
             .filter(p => (p.position ?? '').toUpperCase() === g)
             .sort((a, b) => (meanOf(b.id) ?? -1) - (meanOf(a.id) ?? -1)),
     })).filter(g => g.players.length > 0);
-    const other = roster.filter(p =>
+    const other = shown.filter(p =>
         !GROUPS.includes((p.position ?? '').toUpperCase()));
     if (other.length) byGroup.push({ group: 'Other', players: other });
 
@@ -61,9 +85,28 @@ export function RosterPicker({
                 </span>
             </div>
 
+            {/* Only where the scroll is long enough to be the problem. A
+                ten-man roster is read at a glance and a box above it is
+                one more thing in the way. */}
+            {roster.length > 10 && (
+                <input value={filter} onChange={e => setFilter(e.target.value)}
+                    disabled={disabled}
+                    placeholder={`Filter ${roster.length} players…`}
+                    aria-label={`Filter ${title}`}
+                    data-roster-filter=""
+                    className="w-full text-[11px] rounded-lg px-2 py-1 mb-1.5
+                               bg-black/40 border border-white/10
+                               placeholder:text-muted-foreground/35
+                               disabled:opacity-40" />
+            )}
+
             {roster.length === 0 ? (
                 <p className="text-[11px] text-muted-foreground/45 py-2">
                     Nothing to show — no player on this roster matched our pool.
+                </p>
+            ) : byGroup.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground/45 py-2">
+                    Nobody on this roster matches &ldquo;{filter.trim()}&rdquo;.
                 </p>
             ) : byGroup.map(({ group, players }) => (
                 <div key={group} className="mb-1.5 last:mb-0">
@@ -169,6 +212,7 @@ export function RosterPicker({
                     + 'a dot means nothing at all, which is what the easiest player '
                     + 'to trade away looks like.'}
             </p>
+            {children}
         </section>
     );
 }

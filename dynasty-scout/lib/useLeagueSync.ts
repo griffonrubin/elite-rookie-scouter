@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { clearStartSitCache } from '@/lib/useStartSit';
 import { RedraftPlayer } from '@/lib/types';
 import {
-    getCurrentWeek, getLeague, getLeagueRosters, getLeagueUsers, getMatchups, teamName,
+    getCurrentWeek, getLeague, getLeagueRosters, getLeagueUsers, getMatchups,
+    getTradedPicks, teamName,
 } from '@/lib/sleeper';
+import type { LeagueKind, PickTrade } from '@/lib/tradePicks';
 import type { LeagueGame } from '@/lib/leagueSchedule';
 import { readEspnCreds } from '@/lib/espn';
 import { scoringFrom, type Scoring } from '@/lib/scoring';
@@ -138,6 +140,27 @@ export interface LeagueSnapshot {
     /** True in a best-ball league: the platform scores the optimal lineup
         itself, so there is no start/sit call to make. */
     bestBall?: boolean;
+    /**
+     * Redraft, keeper or dynasty, where the platform says.
+     *
+     * Which decides whether a future draft pick is an asset. Null where the
+     * platform will not say — and null is not the same as redraft, so the
+     * trades page offers the reader the switch rather than deciding that
+     * their dynasty league has no picks in it.
+     */
+    leagueKind?: LeagueKind | null;
+    /** Rounds in the rookie draft, which bounds what picks exist. */
+    draftRounds?: number | null;
+    /**
+     * Future picks that have changed hands, where the platform reports them.
+     *
+     * Only the ones that moved: everything unlisted is still held by the
+     * team it belongs to, which is how Sleeper says it and the compact way
+     * to say it. An empty list on a platform that has no such endpoint is
+     * indistinguishable from a league where nothing has been traded, so the
+     * page states the assumption instead of hiding it.
+     */
+    pickTrades?: PickTrade[] | null;
     /**
      * What this league pays per catch, where the platform says.
      *
@@ -330,9 +353,13 @@ export function clearSnapshotCache() {
 }
 
 async function fetchSleeper(conn: LeagueConnection, week: number): Promise<LeagueSnapshot | null> {
-    const [league, rosters, users, matchups] = await Promise.all([
+    const [league, rosters, users, matchups, traded] = await Promise.all([
         getLeague(conn.id), getLeagueRosters(conn.id),
         getLeagueUsers(conn.id), getMatchups(conn.id, week),
+        // One request, and the only place any platform will say who holds a
+        // future pick. Cheap enough to take on every snapshot rather than
+        // make the trades page ask for it separately and wait twice.
+        getTradedPicks(conn.id),
     ]);
     if (rosters.length === 0) return null;
 
@@ -412,6 +439,18 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         divisions: typeof league?.settings?.divisions === 'number'
             && league.settings.divisions > 1 ? league.settings.divisions : null,
         bestBall: league?.settings?.best_ball === 1,
+        // 0 redraft, 1 keeper, 2 dynasty. Left null where the platform does
+        // not say, which the trades page reads as "ask rather than assume".
+        leagueKind: league?.settings?.type === 2 ? 'dynasty'
+            : league?.settings?.type === 1 ? 'keeper'
+                : league?.settings?.type === 0 ? 'redraft' : null,
+        draftRounds: league?.settings?.draft_rounds ?? null,
+        pickTrades: traded.map((t): PickTrade => ({
+            season: Number(t.season),
+            round: t.round,
+            originalKey: String(t.roster_id),
+            ownerKey: String(t.owner_id),
+        })).filter(t => Number.isFinite(t.season)),
         scoring: scoringFrom(league?.scoring_settings),
         /**
          * Not here, deliberately — see `useLeagueFixtures`.
