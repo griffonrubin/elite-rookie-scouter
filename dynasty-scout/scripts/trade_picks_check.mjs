@@ -323,6 +323,38 @@ const gapNumber = async page => {
     await ctx.close();
 }
 
+// ──────────────────── what the market does not price, and why it says so
+{
+    step(10, 'an unpriced asset is explained by what it is, not by one blanket reason');
+    const { ctx, page, errs } = await open(dynasty, TRADED);
+    const mineSide = page.locator('section').filter({ has: page.locator('h3') }).nth(0);
+    // A kicker: the dynasty market carries a few hundred tradeable players
+    // and no kickers at all, so this is the common unpriced case rather
+    // than an exotic one — 13% of a real roster is kickers and defences.
+    const kicker = mineSide.locator('button[aria-pressed]')
+        .filter({ hasText: /^(?!.*ST\s*$)/ });
+    const rows = await mineSide.locator('button[aria-pressed]').all();
+    let picked = null;
+    for (const r of rows) {
+        const t = await r.innerText();
+        if (/D\/ST|Myers|Reichard|Ravens|Texans/i.test(t)) { picked = r; break; }
+    }
+    assert('the fixture has a kicker or defence to offer', picked != null);
+    if (picked) {
+        await picked.click();
+        await page.waitForTimeout(1500);
+        const note = page.locator('[data-note="unpriced"]');
+        assert('the panel says it is unpriced', await note.count() === 1);
+        const text = await note.innerText();
+        console.log('      ' + text.replace(/\s+/g, ' ').slice(0, 160));
+        assert('and blames the market, not the feed\u2019s horizon',
+            /does not price/.test(text) && !/further out than the market/.test(text),
+            text.replace(/\s+/g, ' '));
+    }
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
 await b.close();
 console.log(fails.length
     ? `\nFAILED ${fails.length}:\n - ${fails.join('\n - ')}`

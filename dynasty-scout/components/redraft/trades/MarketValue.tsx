@@ -42,6 +42,8 @@ export function MarketValue({
     const totalGive = sum(give);
     const totalGet = sum(get);
     const missing = [...give, ...get].filter(a => a.value == null);
+    const missingPicks = missing.filter(a => a.pick);
+    const missingPlayers = missing.filter(a => !a.pick);
     const diff = totalGet - totalGive;
     const bigger = Math.max(totalGive, totalGet);
     const call = marketVerdict(diff, bigger);
@@ -150,11 +152,29 @@ export function MarketValue({
                 this decide, and the two disagreeing is information rather than a
                 problem: it is exactly what the other manager is hoping you will not
                 notice.
-                {missing.length > 0 && ` ${missing.length === 1
-                    ? 'One asset has'
-                    : `${missing.length} assets have`} no market price and count as `
-                    + 'nothing in these totals — they are further out than the feed goes.'}
             </p>
+
+            {/* Said per kind, because the two reasons are different and one
+                of them was being given for both. A 2030 pick is unpriced
+                because the feed does not go that far; a kicker is unpriced
+                because the dynasty market does not trade kickers, and
+                telling a reader his kicker is "further out than the feed
+                goes" is a wrong explanation for a right dash. */}
+            {missing.length > 0 && (
+                <p className="text-[10px] text-muted-foreground/40 mt-1 leading-snug
+                              max-w-[780px]" data-note="unpriced">
+                    {missingPicks.length > 0 && `${missingPicks.length === 1
+                        ? 'One pick is'
+                        : `${missingPicks.length} picks are`} further out than the `
+                        + 'market prices. '}
+                    {missingPlayers.length > 0 && `The dynasty market does not price `
+                        + `${missingPlayers.map(a => a.name).join(', ')} — it carries `
+                        + 'the few hundred players dynasty managers actually trade, '
+                        + 'which is why kickers and defences have no number here. '}
+                    Either way they count as nothing in these totals, so a trade
+                    resting on one is a trade this panel is understating.
+                </p>
+            )}
         </section>
     );
 }
