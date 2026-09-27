@@ -7,7 +7,7 @@ import { POSITION_RAW } from '@/lib/constants';
 import { DIVERGING } from '@/lib/vizTokens';
 import {
     findTrades, offerReason,
-    type FinderTeam, type MarketInput, type Offer, type Stance,
+    type FinderTeam, type MarketInput, type Offer, type Stance, type WireInput,
 } from '@/lib/tradeFinder';
 import { CLAIM_NOISE, type ClaimWorth } from '@/lib/seasonOdds';
 import { offerKey } from '@/lib/tradeFinder';
@@ -85,7 +85,7 @@ function Side({ ids, picks, nameOf, positionOf, teamOf, playoffs, tone }: {
 
 export function TradeFinder({
     myRoster, teams, slots, meanOf, nameOf, positionOf, teamOf, playoffs,
-    profiles, myKey, rosterSize, onPick, partnerKey, worth, onOffers,
+    profiles, myKey, rosterSize, onPick, partnerKey, worth, onOffers, wire,
     market, pickLabel,
 }: {
     myRoster: TradeRosterPlayer[];
@@ -121,6 +121,14 @@ export function TradeFinder({
      * torn up in August.
      */
     market?: MarketInput;
+    /**
+     * What a roster spot is worth, so a full league still gets uneven offers.
+     *
+     * Without it the sweep scores an unfillable lineup slot at zero and a
+     * trade that needs a cut is refused outright — which on a full roster
+     * is every uneven offer there is.
+     */
+    wire?: WireInput;
     /** A pick id, as it should read on the page. */
     pickLabel?: (id: string) => string;
 }) {
@@ -144,9 +152,9 @@ export function TradeFinder({
     const offers = useMemo(
         () => (myRoster.length && others.length
             ? findTrades({ roster: myRoster, slots, meanOf }, others, rosterSize, 12,
-                active, market)
+                active, market, wire)
             : []),
-        [myRoster, others, slots, meanOf, rosterSize, active, market]);
+        [myRoster, others, slots, meanOf, rosterSize, active, market, wire]);
 
     /**
      * Handed up rather than priced here, because pricing one needs the
@@ -324,7 +332,33 @@ export function TradeFinder({
                                     <span className="text-[10px] text-muted-foreground/50
                                                      truncate">
                                         {o.teamName}
-                                        {o.unevenCount && (
+                                        {/**
+                                          * What the trade costs beyond the
+                                          * names in it.
+                                          *
+                                          * A full roster settles an uneven
+                                          * trade by cutting, and the lineup
+                                          * arithmetic already charges what
+                                          * that costs — usually nothing,
+                                          * because the man cut is the last
+                                          * one on the bench. But nothing in
+                                          * points is not nothing to read: a
+                                          * reader is entitled to know a name
+                                          * leaves their roster that is not in
+                                          * the trade, before they send it.
+                                          */}
+                                        {o.drops.length > 0 ? (
+                                            <span className="block text-[9px]
+                                                             text-muted-foreground/35"
+                                                title={'Your roster is full, so '
+                                                    + 'sending this means cutting '
+                                                    + o.drops.map(nameOf).join(' and ')
+                                                    + ' — already counted in the '
+                                                    + 'points, since the lineup does '
+                                                    + 'not miss him'}>
+                                                drop {o.drops.map(nameOf).join(' + ')}
+                                            </span>
+                                        ) : o.unevenCount && (
                                             <span className="block text-[9px]
                                                              text-muted-foreground/35">
                                                 {o.give.length} for {o.get.length}

@@ -21,6 +21,7 @@
  */
 import {
     findTrades, offerKey, type FinderPick, type FinderTeam, type MarketInput,
+    type WireInput,
 } from '../lib/tradeFinder';
 import type { TradeRosterPlayer } from '../lib/trade';
 
@@ -268,43 +269,53 @@ step('8b', 'the list is one route per player, and the cheapest one');
     }
 }
 
-step(9, 'a full roster is handled by including the spot, not by finding nothing');
+step(9, 'a full roster is handled by cutting the spot, not by bartering it');
 {
-    // Seven players and a seven-man limit: every buy would put me a man
-    // over, which is the state every real roster is in. Before the throw-in
-    // this returned nothing at all — not because the trades were bad, but
-    // because none of them could be expressed.
+    /*
+     * Seven players and a seven-man limit: every buy puts me a man over,
+     * which is the state every real roster is in. This step used to assert
+     * the opposite behaviour — that the sweep bundled my worst bench player
+     * into the deal to keep the counts level. That worked and described
+     * something nobody does: a manager buying a receiver for two firsts does
+     * not ask the seller to take their twelfth man as well, they drop him.
+     *
+     * So the offers are now picks for a player, and the cut is reported
+     * beside them rather than dressed up as part of the trade.
+     */
     const full = findTrades(me, OTHERS, MINE.length, 40, 'buy', market);
     const loose = findTrades(me, OTHERS, undefined, 40, 'buy', market);
     console.log(`      ${loose.length} offers with no roster limit, `
         + `${full.length} with a full roster`);
     assert('a full roster still produces offers', full.length > 0, `${full.length}`);
-    assert('and every one of them sends a player along with the picks',
-        full.every(o => o.give.length === 1 && o.givePicks.length > 0),
-        full.filter(o => o.give.length !== 1).length + ' without one');
+    assert('and they are picks for a player, with no body bartered in',
+        full.every(o => o.give.length === 0 && o.givePicks.length > 0),
+        full.filter(o => o.give.length !== 0).length + ' carrying a body');
 
-    // The body sent has to be the cheapest one to lose, or the finder is
-    // proposing you pay for a roster spot with a starter.
+    // The cut has to be the cheapest man to lose, or the finder is proposing
+    // you pay for a roster spot with a starter.
     const worstMean = Math.min(...MINE.map(p => POINTS[p.id] ?? 0));
-    assert('the body sent is the one the lineup misses least',
-        full.every(o => (POINTS[o.give[0]] ?? 0) === worstMean),
-        full.map(o => `P${o.give[0]}=${POINTS[o.give[0]]}`).join(','));
+    assert('every one names the cut it implies',
+        full.every(o => o.drops.length === 1), 
+        full.map(o => String(o.drops.length)).join(','));
+    assert('and the man cut is the one the lineup misses least',
+        full.every(o => (POINTS[o.drops[0]] ?? 0) === worstMean),
+        full.map(o => `P${o.drops[0]}=${POINTS[o.drops[0]]}`).join(','));
 
-    // And the counts have to balance, or it is not a legal trade.
-    assert('one body each way, so both rosters stay the size they were',
-        full.every(o => o.give.length === o.get.length));
-    assert('and none of them is tagged as changing a roster size',
-        full.every(o => !o.unevenCount),
-        `${full.filter(o => o.unevenCount).length} mislabelled`);
+    // A picks-for-a-player trade always moves one body one way and none the
+    // other, so it is always uneven and must always say so.
+    assert('all of them are tagged as changing a roster size',
+        full.every(o => o.unevenCount),
+        `${full.filter(o => !o.unevenCount).length} mislabelled`);
 
-    // Where there is room, no body is sent and the tag has to say so.
-    assert('an offer that does grow a roster is still tagged',
-        loose.some(o => o.unevenCount && o.give.length === 0),
-        `${loose.filter(o => o.unevenCount).length} tagged`);
+    // Where there is room, nobody is cut and the offer says nothing about one.
+    assert('with room, no cut is named',
+        loose.length > 0 && loose.every(o => o.drops.length === 0),
+        `${loose.filter(o => o.drops.length).length} of ${loose.length} name one`);
 
     const sell = findTrades(me, OTHERS, THEIRS.length, 40, 'sell', market);
     assert('selling into a full roster works the same way',
-        sell.length > 0 && sell.every(o => o.get.length === 1),
+        sell.length > 0 && sell.every(o => o.get.length === 0
+            && o.getPicks.length > 0 && o.theirDrops.length === 1),
         `${sell.length} offers`);
 }
 
@@ -440,6 +451,113 @@ step(11, 'two for two, and one row per idea rather than per permutation');
     // written to catch. Both ways of reaching zero are failures here.
     assert('one-for-ones that share a player are both kept',
         sharing.length > 0, `${sharing.length} sharing, of ${ones.length}`);
+}
+
+step(12, 'a full roster is settled by cutting, not by refusing the trade');
+{
+    const FULL = MINE.length;            // every roster here is at its limit
+    const shapes = (list: ReturnType<typeof findTrades>) => {
+        const out: Record<string, number> = {};
+        for (const o of list) {
+            const k = `${o.give.length}for${o.get.length}`;
+            out[k] = (out[k] ?? 0) + 1;
+        }
+        return out;
+    };
+    const full = findTrades(me, OTHERS, FULL, 40);
+    const roomy = findTrades(me, OTHERS, FULL + 2, 40);
+    console.log(`      full:  ${JSON.stringify(shapes(full))}`);
+    console.log(`      roomy: ${JSON.stringify(shapes(roomy))}`);
+
+    /*
+     * The thing this fixes. A trade that left somebody over the limit used to
+     * be thrown away, and on a full roster — the normal state of a league —
+     * that is every uneven offer there is. Consolidation, the classic fantasy
+     * trade, was unreachable in exactly the leagues people play in.
+     */
+    const uneven = (list: ReturnType<typeof findTrades>) =>
+        list.filter(o => o.give.length !== o.get.length).length;
+    assert('a roster with room offers uneven trades', uneven(roomy) > 0,
+        `${uneven(roomy)} — the next assertion is vacuous without this`);
+    assert('and a full one still does', uneven(full) > 0, `${uneven(full)}`);
+
+    // Every one of them has to name the cut it implies, on the side that is
+    // over. An offer that silently costs a player is not the offer read.
+    const overMine = full.filter(o => o.get.length > o.give.length);
+    assert('the fixture produces offers that grow my roster',
+        overMine.length > 0, `${overMine.length}`);
+    assert('each one names who I would have to cut',
+        overMine.every(o => o.drops.length === o.get.length - o.give.length),
+        overMine.map(o => `${o.get.length - o.give.length}:${o.drops.length}`).join(' '));
+    // And it is the worst man who goes, not an arbitrary one.
+    assert('and it is the cheapest player on the roster who goes',
+        overMine.every(o => {
+            const left = MINE.filter(x => !o.give.includes(x.id)
+                && !o.drops.includes(x.id));
+            const cut = Math.max(...o.drops.map(meanOf));
+            return left.every(x => meanOf(x.id) >= cut);
+        }));
+    // Nobody in the trade can be the one cut: receiving a player and
+    // immediately dropping him is not a trade, it is a rounding error.
+    assert('never cutting somebody the trade just brought in',
+        full.every(o => !o.drops.some(id => o.get.includes(id))
+            && !o.theirDrops.some(id => o.give.includes(id))));
+}
+
+step(13, 'an empty lineup slot is worth the wire, not zero');
+{
+    /*
+     * A manager who trades away their only tight end does not start nobody
+     * there for the rest of the season; they claim one on Tuesday. Scoring
+     * that slot at zero overstates what the trade costs them.
+     *
+     * Built rather than fished out of the sweep. The first version looked for
+     * offers sending the only tight end and compared their gains with and
+     * without a wire — and got the same number both ways, because the offers
+     * it found were receiving a tight end back, which refills the slot and
+     * cancels the whole effect. The opponent here holds none, so the slot
+     * really does empty.
+     */
+    const thin: TradeRosterPlayer[] = [
+        p(1, 'QB'), p(2, 'RB'), p(3, 'RB'), p(5, 'WR'), p(6, 'WR'), p(7, 'TE')];
+    const thinMe = { roster: thin, slots: SLOTS, meanOf };
+    const noTE: FinderTeam[] = [{ key: 't9', name: 'No tight ends',
+        roster: [p(11, 'QB'), p(13, 'WR'), p(14, 'WR'), p(15, 'WR'), p(16, 'WR')] }];
+    const wire: WireInput = { best: new Map([['TE', 6], ['WR', 5], ['RB', 5]]) };
+
+    const sendsTE = (list: ReturnType<typeof findTrades>) =>
+        list.filter(o => o.give.includes(7) && !o.get.some(id => id === 17));
+    const bare = sendsTE(findTrades(thinMe, noTE, undefined, 40));
+    const wired = sendsTE(
+        findTrades(thinMe, noTE, undefined, 40, 'mutual', undefined, wire));
+    console.log(`      offers sending the only tight end into a roster with `
+        + `none: ${bare.length} bare, ${wired.length} wired`);
+
+    // Both lists have to hold the trade, or the comparison is between two
+    // empty sets and says nothing — which is how the first attempt passed.
+    assert('the fixture really does offer to trade the only tight end',
+        bare.length > 0 && wired.length > 0, `${bare.length} / ${wired.length}`);
+
+    const gainFor = (list: ReturnType<typeof findTrades>) => {
+        const byKey = new Map(list.map(o => [offerKey(o), o.myGain]));
+        return byKey;
+    };
+    const b = gainFor(bare);
+    const w = gainFor(wired);
+    const shared = [...b.keys()].filter(k => w.has(k));
+    console.log(`      ${shared.length} offers in both lists`);
+    assert('the same offers are reachable either way', shared.length > 0,
+        `${shared.length} — nothing to compare otherwise`);
+    const better = shared.filter(k => w.get(k)! > b.get(k)!);
+    for (const k of shared.slice(0, 3)) {
+        console.log(`        ${k}  bare ${b.get(k)}  wired ${w.get(k)}`);
+    }
+    // Strictly better, not merely no worse: emptying the tight-end slot costs
+    // the whole of him without a wire and the gap down to a free agent with
+    // one, and those are different numbers.
+    assert('losing him costs strictly less when somebody can replace him',
+        better.length > 0, `${better.length} of ${shared.length} improved`);
+    assert('and never more', shared.every(k => w.get(k)! >= b.get(k)!));
 }
 
 console.log(fails.length

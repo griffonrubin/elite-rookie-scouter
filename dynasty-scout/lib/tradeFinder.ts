@@ -22,6 +22,7 @@
  * handful that survive is what the analyser below is for.
  */
 import { bestLineup, type TradeRosterPlayer } from '@/lib/trade';
+import { eligibleForSlot } from '@/lib/lineup';
 
 /**
  * What the reader is trying to do, which decides what counts as a good offer.
@@ -43,6 +44,38 @@ import { bestLineup, type TradeRosterPlayer } from '@/lib/trade';
  * whether they are chasing this season or next.
  */
 export type Stance = 'mutual' | 'buy' | 'sell';
+
+/**
+ * What is freely available, a point a week, by position.
+ *
+ * The sweep used to treat a roster as a closed system: every trade was
+ * judged on the players in it and nothing else, and a trade that would leave
+ * a manager over the roster limit was thrown away. Real leagues do not work
+ * that way. Nobody refuses a two-for-one because they are full; they drop
+ * their last bench player, who is on the roster precisely because he is the
+ * one they would drop.
+ *
+ * Rejecting those trades outright is not a small omission. On a full roster
+ * it removes every uneven offer from the list — measured on a twelve-team
+ * fixture, fifteen of forty — and consolidation, the classic fantasy trade,
+ * becomes unreachable by construction in exactly the leagues where people
+ * play.
+ *
+ * So the limit stops being a wall and becomes a price: a side that ends up
+ * over it drops its worst players, and the lineup arithmetic charges
+ * whatever that costs, which for a deep bench body is correctly nothing. The
+ * other direction is this map: a lineup slot nobody can fill is not zero
+ * points, it is whatever the best free agent at that position scores, and a
+ * manager who has just traded away their only tight end will have one by
+ * Sunday.
+ *
+ * Absent — a league whose free agents nobody has priced — an unfillable slot
+ * scores zero, which is what it did before.
+ */
+export interface WireInput {
+    /** The best available player's points a week, by position. */
+    best: Map<string, number>;
+}
 
 /** A draft pick, as something the sweep can put in an offer. */
 export interface FinderPick {
@@ -99,6 +132,18 @@ export interface Offer {
     balance: number;
     /** True when one side receives more players than it sends. */
     unevenCount: boolean;
+    /**
+     * Who each side has to drop for this to be legal, where the league is
+     * full.
+     *
+     * Reported rather than folded silently into the numbers, because an
+     * offer that quietly costs you a player is not the offer you read. The
+     * lineup cost is already counted — dropping a deep bench body is worth
+     * nothing and the arithmetic says so — but the reader still has to know
+     * a name is leaving their roster that is not in the trade.
+     */
+    drops: number[];
+    theirDrops: number[];
 }
 
 /**
@@ -195,13 +240,50 @@ export function findTrades(
     /** 'mutual' keeps the original sweep exactly as it was. */
     stance: Stance = 'mutual',
     market?: MarketInput,
+    /** What is freely available, so a roster spot has a price. */
+    wire?: WireInput,
 ): Offer[] {
     if (stance !== 'mutual') {
         return market
-            ? findAcrossStances(me, others, market, stance, rosterSize, limit)
+            ? findAcrossStances(me, others, market, stance, rosterSize, limit, wire)
             : [];
     }
-    return findMutual(me, others, rosterSize, limit, market);
+    return findMutual(me, others, rosterSize, limit, market, wire);
+}
+
+/**
+ * The points a slot is worth to somebody who has nobody for it.
+ *
+ * A flex takes the best of whatever it accepts, which is the same rule the
+ * lineup itself uses — so the two cannot disagree about what a slot is for.
+ */
+function wireForSlot(slot: string, wire: WireInput): number {
+    let best = 0;
+    for (const [position, mean] of wire.best) {
+        if (eligibleForSlot(slot, position) && mean > best) best = mean;
+    }
+    return best;
+}
+
+/**
+ * A roster brought back to a legal size, and what it cost to do it.
+ *
+ * Dropping the worst, which is what the roster order already means: a
+ * manager's last bench player is last because he is the one they would cut.
+ * The lineup arithmetic then charges whatever that actually costs, which for
+ * a deep bench body is nothing and for somebody's only tight end is not.
+ */
+function settle(
+    roster: TradeRosterPlayer[],
+    size: number | undefined,
+    meanOf: (id: number) => number,
+): { roster: TradeRosterPlayer[]; dropped: number[] } {
+    if (size == null || roster.length <= size) return { roster, dropped: [] };
+    const ordered = [...roster].sort((a, b) => meanOf(b.id) - meanOf(a.id));
+    return {
+        roster: ordered.slice(0, size),
+        dropped: ordered.slice(size).map(p => p.id),
+    };
 }
 
 function findMutual(
@@ -223,13 +305,28 @@ function findMutual(
      * does not.
      */
     market?: MarketInput,
+    wire?: WireInput,
 ): Offer[] {
     const { roster: mine, slots, meanOf } = me;
     if (mine.length === 0 || slots.length === 0) return [];
+    /**
+     * What a roster's lineup is worth, with nobody left standing in an empty
+     * slot.
+     *
+     * A slot the roster cannot fill used to score zero, which says a manager
+     * who trades away their only kicker starts nobody there for the rest of
+     * the season. They do not; they claim one on Tuesday. Counting the slot
+     * at what the wire offers is both truer and the thing that keeps the
+     * drop below honest — a trade that empties a slot is charged the gap
+     * down to a free agent, not the whole of the player.
+     */
     const value = (r: TradeRosterPlayer[]) => {
         let total = 0;
-        for (const id of bestLineup(slots, r, meanOf)) {
+        const line = bestLineup(slots, r, meanOf);
+        for (let i = 0; i < line.length; i++) {
+            const id = line[i];
             if (id != null) total += meanOf(id);
+            else if (wire) total += wireForSlot(slots[i], wire);
         }
         return total;
     };
@@ -256,13 +353,27 @@ function findMutual(
         const consider = (give: TradeRosterPlayer[], get: TradeRosterPlayer[]) => {
             const giveIds = new Set(give.map(p => p.id));
             const getIds = new Set(get.map(p => p.id));
-            const mineAfter = mine.filter(p => !giveIds.has(p.id)).concat(get);
-            const theirsAfter = them.roster.filter(p => !getIds.has(p.id)).concat(give);
-            // A trade that would leave either side over the roster limit is
-            // not an offer, it is an offer plus a cut nobody agreed to.
-            if (rosterSize != null) {
-                if (mineAfter.length > rosterSize || theirsAfter.length > rosterSize) return;
-            }
+            const mineRaw = mine.filter(p => !giveIds.has(p.id)).concat(get);
+            const theirsRaw = them.roster.filter(p => !getIds.has(p.id)).concat(give);
+            /*
+             * Over the limit is a cut, not a refusal.
+             *
+             * This used to throw the offer away, on the reasoning that it was
+             * "an offer plus a cut nobody agreed to". But a full roster is the
+             * normal state of a league, and refusing every uneven trade in it
+             * removed consolidation — two for one, the classic fantasy trade —
+             * from the list entirely. Measured on a twelve-team fixture: with
+             * room, fifteen of forty offers are uneven; at the limit, none are,
+             * and the reader is never told why.
+             *
+             * So the cut is made and charged instead. The dropped name is
+             * carried on the offer, because a trade that quietly costs you a
+             * player is not the trade you read.
+             */
+            const mineSettled = settle(mineRaw, rosterSize, meanOf);
+            const theirsSettled = settle(theirsRaw, rosterSize, meanOf);
+            const mineAfter = mineSettled.roster;
+            const theirsAfter = theirsSettled.roster;
             const myGain = value(mineAfter) - myBase;
             if (myGain < MIN_GAIN) return;
             const theirGain = value(theirsAfter) - theirBase;
@@ -306,6 +417,8 @@ function findMutual(
                 efficiency: 0,
                 balance: Math.round(Math.min(myGain, theirGain) * 10) / 10,
                 unevenCount: give.length !== get.length,
+                drops: mineSettled.dropped,
+                theirDrops: theirsSettled.dropped,
             });
         };
 
@@ -416,14 +529,19 @@ function findAcrossStances(
     stance: Stance,
     rosterSize?: number,
     limit = 40,
+    wire?: WireInput,
 ): Offer[] {
     const { roster: mine, slots, meanOf } = me;
     if (mine.length === 0 || slots.length === 0) return [];
 
+    /** Same rule as the mutual sweep: an empty slot is worth the wire. */
     const lineup = (r: TradeRosterPlayer[]) => {
         let total = 0;
-        for (const id of bestLineup(slots, r, meanOf)) {
+        const line = bestLineup(slots, r, meanOf);
+        for (let i = 0; i < line.length; i++) {
+            const id = line[i];
             if (id != null) total += meanOf(id);
+            else if (wire) total += wireForSlot(slots[i], wire);
         }
         return total;
     };
@@ -457,58 +575,36 @@ function findAcrossStances(
         const consider = (
             player: TradeRosterPlayer, picks: FinderPick[], buying: boolean,
         ) => {
-            /**
-             * The spare body that keeps the roster counts legal.
+            /*
+             * The roster spot, priced rather than bartered.
              *
-             * A trade of picks for a player moves one body one way and none
-             * the other, so the side receiving him ends a man over the limit
-             * — and every roster in a real league is already full. Without
-             * this the whole search returns nothing, for a reason that has
-             * nothing to do with whether the trades are any good.
+             * This used to bundle the receiving manager's worst bench player
+             * into the deal to keep the counts level — "he is not a sweetener,
+             * he is the roster spot". It worked, and it described something
+             * nobody does. A manager buying a receiver for two firsts does not
+             * ask the seller to take their twelfth man as well; they drop him.
              *
-             * What a manager actually does is put their last bench player in
-             * the deal, so that is what is offered: the one whose loss costs
-             * the lineup least, which is usually nothing at all. He is not a
-             * sweetener, he is the roster spot — and his market value counts
-             * towards what the other side is being paid, because they are
-             * receiving him.
+             * Now that a roster over the limit is settled by cutting rather
+             * than refused, the barter is unnecessary. The offers come out
+             * simpler — two picks for a player, rather than two picks and a
+             * name neither manager was thinking about — and the drop is
+             * reported so the reader still knows a spot is being spent.
              */
-            const spareOf = (roster: TradeRosterPlayer[]) => {
-                if (rosterSize == null || roster.length < rosterSize) return null;
-                let worst: TradeRosterPlayer | null = null;
-                for (const p of roster) {
-                    if (p.id === player.id) continue;
-                    if (!worst || meanOf(p.id) < meanOf(worst.id)) worst = p;
-                }
-                return worst;
-            };
-            // The buyer receives a body, so the buyer needs the spot.
-            const spare = buying ? spareOf(mine) : spareOf(them.roster);
-            if (rosterSize != null && !spare
-                && (buying ? mine.length : them.roster.length) >= rosterSize) {
-                return;
-            }
-
-            const drop = (r: TradeRosterPlayer[], p: TradeRosterPlayer | null) =>
-                p ? r.filter(x => x.id !== p.id) : r;
-            const mineAfter = buying
-                ? [...drop(mine, spare), player]
-                : drop(mine.filter(p => p.id !== player.id), null);
-            const theirsAfter = buying
-                ? drop(them.roster.filter(p => p.id !== player.id), null)
-                    .concat(spare ? [spare] : [])
-                : [...drop(them.roster, spare), player];
-            if (rosterSize != null
-                && (mineAfter.length > rosterSize || theirsAfter.length > rosterSize)) {
-                return;
-            }
+            const mineAfter0 = buying
+                ? [...mine, player]
+                : mine.filter(p => p.id !== player.id);
+            const theirsAfter0 = buying
+                ? them.roster.filter(p => p.id !== player.id)
+                : [...them.roster, player];
+            const mineSettled = settle(mineAfter0, rosterSize, meanOf);
+            const theirsSettled = settle(theirsAfter0, rosterSize, meanOf);
+            const mineAfter = mineSettled.roster;
+            const theirsAfter = theirsSettled.roster;
 
             const myGain = lineup(mineAfter) - myBase;
             const theirGain = lineup(theirsAfter) - theirBase;
-            const spareWorth = spare ? market.valueOfPlayer(spare.id) ?? 0 : 0;
-            const cost = sum(picks) + (buying ? spareWorth : 0);
-            const worth = (market.valueOfPlayer(player.id) ?? 0)
-                + (buying ? 0 : spareWorth);
+            const cost = sum(picks);
+            const worth = market.valueOfPlayer(player.id) ?? 0;
             // Both halves have to be priced or the comparison is a number
             // against a blank, which is how a kicker ends up looking like a
             // free first-round pick.
@@ -535,12 +631,8 @@ function findAcrossStances(
             const myMarketGain = buying ? worth - cost : cost - worth;
             offers.push({
                 teamKey: them.key, teamName: them.name,
-                give: buying
-                    ? (spare ? [spare.id] : [])
-                    : [player.id],
-                get: buying
-                    ? [player.id]
-                    : (spare ? [spare.id] : []),
+                give: buying ? [] : [player.id],
+                get: buying ? [player.id] : [],
                 givePicks: buying ? picks.map(p => p.id) : [],
                 getPicks: buying ? [] : picks.map(p => p.id),
                 myGain: Math.round(myGain * 10) / 10,
@@ -554,13 +646,12 @@ function findAcrossStances(
                     ? Math.round((myGain / cost) * 1000 * 100) / 100
                     : Math.round((myMarketGain / Math.max(0.1, -myGain)) * 100) / 100,
                 balance: Math.round(buyerGain * 10) / 10,
-                // Bodies, not assets: the tag exists to warn that a roster
-                // is about to grow or shrink, and an offer carrying the
-                // throw-in that keeps the counts level is not one of those.
-                // Set unconditionally it printed "1 for 1" under a heading
-                // that means "these do not match".
-                unevenCount: (buying ? (spare ? 1 : 0) : 1)
-                    !== (buying ? 1 : (spare ? 1 : 0)),
+                // A picks-for-a-player trade always moves one body one way
+                // and none the other, so the counts never match. The tag says
+                // so, and `drops` below names whoever has to go for it.
+                unevenCount: true,
+                drops: mineSettled.dropped,
+                theirDrops: theirsSettled.dropped,
             });
         };
 
