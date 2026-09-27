@@ -883,6 +883,46 @@ const gapNumber = async page => {
     await ctx.close();
 }
 
+
+// ──── the numbers on an offer have to read as numbers
+{
+    step(22, 'a losing lineup change reads as a loss, not as "+-0.6"');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+
+    // Selling is the stance where your own lineup is meant to get worse —
+    // that is what selling is — so it is the one that exposes a hardcoded
+    // plus sign in front of a negative number.
+    await page.locator('[data-stance-option="sell"]').click();
+    await page.waitForTimeout(3000);
+    const rows = await page.locator('[data-offer]').allInnerTexts();
+    console.log(`      ${rows.length} sell rows`);
+    assert('the sell sweep found offers to read',
+        rows.length > 0, `${rows.length} — the assertions below need rows`);
+
+    const flat = rows.map(t => t.replace(/\s+/g, ' '));
+    for (const t of flat.slice(0, 3)) console.log('        ' + t.slice(0, 110));
+
+    // The bug this exists for: `+${gain.toFixed(1)}` printed "+-0.6 you".
+    const mangled = flat.filter(t => /\+\s*[-−]/.test(t));
+    assert('no number wears two signs', mangled.length === 0,
+        mangled[0] ?? '');
+
+    // A zero is not a sign problem but it is a reading problem: "+0.0 you" is
+    // the least useful way to say the player leaving is one the lineup does
+    // not miss, which for a seller is the best case rather than a null one.
+    assert('and a zero change says what it means',
+        !flat.some(t => /[+−]0\.0 you/.test(t)),
+        flat.find(t => /[+−]0\.0 you/.test(t)) ?? '');
+    // "1 for 0" reads like a scoreline; what it means is that no player comes
+    // back for the one going out.
+    assert('and the body count reads as English',
+        !flat.some(t => /\d for 0|0 for \d/.test(t)),
+        flat.find(t => /\d for 0|0 for \d/.test(t)) ?? '');
+
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
 await b.close();
 console.log(fails.length
     ? `\nFAILED ${fails.length}:\n - ${fails.join('\n - ')}`

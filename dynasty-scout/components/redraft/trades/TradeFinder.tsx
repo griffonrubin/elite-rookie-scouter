@@ -351,9 +351,18 @@ export function TradeFinder({
                                                 drop {o.drops.map(nameOf).join(' + ')}
                                             </span>
                                         ) : o.unevenCount && (
+                                            /* "1 for 0" reads like a
+                                               scoreline. What it means is
+                                               that no player comes back, so
+                                               that is what it says. */
                                             <span className="block text-[9px]
                                                              text-muted-foreground/35">
-                                                {o.give.length} for {o.get.length}
+                                                {o.get.length === 0
+                                                    ? 'no player back'
+                                                    : o.give.length === 0
+                                                        ? 'no player out'
+                                                        : `${o.give.length} for `
+                                                          + `${o.get.length}`}
                                             </span>
                                         )}
                                     </span>
@@ -378,10 +387,44 @@ export function TradeFinder({
                                             theirs, and a finder that shows
                                             only yours is selling you a
                                             message nobody answers. */}
+                                        {/**
+                                          * What it does to your lineup, with
+                                          * the sign it actually has.
+                                          *
+                                          * This printed a hardcoded plus, so
+                                          * a selling row — where your lineup
+                                          * is *meant* to get worse, that
+                                          * being what selling is — read
+                                          * "+-0.6 you".
+                                          *
+                                          * And a zero says something worth
+                                          * saying in words: the player going
+                                          * out is one this lineup does not
+                                          * miss, which for a seller is the
+                                          * best case rather than a null
+                                          * result.
+                                          */}
                                         <span className="block text-[11px] font-bold
                                                          tabular-nums"
-                                            style={{ color: DIVERGING.positive }}>
-                                            +{o.myGain.toFixed(1)} you
+                                            style={{
+                                                color: o.myGain > 0
+                                                    ? DIVERGING.positive
+                                                    : o.myGain < 0
+                                                        ? DIVERGING.negative
+                                                        : 'rgba(255,255,255,0.55)',
+                                            }}
+                                            title={o.myGain === 0
+                                                ? 'Your starting lineup is unchanged '
+                                                  + '— whoever is leaving was not in it'
+                                                : o.myGain > 0
+                                                    ? 'Points a week your starting '
+                                                      + 'lineup gains'
+                                                    : 'Points a week your starting '
+                                                      + 'lineup gives up'}>
+                                            {o.myGain === 0
+                                                ? 'costs your lineup nothing'
+                                                : `${o.myGain > 0 ? '+' : '−'}`
+                                                  + `${Math.abs(o.myGain).toFixed(1)} you`}
                                         </span>
                                         {/* Their lineup, on a mutual offer
                                             only. On a bought or sold one the
@@ -396,7 +439,8 @@ export function TradeFinder({
                                         {active === 'mutual' && (
                                             <span className="block text-[10px] tabular-nums
                                                              text-muted-foreground/50">
-                                                +{o.theirGain.toFixed(1)} them
+                                                {o.theirGain > 0 ? '+' : '−'}
+                                                {Math.abs(o.theirGain).toFixed(1)} them
                                             </span>
                                         )}
                                         {/**
