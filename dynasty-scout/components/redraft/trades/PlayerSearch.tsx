@@ -6,19 +6,46 @@ import { cn } from '@/lib/utils';
 import { DIVERGING } from '@/lib/vizTokens';
 import type { Horizon } from '@/lib/simInput';
 
-/** One rostered player, with the team that holds him. */
-export interface SearchHit {
-    id: number;
+/** What every hit carries, whichever kind it is. */
+interface HitBase {
     name: string;
-    position: string;
+    /** The team holding it. */
     teamKey: string;
     teamName: string;
-    /** True where he is in that team's lineup as it stands. */
-    starting: boolean;
-    mean: number | null;
     /** Already on the table, either way. */
     onTable: boolean;
 }
+
+/** One rostered player, with the team that holds him. */
+export interface PlayerHit extends HitBase {
+    kind: 'player';
+    id: number;
+    position: string;
+    /** True where he is in that team's lineup as it stands. */
+    starting: boolean;
+    mean: number | null;
+}
+
+/**
+ * One future draft pick.
+ *
+ * Searchable for the same reason players are. Picks became things a trade
+ * can be made of, and then stayed findable only by scrolling the holdings
+ * of whichever manager happened to be selected — so "who has a 2027 first"
+ * was back to reading eleven panels, which is the exact question this box
+ * was added to stop anybody having to answer that way.
+ */
+export interface PickHit extends HitBase {
+    kind: 'pick';
+    /** The id `tradePicks` builds, '2027-1-8'. */
+    id: string;
+    /** Market price, where the feed carries one. */
+    value: number | null;
+    /** Its projected band, where the season is far enough along to say. */
+    slot: string | null;
+}
+
+export type SearchHit = PlayerHit | PickHit;
 
 const POSITION_TINT: Record<string, string> = {
     QB: '#F97316', RB: '#22C55E', WR: '#38BDF8', TE: '#A78BFA',
@@ -60,6 +87,8 @@ export function PlayerSearch({
 }) {
     const [q, setQ] = useState('');
     const inputRef = useRef<HTMLInputElement | null>(null);
+    /** Whether this league has picks at all, which the wording follows. */
+    const hasPicks = hits.some(h => h.kind === 'pick');
 
     /**
      * Matches, best first.
@@ -76,10 +105,16 @@ export function PlayerSearch({
     const results = useMemo(() => {
         const needle = q.trim().toLowerCase();
         if (needle.length < 2) return [];
-        return hits
-            .filter(h => h.name.toLowerCase().includes(needle))
-            .sort((a, b) => (b.mean ?? -1) - (a.mean ?? -1))
-            .slice(0, 10);
+        const matched = hits.filter(h => h.name.toLowerCase().includes(needle));
+        // Players by what they score, picks by what they cost, players first.
+        // The two rarely mix — a query matching "2027" matches no player and
+        // a surname matches no pick — so this is about ordering within a
+        // kind rather than ranking one kind above the other.
+        const players = matched.filter((h): h is PlayerHit => h.kind === 'player')
+            .sort((a, b) => (b.mean ?? -1) - (a.mean ?? -1));
+        const picks = matched.filter((h): h is PickHit => h.kind === 'pick')
+            .sort((a, b) => (b.value ?? -1) - (a.value ?? -1));
+        return [...players, ...picks].slice(0, 10);
     }, [q, hits]);
 
     const take = (hit: SearchHit) => {
@@ -99,7 +134,9 @@ export function PlayerSearch({
                     aria-hidden="true" />
                 <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)}
                     disabled={disabled}
-                    placeholder="Find a player anywhere in the league…"
+                    placeholder={hasPicks
+                        ? 'Find a player or a pick anywhere in the league…'
+                        : 'Find a player anywhere in the league…'}
                     aria-label="Find a player anywhere in the league"
                     data-search="league"
                     className="w-full text-[12px] rounded-lg pl-7 pr-7 py-1.5
@@ -143,18 +180,26 @@ export function PlayerSearch({
                                     <span className="text-[9px] font-bold uppercase
                                                      tracking-wider"
                                         style={{
-                                            color: POSITION_TINT[h.position.toUpperCase()]
-                                                ?? 'rgba(255,255,255,0.45)',
+                                            color: h.kind === 'pick'
+                                                ? 'rgba(255,255,255,0.35)'
+                                                : POSITION_TINT[h.position.toUpperCase()]
+                                                  ?? 'rgba(255,255,255,0.45)',
                                         }}>
-                                        {h.position}
+                                        {h.kind === 'pick' ? 'PICK' : h.position}
                                     </span>
                                     <span className="text-[12px] truncate">
                                         {h.name}
-                                        {h.starting && (
+                                        {h.kind === 'player' && h.starting && (
                                             <span className="text-[8px] font-bold uppercase
                                                              tracking-wide ml-1.5
                                                              text-muted-foreground/45">
                                                 ST
+                                            </span>
+                                        )}
+                                        {h.kind === 'pick' && h.slot && (
+                                            <span className="text-[9px] ml-1.5
+                                                             text-muted-foreground/45">
+                                                {h.slot}
                                             </span>
                                         )}
                                     </span>
@@ -168,9 +213,22 @@ export function PlayerSearch({
                                         }}>
                                         {mine ? 'you' : h.teamName}
                                     </span>
+                                    {/* Points a week for a player, market
+                                        price for a pick. Different units in
+                                        one column, but never in one row and
+                                        never for the same kind of thing —
+                                        and the alternative is a column of
+                                        dashes beside every pick. */}
                                     <span className="text-[10px] tabular-nums text-right
-                                                     text-muted-foreground/50">
-                                        {h.mean == null ? '—' : h.mean.toFixed(1)}
+                                                     text-muted-foreground/50"
+                                        title={h.kind === 'pick'
+                                            ? 'Market value'
+                                            : 'Expected points'}>
+                                        {h.kind === 'pick'
+                                            ? (h.value == null
+                                                ? '—' : h.value.toLocaleString())
+                                            : (h.mean == null
+                                                ? '—' : h.mean.toFixed(1))}
                                     </span>
                                 </button>
                             </li>
@@ -182,14 +240,15 @@ export function PlayerSearch({
             {q.trim().length >= 2 && results.length === 0 && (
                 <p className="text-[11px] text-muted-foreground/45 mt-2 px-1"
                     data-search-empty="">
-                    Nobody on any roster in this league matches
-                    &ldquo;{q.trim()}&rdquo;. Free agents cannot be traded for — the
-                    waiver page prices those.
+                    Nothing in this league matches &ldquo;{q.trim()}&rdquo;. Free
+                    agents cannot be traded for — the waiver page prices those.
                 </p>
             )}
 
             <p className="text-[9px] text-muted-foreground/30 mt-2">
-                Searches every roster, yours included. Picking somebody else&rsquo;s
+                Searches every roster, yours included{hasPicks
+                    ? ', and every future pick — type a year or a round'
+                    : ''}. Picking somebody else&rsquo;s
                 player asks their manager for him and switches who you are trading
                 with; picking one of yours offers him. The number is expected points
                 {horizon === 'season' ? ' in a typical week from here' : ' this Sunday'}.

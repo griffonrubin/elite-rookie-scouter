@@ -599,6 +599,54 @@ const gapNumber = async page => {
     await ctx.close();
 }
 
+// ───────────────── picks are findable in the same box players are
+{
+    step(17, 'the league search finds picks, not just players');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+    const search = page.locator('[data-search="league"]');
+    assert('the box says picks are findable',
+        /pick/i.test(await search.getAttribute('placeholder') ?? ''),
+        await search.getAttribute('placeholder'));
+
+    await search.fill('2027 1st');
+    await page.waitForTimeout(600);
+    const hits = page.locator('[data-search-results] button');
+    const n = await hits.count();
+    const first = n > 0 ? (await hits.first().innerText()).replace(/\s+/g, ' ') : '';
+    console.log(`      ${n} hits, first: ${first}`);
+    assert('a year and a round finds picks', n > 0, `${n} hits`);
+    assert('and they are labelled as picks', /PICK/.test(first), first);
+    assert('with the manager who holds each one',
+        await hits.first().getAttribute('data-hit-team') != null);
+
+    // The case worth having: a pick on a manager I am not trading with.
+    const startingPartner = await page.locator('#trade-partner').inputValue();
+    let third = null;
+    for (const h of await hits.all()) {
+        const team = await h.getAttribute('data-hit-team');
+        if (team !== startingPartner && team !== '11') { third = h; break; }
+    }
+    assert('a pick is listed on a manager I am not trading with', third != null);
+    if (third) {
+        const team = await third.getAttribute('data-hit-team');
+        const label = (await third.innerText()).replace(/\s+/g, ' ');
+        await third.click();
+        await page.waitForTimeout(2000);
+        assert('picking it switches the partner to whoever holds it',
+            await page.locator('#trade-partner').inputValue() === team,
+            `${await page.locator('#trade-partner').inputValue()} vs ${team}`);
+        const theirSide = page.locator('section').filter({ has: page.locator('h3') })
+            .nth(1);
+        const selected = theirSide.locator('[data-pick-id][aria-pressed="true"]');
+        assert('and puts that pick on the table', await selected.count() === 1,
+            `${await selected.count()} selected — wanted ${label}`);
+        assert('the URL carries it', /getPicks=/.test(page.url()), page.url());
+    }
+
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
 await b.close();
 console.log(fails.length
     ? `\nFAILED ${fails.length}:\n - ${fails.join('\n - ')}`
