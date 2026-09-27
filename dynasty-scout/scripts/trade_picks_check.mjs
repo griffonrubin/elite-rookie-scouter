@@ -79,15 +79,24 @@ async function open(detail, traded, week = 1) {
             // Mid-season only: give every roster a played record, so the
             // record beside a pick has something to say.
             if (week === 1 || m[1] !== LEAGUE_ID) return j(rs);
-            return j(rs.map(r => ({
-                ...r,
-                settings: {
-                    ...r.settings,
-                    wins: r.roster_id % 9, losses: (week - 1) - (r.roster_id % 9),
-                    ties: 0, fpts: 1100, fpts_decimal: 0,
-                    fpts_against: 1100, fpts_against_decimal: 0,
-                },
-            })));
+            return j(rs.map(r => {
+                const wins = r.roster_id % 9;
+                return {
+                    ...r,
+                    settings: {
+                        ...r.settings,
+                        wins, losses: (week - 1) - wins, ties: 0,
+                        // Points that track the record, the way a real
+                        // league's do. Giving every roster the same total
+                        // made the points rank a tiebreak on roster id,
+                        // which is no rank at all — and the projection
+                        // reading as arbitrary was the check's fault, not
+                        // the page's.
+                        fpts: 900 + wins * 45 + r.roster_id, fpts_decimal: 0,
+                        fpts_against: 1100, fpts_against_decimal: 0,
+                    },
+                };
+            }));
         }
         if ((m = u.match(/\/league\/(\d+)\/users/))) return j(F.users[m[1]] ?? []);
         if ((m = u.match(/\/league\/(\d+)\/matchups\/(\d+)/)))
@@ -313,12 +322,17 @@ const gapNumber = async page => {
     const chip = mineSide.locator('[data-pick-id="2027-1-8"]');
     assert('the acquired pick is still there', await chip.count() === 1);
     const text = await chip.innerText();
+    const title = await chip.getAttribute('title');
     console.log('      ' + text.replace(/\n/g, ' '));
+    console.log('      ' + (title ?? '').slice(0, 150));
+    assert('it shows whose pick it is', /ex /.test(text), text.replace(/\n/g, ' '));
     // Roster 8's record under the rule above is 8 % 9 = 8 wins of 9 played.
-    assert('it shows whose pick it is and how their season is going',
-        /8-1/.test(text), text.replace(/\n/g, ' '));
-    assert('and that is the original owner\u2019s record, not the holder\u2019s',
-        !/ 2-/.test(text), text.replace(/\n/g, ' '));
+    // Once a band is projected the chip shows that instead, so the raw
+    // record moves into the tooltip rather than disappearing.
+    assert('and how the team it belongs to is doing', /8-1/.test(title ?? ''),
+        (title ?? '').slice(0, 150));
+    assert('which is the original owner\u2019s record, not the holder\u2019s',
+        !/\b2-7\b/.test(title ?? ''), (title ?? '').slice(0, 150));
     assert('no page errors', errs.length === 0, errs.join(' | '));
     await ctx.close();
 }
@@ -351,6 +365,87 @@ const gapNumber = async page => {
             /does not price/.test(text) && !/further out than the market/.test(text),
             text.replace(/\s+/g, ' '));
     }
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
+// ───────────────────────── the projected band, end to end in the browser
+{
+    step(11, 'mid-season, the next draft is priced at its projected band');
+    // Week 10, so nine games played: past the four-game floor, and the
+    // fixture's records are roster_id % 9 wins, which makes roster 8 the
+    // best team in the league (8-1) and roster 9 the worst (0-9).
+    const { ctx, page, errs } = await open(dynasty, [], 10);
+    const mineSide = page.locator('section').filter({ has: page.locator('h3') }).nth(0);
+
+    const chips = await mineSide.locator('[data-pick-id]')
+        .evaluateAll(e => e.map(x => ({
+            id: x.getAttribute('data-pick-id'),
+            text: x.innerText.replace(/\s+/g, ' '),
+            title: x.getAttribute('title') ?? '',
+        })));
+    const next = chips.filter(c => c.id.startsWith('2027-'));
+    const later = chips.filter(c => c.id.startsWith('2029-'));
+    console.log('      ' + (next[0]?.text ?? '(none)'));
+    console.log('      ' + (later[0]?.text ?? '(none)'));
+
+    assert('the next draft carries a band',
+        next.length > 0 && /early|mid|late/.test(next[0].text), next[0]?.text);
+    assert('and says it is a projection, with the blend that produced it',
+        /Projected pick \d+ of \d+/.test(next[0].title)
+        && /% record/.test(next[0].title), next[0].title.slice(0, 120));
+    assert('the draft after next carries none',
+        later.length > 0 && !/early|mid|late/.test(later[0].text), later[0]?.text);
+
+    // The reader's own team is roster 11 on 2-7, which four teams are worse
+    // than — so it projects mid, and asserting "near the bottom means early"
+    // on it was the check misreading its own fixture rather than the page
+    // misreading the league. The genuinely worst team is roster 9 on 0-9.
+    const mine = chips.find(c => c.id === '2027-1-11');
+    assert('a mid-table team holds a mid first', /mid/.test(mine?.text ?? ''),
+        mine?.text);
+
+    await page.locator('#trade-partner').selectOption('9');
+    await page.waitForTimeout(1800);
+    const worstSide = page.locator('section').filter({ has: page.locator('h3') }).nth(1);
+    const worst = await worstSide.locator('[data-pick-id="2027-1-9"]').innerText();
+    console.log('      worst team (0-9): ' + worst.replace(/\s+/g, ' '));
+    assert('the worst team in the league holds an early first',
+        /early/.test(worst), worst.replace(/\s+/g, ' '));
+    // Read off the title, not the chip: innerText runs "~1" straight into
+    // the value "4,477", so a regex on the chip cannot tell pick 1 from
+    // pick 14 and was failing on a number that was right.
+    const worstTitle = await worstSide.locator('[data-pick-id="2027-1-9"]')
+        .getAttribute('title');
+    assert('and it is projected at the very top of the draft',
+        /Projected pick 1 of 12/.test(worstTitle ?? ''),
+        (worstTitle ?? '').slice(0, 120));
+
+    // And the best team in the league should hold a late one.
+    await page.locator('#trade-partner').selectOption('8');
+    await page.waitForTimeout(1800);
+    const theirSide = page.locator('section').filter({ has: page.locator('h3') }).nth(1);
+    const best = await theirSide.locator('[data-pick-id="2027-1-8"]').innerText();
+    console.log('      best team (8-1): ' + best.replace(/\s+/g, ' '));
+    assert('while the best team in the league holds a late one',
+        /late/.test(best), best.replace(/\s+/g, ' '));
+
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
+// ─────────── and week one, where there is nothing to project it from
+{
+    step(12, 'week one prices every pick unslotted, and says why');
+    const { ctx, page, errs } = await open(dynasty, [], 1);
+    const mineSide = page.locator('section').filter({ has: page.locator('h3') }).nth(0);
+    const text = await mineSide.innerText();
+    const chips = await mineSide.locator('[data-pick-id]')
+        .evaluateAll(e => e.map(x => x.innerText.replace(/\s+/g, ' ')));
+    assert('no chip claims a band', !chips.some(c => /early|mid|late/.test(c)),
+        chips.find(c => /early|mid|late/.test(c)) ?? 'none do');
+    assert('and the panel says a band needs games first',
+        /not projected until game/.test(text));
     assert('no page errors', errs.length === 0, errs.join(' | '));
     await ctx.close();
 }

@@ -492,16 +492,23 @@ export function TradeClient({ players, prices }: {
             teamNames: new Map(teams.map(t => [t.key, t.name])),
             records: new Map(teams.map(t => [t.key, t.record
                 ? { wins: t.record.wins, losses: t.record.losses,
-                    ties: t.record.ties }
+                    ties: t.record.ties, pointsFor: t.record.pointsFor }
                 : null])),
             seasons: pickSeasons,
             rounds,
             traded: league.snapshot?.pickTrades ?? [],
             prices: prices.picks,
             superflex,
+            // How much of the regular season has been played, which is what
+            // decides whether the next draft's order can be projected at all
+            // and how much of the projection the record gets to carry.
+            played: Math.max(0, (week ?? 1) - 1),
+            total: Math.max(0, (league.snapshot?.playoffWeekStart
+                ?? DEFAULT_PLAYOFF_WEEK) - 1),
         });
-    }, [picksEnabled, teams, pickSeasons, prices.picks, superflex,
-        league.snapshot?.draftRounds, league.snapshot?.pickTrades]);
+    }, [picksEnabled, teams, pickSeasons, prices.picks, superflex, week,
+        league.snapshot?.draftRounds, league.snapshot?.pickTrades,
+        league.snapshot?.playoffWeekStart]);
 
     /** The market's price for a player, in this league's format. */
     const priceOfPlayer = useMemo(() => {

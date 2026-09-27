@@ -68,8 +68,42 @@ export interface PickAsset {
     fromKey: string;
     fromName: string | null;
     /** The original owner's record, where the league reports one. */
-    fromRecord: { wins: number; losses: number; ties: number } | null;
+    fromRecord: TeamForm | null;
+    /**
+     * Where this pick is projected to land, for the next draft only.
+     *
+     * Null for every later draft and for a season too young to project,
+     * which is the same as saying the market's unslotted price is the best
+     * available answer. Where it is set, `value` is the slotted price and
+     * this is what justifies it.
+     */
+    projection: SlotProjection | null;
     value: number | null;
+}
+
+/** A team's season so far, which is what a future pick is worth guessing from. */
+export interface TeamForm {
+    wins: number;
+    losses: number;
+    ties: number;
+    /** Total scored, which is the better guide to a team's real strength. */
+    pointsFor: number;
+}
+
+/** Where a pick is projected to land, and what said so. */
+export interface SlotProjection {
+    /** 'early' | 'mid' | 'late' — the feed's own three bands. */
+    slot: string;
+    /** Projected draft position, 1 to the number of teams. */
+    pick: number;
+    /** Teams in the league, so "4th of 12" reads as a position. */
+    teams: number;
+    /** Where the original owner sits on record alone. */
+    recordRank: number;
+    /** And on points scored. */
+    pointsRank: number;
+    /** How much of the blend the record took, 0 to 1. */
+    recordWeight: number;
 }
 
 const ROUND_LABEL: Record<number, string> = {
@@ -151,12 +185,142 @@ export function superflexLeague(slots: string[]): boolean {
  */
 export function priceOf(
     prices: PickPrice[], season: number, round: number, superflex: boolean,
+    /** The projected band, where there is one. Falls back if the feed has none. */
+    slot?: string | null,
 ): number | null {
-    const exact = prices.find(p =>
-        p.season === season && p.round === round && p.slot == null);
-    const row = exact ?? prices.find(p => p.season === season && p.round === round);
+    const want = (s: string | null) =>
+        prices.find(p => p.season === season && p.round === round && p.slot === s);
+    const row = (slot ? want(slot) : null) ?? want(null)
+        ?? prices.find(p => p.season === season && p.round === round);
     if (!row) return null;
     return (superflex ? row.valueSf : row.value1qb) ?? null;
+}
+
+/**
+ * Below this many games, a season has not said anything worth pricing on.
+ *
+ * The swing is the reason for the floor. A 2027 first is 4,477 early and
+ * 2,290 late — near enough double — so projecting a slot off two games means
+ * putting a 2x multiplier on two games, and two games of fantasy football is
+ * mostly which quarterback ran into a soft defence. Under this, every pick
+ * keeps the market's unslotted price, which is exactly what that price is
+ * for: the pick whose landing spot nobody knows yet.
+ */
+export const PROJECTION_MIN_GAMES = 4;
+
+/**
+ * How much of the blend the record takes, given how much season has gone.
+ *
+ * The thing being predicted is the *final standings*, and final standings
+ * are made of record — so by the last week the record is not a predictor of
+ * the answer, it is the answer, and deserves all the weight. Early on it is
+ * four games of a fourteen-game sample and points scored is the better guide
+ * to which teams are actually good.
+ *
+ * So the weight is simply the share of the regular season played. It needs
+ * no tuning and it degenerates correctly at both ends: nothing at kickoff,
+ * everything at the finish. A fixed weight cannot do that — it would still
+ * be second-guessing the standings in the last week of the season, when the
+ * standings have stopped being an estimate of anything.
+ */
+export function recordWeightFor(played: number, total: number): number {
+    if (total <= 0) return 1;
+    return Math.max(0, Math.min(1, played / total));
+}
+
+/**
+ * Where each team's own pick is projected to land in the next rookie draft.
+ *
+ * Rookie draft order is the standings reversed — the worst team picks first —
+ * so this ranks the league and then reads it upside down. The ranking is a
+ * weighted average of two ranks, the record and the points scored, which is
+ * the blend asked for: record is what the draft order is actually made of,
+ * points scored is what says whether a record is real.
+ *
+ * Only the next draft. A 2029 pick belongs to a roster that does not exist
+ * yet and a season nobody has played, and putting a confident band on it
+ * would be inventing information rather than reading it — those keep the
+ * market's unslotted price, which is the honest number for a pick whose
+ * owner might be anybody by then.
+ */
+export function projectDraftOrder({
+    teams, played, total,
+}: {
+    teams: { key: string; form: TeamForm | null }[];
+    /** Regular-season games played so far. */
+    played: number;
+    /** Regular-season games in total. */
+    total: number;
+}): Map<string, SlotProjection> {
+    const out = new Map<string, SlotProjection>();
+    const known = teams.filter(t => t.form != null) as
+        { key: string; form: TeamForm }[];
+    // Every team or none: a league where half the rosters have a record and
+    // half do not cannot be ranked, and a partial ranking would quietly
+    // place the unknown half at the bottom — which is the band worth the
+    // most money.
+    if (known.length !== teams.length || known.length < 2) return out;
+    if (played < PROJECTION_MIN_GAMES) return out;
+
+    const played_ = (f: TeamForm) => f.wins + f.losses + f.ties;
+    const winPct = (f: TeamForm) => {
+        const g = played_(f);
+        return g > 0 ? (f.wins + f.ties / 2) / g : 0;
+    };
+
+    /** Rank 1 is the best team, by each measure on its own. */
+    const rankBy = (score: (f: TeamForm) => number) => {
+        const order = [...known].sort((a, b) =>
+            score(b.form) - score(a.form)
+            // Ties broken by points, then by key, so the ranking is stable
+            // rather than dependent on the order rosters arrived in.
+            || b.form.pointsFor - a.form.pointsFor
+            || a.key.localeCompare(b.key));
+        return new Map(order.map((t, i) => [t.key, i + 1]));
+    };
+
+    const recordRank = rankBy(winPct);
+    const pointsRank = rankBy(f => f.pointsFor);
+    const w = recordWeightFor(played, total);
+
+    const blended = known.map(t => ({
+        key: t.key,
+        score: w * recordRank.get(t.key)! + (1 - w) * pointsRank.get(t.key)!,
+    })).sort((a, b) => a.score - b.score
+        || recordRank.get(a.key)! - recordRank.get(b.key)!
+        || a.key.localeCompare(b.key));
+
+    const n = blended.length;
+    blended.forEach((t, i) => {
+        // i is the projected finish, best first. The draft runs the other
+        // way: the team finishing last picks first.
+        const pick = n - i;
+        out.set(t.key, {
+            slot: slotForPick(pick, n),
+            pick,
+            teams: n,
+            recordRank: recordRank.get(t.key)!,
+            pointsRank: pointsRank.get(t.key)!,
+            recordWeight: w,
+        });
+    });
+    return out;
+}
+
+/**
+ * Which of the feed's three bands a draft position falls in.
+ *
+ * Thirds of the round, which is what the feed means by them: in a
+ * twelve-team league picks 1–4 are early, 5–8 mid and 9–12 late. Rounded so
+ * that a ten- or fourteen-team league splits as evenly as it can rather than
+ * leaving the last band holding everybody left over.
+ */
+export function slotForPick(pick: number, teams: number): string {
+    if (teams <= 0) return 'mid';
+    const third = teams / 3;
+    if (pick <= Math.round(third)) return 'early';
+    if (pick <= Math.round(third * 2)) return 'mid';
+    return 'late';
 }
 
 /**
@@ -175,15 +339,20 @@ export function priceOf(
  */
 export function pickInventory({
     teamKeys, teamNames, records, seasons, rounds, traded, prices, superflex,
+    played = 0, total = 0,
 }: {
     teamKeys: string[];
     teamNames: Map<string, string>;
-    records: Map<string, { wins: number; losses: number; ties: number } | null>;
+    records: Map<string, TeamForm | null>;
     seasons: number[];
     rounds: number;
     traded: PickTrade[];
     prices: PickPrice[];
     superflex: boolean;
+    /** Regular-season games played, for projecting the next draft's order. */
+    played?: number;
+    /** And how many there are in total. */
+    total?: number;
 }): Map<string, PickAsset[]> {
     const keys = new Set(teamKeys);
     /** season-round-original → who holds it now. */
@@ -196,12 +365,28 @@ export function pickInventory({
         moved.set(`${t.season}-${t.round}-${t.originalKey}`, t.ownerKey);
     }
 
+    /**
+     * The order of the next rookie draft, which is the only one this season
+     * decides. Later drafts are set by seasons nobody has played.
+     */
+    const nextDraft = seasons.length ? Math.min(...seasons) : null;
+    const projected = projectDraftOrder({
+        teams: teamKeys.map(k => ({ key: k, form: records.get(k) ?? null })),
+        played, total,
+    });
+
     const out = new Map<string, PickAsset[]>(teamKeys.map(k => [k, []]));
     for (const season of seasons) {
         for (let round = 1; round <= rounds; round++) {
             for (const originalKey of teamKeys) {
                 const ownerKey =
                     moved.get(`${season}-${round}-${originalKey}`) ?? originalKey;
+                // The band belongs to the team the pick came from, not the
+                // team holding it: a first acquired from the worst roster in
+                // the league is an early pick whoever ends up with it.
+                const projection = season === nextDraft
+                    ? projected.get(originalKey) ?? null
+                    : null;
                 out.get(ownerKey)!.push({
                     id: pickId(season, round, originalKey),
                     season, round,
@@ -210,7 +395,9 @@ export function pickInventory({
                     fromKey: originalKey,
                     fromName: teamNames.get(originalKey) ?? null,
                     fromRecord: records.get(originalKey) ?? null,
-                    value: priceOf(prices, season, round, superflex),
+                    projection,
+                    value: priceOf(prices, season, round, superflex,
+                        projection?.slot ?? null),
                 });
             }
         }
