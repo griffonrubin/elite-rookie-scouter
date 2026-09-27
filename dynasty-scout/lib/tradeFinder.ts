@@ -23,15 +23,66 @@
  */
 import { bestLineup, type TradeRosterPlayer } from '@/lib/trade';
 
+/**
+ * What the reader is trying to do, which decides what counts as a good offer.
+ *
+ * The sweep below has always looked for one shape: both starting lineups
+ * improve. That is the right and only shape in a redraft league, where
+ * everybody wants the same thing, and it is *structurally incapable* of
+ * finding the trade dynasty leagues are actually made of — because the
+ * dynasty trade is two managers wanting opposite things.
+ *
+ * A contender gives up picks, which are worth nothing to a lineup this
+ * season, and receives a player. Their lineup improves and the seller's gets
+ * worse, so "both lineups improve" rejects every such offer no matter how
+ * good it is for both of them. The seller is not being robbed; they are
+ * being paid in a currency the old rule could not see.
+ *
+ * So the rule becomes: both sides gain on the axis they each care about.
+ * Which axis that is, is the reader's to declare, because we cannot know
+ * whether they are chasing this season or next.
+ */
+export type Stance = 'mutual' | 'buy' | 'sell';
+
+/** A draft pick, as something the sweep can put in an offer. */
+export interface FinderPick {
+    /** The id `tradePicks` builds, '2027-1-8'. */
+    id: string;
+    /** "2027 1st", for reading back. */
+    label: string;
+    /** Market price, or null where the feed does not carry one. */
+    value: number | null;
+}
+
 export interface Offer {
     teamKey: string;
     teamName: string;
     /** Player ids leaving your roster, and arriving on it. */
     give: number[];
     get: number[];
+    /** Picks each way, for the offers that are made of them. */
+    givePicks: string[];
+    getPicks: string[];
     /** Points a week each side's best lineup gains. */
     myGain: number;
     theirGain: number;
+    /**
+     * What the offer does to each side's holdings on the dynasty market.
+     *
+     * The other half of a trade between two managers who want different
+     * things: the one giving up this season's points has to be gaining
+     * something, and this is what it is.
+     */
+    myMarketGain: number;
+    theirMarketGain: number;
+    /**
+     * Points a week bought per thousand of market value spent.
+     *
+     * The ranking a buyer actually wants. Two firsts that both buy you a
+     * starter are not the same offer if one costs four thousand and the
+     * other costs two, and sorting on the points alone cannot say so.
+     */
+    efficiency: number;
     /**
      * The smaller of the two gains.
      *
@@ -52,9 +103,18 @@ export interface Offer {
  * rather than from the list position, which moves when the list is
  * re-sorted or filtered to one manager.
  */
-export function offerKey(o: Pick<Offer, 'teamKey' | 'give' | 'get'>): string {
+export function offerKey(
+    o: Pick<Offer, 'teamKey' | 'give' | 'get'>
+        & Partial<Pick<Offer, 'givePicks' | 'getPicks'>>,
+): string {
+    // Picks are in the key because two offers can move the same players and
+    // different picks, and a price computed for one would otherwise land on
+    // the other.
+    const picks = (list?: string[]) => (list ?? []).slice().sort().join('.');
     return `${o.teamKey}:${[...o.give].sort((a, b) => a - b).join('.')}`
-        + `>${[...o.get].sort((a, b) => a - b).join('.')}`;
+        + `+${picks(o.givePicks)}`
+        + `>${[...o.get].sort((a, b) => a - b).join('.')}`
+        + `+${picks(o.getPicks)}`;
 }
 
 export interface FinderInput {
@@ -83,10 +143,47 @@ const PACKAGE_POOL = 8;
 /** Offers below this are inside the rounding of a projection. */
 const MIN_GAIN = 0.25;
 
+/**
+ * At most this many picks from either side are tried in an offer.
+ *
+ * A twelve-team dynasty league holds twelve future picks per manager, and
+ * pairing all of them against every player on eleven rosters is a sweep
+ * nobody waits for. The most valuable few are the ones that buy anything
+ * worth buying, and a fourth-rounder three years out is not the difference
+ * between a deal and no deal.
+ */
+const PICK_POOL = 6;
+
+export interface MarketInput {
+    /** What a player is worth on the dynasty market, where it is known. */
+    valueOfPlayer: (id: number) => number | null;
+    /** The picks I hold. */
+    myPicks: FinderPick[];
+    /** And the ones each other manager holds, by team key. */
+    picksByTeam: Map<string, FinderPick[]>;
+}
+
 export function findTrades(
     me: FinderInput,
     others: FinderTeam[],
     /** Roster spots the league allows, where the platform reports it. */
+    rosterSize?: number,
+    limit = 40,
+    /** 'mutual' keeps the original sweep exactly as it was. */
+    stance: Stance = 'mutual',
+    market?: MarketInput,
+): Offer[] {
+    if (stance !== 'mutual') {
+        return market
+            ? findAcrossStances(me, others, market, stance, rosterSize, limit)
+            : [];
+    }
+    return findMutual(me, others, rosterSize, limit);
+}
+
+function findMutual(
+    me: FinderInput,
+    others: FinderTeam[],
     rosterSize?: number,
     limit = 40,
 ): Offer[] {
@@ -136,8 +233,13 @@ export function findTrades(
             offers.push({
                 teamKey: them.key, teamName: them.name,
                 give: give.map(p => p.id), get: get.map(p => p.id),
+                givePicks: [], getPicks: [],
                 myGain: Math.round(myGain * 10) / 10,
                 theirGain: Math.round(theirGain * 10) / 10,
+                // Not measured on this path: a mutual-gain offer is judged
+                // on the lineups, and reporting a market number nothing
+                // ranked on would invite it to be read as one that was.
+                myMarketGain: 0, theirMarketGain: 0, efficiency: 0,
                 balance: Math.round(Math.min(myGain, theirGain) * 10) / 10,
                 unevenCount: give.length !== get.length,
             });
@@ -175,6 +277,159 @@ export function findTrades(
         return true;
     });
     unique.sort((a, b) => b.balance - a.balance || b.myGain - a.myGain);
+    return unique.slice(0, limit);
+}
+
+/**
+ * Offers between two managers who want different things.
+ *
+ * A buyer sends picks and receives a player: their lineup improves, the
+ * seller's gets worse, and the seller is paid on the market instead. A
+ * seller does the reverse. Both sides still have to gain — that rule never
+ * changes, because an offer the other manager should refuse is a message
+ * that goes unanswered — but each gains on their own axis.
+ *
+ * Two guards keep the list sendable. The price has to beat what the player
+ * is worth, or the seller is being asked to lose on both axes at once; and
+ * the buyer's lineup has to actually move, or it is money spent on nothing.
+ * What neither guard does is stop a buyer overpaying — paying over the odds
+ * to win this season is the entire premise of buying, so the market number
+ * is printed beside every row and the judgement left where it belongs.
+ */
+function findAcrossStances(
+    me: FinderInput,
+    others: FinderTeam[],
+    market: MarketInput,
+    stance: Stance,
+    rosterSize?: number,
+    limit = 40,
+): Offer[] {
+    const { roster: mine, slots, meanOf } = me;
+    if (mine.length === 0 || slots.length === 0) return [];
+
+    const lineup = (r: TradeRosterPlayer[]) => {
+        let total = 0;
+        for (const id of bestLineup(slots, r, meanOf)) {
+            if (id != null) total += meanOf(id);
+        }
+        return total;
+    };
+    const myBase = lineup(mine);
+    /** Priced picks only: an unpriced one cannot be weighed against a player. */
+    const priced = (list: FinderPick[]) => list
+        .filter(p => p.value != null && p.value > 0)
+        .sort((a, b) => b.value! - a.value!)
+        .slice(0, PICK_POOL);
+    const sum = (list: FinderPick[]) => list.reduce((t, p) => t + (p.value ?? 0), 0);
+    const playerValue = (list: TradeRosterPlayer[]) =>
+        list.reduce((t, p) => t + (market.valueOfPlayer(p.id) ?? 0), 0);
+
+    const myPicks = priced(market.myPicks);
+    const myPackages: FinderPick[][] = [
+        ...myPicks.map(p => [p]),
+        ...myPicks.flatMap((a, i) => myPicks.slice(i + 1).map(b => [a, b])),
+    ];
+
+    const offers: Offer[] = [];
+    for (const them of others) {
+        if (them.roster.length === 0) continue;
+        const theirBase = lineup(them.roster);
+        const theirPicks = priced(market.picksByTeam.get(them.key) ?? []);
+        const theirPackages: FinderPick[][] = [
+            ...theirPicks.map(p => [p]),
+            ...theirPicks.flatMap((a, i) => theirPicks.slice(i + 1).map(b => [a, b])),
+        ];
+
+        /**
+         * One offer, where `players` move one way and `picks` the other.
+         * `buying` says which way round that is.
+         */
+        const consider = (
+            player: TradeRosterPlayer, picks: FinderPick[], buying: boolean,
+        ) => {
+            const mineAfter = buying
+                ? [...mine, player]
+                : mine.filter(p => p.id !== player.id);
+            const theirsAfter = buying
+                ? them.roster.filter(p => p.id !== player.id)
+                : [...them.roster, player];
+            if (rosterSize != null
+                && (mineAfter.length > rosterSize || theirsAfter.length > rosterSize)) {
+                return;
+            }
+
+            const myGain = lineup(mineAfter) - myBase;
+            const theirGain = lineup(theirsAfter) - theirBase;
+            const cost = sum(picks);
+            const worth = market.valueOfPlayer(player.id);
+            // Both halves have to be priced or the comparison is a number
+            // against a blank, which is how a kicker ends up looking like a
+            // free first-round pick.
+            if (worth == null || worth <= 0 || cost <= 0) return;
+
+            // The side receiving the player gains lineup; the side receiving
+            // the picks gains market. Each has to actually gain.
+            const buyerGain = buying ? myGain : theirGain;
+            if (buyerGain < MIN_GAIN) return;
+            // The seller has to be paid over the odds, or there is no reason
+            // for them to give up a player who is helping them this season.
+            //
+            // This single rule is also the whole lowball guard. An earlier
+            // version had a second check rejecting offers a quarter or more
+            // under the market — which can never fire, because requiring the
+            // price to exceed the player's value already puts every surviving
+            // offer on the generous side of even. A guard that cannot trigger
+            // reads like a protection and provides none, so it is gone rather
+            // than kept for the comfort of seeing it.
+            const sellerMarketGain = cost - worth;
+            if (sellerMarketGain <= 0) return;
+
+            const myMarketGain = buying ? worth - cost : cost - worth;
+            offers.push({
+                teamKey: them.key, teamName: them.name,
+                give: buying ? [] : [player.id],
+                get: buying ? [player.id] : [],
+                givePicks: buying ? picks.map(p => p.id) : [],
+                getPicks: buying ? [] : picks.map(p => p.id),
+                myGain: Math.round(myGain * 10) / 10,
+                theirGain: Math.round(theirGain * 10) / 10,
+                myMarketGain: Math.round(myMarketGain),
+                theirMarketGain: Math.round(-myMarketGain),
+                // Points a week per thousand spent, for the buyer. The
+                // seller reads it the other way: market gained per point
+                // of lineup given up.
+                efficiency: buying
+                    ? Math.round((myGain / cost) * 1000 * 100) / 100
+                    : Math.round((myMarketGain / Math.max(0.1, -myGain)) * 100) / 100,
+                balance: Math.round(buyerGain * 10) / 10,
+                unevenCount: true,
+            });
+        };
+
+        if (stance === 'buy') {
+            for (const b of them.roster) {
+                for (const pkg of myPackages) consider(b, pkg, true);
+            }
+        } else {
+            for (const a of mine) {
+                for (const pkg of theirPackages) consider(a, pkg, false);
+            }
+        }
+    }
+
+    const seen = new Set<string>();
+    const unique = offers.filter(o => {
+        const k = offerKey(o);
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+    });
+    // Ranked on efficiency rather than raw gain: the question a buyer has is
+    // not "what is the biggest upgrade" but "what does this cost me", and two
+    // offers that add the same points are not the same offer when one costs
+    // twice as much.
+    unique.sort((a, b) => b.efficiency - a.efficiency
+        || b.balance - a.balance);
     return unique.slice(0, limit);
 }
 
