@@ -781,6 +781,56 @@ const gapNumber = async page => {
     await ctx.close();
 }
 
+
+// ──── the half of a mutual trade the lineups cannot see
+{
+    step(20, 'a mutual suggestion says what it does to the market, in dynasty only');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+    const rowText = async p => await p.locator('[data-offer]')
+        .evaluateAll(e => e.map(x => x.innerText.replace(/\s+/g, ' ')));
+
+    const mutual = await rowText(page);
+    console.log(`      ${mutual.length} mutual offers`);
+    assert('the mutual sweep found something to cost',
+        mutual.length > 0, `${mutual.length} — the assertions below need offers`);
+    // Scoped to the rows: the blurb above them now uses the word too, so a
+    // body-text match would pass on the explanation alone.
+    const costed = mutual.filter(t => /market/.test(t));
+    assert('every mutual offer carries a market number',
+        costed.length === mutual.length, `${costed.length} of ${mutual.length}`);
+    /*
+     * Signed and grouped, the way the bought-and-sold rows print it.
+     *
+     * Whether the column varies across offers is a property of the sweep and
+     * is checked where it can be — `finder_stance_check` step 10, whose
+     * fixture produces twenty-six distinct outcomes across thirty-two
+     * offers. This league is real and yields one mutual offer, so asserting
+     * variety here would be asserting something about the fixture.
+     */
+    const numbers = mutual
+        .map(t => (t.match(/[+−][\d,]+ market/) ?? [])[0])
+        .filter(Boolean);
+    console.log(`      as rendered: ${numbers.join('  ')}`);
+    assert('the number is signed, and grouped rather than raw',
+        numbers.length === mutual.length, `${numbers.length} of ${mutual.length}`);
+    assert('they still report both lineups too',
+        mutual.every(t => / you\b/.test(t) && / them\b/.test(t)), mutual[0]);
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+
+    // A redraft league has no afterwards, so there is nothing to say.
+    const r = await open(redraft, [], 10);
+    const rows = await rowText(r.page);
+    console.log(`      redraft: ${rows.length} offers`);
+    assert('the redraft sweep found offers too', rows.length > 0,
+        `${rows.length} — the next assertion is vacuous without them`);
+    assert('and none of them mentions a market that does not exist',
+        rows.every(t => !/market/.test(t)), rows.find(t => /market/.test(t)) ?? '');
+    assert('no page errors in the redraft league', r.errs.length === 0,
+        r.errs.join(' | '));
+    await r.ctx.close();
+}
+
 await b.close();
 console.log(fails.length
     ? `\nFAILED ${fails.length}:\n - ${fails.join('\n - ')}`

@@ -72,9 +72,15 @@ export interface Offer {
      * The other half of a trade between two managers who want different
      * things: the one giving up this season's points has to be gaining
      * something, and this is what it is.
+     *
+     * Null where it could not be measured — a redraft league, where the
+     * question does not arise, or an offer holding a player the feed does
+     * not price. Nullable rather than zero because a trade that is even on
+     * the market and a trade nobody costed are opposite pieces of news, and
+     * a reader shown `0` for both cannot tell which one they have.
      */
-    myMarketGain: number;
-    theirMarketGain: number;
+    myMarketGain: number | null;
+    theirMarketGain: number | null;
     /**
      * Points a week bought per thousand of market value spent.
      *
@@ -178,7 +184,7 @@ export function findTrades(
             ? findAcrossStances(me, others, market, stance, rosterSize, limit)
             : [];
     }
-    return findMutual(me, others, rosterSize, limit);
+    return findMutual(me, others, rosterSize, limit, market);
 }
 
 function findMutual(
@@ -186,6 +192,20 @@ function findMutual(
     others: FinderTeam[],
     rosterSize?: number,
     limit = 40,
+    /**
+     * Prices, where the league has them.
+     *
+     * Not used for ranking, and that distinction is the whole of it: a
+     * mutual offer is still found and ordered on the lineups, exactly as it
+     * always was. This only costs the ones that survive.
+     *
+     * Because in a dynasty league "both lineups improve" is equally true of
+     * the offer that hands a 23-year-old over for a 28-year-old and of the
+     * reverse, and a reader choosing between those two was being shown the
+     * half of each trade that expires in January and not the half that
+     * does not.
+     */
+    market?: MarketInput,
 ): Offer[] {
     const { roster: mine, slots, meanOf } = me;
     if (mine.length === 0 || slots.length === 0) return [];
@@ -230,16 +250,43 @@ function findMutual(
             if (myGain < MIN_GAIN) return;
             const theirGain = value(theirsAfter) - theirBase;
             if (theirGain < MIN_GAIN) return;
+            /**
+             * What the offer does to the reader's holdings on the market.
+             *
+             * Every player in it has to be priced. One blank makes the
+             * comparison a number against nothing, which is how a kicker
+             * comes to look like a free first-round pick — the same rule the
+             * bought-and-sold sweep applies, for the same reason.
+             */
+            let myMarketGain: number | null = null;
+            if (market) {
+                let net = 0;
+                let priced = true;
+                for (const p of give) {
+                    const v = market.valueOfPlayer(p.id);
+                    if (v == null) { priced = false; break; }
+                    net -= v;
+                }
+                if (priced) {
+                    for (const p of get) {
+                        const v = market.valueOfPlayer(p.id);
+                        if (v == null) { priced = false; break; }
+                        net += v;
+                    }
+                }
+                if (priced) myMarketGain = Math.round(net);
+            }
             offers.push({
                 teamKey: them.key, teamName: them.name,
                 give: give.map(p => p.id), get: get.map(p => p.id),
                 givePicks: [], getPicks: [],
                 myGain: Math.round(myGain * 10) / 10,
                 theirGain: Math.round(theirGain * 10) / 10,
-                // Not measured on this path: a mutual-gain offer is judged
-                // on the lineups, and reporting a market number nothing
-                // ranked on would invite it to be read as one that was.
-                myMarketGain: 0, theirMarketGain: 0, efficiency: 0,
+                myMarketGain,
+                theirMarketGain: myMarketGain == null ? null : -myMarketGain,
+                // Nothing was bought here, so there is no price to divide
+                // the points by.
+                efficiency: 0,
                 balance: Math.round(Math.min(myGain, theirGain) * 10) / 10,
                 unevenCount: give.length !== get.length,
             });
