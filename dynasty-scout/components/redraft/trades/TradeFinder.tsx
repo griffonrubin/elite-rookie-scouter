@@ -307,6 +307,11 @@ export function TradeFinder({
                         return (
                             <li key={`${o.teamKey}-${o.give.join()}-${o.get.join()}`}>
                                 <button type="button" onClick={() => onPick(o)}
+                                    /* The offer's own identity, so a check can
+                                       assert what a click was supposed to load
+                                       rather than reading it back out of the
+                                       prose in the row. */
+                                    data-offer={offerKey(o)}
                                     className="w-full grid items-center gap-x-3 gap-y-1
                                                px-1 py-1.5 rounded-lg text-left
                                                transition-colors hover:bg-white/[0.05]

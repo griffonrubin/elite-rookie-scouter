@@ -621,6 +621,7 @@ export function TradeClient({ players, prices }: {
         for (const t of teams) {
             for (const p of t.roster) {
                 out.push({
+                    kind: 'player',
                     id: p.id, name: p.name, position: p.position,
                     teamKey: t.key, teamName: t.name,
                     starting: t.starting.has(p.id),
@@ -629,9 +630,27 @@ export function TradeClient({ players, prices }: {
                         || (t.key === partnerKey && getting.has(p.id)),
                 });
             }
+            // Picks too, where the league has them. Without this, "who holds
+            // a 2027 first" was answerable only by selecting each manager in
+            // turn and reading their holdings — the exact scroll this box was
+            // built to replace, reintroduced the moment picks became
+            // tradeable.
+            for (const k of picksByTeam?.get(t.key) ?? []) {
+                out.push({
+                    kind: 'pick',
+                    id: k.id,
+                    name: `${k.season} ${k.label}`,
+                    teamKey: t.key, teamName: t.name,
+                    value: k.value,
+                    slot: k.projection?.slot ?? null,
+                    onTable: (t.key === myKey && givingPicks.has(k.id))
+                        || (t.key === partnerKey && gettingPicks.has(k.id)),
+                });
+            }
         }
         return out;
-    }, [teams, simOf, myKey, partnerKey, giving, getting]);
+    }, [teams, simOf, myKey, partnerKey, giving, getting,
+        picksByTeam, givingPicks, gettingPicks]);
 
     /**
      * A search hit, put on the side of the table it belongs to.
@@ -644,18 +663,25 @@ export function TradeClient({ players, prices }: {
      * against two managers at once.
      */
     const pickFromSearch = useCallback((hit: SearchHit) => {
-        if (hit.teamKey === myKey) {
-            setMyGive(new Set(giving).add(hit.id));
+        const mine = hit.teamKey === myKey;
+        const theirs = hit.teamKey === partnerKey;
+        if (hit.kind === 'pick') {
+            if (mine) { setMyPicks(new Set(givingPicks).add(hit.id)); return; }
+            if (theirs) { setTheirPicks(new Set(gettingPicks).add(hit.id)); return; }
+            // A pick on a third manager's shelf: switching to them takes the
+            // players asked of the old partner with it, the same as picking
+            // one of their players does.
+            setPartner(hit.teamKey);
+            setTheirGive(new Set());
+            setTheirPicks(new Set([hit.id]));
             return;
         }
-        if (hit.teamKey === partnerKey) {
-            setTheirGive(new Set(getting).add(hit.id));
-            return;
-        }
+        if (mine) { setMyGive(new Set(giving).add(hit.id)); return; }
+        if (theirs) { setTheirGive(new Set(getting).add(hit.id)); return; }
         setPartner(hit.teamKey);
         setTheirGive(new Set([hit.id]));
         setTheirPicks(new Set());
-    }, [myKey, partnerKey, giving, getting]);
+    }, [myKey, partnerKey, giving, getting, givingPicks, gettingPicks]);
 
     /**
      * Keep the address bar holding the trade on screen.
@@ -826,12 +852,17 @@ export function TradeClient({ players, prices }: {
                                 setPartner(o.teamKey);
                                 setMyGive(new Set(o.give));
                                 setTheirGive(new Set(o.get));
-                                // The finder deals in players only, so a
-                                // loaded suggestion is the whole offer and
-                                // any picks left on the table are not part
-                                // of the thing being priced.
-                                setMyPicks(new Set());
-                                setTheirPicks(new Set());
+                                // Picks and all. A buy-stance suggestion IS
+                                // picks — that is what paying the other
+                                // manager means — so loading one without them
+                                // put a bench body against their best player
+                                // and priced it as a gift, while the row the
+                                // reader had just clicked showed the price.
+                                // Whatever was on the table before is gone
+                                // either way: a loaded suggestion is the
+                                // whole offer, not an addition to one.
+                                setMyPicks(new Set(o.givePicks));
+                                setTheirPicks(new Set(o.getPicks));
                                 if (typeof window !== 'undefined') {
                                     window.scrollBy({ top: 220, behavior: 'smooth' });
                                 }
@@ -935,8 +966,10 @@ export function TradeClient({ players, prices }: {
 
                     {held && (
                         <TradeCompare held={held} nameOf={nameOf}
+                            pickLabel={pickLabelOf}
                             current={result && them ? {
                                 give: [...giving], get: [...getting],
+                                givePicks: [...givingPicks], getPicks: [...gettingPicks],
                                 partnerName: them.name,
                                 mine: mineEffect, theirs: theirsEffect,
                             } : null}

@@ -45,21 +45,51 @@ export interface HeldOffer {
     week: number | null;
 }
 
-function names(ids: number[], nameOf: (id: number) => string): string {
-    if (!ids.length) return 'nobody';
-    return ids.map(id => {
-        const parts = nameOf(id).split(' ');
-        return parts.length > 1 ? parts.slice(1).join(' ') : parts[0];
-    }).join(' + ');
+/**
+ * One side of an offer, named.
+ *
+ * Picks belong here for the same reason they belong in the bar at the foot
+ * of the page: an offer whose incoming side is a 2027 first otherwise reads
+ * as "nobody", and these two columns exist precisely so a reader can tell
+ * two offers apart. Their *values* stay out — the numbers under these names
+ * are what each offer does to the season, and a pick does nothing to the
+ * season — but a side that renders as nothing is not a comparison, it is a
+ * missing row.
+ */
+function names(
+    ids: number[], nameOf: (id: number) => string, picks: string[] = [],
+): string {
+    const labels = [
+        ...ids.map(id => {
+            const parts = nameOf(id).split(' ');
+            return parts.length > 1 ? parts.slice(1).join(' ') : parts[0];
+        }),
+        ...picks,
+    ];
+    return labels.length ? labels.join(' + ') : 'nobody';
 }
 
 /** One column: an offer and what it does. */
-function Column({ title, offer, mine, theirs, nameOf, better, children }: {
+function Column({
+    title, offer, mine, theirs, nameOf, pickLabel, better, children,
+}: {
     title: string;
-    offer: { give: number[]; get: number[]; partnerName: string };
+    offer: {
+        give: number[]; get: number[]; partnerName: string;
+        givePicks?: string[]; getPicks?: string[];
+    };
     mine: TradeEffect | null;
     theirs: TradeEffect | null;
     nameOf: (id: number) => string;
+    /**
+     * A pick id as it should read.
+     *
+     * Both columns are handed ids rather than finished labels, because the
+     * held offer has to keep ids anyway — restoring it puts those exact
+     * picks back on the table — and a column fed labels beside one fed ids
+     * prints "2027 1st" next to "2027-1-8".
+     */
+    pickLabel?: (id: string) => string;
     /** True where this column is the better of the two for you. */
     better: boolean;
     children?: React.ReactNode;
@@ -82,11 +112,13 @@ function Column({ title, offer, mine, theirs, nameOf, better, children }: {
             </div>
             <p className="text-[11px] mb-1.5 leading-snug">
                 <span className="font-semibold text-foreground/80">
-                    {names(offer.give, nameOf)}
+                    {names(offer.give, nameOf,
+                        (offer.givePicks ?? []).map(id => pickLabel?.(id) ?? id))}
                 </span>
                 <span className="text-muted-foreground/35"> &rarr; </span>
                 <span className="font-semibold text-foreground/80">
-                    {names(offer.get, nameOf)}
+                    {names(offer.get, nameOf,
+                        (offer.getPicks ?? []).map(id => pickLabel?.(id) ?? id))}
                 </span>
                 <span className="block text-[9px] text-muted-foreground/40">
                     with {offer.partnerName}
@@ -117,14 +149,16 @@ function Column({ title, offer, mine, theirs, nameOf, better, children }: {
 }
 
 export function TradeCompare({
-    held, current, nameOf, onRestore, onDrop,
+    held, current, nameOf, pickLabel, onRestore, onDrop,
 }: {
     held: HeldOffer;
     current: {
         give: number[]; get: number[]; partnerName: string;
+        givePicks?: string[]; getPicks?: string[];
         mine: TradeEffect | null; theirs: TradeEffect | null;
     } | null;
     nameOf: (id: number) => string;
+    pickLabel?: (id: string) => string;
     onRestore: () => void;
     onDrop: () => void;
 }) {
@@ -148,7 +182,7 @@ export function TradeCompare({
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
                 <Column title="Held" offer={held} mine={held.mine} theirs={held.theirs}
-                    nameOf={nameOf} better={heldBetter}>
+                    nameOf={nameOf} pickLabel={pickLabel} better={heldBetter}>
                     <div className="flex gap-1 mt-2">
                         <button type="button" onClick={onRestore}
                             className="text-[10px] px-2 py-0.5 rounded-lg border
@@ -166,7 +200,8 @@ export function TradeCompare({
                 </Column>
                 {current ? (
                     <Column title="Current" offer={current} mine={current.mine}
-                        theirs={current.theirs} nameOf={nameOf} better={nowBetter} />
+                        theirs={current.theirs} nameOf={nameOf} pickLabel={pickLabel}
+                        better={nowBetter} />
                 ) : (
                     <div className="rounded-lg p-2.5 border border-dashed
                                     border-white/[0.08] flex items-center">

@@ -553,6 +553,149 @@ const gapNumber = async page => {
     await ctx.close();
 }
 
+// ──── the held-against-current columns are the third place a pick can vanish
+{
+    step(16, 'a held offer keeps its picks in the comparison columns');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+    await page.locator('#trade-partner').selectOption('8');
+    await page.waitForTimeout(1800);
+    const mineSide = page.locator('section').filter({ has: page.locator('h3') }).nth(0);
+    const theirSide = page.locator('section').filter({ has: page.locator('h3') }).nth(1);
+
+    // Give a player, ask for a pick — the same shape that read as "nobody"
+    // in the bar, checked here in the other place it could go missing.
+    await mineSide.locator('button[aria-pressed]').first().click();
+    await theirSide.locator('[data-pick-id]').first().click();
+    await verdictSettled(page);
+
+    // Hold it, then build a different offer so both columns are filled.
+    // The Hold button lives in the bar, and the bar only exists while the
+    // verdict is off screen — so the page has to be put in that state
+    // before the button can be found at all.
+    await page.setViewportSize({ width: 1500, height: 700 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(1200);
+    await page.getByRole('button', { name: /^hold$/i }).first().click();
+    await page.waitForTimeout(800);
+    await page.setViewportSize({ width: 1500, height: 1600 });
+    await page.waitForTimeout(500);
+    await theirSide.locator('[data-pick-id]').first().click();   // take the pick off
+    await theirSide.locator('button[aria-pressed]').first().click();  // ask for a player
+    await verdictSettled(page);
+
+    const compare = page.locator('section').filter({ hasText: /held against current/i })
+        .first();
+    const text = (await compare.innerText()).replace(/\s+/g, ' ');
+    console.log('      ' + text.slice(0, 190));
+    assert('the comparison is showing', await compare.count() >= 1);
+    assert('the held offer still names its pick',
+        /20\d\d (1st|2nd|3rd|4th)/.test(text), text.slice(0, 190));
+    assert('and it reads as a pick, not as a raw id',
+        !/20\d\d-\d-\d/.test(text), text.slice(0, 190));
+    assert('neither column calls a real offer \u201cnobody\u201d',
+        !/nobody/.test(text), text.slice(0, 190));
+
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
+// ───────────────── picks are findable in the same box players are
+{
+    step(17, 'the league search finds picks, not just players');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+    const search = page.locator('[data-search="league"]');
+    assert('the box says picks are findable',
+        /pick/i.test(await search.getAttribute('placeholder') ?? ''),
+        await search.getAttribute('placeholder'));
+
+    await search.fill('2027 1st');
+    await page.waitForTimeout(600);
+    const hits = page.locator('[data-search-results] button');
+    const n = await hits.count();
+    const first = n > 0 ? (await hits.first().innerText()).replace(/\s+/g, ' ') : '';
+    console.log(`      ${n} hits, first: ${first}`);
+    assert('a year and a round finds picks', n > 0, `${n} hits`);
+    assert('and they are labelled as picks', /PICK/.test(first), first);
+    assert('with the manager who holds each one',
+        await hits.first().getAttribute('data-hit-team') != null);
+
+    // The case worth having: a pick on a manager I am not trading with.
+    const startingPartner = await page.locator('#trade-partner').inputValue();
+    let third = null;
+    for (const h of await hits.all()) {
+        const team = await h.getAttribute('data-hit-team');
+        if (team !== startingPartner && team !== '11') { third = h; break; }
+    }
+    assert('a pick is listed on a manager I am not trading with', third != null);
+    if (third) {
+        const team = await third.getAttribute('data-hit-team');
+        const label = (await third.innerText()).replace(/\s+/g, ' ');
+        await third.click();
+        await page.waitForTimeout(2000);
+        assert('picking it switches the partner to whoever holds it',
+            await page.locator('#trade-partner').inputValue() === team,
+            `${await page.locator('#trade-partner').inputValue()} vs ${team}`);
+        const theirSide = page.locator('section').filter({ has: page.locator('h3') })
+            .nth(1);
+        const selected = theirSide.locator('[data-pick-id][aria-pressed="true"]');
+        assert('and puts that pick on the table', await selected.count() === 1,
+            `${await selected.count()} selected — wanted ${label}`);
+        assert('the URL carries it', /getPicks=/.test(page.url()), page.url());
+    }
+
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
+
+// ──── the fourth place a pick can vanish: loading a suggestion the finder made
+{
+    step(18, 'a suggestion loads with the picks that were its price');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+
+    await page.locator('[data-stance-option="buy"]').click();
+    await page.waitForTimeout(2500);
+    const rows = page.locator('[data-offer]');
+    const n = await rows.count();
+    console.log(`      buy stance: ${n} offers`);
+    if (n === 0) {
+        // Legitimate, and step 14 already holds the empty case to its wording.
+        // Nothing to load means nothing to check here.
+        assert('nothing to load, and the page says so',
+            await page.locator('[data-finder-empty]').count() === 1);
+    } else {
+        // `offerKey` is 'team:give+givePicks>get+getPicks', so the row states
+        // its own price and the check need not read it out of the prose.
+        const key = await rows.first().getAttribute('data-offer');
+        const [, priced] = key.match(/:[^+]*\+([^>]*)>/) ?? [];
+        const wanted = priced ? priced.split('.').filter(Boolean) : [];
+        console.log(`      first offer: ${key}`);
+        assert('a buy-stance offer is priced in picks', wanted.length > 0, key);
+
+        await rows.first().click();
+        await verdictSettled(page);
+
+        // Buying means I send the picks, so they land on my side.
+        const mineSide = page.locator('section').filter({ has: page.locator('h3') })
+            .nth(0);
+        const got = await mineSide.locator('[data-pick-id][aria-pressed="true"]')
+            .evaluateAll(e => e.map(x => x.getAttribute('data-pick-id')));
+        console.log(`      wanted [${wanted}] — on the table [${got}]`);
+        // The failure this exists for: the picks were cleared on load, so the
+        // table held a bench body against their best player and priced it as
+        // a gift, while the row the reader clicked showed the price.
+        assert('every pick the offer was priced in is on the table',
+            wanted.every(id => got.includes(id)), `[${got}]`);
+        assert('and nothing else came with it', got.length === wanted.length,
+            `${got.length} vs ${wanted.length}`);
+        assert('the URL carries the price too', /givePicks=/.test(page.url()),
+            page.url());
+    }
+
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
 await b.close();
 console.log(fails.length
     ? `\nFAILED ${fails.length}:\n - ${fails.join('\n - ')}`
