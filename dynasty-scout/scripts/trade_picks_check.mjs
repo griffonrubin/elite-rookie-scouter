@@ -439,13 +439,19 @@ const gapNumber = async page => {
     step(12, 'week one prices every pick unslotted, and says why');
     const { ctx, page, errs } = await open(dynasty, [], 1);
     const mineSide = page.locator('section').filter({ has: page.locator('h3') }).nth(0);
-    const text = await mineSide.innerText();
     const chips = await mineSide.locator('[data-pick-id]')
         .evaluateAll(e => e.map(x => x.innerText.replace(/\s+/g, ' ')));
     assert('no chip claims a band', !chips.some(c => /early|mid|late/.test(c)),
         chips.find(c => /early|mid|late/.test(c)) ?? 'none do');
-    assert('and the panel says a band needs games first',
-        /not projected until game/.test(text));
+    // Read off the note rather than off the panel: the wording used to live
+    // inside each manager's pick list and now sits once beneath both, so
+    // scoping this to one panel asserts where the sentence is rather than
+    // whether it is said.
+    const note = page.locator('p').filter({ hasText: /Market value, not a projection/ });
+    assert('the note is there to say it', await note.count() === 1,
+        `${await note.count()} copies`);
+    assert('and it says a band needs games first',
+        /not projected until game/.test(await note.first().innerText()));
     assert('no page errors', errs.length === 0, errs.join(' | '));
     await ctx.close();
 }
@@ -829,6 +835,52 @@ const gapNumber = async page => {
     assert('no page errors in the redraft league', r.errs.length === 0,
         r.errs.join(' | '));
     await r.ctx.close();
+}
+
+
+// ──── the same hundred and ten words, printed twice, side by side
+{
+    step(21, 'what the pick prices mean is said once, not once per manager');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+    await page.locator('#trade-partner').selectOption('8');
+    await page.waitForTimeout(1800);
+    // The market panel only exists once something is on the table, and the
+    // note's whole claim is where it sits relative to that panel.
+    const mineSide = page.locator('section').filter({ has: page.locator('h3') }).nth(0);
+    await mineSide.locator('[data-pick-id]').first().click();
+    // Waiting on the market panel rather than the verdict: a pick alone moves
+    // no playoff odds, so there is no verdict to settle — which is the whole
+    // invariant the rest of this file is built on.
+    await page.locator('[data-market-gap]').first().waitFor({ timeout: 30000 });
+
+    const note = page.locator('p').filter({ hasText: /Market value, not a projection/ });
+    const n = await note.count();
+    console.log(`      ${n} copy of the note`);
+    // Two is what this looked like when the paragraph lived inside the panel:
+    // both managers' pick lists carried it, so it appeared twice on one screen,
+    // a column apart, identical.
+    assert('exactly one, for both managers’ picks', n === 1, `${n} copies`);
+
+    // And it has to be somewhere it still makes sense. It refers to "the panel
+    // under the verdict", so it belongs below the picks it explains and above
+    // that panel — not floated to the foot of the page.
+    const noteBox = await note.first().boundingBox();
+    const picks = await page.locator('[data-pick-id]').last().boundingBox();
+    const market = await page.locator('[data-market-gap]').first().boundingBox();
+    console.log(`      picks end ${Math.round(picks.y)}, note ${Math.round(noteBox.y)}, `
+        + `market ${Math.round(market.y)}`);
+    assert('it sits below the picks it explains', noteBox.y > picks.y,
+        `${Math.round(noteBox.y)} vs ${Math.round(picks.y)}`);
+    assert('and above the panel it points at', noteBox.y < market.y,
+        `${Math.round(noteBox.y)} vs ${Math.round(market.y)}`);
+
+    // A line of prose the width of the page is not a line anybody reads.
+    console.log(`      note is ${Math.round(noteBox.width)}px wide`);
+    assert('and is not set the full width of the page', noteBox.width <= 1000,
+        `${Math.round(noteBox.width)}px`);
+
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
 }
 
 await b.close();
