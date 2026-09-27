@@ -156,13 +156,27 @@ console.log(`      with room: ${packages(roomy)} uneven offers; `
     + `at the limit: ${packages(tight)}`);
 assert('packages exist when there is room for them', packages(roomy) > 0,
     String(packages(roomy)));
-assert('and none of them would put a roster over the limit',
+/*
+ * Legal once the cut is made, which is the claim now.
+ *
+ * An over-limit trade used to be thrown away, so this could count bodies in
+ * and out and stop there. It is settled by cutting instead — a full roster
+ * that refuses every uneven trade removes consolidation from the list
+ * entirely — so the drop belongs in the arithmetic. The invariant is the same
+ * one: nobody ends up holding more players than the league allows.
+ */
+assert('and none of them leaves a roster over the limit once settled',
     tight.every(o => {
-        const after = mine.length - o.give.length + o.get.length;
-        const theirsAfter = theirs.length - o.get.length + o.give.length;
+        const after = mine.length - o.give.length + o.get.length - o.drops.length;
+        const theirsAfter = theirs.length - o.get.length + o.give.length
+            - o.theirDrops.length;
         const cap = Math.max(mine.length, theirs.length);
         return after <= cap && theirsAfter <= cap;
     }), String(packages(tight)));
+// And a cut is only ever made where one is needed.
+assert('with nobody cut unless the trade actually grows a roster',
+    tight.every(o => o.drops.length === 0
+        || o.get.length - o.give.length >= o.drops.length));
 
 step(5, 'it says why, in the words a message to that manager would use');
 const myRank = { RB: 1, WR: 5, TE: 12, QB: 3 };

@@ -222,6 +222,17 @@ const MIN_GAIN = 0.25;
  */
 const PICK_POOL = 6;
 
+/**
+ * And how many players either side will consider adding to a pick package.
+ *
+ * Every target against every pick package against every extra, so this
+ * multiplies a sweep that was already the slowest of the three. Five of the
+ * dearest is enough to find the trade the shape exists for — the surplus
+ * asset a contender is deep at — without turning the buy list into every
+ * combination of a roster.
+ */
+const EXTRA_POOL = 5;
+
 export interface MarketInput {
     /** What a player is worth on the dynasty market, where it is known. */
     valueOfPlayer: (id: number) => number | null;
@@ -266,6 +277,16 @@ function wireForSlot(slot: string, wire: WireInput): number {
 }
 
 /**
+ * The same thing for a fixed set of slots, worked out once.
+ *
+ * The slots do not change inside a sweep, and the lookup above walks every
+ * position for every empty slot of every one of thirty thousand offers.
+ */
+function wireBySlot(slots: string[], wire?: WireInput): number[] | null {
+    return wire ? slots.map(slot => wireForSlot(slot, wire)) : null;
+}
+
+/**
  * A roster brought back to a legal size, and what it cost to do it.
  *
  * Dropping the worst, which is what the roster order already means: a
@@ -279,10 +300,31 @@ function settle(
     meanOf: (id: number) => number,
 ): { roster: TradeRosterPlayer[]; dropped: number[] } {
     if (size == null || roster.length <= size) return { roster, dropped: [] };
-    const ordered = [...roster].sort((a, b) => meanOf(b.id) - meanOf(a.id));
+    /*
+     * The cheapest few, found rather than sorted for.
+     *
+     * A full sort of a sixteen-man roster, twice for every one of thirty
+     * thousand offers, is most of what this costs — and it is a sort to
+     * answer "who are the worst one or two", which a pass answers. Uneven
+     * offers used to be thrown away before any of this ran, so the work is
+     * new and worth not wasting.
+     */
+    const over = roster.length - size;
+    const dropped: TradeRosterPlayer[] = [];
+    const cut = new Set<number>();
+    for (let n = 0; n < over; n++) {
+        let worst: TradeRosterPlayer | null = null;
+        for (const p of roster) {
+            if (cut.has(p.id)) continue;
+            if (!worst || meanOf(p.id) < meanOf(worst.id)) worst = p;
+        }
+        if (!worst) break;
+        cut.add(worst.id);
+        dropped.push(worst);
+    }
     return {
-        roster: ordered.slice(0, size),
-        dropped: ordered.slice(size).map(p => p.id),
+        roster: roster.filter(p => !cut.has(p.id)),
+        dropped: dropped.map(p => p.id),
     };
 }
 
@@ -320,13 +362,14 @@ function findMutual(
      * drop below honest — a trade that empties a slot is charged the gap
      * down to a free agent, not the whole of the player.
      */
+    const fromWire = wireBySlot(slots, wire);
     const value = (r: TradeRosterPlayer[]) => {
         let total = 0;
         const line = bestLineup(slots, r, meanOf);
         for (let i = 0; i < line.length; i++) {
             const id = line[i];
             if (id != null) total += meanOf(id);
-            else if (wire) total += wireForSlot(slots[i], wire);
+            else if (fromWire) total += fromWire[i];
         }
         return total;
     };
@@ -535,13 +578,14 @@ function findAcrossStances(
     if (mine.length === 0 || slots.length === 0) return [];
 
     /** Same rule as the mutual sweep: an empty slot is worth the wire. */
+    const fromWire = wireBySlot(slots, wire);
     const lineup = (r: TradeRosterPlayer[]) => {
         let total = 0;
         const line = bestLineup(slots, r, meanOf);
         for (let i = 0; i < line.length; i++) {
             const id = line[i];
             if (id != null) total += meanOf(id);
-            else if (wire) total += wireForSlot(slots[i], wire);
+            else if (fromWire) total += fromWire[i];
         }
         return total;
     };
@@ -573,7 +617,22 @@ function findAcrossStances(
          * `buying` says which way round that is.
          */
         const consider = (
-            player: TradeRosterPlayer, picks: FinderPick[], buying: boolean,
+            player: TradeRosterPlayer, packages: FinderPick[][], buying: boolean,
+            /**
+             * Players the paying side sends along with the picks.
+             *
+             * The sweep could pay in picks and nothing else, so the trade a
+             * contender actually makes was unreachable: the aging back they
+             * are deep at, plus a second, for the receiver they want. Paying
+             * partly in players is how most real packages are built — picks
+             * alone means every buyer must have hoarded picks, and the ones
+             * who have not are told there is nothing to do.
+             *
+             * Chosen on market value rather than on points, because the job
+             * of an extra is to pay. A body whose loss the lineup does not
+             * feel is already handled — that is the cut below, and it is free.
+             */
+            extras: TradeRosterPlayer[] = [],
         ) => {
             /*
              * The roster spot, priced rather than bartered.
@@ -590,12 +649,14 @@ function findAcrossStances(
              * name neither manager was thinking about — and the drop is
              * reported so the reader still knows a spot is being spent.
              */
+            const extraIds = new Set(extras.map(p => p.id));
+            if (extraIds.has(player.id)) return;
             const mineAfter0 = buying
-                ? [...mine, player]
-                : mine.filter(p => p.id !== player.id);
+                ? [...mine.filter(p => !extraIds.has(p.id)), player]
+                : mine.filter(p => p.id !== player.id).concat(extras);
             const theirsAfter0 = buying
-                ? them.roster.filter(p => p.id !== player.id)
-                : [...them.roster, player];
+                ? them.roster.filter(p => p.id !== player.id).concat(extras)
+                : [...them.roster.filter(p => !extraIds.has(p.id)), player];
             const mineSettled = settle(mineAfter0, rosterSize, meanOf);
             const theirsSettled = settle(theirsAfter0, rosterSize, meanOf);
             const mineAfter = mineSettled.roster;
@@ -603,8 +664,45 @@ function findAcrossStances(
 
             const myGain = lineup(mineAfter) - myBase;
             const theirGain = lineup(theirsAfter) - theirBase;
-            const cost = sum(picks);
+            /*
+             * What the package is worth against what it buys.
+             *
+             * An extra with no price makes the comparison a number against a
+             * blank, the same way an unpriced player does — so an unpriced
+             * body cannot be part of the payment. It can still be cut for
+             * free below; that is a different thing.
+             */
+            let extrasWorth = 0;
+            for (const e of extras) {
+                const v = market.valueOfPlayer(e.id);
+                if (v == null) return;
+                extrasWorth += v;
+            }
             const worth = market.valueOfPlayer(player.id) ?? 0;
+            /**
+             * The cheapest package that clears the seller's price.
+             *
+             * Chosen here rather than by trying each one as a separate offer,
+             * because the picks do not touch either lineup — only the target
+             * and the extras do — so pricing twenty-one packages against the
+             * same pair of lineups recomputed the expensive half twenty-one
+             * times to answer a question about arithmetic. The buy sweep ran
+             * at 1815ms doing that; the lineups are now built once per target
+             * and package.
+             *
+             * Cheapest, because the dedup below keeps one route per target
+             * anyway and the one worth keeping is the one that costs least —
+             * which is what it was already choosing, the long way round.
+             */
+            let picks: FinderPick[] | null = null;
+            let picksCost = Infinity;
+            for (const pkg of packages) {
+                const c = sum(pkg);
+                if (c + extrasWorth <= worth) continue;
+                if (c < picksCost) { picksCost = c; picks = pkg; }
+            }
+            if (!picks) return;
+            const cost = picksCost + extrasWorth;
             // Both halves have to be priced or the comparison is a number
             // against a blank, which is how a kicker ends up looking like a
             // free first-round pick.
@@ -631,8 +729,8 @@ function findAcrossStances(
             const myMarketGain = buying ? worth - cost : cost - worth;
             offers.push({
                 teamKey: them.key, teamName: them.name,
-                give: buying ? [] : [player.id],
-                get: buying ? [player.id] : [],
+                give: buying ? extras.map(p => p.id) : [player.id],
+                get: buying ? [player.id] : extras.map(p => p.id),
                 givePicks: buying ? picks.map(p => p.id) : [],
                 getPicks: buying ? [] : picks.map(p => p.id),
                 myGain: Math.round(myGain * 10) / 10,
@@ -646,22 +744,81 @@ function findAcrossStances(
                     ? Math.round((myGain / cost) * 1000 * 100) / 100
                     : Math.round((myMarketGain / Math.max(0.1, -myGain)) * 100) / 100,
                 balance: Math.round(buyerGain * 10) / 10,
-                // A picks-for-a-player trade always moves one body one way
-                // and none the other, so the counts never match. The tag says
-                // so, and `drops` below names whoever has to go for it.
-                unevenCount: true,
+                // Uneven whenever the bodies do not balance, which a package
+                // paid partly in players can. `drops` below names whoever has
+                // to go when they do not.
+                // Both directions move one body for the target and `extras`
+                // the other way, so the counts balance on exactly one extra —
+                // the same expression either way round, which is why it is
+                // not written as a pair of branches that say the same thing.
+                unevenCount: extras.length !== 1,
                 drops: mineSettled.dropped,
                 theirDrops: theirsSettled.dropped,
             });
         };
 
+        /**
+         * The players each side could put in a package, dearest first.
+         *
+         * Market value, not points: an extra is there to pay, and the player
+         * whose loss the lineup does not feel is already free through the cut.
+         * Capped tightly because this multiplies an already large sweep —
+         * every target against every pick package against every extra.
+         */
+        const payers = (roster: TradeRosterPlayer[]) => roster
+            .filter(r => (market.valueOfPlayer(r.id) ?? 0) > 0)
+            .sort((a, b) => (market.valueOfPlayer(b.id) ?? 0)
+                - (market.valueOfPlayer(a.id) ?? 0))
+            .slice(0, EXTRA_POOL);
+
+        /**
+         * A player joins the package only where the picks cannot pay alone.
+         *
+         * What is genuinely new is the offer that could not be made at all: a
+         * manager whose picks fall short of what the seller wants, who is told
+         * there is nothing available when the answer is that they are deep at
+         * running back.
+         *
+         * Adding a body to a package that already clears the price makes the
+         * same trade dearer for the same lineup gain, and those never reach
+         * the reader — but this guard is not what stops them. The dedup below
+         * keeps one route per target and the cheaper one always wins, which
+         * was confirmed by removing this and watching the list come back
+         * unchanged. So this is a performance rule, honestly: trying every
+         * extra against every package against every target took the buy sweep
+         * from 294ms to 1815ms to produce a list identical to the one it
+         * produces now.
+         */
         if (stance === 'buy') {
+            const mineExtras = payers(mine);
+            const packageBestMine = myPackages.length
+                ? Math.max(...myPackages.map(sum)) : 0;
             for (const b of them.roster) {
-                for (const pkg of myPackages) consider(b, pkg, true);
+                const worth = market.valueOfPlayer(b.id);
+                if (worth == null || worth <= 0) continue;
+                if (packageBestMine > worth) { consider(b, myPackages, true); continue; }
+                for (const e of mineExtras) {
+                    if (packageBestMine + (market.valueOfPlayer(e.id) ?? 0) > worth) {
+                        consider(b, myPackages, true, [e]);
+                    }
+                }
             }
         } else {
+            const theirExtras = payers(them.roster);
+            const packageBestTheirs = theirPackages.length
+                ? Math.max(...theirPackages.map(sum)) : 0;
             for (const a of mine) {
-                for (const pkg of theirPackages) consider(a, pkg, false);
+                const worth = market.valueOfPlayer(a.id);
+                if (worth == null || worth <= 0) continue;
+                if (packageBestTheirs > worth) {
+                    consider(a, theirPackages, false);
+                    continue;
+                }
+                for (const e of theirExtras) {
+                    if (packageBestTheirs + (market.valueOfPlayer(e.id) ?? 0) > worth) {
+                        consider(a, theirPackages, false, [e]);
+                    }
+                }
             }
         }
     }

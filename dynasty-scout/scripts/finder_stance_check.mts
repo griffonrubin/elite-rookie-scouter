@@ -156,10 +156,24 @@ step(5, 'the seller is never asked to take less than the player is worth');
         myPicks: [pick('2027-2-1', '2027 2nd', 1500)],
     };
     const buy = findTrades(me, OTHERS, undefined, 40, 'buy', cheap);
-    const underpaid = buy.filter(o => (VALUES[o.get[0]] ?? 0) >= 1500);
+    /*
+     * What was paid, all of it.
+     *
+     * This used to compare the target's value against 1,500 and call anything
+     * dearer an underpay, which was right while a package could only be
+     * picks. A buyer can now add a player, so a 1,500 pick and a 3,200 back
+     * really do cover a 4,600 receiver — and the old filter read that as three
+     * lowballs. The invariant is the same and the arithmetic has to include
+     * the whole package to state it.
+     */
+    const paid = (o: typeof buy[number]) =>
+        o.givePicks.reduce((t, id) => t + (id === '2027-2-1' ? 1500 : 0), 0)
+        + o.give.reduce((t, id) => t + (VALUES[id] ?? 0), 0);
+    const underpaid = buy.filter(o => paid(o) <= (VALUES[o.get[0]] ?? 0));
     console.log(`      ${buy.length} offers survive, ${underpaid.length} underpaying`);
-    assert('nobody is offered a 1,500 pick for a player worth more',
-        underpaid.length === 0, underpaid.map(o => `P${o.get[0]}`).join(','));
+    assert('nobody is offered less than the player is worth',
+        underpaid.length === 0,
+        underpaid.map(o => `P${o.get[0]} for ${paid(o)}`).join(','));
     assert('and the cheap pick still buys something it covers',
         buy.length > 0, `${buy.length} — without this the line above is vacuous`);
 }
@@ -215,9 +229,14 @@ step(7, 'selling is the mirror: a player out, picks in');
             + `their lineup +${o.theirGain}  my market +${o.myMarketGain}`);
     }
     assert('there are offers', sell.length > 0, `${sell.length}`);
-    assert('every one sends a player and receives picks',
+    // The shape that defines selling: my player leaves, picks come back, and
+    // no pick of mine ever goes the other way. A player can come back with
+    // the picks now — that is the package the other manager builds when their
+    // picks alone do not cover what they are buying — so the count of
+    // incoming bodies is no longer part of the claim.
+    assert('every one sends a player and is paid in picks',
         sell.every(o => o.give.length === 1 && o.getPicks.length > 0
-            && o.get.length === 0 && o.givePicks.length === 0));
+            && o.givePicks.length === 0));
     assert('the buyer’s lineup improves in all of them',
         sell.every(o => o.theirGain >= 0.25));
     assert('and I gain on the market in all of them',
@@ -313,9 +332,13 @@ step(9, 'a full roster is handled by cutting the spot, not by bartering it');
         `${loose.filter(o => o.drops.length).length} of ${loose.length} name one`);
 
     const sell = findTrades(me, OTHERS, THEIRS.length, 40, 'sell', market);
+    // Stated as the arithmetic rather than as one shape. The buyer takes my
+    // player and sends back picks, and may send a player with them where
+    // their picks fall short — so they end over by one body only when they
+    // send none, and that is exactly when a cut is named.
     assert('selling into a full roster works the same way',
-        sell.length > 0 && sell.every(o => o.get.length === 0
-            && o.getPicks.length > 0 && o.theirDrops.length === 1),
+        sell.length > 0 && sell.every(o => o.getPicks.length > 0
+            && o.theirDrops.length === Math.max(0, 1 - o.get.length)),
         `${sell.length} offers`);
 }
 
@@ -558,6 +581,64 @@ step(13, 'an empty lineup slot is worth the wire, not zero');
     assert('losing him costs strictly less when somebody can replace him',
         better.length > 0, `${better.length} of ${shared.length} improved`);
     assert('and never more', shared.every(k => w.get(k)! >= b.get(k)!));
+}
+
+step(14, 'a package pays partly in players when the picks fall short');
+{
+    /*
+     * The trade a contender actually makes: the back they are deep at, plus a
+     * pick, for the receiver they want. Picks alone meant every buyer had to
+     * have hoarded them, and the ones who had not were told there was nothing
+     * to do.
+     *
+     * Their best receiver is 4,600. One 2027 2nd is 1,500 and cannot reach
+     * him however the sweep is asked — so any offer for him has to carry a
+     * player, which is the whole point of the shape.
+     */
+    const short: MarketInput = {
+        ...market,
+        myPicks: [pick('2027-2-1', '2027 2nd', 1500)],
+    };
+    const buy = findTrades(me, OTHERS, undefined, 40, 'buy', short);
+    const packaged = buy.filter(o => o.give.length > 0);
+    console.log(`      ${buy.length} offers, ${packaged.length} paying with a player`);
+    assert('the short pick still buys somebody on its own', 
+        buy.some(o => o.give.length === 0), 
+        `${buy.filter(o => o.give.length === 0).length}`);
+    assert('and a player joins the package to reach the dearer ones',
+        packaged.length > 0, `${packaged.length}`);
+
+    // Every packaged offer has to clear the seller's price on the whole of
+    // what is sent, or it is a lowball wearing two assets.
+    const paid = (o: typeof buy[number]) =>
+        (o.givePicks.length ? 1500 : 0)
+        + o.give.reduce((t, id) => t + (VALUES[id] ?? 0), 0);
+    assert('each one pays more than the player is worth',
+        packaged.every(o => paid(o) > (VALUES[o.get[0]] ?? 0)),
+        packaged.map(o => `${paid(o)}v${VALUES[o.get[0]]}`).join(' '));
+    // And the buyer's lineup still has to improve, or it is money for nothing.
+    assert('and still improves the buyer’s lineup',
+        packaged.every(o => o.myGain >= 0.25));
+
+    /*
+     * The list never shows a packaged route where a pure-pick one exists.
+     *
+     * Worth asserting as an output property, but not evidence for the guard
+     * that skips those combinations: removing the guard leaves this passing,
+     * because the dedup keeps one route per target and the cheaper one wins
+     * either way. The guard is a performance rule and the comment in the
+     * sweep now says so rather than implying it changes what is read.
+     */
+    const rich: MarketInput = {
+        ...market,
+        myPicks: [pick('2027-1-1', '2027 1st', 9000)],
+    };
+    const easy = findTrades(me, OTHERS, undefined, 40, 'buy', rich);
+    console.log(`      with a 9,000 pick: ${easy.length} offers, `
+        + `${easy.filter(o => o.give.length > 0).length} carrying a player`);
+    assert('no packaged route survives where picks alone would do',
+        easy.length > 0 && easy.every(o => o.give.length === 0),
+        `${easy.filter(o => o.give.length > 0).length} carry one`);
 }
 
 console.log(fails.length
