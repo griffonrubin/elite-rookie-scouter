@@ -142,13 +142,27 @@ export function parsePickId(
 /**
  * Which league types have picks worth trading.
  *
- * Keeper counts: a keeper league's rookie draft is smaller but its picks are
- * still an asset, and a keeper manager trading one is doing the same thing a
- * dynasty manager is. Redraft does not — every roster is torn up before that
- * pick is ever used, so putting one on the table would be theatre.
+ * Dynasty, and only dynasty.
+ *
+ * This used to count keeper as well, on the reasoning that a keeper league's
+ * rookie draft is smaller but its picks are still an asset. The flaw is not
+ * in whether those picks can be traded — they often can — but in what this
+ * page would say they are worth. Every price here comes from a dynasty
+ * rookie-pick feed, where a 2027 first means the first pick of a draft made
+ * only of incoming rookies, entering a roster kept whole.
+ *
+ * A keeper league's first-round pick is a different asset with the same name.
+ * It buys the best player in a draft that nearly everybody is re-entering,
+ * and it is used once before the roster is torn up again. Putting a dynasty
+ * rookie price against it is not an approximation, it is a number about
+ * something else — and a confident wrong number is worse here than no number,
+ * because the whole panel exists to be weighed against the points.
+ *
+ * Redraft never had them: every roster is torn up before that pick is used,
+ * so putting one on the table would be theatre.
  */
 export function hasPicks(kind: LeagueKind | null | undefined): boolean {
-    return kind === 'dynasty' || kind === 'keeper';
+    return kind === 'dynasty';
 }
 
 /**

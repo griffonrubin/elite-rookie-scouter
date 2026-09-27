@@ -47,6 +47,17 @@ const dynasty = { ...F.leagueDetail[LEAGUE_ID] };
 dynasty.settings = { ...dynasty.settings, type: 2, draft_rounds: 4 };
 const redraft = { ...F.leagueDetail[LEAGUE_ID] };
 redraft.settings = { ...redraft.settings, type: 0 };
+/**
+ * A keeper league, which Sleeper reports as type 1.
+ *
+ * Its picks can be traded on the platform, and this page still does not offer
+ * them, because every price here is a dynasty rookie-pick price and a keeper
+ * league's first round is a different asset wearing the same name — the best
+ * player in a draft nearly everybody re-enters, used once before the rosters
+ * are torn up. A confident wrong number is worse than none.
+ */
+const keeper = { ...F.leagueDetail[LEAGUE_ID] };
+keeper.settings = { ...keeper.settings, type: 1, draft_rounds: 4 };
 
 const b = await chromium.launch({
     executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
@@ -919,6 +930,33 @@ const gapNumber = async page => {
         !flat.some(t => /\d for 0|0 for \d/.test(t)),
         flat.find(t => /\d for 0|0 for \d/.test(t)) ?? '');
 
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
+
+// ──── keeper is not dynasty, whatever the platform will let you trade
+{
+    step(23, 'a keeper league is not offered picks either');
+    const { ctx, page, errs } = await open(keeper, TRADED, 10);
+    assert('no pick chips', await page.locator('[data-pick-id]').count() === 0,
+        `${await page.locator('[data-pick-id]').count()} chips`);
+    // Nor a way to turn them on: the platform said what this league is, so
+    // there is nothing to ask about.
+    assert('and no switch, because the platform did say',
+        await page.locator('[data-toggle="picks"]').count() === 0);
+    // The stance control is the other thing picks pay for. Without a market
+    // there is no buying or selling to be done.
+    assert('no buying or selling either',
+        await page.locator('[data-stance-option]').count() === 0);
+    const mineSide = page.locator('section').filter({ has: page.locator('h3') }).nth(0);
+    await mineSide.locator('button[aria-pressed]').first().click();
+    await verdictSettled(page);
+    // Everything that is not about picks still has to work.
+    assert('the season verdict still works', (await headline(page)).length > 0);
+    assert('and the finder still finds player trades',
+        await page.locator('[data-offer]').count() > 0,
+        `${await page.locator('[data-offer]').count()} offers`);
     assert('no page errors', errs.length === 0, errs.join(' | '));
     await ctx.close();
 }
