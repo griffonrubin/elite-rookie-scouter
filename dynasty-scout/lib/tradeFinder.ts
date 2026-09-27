@@ -201,10 +201,24 @@ const PACKAGE_POOL = 8;
  * 590ms — which a browser runs twice under StrictMode while somebody waits.
  * Six-a-side is fifteen pairs and two hundred and twenty-five.
  *
- * The cut is not arbitrary. A two-for-two names four players and all four
- * have to be worth moving; an offer built from your seventh and eighth best
- * against theirs is not a trade anybody sends, and the same reasoning that
- * caps the pool above applies harder when both sides are packages.
+ * Six rather than eight was first justified here on the reasoning that a
+ * two-for-two names four players and all four have to be worth moving, so an
+ * offer built from your seventh and eighth best is not one anybody sends.
+ * That was wrong, and measuring it said so: at eight a side, players ranked
+ * seventh and eighth carry twenty-three per cent of the slots in the
+ * surviving offers and nearly double how many two-for-twos are found. They
+ * are real trades.
+ *
+ * The reason to stop at six is what those extra trades are worth to a reader.
+ * Across five leagues the deeper pool lifts the mean balance of the list by
+ * seven per cent — and leaves the top of it almost exactly where it was, the
+ * best offer improving by one and a half per cent, with slightly fewer
+ * managers represented. It improves the middle of a list that is read from
+ * the top, and costs eighty-eight per cent more time to do it (431ms against
+ * 810ms with the sweep as it stands).
+ *
+ * Ten is not an option worth weighing: `PACKAGE_POOL` already caps what
+ * `topOf` returns, so a larger number here changes nothing at all.
  */
 const PAIR_POOL = 6;
 
