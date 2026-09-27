@@ -20,6 +20,13 @@ import { useSchedule } from '@/lib/useSchedule';
 import { measureTeam, rankLeague, type TeamProfile } from '@/lib/teamProfile';
 import type { Offer } from '@/lib/tradeFinder';
 import { RosterPicker } from './RosterPicker';
+import { PlayerSearch, type SearchHit } from './PlayerSearch';
+import { PickPicker } from './PickPicker';
+import { MarketValue, type PricedAsset } from './MarketValue';
+import {
+    findPick, hasPicks, pickInventory, pickName, superflexLeague, type PickAsset,
+} from '@/lib/tradePicks';
+import type { TradePrices } from '@/lib/tradePrices';
 import { TradeVerdict } from './TradeVerdict';
 import { TradeSummaryBar, useOutOfView } from './TradeSummaryBar';
 import { useTradeEvaluation, type TradeInput } from '@/lib/useTradeEvaluation';
@@ -48,7 +55,18 @@ const DEFAULT_PLAYOFF_WEEK = 15;
  * could I have offered instead", and that is a question you answer by trying
  * things.
  */
-export function TradeClient({ players }: { players: RedraftPlayer[] }) {
+export function TradeClient({ players, prices }: {
+    players: RedraftPlayer[];
+    /**
+     * The dynasty market, for the half of a trade the season cannot price.
+     *
+     * Passed from the server component rather than fetched here: it is two
+     * numbers per player and twenty-four pick rows, it changes once a day,
+     * and a page that already waits on the league's rosters should not also
+     * wait on a second round trip for it.
+     */
+    prices: TradePrices;
+}) {
     const league = useLeagueSync(players);
     /** What this league pays per catch; every stored number is full PPR. */
     const scoring = league.snapshot?.scoring ?? null;
@@ -102,12 +120,22 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
 
     const [myGive, setMyGive] = useState<Set<number> | null>(null);
     const [theirGive, setTheirGive] = useState<Set<number> | null>(null);
+    /** Picks each way, by the ids `tradePicks` builds. */
+    const [myPicks, setMyPicks] = useState<Set<string> | null>(null);
+    const [theirPicks, setTheirPicks] = useState<Set<string> | null>(null);
 
     const fromUrlGive = useMemo(() => new Set(urlTrade.give), [urlTrade.give]);
     const fromUrlGet = useMemo(() => new Set(urlTrade.get), [urlTrade.get]);
     // The reader's own picks win once they have made one.
     const giving = myGive ?? fromUrlGive;
     const getting = theirGive ?? fromUrlGet;
+
+    const fromUrlGivePicks = useMemo(
+        () => new Set(urlTrade.givePicks ?? []), [urlTrade.givePicks]);
+    const fromUrlGetPicks = useMemo(
+        () => new Set(urlTrade.getPicks ?? []), [urlTrade.getPicks]);
+    const givingPicks = myPicks ?? fromUrlGivePicks;
+    const gettingPicks = theirPicks ?? fromUrlGetPicks;
 
     const myKey = league.connection?.teamKey ?? null;
 
@@ -387,10 +415,24 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
 
     const { result, pending } = useTradeEvaluation(question);
 
-    const nameOf = (id: number) =>
-        teams?.flatMap(t => t.roster).find(p => p.id === id)?.name ?? String(id);
-    const positionOf = (id: number) =>
-        teams?.flatMap(t => t.roster).find(p => p.id === id)?.position ?? '';
+    /**
+     * Everyone in the league, by id.
+     *
+     * Built once rather than scanned per call: both of these are asked for
+     * every player in the offer, every row of the verdict and every asset in
+     * the market panel, and each call was flattening twelve rosters and
+     * walking a hundred and seventy players to answer one of them. Stable
+     * too, so the memos that take them hold between renders.
+     */
+    const byLeagueId = useMemo(() => {
+        const out = new Map<number, TradeRosterPlayer>();
+        for (const t of teams ?? []) for (const p of t.roster) out.set(p.id, p);
+        return out;
+    }, [teams]);
+    const nameOf = useCallback(
+        (id: number) => byLeagueId.get(id)?.name ?? String(id), [byLeagueId]);
+    const positionOf = useCallback(
+        (id: number) => byLeagueId.get(id)?.position ?? '', [byLeagueId]);
 
     const toggle = (set: Set<number>, setter: (s: Set<number>) => void) =>
         (id: number) => {
@@ -398,6 +440,173 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
             if (next.has(id)) next.delete(id); else next.add(id);
             setter(next);
         };
+
+    /**
+     * Whether this league has draft picks worth trading, and who holds them.
+     *
+     * Gated on the league's own type, because in a redraft league a 2027
+     * first is not an asset — every roster is torn up before it is used, and
+     * offering one would be theatre. Where the platform will not say (ESPN
+     * reports no such field) the reader gets the switch rather than a page
+     * that quietly decided their dynasty league has no picks in it.
+     */
+    const [picksOn, setPicksOn] = useState<boolean | null>(null);
+    const platformKind = league.snapshot?.leagueKind ?? null;
+    const picksEnabled = picksOn ?? hasPicks(platformKind);
+    /** True where nothing said, so the switch is worth showing. */
+    const kindUnknown = platformKind == null;
+    /**
+     * Whether pick ownership was actually read, or assumed.
+     *
+     * An empty list of trades and a platform with no endpoint for them look
+     * identical from here, so the honest reading is "read it where the
+     * platform is one that reports it". Sleeper is; ESPN is not.
+     */
+    const ownershipRead = league.connection?.platform !== 'espn';
+
+    const superflex = useMemo(() => superflexLeague(slots), [slots]);
+
+    /**
+     * The next three rookie drafts, which is as far as the market prices.
+     *
+     * Taken from the feed rather than counted forward from today, so the
+     * seasons on the page are exactly the seasons there is a price for and
+     * no row ever reads as a pick worth nothing.
+     */
+    const pickSeasons = useMemo(() => {
+        const seasons = [...new Set(prices.picks.map(p => p.season))]
+            .filter(s => s > SEASON)
+            .sort((a, b) => a - b);
+        return seasons;
+    }, [prices.picks]);
+
+    const picksByTeam = useMemo(() => {
+        if (!picksEnabled || !teams || pickSeasons.length === 0) return null;
+        const rounds = Math.min(
+            league.snapshot?.draftRounds ?? 4,
+            Math.max(...prices.picks.map(p => p.round)),
+        );
+        if (rounds < 1) return null;
+        return pickInventory({
+            teamKeys: teams.map(t => t.key),
+            teamNames: new Map(teams.map(t => [t.key, t.name])),
+            records: new Map(teams.map(t => [t.key, t.record
+                ? { wins: t.record.wins, losses: t.record.losses,
+                    ties: t.record.ties, pointsFor: t.record.pointsFor }
+                : null])),
+            seasons: pickSeasons,
+            rounds,
+            traded: league.snapshot?.pickTrades ?? [],
+            prices: prices.picks,
+            superflex,
+            // How much of the regular season has been played, which is what
+            // decides whether the next draft's order can be projected at all
+            // and how much of the projection the record gets to carry.
+            played: Math.max(0, (week ?? 1) - 1),
+            total: Math.max(0, (league.snapshot?.playoffWeekStart
+                ?? DEFAULT_PLAYOFF_WEEK) - 1),
+        });
+    }, [picksEnabled, teams, pickSeasons, prices.picks, superflex, week,
+        league.snapshot?.draftRounds, league.snapshot?.pickTrades,
+        league.snapshot?.playoffWeekStart]);
+
+    /** The market's price for a player, in this league's format. */
+    const priceOfPlayer = useMemo(() => {
+        const by = new Map(prices.players.map(([id, v1, sf]) => [id, superflex ? sf : v1]));
+        return (id: number) => by.get(id) ?? null;
+    }, [prices.players, superflex]);
+
+    /**
+     * Everything on the table, priced on the market's scale.
+     *
+     * Players and picks together, because the market total is only a
+     * comparison if both halves are on it — "you gain a 2027 1st" without
+     * what the receiver leaving was worth is not a sentence about a trade.
+     */
+    const marketGive: PricedAsset[] = useMemo(() => {
+        const mine = picksByTeam && me ? picksByTeam.get(me.key) ?? [] : [];
+        return [
+            ...[...giving].map(id => ({
+                key: `p${id}`, name: nameOf(id),
+                value: priceOfPlayer(id), pick: false,
+            })),
+            ...[...givingPicks]
+                .map(id => findPick(mine, id))
+                .filter((p): p is PickAsset => p != null)
+                .map(p => ({ key: p.id, name: pickName(p), value: p.value, pick: true })),
+        ];
+    }, [giving, givingPicks, picksByTeam, me, priceOfPlayer, nameOf]);
+
+    const marketGet: PricedAsset[] = useMemo(() => {
+        const theirs = picksByTeam && them ? picksByTeam.get(them.key) ?? [] : [];
+        return [
+            ...[...getting].map(id => ({
+                key: `p${id}`, name: nameOf(id),
+                value: priceOfPlayer(id), pick: false,
+            })),
+            ...[...gettingPicks]
+                .map(id => findPick(theirs, id))
+                .filter((p): p is PickAsset => p != null)
+                .map(p => ({ key: p.id, name: pickName(p), value: p.value, pick: true })),
+        ];
+    }, [getting, gettingPicks, picksByTeam, them, priceOfPlayer, nameOf]);
+
+    const togglePick = (set: Set<string>, setter: (s: Set<string>) => void) =>
+        (id: string) => {
+            const next = new Set(set);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            setter(next);
+        };
+
+    /**
+     * Every rostered player in the league, for the search box.
+     *
+     * The whole league rather than the two rosters on screen, because the
+     * question the box exists to answer is which manager holds the player
+     * you want — and that cannot be answered out of a list you already
+     * chose the teams for.
+     */
+    const searchHits: SearchHit[] = useMemo(() => {
+        if (!teams) return [];
+        const out: SearchHit[] = [];
+        for (const t of teams) {
+            for (const p of t.roster) {
+                out.push({
+                    id: p.id, name: p.name, position: p.position,
+                    teamKey: t.key, teamName: t.name,
+                    starting: t.starting.has(p.id),
+                    mean: simOf(p.id)?.outcome.mean ?? null,
+                    onTable: (t.key === myKey && giving.has(p.id))
+                        || (t.key === partnerKey && getting.has(p.id)),
+                });
+            }
+        }
+        return out;
+    }, [teams, simOf, myKey, partnerKey, giving, getting]);
+
+    /**
+     * A search hit, put on the side of the table it belongs to.
+     *
+     * Wanting a player and wanting to trade with whoever holds him are the
+     * same wish, so a hit on a third manager's roster switches the partner
+     * rather than asking the reader to go and do it. What was asked of the
+     * old partner goes with them: those ids are players on a roster that is
+     * no longer on screen, and carrying them over would price an offer
+     * against two managers at once.
+     */
+    const pickFromSearch = useCallback((hit: SearchHit) => {
+        if (hit.teamKey === myKey) {
+            setMyGive(new Set(giving).add(hit.id));
+            return;
+        }
+        if (hit.teamKey === partnerKey) {
+            setTheirGive(new Set(getting).add(hit.id));
+            return;
+        }
+        setPartner(hit.teamKey);
+        setTheirGive(new Set([hit.id]));
+        setTheirPicks(new Set());
+    }, [myKey, partnerKey, giving, getting]);
 
     /**
      * Keep the address bar holding the trade on screen.
@@ -424,6 +633,7 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
      */
     const href = tradeHref('/in-season/trades', {
         partner: partnerKey, give: [...giving], get: [...getting],
+        givePicks: [...givingPicks], getPicks: [...gettingPicks],
     });
     useEffect(() => {
         if (!ready) return;
@@ -459,7 +669,14 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
         && held.give.length === giving.size
         && held.get.length === getting.size
         && held.give.every(id => giving.has(id))
-        && held.get.every(id => getting.has(id));
+        && held.get.every(id => getting.has(id))
+        // Picks count towards "the same offer" even though they do not move
+        // the odds: two offers differing only by a 2027 first are not the
+        // same offer, and treating them as one would put the pin on both.
+        && (held.givePicks ?? []).length === givingPicks.size
+        && (held.getPicks ?? []).length === gettingPicks.size
+        && (held.givePicks ?? []).every(id => givingPicks.has(id))
+        && (held.getPicks ?? []).every(id => gettingPicks.has(id));
 
     const hold = useCallback(() => {
         if (sameAsHeld) { setHeld(null); return; }
@@ -467,10 +684,11 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
         setHeld({
             partnerKey: them.key, partnerName: them.name,
             give: [...giving], get: [...getting],
+            givePicks: [...givingPicks], getPicks: [...gettingPicks],
             mine: mineEffect, theirs: theirsEffect,
             horizon, week: week ?? null,
         });
-    }, [sameAsHeld, result, them, giving, getting,
+    }, [sameAsHeld, result, them, giving, getting, givingPicks, gettingPicks,
         mineEffect, theirsEffect, horizon, week]);
 
     const restore = useCallback(() => {
@@ -478,11 +696,15 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
         setPartner(held.partnerKey);
         setMyGive(new Set(held.give));
         setTheirGive(new Set(held.get));
+        setMyPicks(new Set(held.givePicks ?? []));
+        setTheirPicks(new Set(held.getPicks ?? []));
     }, [held]);
 
     const clear = useCallback(() => {
         setMyGive(new Set());
         setTheirGive(new Set());
+        setMyPicks(new Set());
+        setTheirPicks(new Set());
     }, []);
 
     /**
@@ -554,6 +776,12 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 setPartner(o.teamKey);
                                 setMyGive(new Set(o.give));
                                 setTheirGive(new Set(o.get));
+                                // The finder deals in players only, so a
+                                // loaded suggestion is the whole offer and
+                                // any picks left on the table are not part
+                                // of the thing being priced.
+                                setMyPicks(new Set());
+                                setTheirPicks(new Set());
                                 if (typeof window !== 'undefined') {
                                     window.scrollBy({ top: 220, behavior: 'smooth' });
                                 }
@@ -570,6 +798,9 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                             onChange={e => {
                                 setPartner(e.target.value);
                                 setTheirGive(new Set());
+                                // Their picks go with them: the ids name a
+                                // holding that is no longer on screen.
+                                setTheirPicks(new Set());
                             }}
                             className="text-[12px] font-semibold rounded-lg px-2 py-1
                                        bg-black/40 border border-white/10">
@@ -577,7 +808,8 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 <option key={t.key} value={t.key}>{t.name}</option>
                             ))}
                         </select>
-                        {(giving.size > 0 || getting.size > 0) && (
+                        {(giving.size > 0 || getting.size > 0
+                            || givingPicks.size > 0 || gettingPicks.size > 0) && (
                             <button type="button"
                                 onClick={clear}
                                 className="text-[11px] px-2 py-1 rounded-lg
@@ -586,7 +818,27 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 Clear
                             </button>
                         )}
+                        {/* Only where the platform would not say. Where it
+                            did, the league's own setting decides and a
+                            switch would just be a way to get it wrong. */}
+                        {kindUnknown && pickSeasons.length > 0 && (
+                            <label className="text-[11px] text-muted-foreground/55
+                                              inline-flex items-center gap-1.5 ml-auto
+                                              cursor-pointer"
+                                title="Your platform does not report whether this is a
+                                       dynasty league, so picks are off until you say">
+                                <input type="checkbox" checked={picksEnabled}
+                                    data-toggle="picks"
+                                    onChange={e => setPicksOn(e.target.checked)}
+                                    className="accent-white/70" />
+                                Trade draft picks
+                            </label>
+                        )}
                     </div>
+
+                    <PlayerSearch hits={searchHits} myKey={myKey}
+                        partnerKey={partnerKey} onPick={pickFromSearch}
+                        horizon={horizon} />
 
                     <div className="grid gap-3 lg:grid-cols-2">
                         {me && (
@@ -596,7 +848,15 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 roster={me.roster} starting={me.starting}
                                 selected={giving} meanOf={meanOf} horizon={horizon}
                                 costOf={costFor(me.key)}
-                                onToggle={toggle(giving, setMyGive)} />
+                                onToggle={toggle(giving, setMyGive)}>
+                                {picksByTeam && (
+                                    <PickPicker
+                                        picks={picksByTeam.get(me.key) ?? []}
+                                        selected={givingPicks}
+                                        unknownOwnership={!ownershipRead}
+                                        onToggle={togglePick(givingPicks, setMyPicks)} />
+                                )}
+                            </RosterPicker>
                         )}
                         {them && (
                             <RosterPicker
@@ -605,9 +865,23 @@ export function TradeClient({ players }: { players: RedraftPlayer[] }) {
                                 roster={them.roster} starting={them.starting}
                                 selected={getting} meanOf={meanOf} horizon={horizon}
                                 costOf={costFor(them.key)}
-                                onToggle={toggle(getting, setTheirGive)} />
+                                onToggle={toggle(getting, setTheirGive)}>
+                                {picksByTeam && (
+                                    <PickPicker
+                                        picks={picksByTeam.get(them.key) ?? []}
+                                        selected={gettingPicks}
+                                        unknownOwnership={!ownershipRead}
+                                        onToggle={togglePick(gettingPicks, setTheirPicks)} />
+                                )}
+                            </RosterPicker>
                         )}
                     </div>
+
+                    {picksEnabled && (marketGive.length > 0 || marketGet.length > 0) && (
+                        <MarketValue give={marketGive} get={marketGet}
+                            superflex={superflex}
+                            partnerName={them?.name ?? ''} />
+                    )}
 
                     {held && (
                         <TradeCompare held={held} nameOf={nameOf}

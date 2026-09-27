@@ -29,6 +29,15 @@ export interface HeldOffer {
     partnerName: string;
     give: number[];
     get: number[];
+    /**
+     * Picks each way, so restoring a held offer restores the whole of it.
+     *
+     * Kept but not shown in the columns: the two columns compare what each
+     * offer does to the season, and a pick does nothing to the season. Drawn
+     * there it would sit in a row of playoff-odds numbers looking like one.
+     */
+    givePicks?: string[];
+    getPicks?: string[];
     mine: TradeEffect | null;
     theirs: TradeEffect | null;
     /** What it was priced over, so a stale hold can be spotted and dropped. */

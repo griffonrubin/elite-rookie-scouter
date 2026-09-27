@@ -24,15 +24,17 @@ import { leverageOf } from '@/lib/seasonOdds';
  * that produced them.
  */
 
-function Tile({ label, value, sub, ink, title }: {
+function Tile({ label, value, sub, ink, title, ...rest }: {
     label: string;
     value: React.ReactNode;
     sub?: React.ReactNode;
     ink?: string;
     title?: string;
+    /** Data attributes a check can anchor to, passed straight through. */
+    [key: `data-${string}`]: string | number | undefined;
 }) {
     return (
-        <div className="min-w-0" title={title}>
+        <div className="min-w-0" title={title} {...rest}>
             <div className="text-[9px] uppercase tracking-widest font-bold
                             text-muted-foreground/40 truncate">
                 {label}
@@ -93,6 +95,7 @@ export function SeasonStrip({ odds, play, sos, teams, week, remaining, cut, name
             <div className="grid gap-x-4 gap-y-4 grid-cols-2 lg:grid-cols-4">
                 {odds && (
                     <Tile label="Still playing in January"
+                        data-my-odds={Math.round(odds.odds * 100)}
                         value={`${Math.round(odds.odds * 100)}%`}
                         ink={odds.odds >= 0.6 ? '#86EFAC'
                             : odds.odds <= 0.25 ? '#FCA5A5' : undefined}

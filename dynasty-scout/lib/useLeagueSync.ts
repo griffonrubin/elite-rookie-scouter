@@ -1,11 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { clearStartSitCache } from '@/lib/useStartSit';
 import { RedraftPlayer } from '@/lib/types';
 import {
-    getCurrentWeek, getLeague, getLeagueRosters, getLeagueUsers, getMatchups, teamName,
+    getCurrentWeek, getLeague, getLeagueRosters, getLeagueUsers, getMatchups,
+    getTradedPicks, teamName,
 } from '@/lib/sleeper';
+import type { LeagueKind, PickTrade } from '@/lib/tradePicks';
 import type { LeagueGame } from '@/lib/leagueSchedule';
 import { readEspnCreds } from '@/lib/espn';
 import { scoringFrom, type Scoring } from '@/lib/scoring';
@@ -117,9 +119,48 @@ export interface LeagueSnapshot {
      * reader move it rather than quietly assuming.
      */
     playoffTeams?: number | null;
+    /**
+     * How many divisions the league is split into, where it says.
+     *
+     * Read and reported rather than modelled, which is the honest state
+     * of this. Where a league has divisions the seeding usually is not
+     * "the best six records": division winners take the top seeds, so a
+     * team leading a weak division can be through on a record that would
+     * miss in a single table, and a strong second-place team can miss on
+     * one that would walk it. The simulation here plays a single table.
+     *
+     * Modelling it properly needs to know which rule the league uses, and
+     * that is a platform setting this has no way to verify — so rather
+     * than guess a rule and print confident odds off it, the pages say
+     * the odds assume one table and that divisions would change them.
+     * A stated assumption a reader can correct for beats a number that
+     * looks like it knew.
+     */
+    divisions?: number | null;
     /** True in a best-ball league: the platform scores the optimal lineup
         itself, so there is no start/sit call to make. */
     bestBall?: boolean;
+    /**
+     * Redraft, keeper or dynasty, where the platform says.
+     *
+     * Which decides whether a future draft pick is an asset. Null where the
+     * platform will not say — and null is not the same as redraft, so the
+     * trades page offers the reader the switch rather than deciding that
+     * their dynasty league has no picks in it.
+     */
+    leagueKind?: LeagueKind | null;
+    /** Rounds in the rookie draft, which bounds what picks exist. */
+    draftRounds?: number | null;
+    /**
+     * Future picks that have changed hands, where the platform reports them.
+     *
+     * Only the ones that moved: everything unlisted is still held by the
+     * team it belongs to, which is how Sleeper says it and the compact way
+     * to say it. An empty list on a platform that has no such endpoint is
+     * indistinguishable from a league where nothing has been traded, so the
+     * page states the assumption instead of hiding it.
+     */
+    pickTrades?: PickTrade[] | null;
     /**
      * What this league pays per catch, where the platform says.
      *
@@ -312,9 +353,13 @@ export function clearSnapshotCache() {
 }
 
 async function fetchSleeper(conn: LeagueConnection, week: number): Promise<LeagueSnapshot | null> {
-    const [league, rosters, users, matchups] = await Promise.all([
+    const [league, rosters, users, matchups, traded] = await Promise.all([
         getLeague(conn.id), getLeagueRosters(conn.id),
         getLeagueUsers(conn.id), getMatchups(conn.id, week),
+        // One request, and the only place any platform will say who holds a
+        // future pick. Cheap enough to take on every snapshot rather than
+        // make the trades page ask for it separately and wait twice.
+        getTradedPicks(conn.id),
     ]);
     if (rosters.length === 0) return null;
 
@@ -388,7 +433,24 @@ async function fetchSleeper(conn: LeagueConnection, week: number): Promise<Leagu
         rosterPositions: league?.roster_positions ?? null,
         playoffWeekStart: league?.settings?.playoff_week_start ?? null,
         playoffTeams: league?.settings?.playoff_teams ?? null,
+        // Absent on every league that has none, and on any platform that
+        // does not report it — which reads the same as "one table" and is
+        // the right thing for it to read as.
+        divisions: typeof league?.settings?.divisions === 'number'
+            && league.settings.divisions > 1 ? league.settings.divisions : null,
         bestBall: league?.settings?.best_ball === 1,
+        // 0 redraft, 1 keeper, 2 dynasty. Left null where the platform does
+        // not say, which the trades page reads as "ask rather than assume".
+        leagueKind: league?.settings?.type === 2 ? 'dynasty'
+            : league?.settings?.type === 1 ? 'keeper'
+                : league?.settings?.type === 0 ? 'redraft' : null,
+        draftRounds: league?.settings?.draft_rounds ?? null,
+        pickTrades: traded.map((t): PickTrade => ({
+            season: Number(t.season),
+            round: t.round,
+            originalKey: String(t.roster_id),
+            ownerKey: String(t.owner_id),
+        })).filter(t => Number.isFinite(t.season)),
         scoring: scoringFrom(league?.scoring_settings),
         /**
          * Not here, deliberately — see `useLeagueFixtures`.
@@ -462,6 +524,7 @@ async function fetchEspn(conn: LeagueConnection, week: number): Promise<LeagueSn
         leagueName: d.name ?? null, week: d.week ?? week, teams, opponentKeyFor,
         playoffWeekStart: d.playoffWeekStart ?? null,
         playoffTeams: d.playoffTeams ?? null,
+        divisions: d.divisions ?? null,
         /**
          * The two facts about a league that change every number in the app,
          * which this path was silently not carrying.
@@ -490,9 +553,6 @@ export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {
     const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(null);
     const [week, setWeekState] = useState<number | null>(null);
     const [nonce, setNonce] = useState(0);
-
-    const playersRef = useRef(players);
-    playersRef.current = players;
 
     useEffect(() => { setConnection(readConnection()); }, []);
 
@@ -555,6 +615,23 @@ export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {
     const oppTeam = oppKey ? snapshot?.teams.find(t => t.key === oppKey) ?? null : null;
     const platform = connection?.platform ?? 'sleeper';
 
+    /**
+     * Matched once per snapshot, not once per render.
+     *
+     * `matchSide` builds fresh arrays, and every page downstream memoises
+     * its expensive work on `league.me.starters` — a twenty-thousand-trial
+     * matchup, nine three-thousand-trial slot contests. Called in the
+     * return statement, those arrays were new on every render, so every
+     * memo keyed on them was a memo that never held: each stray re-render,
+     * from a fetch landing or a filter changing, paid for the whole
+     * simulation again. Measured on Start/Sit, four of them, at roughly
+     * 340ms each.
+     */
+    const me = useMemo(
+        () => matchSide(myTeam, players, platform), [myTeam, players, platform]);
+    const opponent = useMemo(
+        () => matchSide(oppTeam, players, platform), [oppTeam, players, platform]);
+
     const [saved, setSaved] = useState<LeagueConnection[]>([]);
     // Read once on mount: localStorage is not available during render on the
     // server, and the migration in readSaved has to run in the browser.
@@ -601,8 +678,7 @@ export function useLeagueSync(players: RedraftPlayer[]): LeagueSyncState {
 
     return {
         connection, status, snapshot, week,
-        me: matchSide(myTeam, playersRef.current, platform),
-        opponent: matchSide(oppTeam, playersRef.current, platform),
+        me, opponent,
         connect, disconnect, setTeam, saved, switchTo, forget,
         setWeek: (w: number) => setWeekState(w),
         nonce,

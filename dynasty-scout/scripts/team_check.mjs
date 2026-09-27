@@ -14,6 +14,7 @@
  */
 import { chromium } from 'playwright-core';
 import fs from 'fs';
+import { matchupsFor } from './fixtures.mjs';
 
 const F = JSON.parse(fs.readFileSync(new URL('./fixtures-real-leagues.json', import.meta.url), 'utf8'));
 const BASE = process.env.BASE ?? 'http://localhost:3090';
@@ -33,7 +34,7 @@ await ctx.route('**/api/sleeper/**', route => {
     let m;
     if ((m = u.match(/\/league\/(\d+)\/rosters/))) return j(F.rosters[m[1]] ?? []);
     if ((m = u.match(/\/league\/(\d+)\/users/))) return j(F.users[m[1]] ?? []);
-    if ((m = u.match(/\/league\/(\d+)\/matchups\//))) return j(F.matchups[m[1]] ?? []);
+    if ((m = u.match(/\/league\/(\d+)\/matchups\/(\d+)/))) return j(matchupsFor(F, m[1], Number(m[2])));
     if ((m = u.match(/\/league\/(\d+)$/))) return j(F.leagueDetail[m[1]] ?? null);
     return j(null);
 });
@@ -486,7 +487,21 @@ if (await worth.count() === 0) {
     console.log(`      driving /in-season/trades?give=${id} (${name})`);
     await page.goto(`${BASE}/in-season/trades?give=${id}`, { waitUntil: 'domcontentloaded' });
     await page.locator('#trade-partner').waitFor({ timeout: 30000 });
-    await page.waitForTimeout(3500);
+    /**
+     * Waited for, not slept through.
+     *
+     * The analyser replays the league in a worker now, so the verdict
+     * arrives when it arrives — about two seconds after a hundred and
+     * sixty-eight players have been priced, which was longer than the
+     * three and a half this used to sleep. A fixed sleep here does not
+     * fail when the page is wrong, it fails when the page is slow.
+     * `aria-busy` is the page saying the number belongs to the selection.
+     */
+    const verdict = page.getByRole('heading', { name: /what it does to each side/i });
+    await verdict.waitFor({ timeout: 30000 });
+    await page.locator('[aria-busy="false"]').filter({ has: verdict })
+        .waitFor({ timeout: 30000 });
+    await page.waitForTimeout(400);
     const on = await page.locator('button[aria-pressed="true"][data-player-id]')
         .evaluateAll(els => els.map(e => e.getAttribute('data-player-id')));
     console.log('      already on the table: ' + (on.join(', ') || 'nobody'));
@@ -506,11 +521,23 @@ if (await worth.count() === 0) {
         .evaluateAll(els => els.map(e => e.textContent?.replace(/\s+/g, ' ').trim() ?? ''));
     for (const v of verdictRows) console.log('      ' + v.slice(0, 110));
     const mineRow = verdictRows.find(v => /— you/.test(v)) ?? '';
-    const delta = parseFloat((mineRow.match(/([−+-][\d.]+) pts of win rate/) || [])[1]
+    /**
+     * Whatever unit the verdict is quoting.
+     *
+     * It says "pts of playoff odds" where the league's season could be
+     * simulated and "pts of win rate" where it could not, and this used to
+     * match only the second — so once the odds arrived the number stopped
+     * parsing, the assertion compared NaN, and a check that reads a page it
+     * no longer understands is not a check. The unit is the page's
+     * business; the sign is this test's.
+     */
+    const unit = /pts of (playoff odds|win rate)/.exec(mineRow)?.[1] ?? null;
+    const delta = parseFloat((mineRow.match(/([−+-][\d.]+) pts of /) || [])[1]
         ?.replace('−', '-') ?? 'NaN');
     assert('the verdict names me', /— you/.test(mineRow), mineRow.slice(0, 60));
+    assert('in a unit the page actually prints', unit != null, String(unit));
     assert('and giving a starter away for nothing makes me worse',
-        delta < 0, String(delta));
+        delta < 0, `${delta} pts of ${unit}`);
     // Clicking anything must hand control back to the reader.
     await page.locator('button[data-player-id]').nth(6).click();
     await page.waitForTimeout(2500);

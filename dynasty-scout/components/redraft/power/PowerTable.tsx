@@ -310,7 +310,13 @@ export function PowerTable({
                                                 another, and they already
                                                 know which. */}
                                             {po ? (
+                                                /* Tagged on my own row only, so a
+                                                   check can hold the five pages to
+                                                   the one number they all promise
+                                                   to be quoting. */
                                                 <span className="block text-[11px] font-bold"
+                                                    data-my-odds={isMe
+                                                        ? Math.round(po.odds * 100) : undefined}
                                                     style={{ color: oddsInk(po.odds) }}>
                                                     {po.odds >= 0.995 ? '>99'
                                                         : po.odds <= 0.005 ? '<1'

@@ -14,6 +14,7 @@
  */
 import { chromium } from 'playwright-core';
 import fs from 'fs';
+import { matchupsFor } from './fixtures.mjs';
 
 const F = JSON.parse(fs.readFileSync(new URL('./fixtures-real-leagues.json', import.meta.url), 'utf8'));
 const BASE = process.env.BASE ?? 'http://localhost:3090';
@@ -33,7 +34,7 @@ await ctx.route('**/api/sleeper/**', route => {
     let m;
     if ((m = u.match(/\/league\/(\d+)\/rosters/))) return j(F.rosters[m[1]] ?? []);
     if ((m = u.match(/\/league\/(\d+)\/users/))) return j(F.users[m[1]] ?? []);
-    if ((m = u.match(/\/league\/(\d+)\/matchups\//))) return j(F.matchups[m[1]] ?? []);
+    if ((m = u.match(/\/league\/(\d+)\/matchups\/(\d+)/))) return j(matchupsFor(F, m[1], Number(m[2])));
     if ((m = u.match(/\/league\/(\d+)$/))) return j(F.leagueDetail[m[1]] ?? null);
     return j(null);
 });

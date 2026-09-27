@@ -5,6 +5,7 @@ import { Plus, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DIVERGING } from '@/lib/vizTokens';
 import type { DynastyAsset } from '@/lib/dynastyAssets';
+import { marketVerdict } from '@/lib/marketGap';
 
 type Format = '1qb' | 'sf';
 
@@ -14,35 +15,6 @@ const POSITION_TINT: Record<string, string> = {
 
 const valueIn = (a: DynastyAsset, f: Format) =>
     (f === 'sf' ? a.valueSf : a.value1qb) ?? 0;
-
-/**
- * How lopsided a trade has to be before it is worth saying so.
- *
- * Not a fixed number of points, because these values are not a fixed scale:
- * ten per cent of a 1.01 is several hundred, ten per cent of a 4th is
- * eighty. Expressed against the bigger side, which is the side the gap is
- * being measured out of.
- *
- * Ten per cent is where the community's own tolerance sits — trade
- * calculators that colour anything at all tend to call a deal fair inside
- * it, and two humans agreeing a deal are rarely arguing over less.
- */
-const FAIR = 0.10;
-const LOPSIDED = 0.25;
-
-function verdict(diff: number, bigger: number): { text: string; colour: string } {
-    if (bigger === 0) return { text: 'nothing on the table yet', colour: 'rgba(255,255,255,0.4)' };
-    const share = Math.abs(diff) / bigger;
-    if (share < FAIR) return { text: 'an even trade', colour: 'rgba(255,255,255,0.55)' };
-    const side = diff > 0 ? 'you' : 'them';
-    if (share < LOPSIDED) {
-        return { text: `tilts ${side === 'you' ? 'your' : 'their'} way`, colour: '#93C5FD' };
-    }
-    return {
-        text: `heavily ${side === 'you' ? 'your' : 'their'} way`,
-        colour: diff > 0 ? '#93C5FD' : '#FCA5A5',
-    };
-}
 
 /** One asset, as a removable chip on a side of the table. */
 function Chip({ asset, format, onRemove }: {
@@ -168,7 +140,7 @@ export function TradeCalculator({ assets }: { assets: DynastyAsset[] }) {
     // Positive means the side you receive is worth more.
     const diff = totalB - totalA;
     const bigger = Math.max(totalA, totalB);
-    const call = verdict(diff, bigger);
+    const call = marketVerdict(diff, bigger);
     const share = bigger > 0 ? Math.abs(diff) / bigger : 0;
 
     const add = (id: string) => {
