@@ -167,16 +167,39 @@ assert('and none of them would put a roster over the limit',
 step(5, 'it says why, in the words a message to that manager would use');
 const myRank = { RB: 1, WR: 5, TE: 12, QB: 3 };
 const theirRank = { RB: 12, WR: 2, TE: 1, QB: 4 };
-const why = offerReason(top, myRank, theirRank, positionOf, 12);
+/*
+ * The offer this is about, chosen rather than assumed.
+ *
+ * It used to read `offers[0]`, which coupled a claim about the sentence to
+ * whichever offer happened to rank first — so adding two-for-two to the sweep
+ * failed it, for no reason to do with what step 5 is checking.
+ */
+const swap = offers.find(o => o.give.every(id => positionOf(id) === 'RB')
+    && o.get.every(id => positionOf(id) === 'TE'));
+assert('the sweep found a backs-for-tight-end offer to explain', swap != null,
+    offers.slice(0, 3).map(o => `${o.give.map(positionOf).join('+')}`
+        + `→${o.get.map(positionOf).join('+')}`).join(' '));
+const why = swap ? offerReason(swap, myRank, theirRank, positionOf, 12) : null;
 console.log('      ' + (why ?? '(no reason given)'));
 assert('a complementary swap explains itself', why != null, String(why));
 assert('and names both sides of it',
     !!why && /you are 1 of 12 at RB/i.test(why) && /they are 1 at TE/i.test(why), why ?? '');
-// A swap between two positions where the rosters lean the same way is not a
-// complementary trade, and claiming it is would be worse than silence.
-const flat = offerReason(top, { RB: 1, TE: 2 }, { RB: 2, TE: 1 }, positionOf, 12);
+/*
+ * A swap between two positions where the rosters lean the same way is not a
+ * complementary trade, and claiming it is would be worse than silence.
+ *
+ * Both ranks now lean the same way — each roster is better at RB than at TE —
+ * which is the case that must produce nothing. The previous version passed
+ * ranks that lean opposite ways, so a sentence was the correct answer, and
+ * accepted it through an `|| /at RB/` escape that every possible sentence
+ * satisfies: the give side is all RB, so the reason always says "at RB".
+ * It could not fail.
+ */
+const flat = swap
+    ? offerReason(swap, { RB: 1, TE: 2 }, { RB: 1, TE: 2 }, positionOf, 12)
+    : null;
 assert('and stays quiet when the rosters do not actually complement',
-    flat === null || /at RB/.test(flat), String(flat));
+    flat === null, String(flat));
 
 step(6, 'what a real league costs to search');
 /**

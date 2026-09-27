@@ -21,7 +21,7 @@ import { measureTeam, rankLeague, type TeamProfile } from '@/lib/teamProfile';
 import type { Offer } from '@/lib/tradeFinder';
 import { RosterPicker } from './RosterPicker';
 import { PlayerSearch, type SearchHit } from './PlayerSearch';
-import { PickPicker } from './PickPicker';
+import { PickPicker, PickNote } from './PickPicker';
 import { MarketValue, type PricedAsset } from './MarketValue';
 import {
     findPick, hasPicks, parsePickId, pickInventory, pickName, roundLabel,
@@ -934,7 +934,6 @@ export function TradeClient({ players, prices }: {
                                     <PickPicker
                                         picks={picksByTeam.get(me.key) ?? []}
                                         selected={givingPicks}
-                                        unknownOwnership={!ownershipRead}
                                         onToggle={togglePick(givingPicks, setMyPicks)} />
                                 )}
                             </RosterPicker>
@@ -951,12 +950,21 @@ export function TradeClient({ players, prices }: {
                                     <PickPicker
                                         picks={picksByTeam.get(them.key) ?? []}
                                         selected={gettingPicks}
-                                        unknownOwnership={!ownershipRead}
                                         onToggle={togglePick(gettingPicks, setTheirPicks)} />
                                 )}
                             </RosterPicker>
                         )}
                     </div>
+
+                    {/* Once, under both panels, rather than once inside each
+                        — it says the same thing about either manager's picks
+                        and sits directly above the market panel it refers to. */}
+                    {picksByTeam && me && them && (
+                        <PickNote
+                            picks={[...(picksByTeam.get(me.key) ?? []),
+                                ...(picksByTeam.get(them.key) ?? [])]}
+                            unknownOwnership={!ownershipRead} />
+                    )}
 
                     {picksEnabled && (marketGive.length > 0 || marketGet.length > 0) && (
                         <MarketValue give={marketGive} get={marketGet}

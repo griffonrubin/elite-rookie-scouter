@@ -384,6 +384,64 @@ step(10, 'a mutual offer is costed on the market without being ranked on it');
         outgoing.every(o => o.myMarketGain === null));
 }
 
+step(11, 'two for two, and one row per idea rather than per permutation');
+{
+    const mutual = findTrades(me, OTHERS, undefined, 40);
+    const shape = (o: typeof mutual[number]) => `${o.give.length}for${o.get.length}`;
+    const counts: Record<string, number> = {};
+    for (const o of mutual) counts[shape(o)] = (counts[shape(o)] ?? 0) + 1;
+    console.log('      ' + JSON.stringify(counts));
+
+    // The shape the sweep could not reach at all: each manager dealing from
+    // depth at one position into need at another, two players each way. It is
+    // also the only multi-player shape that costs neither side a roster spot.
+    assert('the sweep now reaches two-for-two', (counts['2for2'] ?? 0) > 0,
+        JSON.stringify(counts));
+    assert('and has not stopped finding the simple ones',
+        (counts['1for1'] ?? 0) > 0, JSON.stringify(counts));
+    assert('every two-for-two still improves both lineups',
+        mutual.filter(o => o.give.length === 2 && o.get.length === 2)
+            .every(o => o.myGain >= 0.25 && o.theirGain >= 0.25));
+    // Two out and two back is even, so it must never be tagged as changing
+    // a roster's size.
+    assert('and none of them is tagged as uneven',
+        mutual.filter(o => o.give.length === 2 && o.get.length === 2)
+            .every(o => !o.unevenCount));
+
+    /*
+     * The flood this shape causes if nothing stops it.
+     *
+     * Swap either of your two or either of theirs and it is a different offer
+     * by exact match while being the same suggestion. Before the variant
+     * rule the sweep returned five rows built around one receiver.
+     */
+    for (const o of mutual) {
+        const men = new Set([...o.give, ...o.get]);
+        const twins = mutual.filter(x => x !== o && x.teamKey === o.teamKey
+            && [...x.give, ...x.get].filter(id => men.has(id)).length >= 3);
+        if (twins.length) {
+            assert('no offer is a three-quarter copy of another',
+                false, `[${o.give}]→[${o.get}] vs [${twins[0].give}]→[${twins[0].get}]`);
+            break;
+        }
+    }
+    assert('no offer is a three-quarter copy of another', true);
+
+    // Two one-for-ones can only ever share one player, and both must survive:
+    // their back for your receiver and their back for your other receiver are
+    // different things to send. The rule must not reach them.
+    const ones = mutual.filter(o => o.give.length === 1 && o.get.length === 1);
+    const sharing = ones.filter(o => ones.some(x => x !== o && x.teamKey === o.teamKey
+        && (x.give[0] === o.give[0] || x.get[0] === o.get[0])));
+    console.log(`      ${sharing.length} one-for-ones share a player with another`);
+    // Asserted directly rather than behind an "or there are none" escape.
+    // That escape passed at 0 of 0 — which is exactly the state an
+    // over-aggressive rule produces, so the guard excused the failure it was
+    // written to catch. Both ways of reaching zero are failures here.
+    assert('one-for-ones that share a player are both kept',
+        sharing.length > 0, `${sharing.length} sharing, of ${ones.length}`);
+}
+
 console.log(fails.length
     ? `\nFAILED ${fails.length}:\n - ${fails.join('\n - ')}`
     : '\nfinder_stance_check  ok');

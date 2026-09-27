@@ -26,19 +26,12 @@ const SLOT_LABEL: Record<string, string> = {
  * reader who can see both records can make that adjustment themselves.
  */
 export function PickPicker({
-    picks, selected, onToggle, disabled, unknownOwnership,
+    picks, selected, onToggle, disabled,
 }: {
     picks: PickAsset[];
     selected: Set<string>;
     onToggle: (id: string) => void;
     disabled?: boolean;
-    /**
-     * True where the platform never said who holds what, so these are each
-     * team's own picks by assumption. Said on the panel rather than hidden,
-     * because a reader whose league has traded picks needs to know the list
-     * is a default and not a reading.
-     */
-    unknownOwnership?: boolean;
 }) {
     if (picks.length === 0) {
         return (
@@ -164,31 +157,64 @@ export function PickPicker({
                     </ul>
                 </div>
             ))}
-            <p className="text-[9px] text-muted-foreground/30 mt-1.5">
-                Market value, not a projection of this season — a pick does not play,
-                so it cannot move the playoff odds below, and the panel under the
-                verdict totals it separately.
-                {anyProjected ? ' Picks in the next draft are priced at their '
-                    + 'projected band: the league is ranked on a weighted average of '
-                    + 'record and points scored, the record carrying the share of the '
-                    + 'regular season already played, and the draft read in reverse so '
-                    + 'the worst team picks first. It is a projection and it will move '
-                    + '\u2014 an early first is worth nearly double a late one, so the '
-                    + 'band is doing most of the work in these numbers. Later drafts '
-                    + 'keep the market\u2019s unslotted price, because the roster that '
-                    + 'pick belongs to does not exist yet.'
-                    : ` Bands are not projected until game ${PROJECTION_MIN_GAMES}: `
-                      + 'an early first is worth nearly double a late one, and putting '
-                      + 'that on three games would be guessing with a multiplier. '
-                      + 'Until then every pick carries the market\u2019s unslotted '
-                      + 'price, which is what that price is for.'}
-                {unknownOwnership && ' Your platform does not report which picks have '
-                    + 'been traded, so these are each team’s own picks. Where your '
-                    + 'league has moved some, read this list with that in mind.'}
-                {' '}Where a season is under way, the record beside a pick is the
-                record of the team it belongs to — the worse they are doing, the
-                earlier the pick lands.
-            </p>
         </div>
+    );
+}
+
+/**
+ * What the numbers on those chips mean, said once.
+ *
+ * This used to live inside the panel, which meant it was rendered once per
+ * manager — the same hundred and ten words printed twice, side by side, on
+ * one screen. Two identical paragraphs do not explain a thing twice as well;
+ * they read as two different notes until you have compared them, and they
+ * push the market panel they refer to further down the page.
+ *
+ * It takes both teams' picks because the wording turns on whether any band
+ * has been projected yet, and that is a fact about the season rather than
+ * about either manager. Early on, neither side has bands and the note says
+ * why; later, both do.
+ */
+export function PickNote({
+    picks, unknownOwnership,
+}: {
+    /** Every pick on the table's two panels, both teams together. */
+    picks: PickAsset[];
+    /**
+     * True where the platform never said who holds what, so these are each
+     * team's own picks by assumption. Said rather than hidden, because a
+     * reader whose league has traded picks needs to know the list is a
+     * default and not a reading.
+     */
+    unknownOwnership?: boolean;
+}) {
+    if (picks.length === 0) return null;
+    const anyProjected = picks.some(p => p.projection != null);
+    return (
+        <p className="text-[10px] text-muted-foreground/35 max-w-[980px]">
+            Market value, not a projection of this season — a pick does not play,
+            so it cannot move the playoff odds below, and the panel under the
+            verdict totals it separately.
+            {anyProjected ? ' Picks in the next draft are priced at their '
+                + 'projected band: the league is ranked on a weighted average of '
+                + 'record and points scored, the record carrying the share of the '
+                + 'regular season already played, and the draft read in reverse so '
+                + 'the worst team picks first. It is a projection and it will move '
+                + '\u2014 an early first is worth nearly double a late one, so the '
+                + 'band is doing most of the work in these numbers. Later drafts '
+                + 'keep the market\u2019s unslotted price, because the roster that '
+                + 'pick belongs to does not exist yet.'
+                : ` Bands are not projected until game ${PROJECTION_MIN_GAMES}: `
+                  + 'an early first is worth nearly double a late one, and putting '
+                  + 'that on three games would be guessing with a multiplier. '
+                  + 'Until then every pick carries the market\u2019s unslotted '
+                  + 'price, which is what that price is for.'}
+            {unknownOwnership && ' Your platform does not report which picks have '
+                + 'been traded, so these are each team’s own picks. Where your '
+                + 'league has moved some, read this list with that in mind.'}
+            {' '}Where a season is under way, the record beside a pick is the
+            record of the team it belongs to — the worse they are doing, the
+            earlier the pick lands.
+        </p>
     );
 }
