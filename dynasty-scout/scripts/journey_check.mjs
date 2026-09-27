@@ -9,7 +9,10 @@
 import { chromium } from 'playwright-core';
 import fs from 'fs';
 
-const BASE = process.env.BASE ?? 'http://localhost:3080';
+// 3090, like every other check here. This one alone defaulted to 3080, so
+// running it the way the rest are run got a connection refused — which reads
+// as the app being down and is a stale number in this line.
+const BASE = process.env.BASE ?? 'http://localhost:3090';
 
 const R = JSON.parse(fs.readFileSync(new URL('./fixtures-journey-roster.json', import.meta.url), 'utf8'));
 const sid = p => String(p.sleeper_id);

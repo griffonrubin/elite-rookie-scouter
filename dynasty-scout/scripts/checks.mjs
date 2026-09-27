@@ -93,9 +93,10 @@ if (missing.length) {
     console.error(`Missing from node_modules: ${missing.join(', ')}.\n`
         + `  npm install --no-save ${missing.join(' ')} `
         + '&& git checkout -- package-lock.json\n'
-        + 'Neither is a declared dependency, so an install prunes them and '
-        + 'every check that needs one fails on module resolution rather than '
-        + 'on anything it was written to check.');
+        + `${missing.length > 1 ? 'Neither is' : 'It is not'} a declared `
+        + `dependency, so an install prunes ${missing.length > 1 ? 'them' : 'it'} `
+        + 'and every check that needs one fails on module resolution rather '
+        + 'than on anything it was written to check.');
     process.exit(1);
 }
 
