@@ -551,6 +551,25 @@ export function TradeClient({ players, prices }: {
         ];
     }, [getting, gettingPicks, picksByTeam, them, priceOfPlayer, nameOf]);
 
+    /**
+     * The picks on each side, shortened for the bar at the foot of the page.
+     * "2027 1st" rather than the full "(from Dave)" name, because that bar
+     * is one line and the name is only there to give the numbers a subject.
+     */
+    const shortPicks = (list: PickAsset[], chosen: Set<string>) =>
+        [...chosen]
+            .map(id => findPick(list, id))
+            .filter((p): p is PickAsset => p != null)
+            .map(p => `${p.season} ${p.label}`);
+    const givePickLabels = useMemo(
+        () => shortPicks(picksByTeam && me ? picksByTeam.get(me.key) ?? [] : [],
+            givingPicks),
+        [picksByTeam, me, givingPicks]);
+    const getPickLabels = useMemo(
+        () => shortPicks(picksByTeam && them ? picksByTeam.get(them.key) ?? [] : [],
+            gettingPicks),
+        [picksByTeam, them, gettingPicks]);
+
     const togglePick = (set: Set<string>, setter: (s: Set<string>) => void) =>
         (id: string) => {
             const next = new Set(set);
@@ -919,7 +938,9 @@ export function TradeClient({ players, prices }: {
                     <TradeSummaryBar
                         mine={mineEffect} theirs={theirsEffect}
                         partnerName={them?.name ?? ''}
-                        give={[...giving]} get={[...getting]} nameOf={nameOf}
+                        give={[...giving]} get={[...getting]}
+                        givePicks={givePickLabels} getPicks={getPickLabels}
+                        nameOf={nameOf}
                         href={href}
                         visible={result != null && verdictOffscreen}
                         pending={pending}

@@ -37,15 +37,25 @@ export function useOutOfView(el: HTMLElement | null): boolean {
     return out;
 }
 
-/** Two names and a count, because the bar has one line and a trade has six. */
-function shorthand(ids: number[], nameOf: (id: number) => string): string {
-    if (ids.length === 0) return 'nobody';
+/**
+ * Two names and a count, because the bar has one line and a trade has six.
+ *
+ * Picks belong here as much as players do. Left out, a side made only of
+ * them read as "nobody" — so the bar stood in for the verdict while
+ * describing a different trade from the one the verdict had priced, and the
+ * link the same bar copies carried the picks it was not mentioning.
+ */
+function shorthand(
+    ids: number[], nameOf: (id: number) => string, picks: string[] = [],
+): string {
     const last = (id: number) => {
         const parts = nameOf(id).split(' ');
         return parts.length > 1 ? parts.slice(1).join(' ') : parts[0];
     };
-    if (ids.length <= 2) return ids.map(last).join(' + ');
-    return `${last(ids[0])} + ${ids.length - 1} more`;
+    const labels = [...ids.map(last), ...picks];
+    if (labels.length === 0) return 'nobody';
+    if (labels.length <= 2) return labels.join(' + ');
+    return `${labels[0]} + ${labels.length - 1} more`;
 }
 
 /** One side's number, said the way the panel below says it. */
@@ -89,7 +99,7 @@ function Side({ e, label, strong }: {
  * a message nobody answers.
  */
 export function TradeSummaryBar({
-    mine, theirs, partnerName, give, get, nameOf, href,
+    mine, theirs, partnerName, give, get, givePicks, getPicks, nameOf, href,
     visible, pending, pinned, onPin, onClear, onSeeDetail,
 }: {
     mine: TradeEffect | null;
@@ -97,6 +107,9 @@ export function TradeSummaryBar({
     partnerName: string;
     give: number[];
     get: number[];
+    /** Picks each way, already shortened to "2027 1st". */
+    givePicks?: string[];
+    getPicks?: string[];
     nameOf: (id: number) => string;
     /** The page's own address with this trade in it, for the copy button. */
     href: string;
@@ -129,6 +142,9 @@ export function TradeSummaryBar({
 
     return (
         <div aria-hidden={!visible}
+            // So a check can read what the bar is claiming about the trade,
+            // and whether it is the one on the table.
+            data-bar="summary"
             className={cn(`fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08]
                            transition-transform duration-200 print:hidden`,
                 visible ? 'translate-y-0' : 'translate-y-full pointer-events-none')}
@@ -143,11 +159,11 @@ export function TradeSummaryBar({
                 <span className="text-[11px] min-w-0 flex-1 basis-full sm:basis-auto
                                  sm:max-w-[320px] truncate text-muted-foreground/60">
                     <span className="text-foreground/75 font-semibold">
-                        {shorthand(give, nameOf)}
+                        {shorthand(give, nameOf, givePicks)}
                     </span>
                     <span className="text-muted-foreground/35"> &rarr; </span>
                     <span className="text-foreground/75 font-semibold">
-                        {shorthand(get, nameOf)}
+                        {shorthand(get, nameOf, getPicks)}
                     </span>
                     <span className="hidden md:inline"> &middot; {partnerName}</span>
                 </span>

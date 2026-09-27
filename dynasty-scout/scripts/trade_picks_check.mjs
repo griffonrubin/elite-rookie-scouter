@@ -450,6 +450,46 @@ const gapNumber = async page => {
     await ctx.close();
 }
 
+// ───── the bar that stands in for the verdict must describe the same trade
+{
+    step(13, 'the summary bar names the picks, not just the players');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+    await page.locator('#trade-partner').selectOption('8');
+    await page.waitForTimeout(1800);
+    const theirSide = page.locator('section').filter({ has: page.locator('h3') }).nth(1);
+
+    // Give a player, ask only for a pick. That is the realistic dynasty
+    // trade and the exact shape that read as "nobody" before: the side
+    // receiving the pick had no players on it at all. A pick-for-pick swap
+    // would not do — it moves nobody, so there is no season verdict and no
+    // bar to stand in for one.
+    const mineSide = page.locator('section').filter({ has: page.locator('h3') }).nth(0);
+    await mineSide.locator('button[aria-pressed]').first().click();
+    await theirSide.locator('[data-pick-id]').first().click();
+    await verdictSettled(page);
+    // Put the verdict genuinely out of view, which is the only state the bar
+    // is ever seen in. Scrolling to the top of a 1600px-tall window is not
+    // enough — the verdict is still on screen there, and the bar was right
+    // to stay hidden.
+    await page.setViewportSize({ width: 1500, height: 700 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(1200);
+
+    const bar = page.locator('[data-bar="summary"]');
+    const barText = (await bar.innerText()).replace(/\s+/g, ' ');
+    console.log('      ' + barText.slice(0, 160));
+    assert('the bar has taken over from the off-screen verdict',
+        await bar.getAttribute('aria-hidden') === 'false',
+        `aria-hidden=${await bar.getAttribute('aria-hidden')}`);
+    assert('it names the pick being asked for', /20\d\d (1st|2nd|3rd|4th)/.test(barText),
+        barText.slice(0, 160));
+    assert('and does not call a real trade \u201cnobody\u201d',
+        !/nobody/.test(barText), barText.slice(0, 160));
+
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
 await b.close();
 console.log(fails.length
     ? `\nFAILED ${fails.length}:\n - ${fails.join('\n - ')}`
