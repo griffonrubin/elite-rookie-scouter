@@ -279,7 +279,11 @@ export function TradeFinder({
                 {others.length === 1 ? 'roster' : 'rosters'}, keeping the ones where
                 both starting lineups improve. Ranked on the <em>smaller</em> of the two
                 gains: an offer worth eight points to you and a tenth of one to them is
-                not a deal, it is a message that goes unanswered.
+                not a deal, it is a message that goes unanswered.{market && (<>{' '}
+                The market number beside each one is what it does to the players you
+                own afterwards — both lineups improve either way, and that is the
+                part the lineups cannot see. It does not change the order.
+                </>)}
                 </>) : active === 'buy' ? (<>
                 Your picks against every player on {others.length}{' '}
                 {others.length === 1 ? 'roster' : 'rosters'}, keeping the ones that
@@ -353,29 +357,57 @@ export function TradeFinder({
                                             style={{ color: DIVERGING.positive }}>
                                             +{o.myGain.toFixed(1)} you
                                         </span>
-                                        {/* On a mutual offer both lineup
-                                            gains matter. On a bought or sold
-                                            one the other side's lineup is
-                                            meant to get worse, so printing it
-                                            beside a positive number of yours
-                                            would read as a warning about a
-                                            deal that is working as intended —
-                                            what they gain is the price, and
-                                            that is what goes here instead. */}
-                                        {active === 'mutual' ? (
+                                        {/* Their lineup, on a mutual offer
+                                            only. On a bought or sold one the
+                                            other side's lineup is meant to
+                                            get worse, so printing it beside a
+                                            positive number of yours would
+                                            read as a warning about a deal
+                                            that is working as intended —
+                                            there, what they gain is the
+                                            price, which the market line
+                                            below says. */}
+                                        {active === 'mutual' && (
                                             <span className="block text-[10px] tabular-nums
                                                              text-muted-foreground/50">
                                                 +{o.theirGain.toFixed(1)} them
                                             </span>
-                                        ) : (
+                                        )}
+                                        {/**
+                                          * The market, wherever it is known.
+                                          *
+                                          * On a bought or sold offer this is
+                                          * the price, and the reason the
+                                          * other manager would say yes.
+                                          *
+                                          * On a mutual one it is the half of
+                                          * the trade the lineups cannot see.
+                                          * "Both lineups improve" is equally
+                                          * true of giving up a 23-year-old
+                                          * for a 28-year-old and of the
+                                          * reverse; in a dynasty league those
+                                          * are not the same offer, and the
+                                          * reader was being shown only the
+                                          * part that expires in January. It
+                                          * does not reorder the list — this
+                                          * is information, not a verdict.
+                                          */}
+                                        {o.myMarketGain != null && (
                                             <span className="block text-[10px] tabular-nums
                                                              text-muted-foreground/50"
                                                 title={active === 'buy'
                                                     ? 'What this costs you on the dynasty '
                                                       + 'market — the picks are worth this '
                                                       + 'much more than the player'
-                                                    : 'What this gains you on the dynasty '
-                                                      + 'market'}>
+                                                    : active === 'sell'
+                                                        ? 'What this gains you on the '
+                                                          + 'dynasty market'
+                                                        : 'What this does to your holdings '
+                                                          + 'on the dynasty market. Both '
+                                                          + 'lineups improve either way; '
+                                                          + 'this is the part that outlives '
+                                                          + 'the season, and the list is '
+                                                          + 'not ordered on it'}>
                                                 {o.myMarketGain > 0 ? '+' : '−'}
                                                 {Math.abs(o.myMarketGain).toLocaleString()}
                                                 {' market'}

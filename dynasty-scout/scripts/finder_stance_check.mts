@@ -129,7 +129,7 @@ step(3, 'buying finds picks-for-player, and the buyer’s lineup really improves
     assert('the buyer’s lineup improves in all of them',
         buy.every(o => o.myGain >= 0.25), String(buy.filter(o => o.myGain < 0.25).length));
     assert('and the seller gains on the market in all of them',
-        buy.every(o => o.theirMarketGain > 0));
+        buy.every(o => (o.theirMarketGain ?? 0) > 0));
     // The seller's lineup getting worse is the whole premise, and is exactly
     // what the mutual rule refused to allow.
     assert('the seller’s lineup is worse in at least one, and that is allowed',
@@ -178,21 +178,31 @@ step(6, 'ranking prefers the cheaper of two equal upgrades');
         ],
     };
     const buy = findTrades(me, OTHERS, undefined, 40, 'buy', twoWays);
-    const target = buy.filter(o => o.get[0] === 15 && o.givePicks.length === 1);
+    const target = buy.filter(o => o.get[0] === 15);
     console.log('      ' + target.map(o =>
-        `${o.givePicks[0]} eff ${o.efficiency}`).join('  |  '));
-    if (target.length >= 2) {
-        const first = target[0];
-        const rest = target.slice(1);
-        assert('the cheaper route is ranked first',
-            rest.every(o => first.efficiency >= o.efficiency),
-            `${first.givePicks[0]} at ${first.efficiency}`);
-    } else {
-        // Both routes must survive, or the comparison this step exists for
-        // never happened and the assertion above would pass on one offer.
-        assert('both routes to the same player survive to be compared',
-            target.length >= 2, `${target.length} route(s)`);
-    }
+        `${o.givePicks.join('+')} eff ${o.efficiency}`).join('  |  '));
+
+    /*
+     * This step used to demand that both routes survive so their order could
+     * be read off the list, and then failed once the sweep started keeping
+     * one route per player. Both cannot be true, and the dedup is the one
+     * worth having: seven worse ways to buy a receiver you have already
+     * decided to buy is one suggestion wearing seven rows.
+     *
+     * So the claim moves to where it is still checkable, and is the stronger
+     * one anyway — ranking happens before the dedup, so the survivor is the
+     * cheapest route rather than whichever the sweep reached first. With only
+     * two picks in play the expected answer is arithmetic: P15 costs 1,800,
+     * both the 2027 1st at 2,800 and the 2028 1st at 2,000 clear that, and
+     * the 2,000 one is cheaper.
+     */
+    assert('exactly one route to him survives', target.length === 1,
+        `${target.length} route(s)`);
+    assert('and it is the cheaper of the two that could have bought him',
+        target[0]?.givePicks.join('+') === '2028-1-1',
+        target[0]?.givePicks.join('+') ?? '(none)');
+    assert('priced at the cheaper pick, not the dearer one',
+        target[0]?.efficiency === 5, String(target[0]?.efficiency));
 }
 
 step(7, 'selling is the mirror: a player out, picks in');
@@ -210,7 +220,7 @@ step(7, 'selling is the mirror: a player out, picks in');
     assert('the buyer’s lineup improves in all of them',
         sell.every(o => o.theirGain >= 0.25));
     assert('and I gain on the market in all of them',
-        sell.every(o => o.myMarketGain > 0));
+        sell.every(o => (o.myMarketGain ?? 0) > 0));
 }
 
 step(8, 'offer keys tell two pick packages apart');
@@ -296,6 +306,82 @@ step(9, 'a full roster is handled by including the spot, not by finding nothing'
     assert('selling into a full roster works the same way',
         sell.length > 0 && sell.every(o => o.get.length === 1),
         `${sell.length} offers`);
+}
+
+step(10, 'a mutual offer is costed on the market without being ranked on it');
+{
+    const bare = findTrades(me, OTHERS, undefined, 40, 'mutual');
+    const costed = findTrades(me, OTHERS, undefined, 40, 'mutual', market);
+
+    // The claim that makes this safe to add: pricing the survivors does not
+    // change which offers survive, nor their order. Same list, one column
+    // richer.
+    assert('pricing does not change the list or its order',
+        JSON.stringify(bare.map(offerKey)) === JSON.stringify(costed.map(offerKey)),
+        `${bare.length} vs ${costed.length}`);
+    assert('without prices the market is unmeasured rather than even',
+        bare.every(o => o.myMarketGain === null && o.theirMarketGain === null));
+    assert('with them, every offer carries a number', costed.length > 0
+        && costed.every(o => o.myMarketGain !== null));
+
+    // Arithmetic, not vibes: what arrives minus what leaves, to the penny.
+    const expected = (o: typeof costed[number]) =>
+        o.get.reduce((t, id) => t + VALUES[id], 0)
+        - o.give.reduce((t, id) => t + VALUES[id], 0);
+    const wrong = costed.filter(o => o.myMarketGain !== expected(o));
+    for (const o of costed.slice(0, 3)) {
+        console.log(`      P${o.give.join('+P')} → P${o.get.join('+P')}  `
+            + `+${o.myGain}pts  market ${o.myMarketGain} (want ${expected(o)})`);
+    }
+    assert('it is what arrives minus what leaves', wrong.length === 0,
+        `${wrong.length} of ${costed.length} wrong`);
+    assert('and the other manager gets the mirror of it',
+        costed.every(o => o.theirMarketGain === -o.myMarketGain!));
+
+    // The point of measuring it at all: in a dynasty league two offers that
+    // both improve both lineups are not the same offer, and this is the
+    // column that says so. If every survivor moved the market the same way
+    // there would be nothing to show.
+    const gains = new Set(costed.map(o => o.myMarketGain));
+    console.log(`      ${gains.size} distinct market outcomes across `
+        + `${costed.length} offers`);
+    assert('mutual offers differ on the market, which is why it is shown',
+        gains.size > 1, `${gains.size} distinct`);
+    assert('and they are not all in the reader’s favour',
+        costed.some(o => o.myMarketGain! < 0) && costed.some(o => o.myMarketGain! > 0),
+        `${costed.filter(o => o.myMarketGain! < 0).length} against, `
+        + `${costed.filter(o => o.myMarketGain! > 0).length} for`);
+
+    // One unpriced player poisons that offer and only that offer. A blank on
+    // one side would otherwise be compared against a number, which is how a
+    // kicker comes to look like a free first-round pick.
+    const blind: MarketInput = {
+        ...market,
+        valueOfPlayer: (id: number) => (id === 13 ? null : VALUES[id] ?? null),
+    };
+    const partial = findTrades(me, OTHERS, undefined, 40, 'mutual', blind);
+    const touching = partial.filter(o => o.give.includes(13) || o.get.includes(13));
+    assert('the fixture has offers involving the unpriced man',
+        touching.length > 0, `${touching.length} — the next assertion needs them`);
+    assert('an offer holding an unpriced player is unmeasured, not guessed',
+        touching.every(o => o.myMarketGain === null));
+    assert('and the offers beside it are still costed',
+        partial.filter(o => !o.give.includes(13) && !o.get.includes(13))
+            .every(o => o.myMarketGain !== null));
+
+    // Both sides of the sum, because P13 is on their roster and so can only
+    // ever arrive — breaking the outgoing guard left the assertion above
+    // green. P3 is mine, and only leaves.
+    const blindMine: MarketInput = {
+        ...market,
+        valueOfPlayer: (id: number) => (id === 3 ? null : VALUES[id] ?? null),
+    };
+    const outgoing = findTrades(me, OTHERS, undefined, 40, 'mutual', blindMine)
+        .filter(o => o.give.includes(3));
+    assert('the fixture sends the unpriced man somewhere too',
+        outgoing.length > 0, `${outgoing.length} — the next assertion needs them`);
+    assert('an unpriced player leaving is unmeasured as well',
+        outgoing.every(o => o.myMarketGain === null));
 }
 
 console.log(fails.length

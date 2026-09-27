@@ -696,6 +696,141 @@ const gapNumber = async page => {
     await ctx.close();
 }
 
+
+// ──── the whole point of writing the URL: somebody else opening it
+{
+    step(19, 'a shared link reopens the trade it describes, picks and all');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+    await page.locator('#trade-partner').selectOption('8');
+    await page.waitForTimeout(1800);
+    const mineSide = page.locator('section').filter({ has: page.locator('h3') }).nth(0);
+    const theirSide = page.locator('section').filter({ has: page.locator('h3') }).nth(1);
+
+    // Something of every kind on the table, both ways: a player and a pick
+    // out, a player and a pick back. Nothing smaller would notice a link that
+    // carries three of the four.
+    await mineSide.locator('button[aria-pressed]').first().click();
+    await mineSide.locator('[data-pick-id]').first().click();
+    await theirSide.locator('button[aria-pressed]').first().click();
+    await theirSide.locator('[data-pick-id]').first().click();
+    await verdictSettled(page);
+
+    const pressed = async (side, sel) => await side.locator(sel)
+        .evaluateAll(e => e.map(x => x.getAttribute('data-pick-id')
+            ?? x.textContent.replace(/\s+/g, ' ').trim()));
+    const before = {
+        partner: await page.locator('#trade-partner').inputValue(),
+        minePicks: await pressed(mineSide, '[data-pick-id][aria-pressed="true"]'),
+        theirPicks: await pressed(theirSide, '[data-pick-id][aria-pressed="true"]'),
+        mineMen: await mineSide.locator('button[aria-pressed="true"]:not([data-pick-id])')
+            .count(),
+        theirMen: await theirSide
+            .locator('button[aria-pressed="true"]:not([data-pick-id])').count(),
+        verdict: await headline(page),
+    };
+    const link = page.url();
+    console.log(`      built: ${JSON.stringify(before)}`);
+    console.log(`      link:  ${link}`);
+    assert('the link carries a pick each way',
+        /givePicks=/.test(link) && /getPicks=/.test(link), link);
+
+    // A second page in the same context: the league is already connected, so
+    // this is the recipient's experience minus the connecting.
+    const opened = await ctx.newPage();
+    const errs2 = [];
+    opened.on('pageerror', e => errs2.push(e.message));
+    opened.setDefaultTimeout(30000);
+    await opened.goto(link, { waitUntil: 'domcontentloaded' });
+    await opened.locator('#trade-partner').waitFor({ timeout: 30000 });
+    await verdictSettled(opened);
+    const mine2 = opened.locator('section').filter({ has: opened.locator('h3') }).nth(0);
+    const their2 = opened.locator('section').filter({ has: opened.locator('h3') }).nth(1);
+    const after = {
+        partner: await opened.locator('#trade-partner').inputValue(),
+        minePicks: await pressed(mine2, '[data-pick-id][aria-pressed="true"]'),
+        theirPicks: await pressed(their2, '[data-pick-id][aria-pressed="true"]'),
+        mineMen: await mine2.locator('button[aria-pressed="true"]:not([data-pick-id])')
+            .count(),
+        theirMen: await their2.locator('button[aria-pressed="true"]:not([data-pick-id])')
+            .count(),
+        verdict: await headline(opened),
+    };
+    console.log(`      opened: ${JSON.stringify(after)}`);
+
+    assert('it opens against the same manager', after.partner === before.partner,
+        `${after.partner} vs ${before.partner}`);
+    assert('the players I was sending are back',
+        after.mineMen === before.mineMen, `${after.mineMen} vs ${before.mineMen}`);
+    assert('the players I was asking for are back',
+        after.theirMen === before.theirMen, `${after.theirMen} vs ${before.theirMen}`);
+    // The half that was written but never read back: picks arrive from a
+    // second request, after the query string has already been applied once.
+    assert('the pick I was sending is back',
+        JSON.stringify(after.minePicks) === JSON.stringify(before.minePicks),
+        `[${after.minePicks}] vs [${before.minePicks}]`);
+    assert('the pick I was asking for is back',
+        JSON.stringify(after.theirPicks) === JSON.stringify(before.theirPicks),
+        `[${after.theirPicks}] vs [${before.theirPicks}]`);
+    // Same offer, same answer. A link that restores the assets but prices
+    // them differently is not the trade that was shared.
+    assert('and it is priced the same', after.verdict === before.verdict,
+        `${after.verdict} vs ${before.verdict}`);
+
+    assert('no page errors', errs.length === 0 && errs2.length === 0,
+        [...errs, ...errs2].join(' | '));
+    await ctx.close();
+}
+
+
+// ──── the half of a mutual trade the lineups cannot see
+{
+    step(20, 'a mutual suggestion says what it does to the market, in dynasty only');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+    const rowText = async p => await p.locator('[data-offer]')
+        .evaluateAll(e => e.map(x => x.innerText.replace(/\s+/g, ' ')));
+
+    const mutual = await rowText(page);
+    console.log(`      ${mutual.length} mutual offers`);
+    assert('the mutual sweep found something to cost',
+        mutual.length > 0, `${mutual.length} — the assertions below need offers`);
+    // Scoped to the rows: the blurb above them now uses the word too, so a
+    // body-text match would pass on the explanation alone.
+    const costed = mutual.filter(t => /market/.test(t));
+    assert('every mutual offer carries a market number',
+        costed.length === mutual.length, `${costed.length} of ${mutual.length}`);
+    /*
+     * Signed and grouped, the way the bought-and-sold rows print it.
+     *
+     * Whether the column varies across offers is a property of the sweep and
+     * is checked where it can be — `finder_stance_check` step 10, whose
+     * fixture produces twenty-six distinct outcomes across thirty-two
+     * offers. This league is real and yields one mutual offer, so asserting
+     * variety here would be asserting something about the fixture.
+     */
+    const numbers = mutual
+        .map(t => (t.match(/[+−][\d,]+ market/) ?? [])[0])
+        .filter(Boolean);
+    console.log(`      as rendered: ${numbers.join('  ')}`);
+    assert('the number is signed, and grouped rather than raw',
+        numbers.length === mutual.length, `${numbers.length} of ${mutual.length}`);
+    assert('they still report both lineups too',
+        mutual.every(t => / you\b/.test(t) && / them\b/.test(t)), mutual[0]);
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+
+    // A redraft league has no afterwards, so there is nothing to say.
+    const r = await open(redraft, [], 10);
+    const rows = await rowText(r.page);
+    console.log(`      redraft: ${rows.length} offers`);
+    assert('the redraft sweep found offers too', rows.length > 0,
+        `${rows.length} — the next assertion is vacuous without them`);
+    assert('and none of them mentions a market that does not exist',
+        rows.every(t => !/market/.test(t)), rows.find(t => /market/.test(t)) ?? '');
+    assert('no page errors in the redraft league', r.errs.length === 0,
+        r.errs.join(' | '));
+    await r.ctx.close();
+}
+
 await b.close();
 console.log(fails.length
     ? `\nFAILED ${fails.length}:\n - ${fails.join('\n - ')}`
