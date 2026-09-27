@@ -24,8 +24,10 @@ import { PlayerSearch, type SearchHit } from './PlayerSearch';
 import { PickPicker } from './PickPicker';
 import { MarketValue, type PricedAsset } from './MarketValue';
 import {
-    findPick, hasPicks, pickInventory, pickName, superflexLeague, type PickAsset,
+    findPick, hasPicks, parsePickId, pickInventory, pickName, roundLabel,
+    superflexLeague, type PickAsset,
 } from '@/lib/tradePicks';
+import type { FinderPick } from '@/lib/tradeFinder';
 import type { TradePrices } from '@/lib/tradePrices';
 import { TradeVerdict } from './TradeVerdict';
 import { TradeSummaryBar, useOutOfView } from './TradeSummaryBar';
@@ -551,6 +553,53 @@ export function TradeClient({ players, prices }: {
         ];
     }, [getting, gettingPicks, picksByTeam, them, priceOfPlayer, nameOf]);
 
+    /**
+     * The picks on each side, shortened for the bar at the foot of the page.
+     * "2027 1st" rather than the full "(from Dave)" name, because that bar
+     * is one line and the name is only there to give the numbers a subject.
+     */
+    const shortPicks = (list: PickAsset[], chosen: Set<string>) =>
+        [...chosen]
+            .map(id => findPick(list, id))
+            .filter((p): p is PickAsset => p != null)
+            .map(p => `${p.season} ${p.label}`);
+    const givePickLabels = useMemo(
+        () => shortPicks(picksByTeam && me ? picksByTeam.get(me.key) ?? [] : [],
+            givingPicks),
+        [picksByTeam, me, givingPicks]);
+    const getPickLabels = useMemo(
+        () => shortPicks(picksByTeam && them ? picksByTeam.get(them.key) ?? [] : [],
+            gettingPicks),
+        [picksByTeam, them, gettingPicks]);
+
+    /**
+     * What the finder needs to look for a trade between two managers who
+     * want different things: a price for every player, and the picks each
+     * roster is holding.
+     *
+     * Null in a redraft league and in a league too early to have picks,
+     * which is what keeps the stance control off those pages rather than
+     * offering a search that cannot return anything.
+     */
+    const finderMarket = useMemo(() => {
+        if (!picksByTeam || !myKey) return undefined;
+        const asPicks = (list: PickAsset[]): FinderPick[] => list.map(p => ({
+            id: p.id, label: `${p.season} ${p.label}`, value: p.value,
+        }));
+        return {
+            valueOfPlayer: priceOfPlayer,
+            myPicks: asPicks(picksByTeam.get(myKey) ?? []),
+            picksByTeam: new Map([...picksByTeam].map(
+                ([k, list]) => [k, asPicks(list)])),
+        };
+    }, [picksByTeam, myKey, priceOfPlayer]);
+
+    /** A pick id as the finder should print it. */
+    const pickLabelOf = useCallback((id: string) => {
+        const parsed = parsePickId(id);
+        return parsed ? `${parsed.season} ${roundLabel(parsed.round)}` : id;
+    }, []);
+
     const togglePick = (set: Set<string>, setter: (s: Set<string>) => void) =>
         (id: string) => {
             const next = new Set(set);
@@ -769,6 +818,7 @@ export function TradeClient({ players, prices }: {
                             profiles={profiles} myKey={myKey}
                             rosterSize={league.snapshot?.rosterPositions?.length}
                             partnerKey={partnerKey}
+                            market={finderMarket} pickLabel={pickLabelOf}
                             onPick={(o: Offer) => {
                                 // Loading an offer sets the partner as well,
                                 // or the analyser would price it against
@@ -919,7 +969,9 @@ export function TradeClient({ players, prices }: {
                     <TradeSummaryBar
                         mine={mineEffect} theirs={theirsEffect}
                         partnerName={them?.name ?? ''}
-                        give={[...giving]} get={[...getting]} nameOf={nameOf}
+                        give={[...giving]} get={[...getting]}
+                        givePicks={givePickLabels} getPicks={getPickLabels}
+                        nameOf={nameOf}
                         href={href}
                         visible={result != null && verdictOffscreen}
                         pending={pending}
