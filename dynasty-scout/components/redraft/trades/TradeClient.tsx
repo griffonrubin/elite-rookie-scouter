@@ -38,15 +38,6 @@ import { readTrade, tradeHref } from '@/lib/tradeUrl';
 const SEASON = 2026;
 const TRIALS = 20000;
 
-/**
- * How many free agents to price at each position.
- *
- * Only the best one sets replacement level, so this is not a pool to search —
- * it is headroom. A couple of the top names can come back without a
- * projection, and the next one down is still a free agent worth the same
- * roster spot.
- */
-const WIRE_DEPTH = 6;
 
 /** The lineup shape when the platform does not report one. */
 const DEFAULT_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF'];
@@ -185,60 +176,14 @@ export function TradeClient({ players, prices }: {
         return rp.filter(s => !BENCH_SLOTS.has(s.toUpperCase()));
     }, [league.snapshot?.rosterPositions]);
 
-    /**
-     * The best few free agents at each position, so a roster spot has a price.
-     *
-     * The finder used to treat a roster as closed: a trade that left somebody
-     * over the limit was thrown away rather than costed, which on a full
-     * roster — the normal state of a league — removed every uneven offer from
-     * the list. Consolidation became unreachable in exactly the leagues people
-     * play in.
-     *
-     * Pricing the spot needs to know what filling it is worth, and that is the
-     * best player nobody owns. The pool is free: the board already carries
-     * every projected player and the league already knows who is rostered, so
-     * the difference is a set operation rather than a request.
-     *
-     * The projections are not free, though. A mean comes from the start/sit
-     * endpoint, which is fed the rostered ids only — so an unrostered player
-     * silently scores zero, which would have made every roster spot worthless
-     * and looked exactly like the feature working. So these ids join that
-     * request.
-     *
-     * A handful per position rather than the whole pool, because replacement
-     * level is the best available and nothing below him changes it. Six is
-     * enough to survive a couple of them being unprojected, and keeps this to
-     * a few dozen ids on a request that already chunks.
-     */
-    const freeAgents = useMemo(() => {
-        const taken = new Set<number>();
-        for (const t of teams ?? []) for (const p of t.roster) taken.add(p.id);
-        if (taken.size === 0) return [] as RedraftPlayer[];
-        const byPosition = new Map<string, RedraftPlayer[]>();
-        for (const p of players) {
-            if (taken.has(p.id) || p.proj_points == null) continue;
-            const pos = (p.position ?? '').toUpperCase();
-            if (!pos) continue;
-            byPosition.set(pos, [...(byPosition.get(pos) ?? []), p]);
-        }
-        const out: RedraftPlayer[] = [];
-        for (const [, list] of byPosition) {
-            out.push(...list
-                .sort((a, b) => Number(b.proj_points) - Number(a.proj_points))
-                .slice(0, WIRE_DEPTH));
-        }
-        return out;
-    }, [players, teams]);
-
     // Every rostered player in the league, not just the starters: a trade is
     // about the bench as much as the lineup, and the partner can change
     // without a new request this way.
     const needed = useMemo(() => {
         const ids = new Set<number>();
         for (const t of teams ?? []) for (const p of t.roster) ids.add(p.id);
-        for (const p of freeAgents) ids.add(p.id);
         return [...ids].sort((a, b) => a - b);
-    }, [teams, freeAgents]);
+    }, [teams]);
 
     const week = league.week;
     // One hook, one cache: every In Season page asks about the same league,
@@ -299,27 +244,6 @@ export function TradeClient({ players, prices }: {
         () => (teams ?? []).map(t => ({ key: t.key, name: t.name, roster: t.roster })),
         [teams]);
 
-    /**
-     * What a roster spot is worth, by position.
-     *
-     * The best free agent's points a week — the same unit the lineups are
-     * measured in, through the same simulation, because a replacement level
-     * in different units from the thing it replaces is not a comparison.
-     *
-     * Absent where nothing came back priced, and the finder then falls back to
-     * scoring an empty slot at zero, which is what it always did.
-     */
-    const wire = useMemo(() => {
-        const best = new Map<string, number>();
-        for (const p of freeAgents) {
-            const mean = simOf(p.id)?.outcome.mean;
-            if (mean == null || !Number.isFinite(mean)) continue;
-            const pos = (p.position ?? '').toUpperCase();
-            if (!pos) continue;
-            if (mean > (best.get(pos) ?? -Infinity)) best.set(pos, mean);
-        }
-        return best.size > 0 ? { best } : undefined;
-    }, [freeAgents, simOf]);
 
     /**
      * Who to price against before the reader has chosen.
@@ -922,7 +846,7 @@ export function TradeClient({ players, prices }: {
                             profiles={profiles} myKey={myKey}
                             rosterSize={league.snapshot?.rosterPositions?.length}
                             partnerKey={partnerKey}
-                            market={finderMarket} wire={wire} pickLabel={pickLabelOf}
+                            market={finderMarket} pickLabel={pickLabelOf}
                             onPick={(o: Offer) => {
                                 // Loading an offer sets the partner as well,
                                 // or the analyser would price it against

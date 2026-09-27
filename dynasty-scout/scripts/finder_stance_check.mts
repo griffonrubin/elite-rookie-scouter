@@ -21,7 +21,6 @@
  */
 import {
     findTrades, offerKey, type FinderPick, type FinderTeam, type MarketInput,
-    type WireInput,
 } from '../lib/tradeFinder';
 import type { TradeRosterPlayer } from '../lib/trade';
 
@@ -525,62 +524,6 @@ step(12, 'a full roster is settled by cutting, not by refusing the trade');
     assert('never cutting somebody the trade just brought in',
         full.every(o => !o.drops.some(id => o.get.includes(id))
             && !o.theirDrops.some(id => o.give.includes(id))));
-}
-
-step(13, 'an empty lineup slot is worth the wire, not zero');
-{
-    /*
-     * A manager who trades away their only tight end does not start nobody
-     * there for the rest of the season; they claim one on Tuesday. Scoring
-     * that slot at zero overstates what the trade costs them.
-     *
-     * Built rather than fished out of the sweep. The first version looked for
-     * offers sending the only tight end and compared their gains with and
-     * without a wire — and got the same number both ways, because the offers
-     * it found were receiving a tight end back, which refills the slot and
-     * cancels the whole effect. The opponent here holds none, so the slot
-     * really does empty.
-     */
-    const thin: TradeRosterPlayer[] = [
-        p(1, 'QB'), p(2, 'RB'), p(3, 'RB'), p(5, 'WR'), p(6, 'WR'), p(7, 'TE')];
-    const thinMe = { roster: thin, slots: SLOTS, meanOf };
-    const noTE: FinderTeam[] = [{ key: 't9', name: 'No tight ends',
-        roster: [p(11, 'QB'), p(13, 'WR'), p(14, 'WR'), p(15, 'WR'), p(16, 'WR')] }];
-    const wire: WireInput = { best: new Map([['TE', 6], ['WR', 5], ['RB', 5]]) };
-
-    const sendsTE = (list: ReturnType<typeof findTrades>) =>
-        list.filter(o => o.give.includes(7) && !o.get.some(id => id === 17));
-    const bare = sendsTE(findTrades(thinMe, noTE, undefined, 40));
-    const wired = sendsTE(
-        findTrades(thinMe, noTE, undefined, 40, 'mutual', undefined, wire));
-    console.log(`      offers sending the only tight end into a roster with `
-        + `none: ${bare.length} bare, ${wired.length} wired`);
-
-    // Both lists have to hold the trade, or the comparison is between two
-    // empty sets and says nothing — which is how the first attempt passed.
-    assert('the fixture really does offer to trade the only tight end',
-        bare.length > 0 && wired.length > 0, `${bare.length} / ${wired.length}`);
-
-    const gainFor = (list: ReturnType<typeof findTrades>) => {
-        const byKey = new Map(list.map(o => [offerKey(o), o.myGain]));
-        return byKey;
-    };
-    const b = gainFor(bare);
-    const w = gainFor(wired);
-    const shared = [...b.keys()].filter(k => w.has(k));
-    console.log(`      ${shared.length} offers in both lists`);
-    assert('the same offers are reachable either way', shared.length > 0,
-        `${shared.length} — nothing to compare otherwise`);
-    const better = shared.filter(k => w.get(k)! > b.get(k)!);
-    for (const k of shared.slice(0, 3)) {
-        console.log(`        ${k}  bare ${b.get(k)}  wired ${w.get(k)}`);
-    }
-    // Strictly better, not merely no worse: emptying the tight-end slot costs
-    // the whole of him without a wire and the gap down to a free agent with
-    // one, and those are different numbers.
-    assert('losing him costs strictly less when somebody can replace him',
-        better.length > 0, `${better.length} of ${shared.length} improved`);
-    assert('and never more', shared.every(k => w.get(k)! >= b.get(k)!));
 }
 
 step(14, 'a package pays partly in players when the picks fall short');

@@ -7,7 +7,7 @@ import { POSITION_RAW } from '@/lib/constants';
 import { DIVERGING } from '@/lib/vizTokens';
 import {
     findTrades, offerReason,
-    type FinderTeam, type MarketInput, type Offer, type Stance, type WireInput,
+    type FinderTeam, type MarketInput, type Offer, type Stance
 } from '@/lib/tradeFinder';
 import { CLAIM_NOISE, type ClaimWorth } from '@/lib/seasonOdds';
 import { offerKey } from '@/lib/tradeFinder';
@@ -85,7 +85,7 @@ function Side({ ids, picks, nameOf, positionOf, teamOf, playoffs, tone }: {
 
 export function TradeFinder({
     myRoster, teams, slots, meanOf, nameOf, positionOf, teamOf, playoffs,
-    profiles, myKey, rosterSize, onPick, partnerKey, worth, onOffers, wire,
+    profiles, myKey, rosterSize, onPick, partnerKey, worth, onOffers,
     market, pickLabel,
 }: {
     myRoster: TradeRosterPlayer[];
@@ -121,14 +121,6 @@ export function TradeFinder({
      * torn up in August.
      */
     market?: MarketInput;
-    /**
-     * What a roster spot is worth, so a full league still gets uneven offers.
-     *
-     * Without it the sweep scores an unfillable lineup slot at zero and a
-     * trade that needs a cut is refused outright — which on a full roster
-     * is every uneven offer there is.
-     */
-    wire?: WireInput;
     /** A pick id, as it should read on the page. */
     pickLabel?: (id: string) => string;
 }) {
@@ -152,9 +144,9 @@ export function TradeFinder({
     const offers = useMemo(
         () => (myRoster.length && others.length
             ? findTrades({ roster: myRoster, slots, meanOf }, others, rosterSize, 12,
-                active, market, wire)
+                active, market)
             : []),
-        [myRoster, others, slots, meanOf, rosterSize, active, market, wire]);
+        [myRoster, others, slots, meanOf, rosterSize, active, market]);
 
     /**
      * Handed up rather than priced here, because pricing one needs the

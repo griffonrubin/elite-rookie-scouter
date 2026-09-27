@@ -22,7 +22,6 @@
  * handful that survive is what the analyser below is for.
  */
 import { bestLineup, type TradeRosterPlayer } from '@/lib/trade';
-import { eligibleForSlot } from '@/lib/lineup';
 
 /**
  * What the reader is trying to do, which decides what counts as a good offer.
@@ -45,37 +44,28 @@ import { eligibleForSlot } from '@/lib/lineup';
  */
 export type Stance = 'mutual' | 'buy' | 'sell';
 
-/**
- * What is freely available, a point a week, by position.
+/*
+ * A note on what is deliberately absent here: a replacement level.
  *
- * The sweep used to treat a roster as a closed system: every trade was
- * judged on the players in it and nothing else, and a trade that would leave
- * a manager over the roster limit was thrown away. Real leagues do not work
- * that way. Nobody refuses a two-for-one because they are full; they drop
- * their last bench player, who is on the roster precisely because he is the
- * one they would drop.
+ * This sweep briefly scored an unfillable lineup slot at what the best free
+ * agent offers, on the reasoning that a manager who trades away their only
+ * tight end claims one on Tuesday rather than starting nobody. The reasoning
+ * is sound and the implementation was not, in a way worth recording so it is
+ * not rebuilt.
  *
- * Rejecting those trades outright is not a small omission. On a full roster
- * it removes every uneven offer from the list — measured on a twelve-team
- * fixture, fifteen of forty — and consolidation, the classic fantasy trade,
- * becomes unreachable by construction in exactly the leagues where people
- * play.
+ * Filling empty slots without discounting filled ones is asymmetric: a player
+ * arriving is credited his whole mean, while a player leaving is charged only
+ * his edge over a free agent. That makes every starter nearly free to trade
+ * away, and the finder duly offered a starting tight end for a kicker at
+ * "+6.0 you" — while the analyser below, which knows nothing of any wire,
+ * called the same trade a materially worse season. Two numbers on one page
+ * contradicting each other is worse than either being slightly wrong.
  *
- * So the limit stops being a wall and becomes a price: a side that ends up
- * over it drops its worst players, and the lineup arithmetic charges
- * whatever that costs, which for a deep bench body is correctly nothing. The
- * other direction is this map: a lineup slot nobody can fill is not zero
- * points, it is whatever the best free agent at that position scores, and a
- * manager who has just traded away their only tight end will have one by
- * Sunday.
- *
- * Absent — a league whose free agents nobody has priced — an unfillable slot
- * scores zero, which is what it did before.
+ * Doing it properly means valuing every slot as the starter's edge over
+ * replacement, everywhere on the page at once, which is a deliberate change
+ * to every number the analyser prints rather than something the finder
+ * acquires on its own.
  */
-export interface WireInput {
-    /** The best available player's points a week, by position. */
-    best: Map<string, number>;
-}
 
 /** A draft pick, as something the sweep can put in an offer. */
 export interface FinderPick {
@@ -265,39 +255,13 @@ export function findTrades(
     /** 'mutual' keeps the original sweep exactly as it was. */
     stance: Stance = 'mutual',
     market?: MarketInput,
-    /** What is freely available, so a roster spot has a price. */
-    wire?: WireInput,
 ): Offer[] {
     if (stance !== 'mutual') {
         return market
-            ? findAcrossStances(me, others, market, stance, rosterSize, limit, wire)
+            ? findAcrossStances(me, others, market, stance, rosterSize, limit)
             : [];
     }
-    return findMutual(me, others, rosterSize, limit, market, wire);
-}
-
-/**
- * The points a slot is worth to somebody who has nobody for it.
- *
- * A flex takes the best of whatever it accepts, which is the same rule the
- * lineup itself uses — so the two cannot disagree about what a slot is for.
- */
-function wireForSlot(slot: string, wire: WireInput): number {
-    let best = 0;
-    for (const [position, mean] of wire.best) {
-        if (eligibleForSlot(slot, position) && mean > best) best = mean;
-    }
-    return best;
-}
-
-/**
- * The same thing for a fixed set of slots, worked out once.
- *
- * The slots do not change inside a sweep, and the lookup above walks every
- * position for every empty slot of every one of thirty thousand offers.
- */
-function wireBySlot(slots: string[], wire?: WireInput): number[] | null {
-    return wire ? slots.map(slot => wireForSlot(slot, wire)) : null;
+    return findMutual(me, others, rosterSize, limit, market);
 }
 
 /**
@@ -361,7 +325,6 @@ function findMutual(
      * does not.
      */
     market?: MarketInput,
-    wire?: WireInput,
 ): Offer[] {
     const { roster: mine, slots, meanOf } = me;
     if (mine.length === 0 || slots.length === 0) return [];
@@ -376,14 +339,10 @@ function findMutual(
      * drop below honest — a trade that empties a slot is charged the gap
      * down to a free agent, not the whole of the player.
      */
-    const fromWire = wireBySlot(slots, wire);
     const value = (r: TradeRosterPlayer[]) => {
         let total = 0;
-        const line = bestLineup(slots, r, meanOf);
-        for (let i = 0; i < line.length; i++) {
-            const id = line[i];
+        for (const id of bestLineup(slots, r, meanOf)) {
             if (id != null) total += meanOf(id);
-            else if (fromWire) total += fromWire[i];
         }
         return total;
     };
@@ -586,20 +545,15 @@ function findAcrossStances(
     stance: Stance,
     rosterSize?: number,
     limit = 40,
-    wire?: WireInput,
 ): Offer[] {
     const { roster: mine, slots, meanOf } = me;
     if (mine.length === 0 || slots.length === 0) return [];
 
     /** Same rule as the mutual sweep: an empty slot is worth the wire. */
-    const fromWire = wireBySlot(slots, wire);
     const lineup = (r: TradeRosterPlayer[]) => {
         let total = 0;
-        const line = bestLineup(slots, r, meanOf);
-        for (let i = 0; i < line.length; i++) {
-            const id = line[i];
+        for (const id of bestLineup(slots, r, meanOf)) {
             if (id != null) total += meanOf(id);
-            else if (fromWire) total += fromWire[i];
         }
         return total;
     };
