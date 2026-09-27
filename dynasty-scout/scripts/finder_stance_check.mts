@@ -178,21 +178,31 @@ step(6, 'ranking prefers the cheaper of two equal upgrades');
         ],
     };
     const buy = findTrades(me, OTHERS, undefined, 40, 'buy', twoWays);
-    const target = buy.filter(o => o.get[0] === 15 && o.givePicks.length === 1);
+    const target = buy.filter(o => o.get[0] === 15);
     console.log('      ' + target.map(o =>
-        `${o.givePicks[0]} eff ${o.efficiency}`).join('  |  '));
-    if (target.length >= 2) {
-        const first = target[0];
-        const rest = target.slice(1);
-        assert('the cheaper route is ranked first',
-            rest.every(o => first.efficiency >= o.efficiency),
-            `${first.givePicks[0]} at ${first.efficiency}`);
-    } else {
-        // Both routes must survive, or the comparison this step exists for
-        // never happened and the assertion above would pass on one offer.
-        assert('both routes to the same player survive to be compared',
-            target.length >= 2, `${target.length} route(s)`);
-    }
+        `${o.givePicks.join('+')} eff ${o.efficiency}`).join('  |  '));
+
+    /*
+     * This step used to demand that both routes survive so their order could
+     * be read off the list, and then failed once the sweep started keeping
+     * one route per player. Both cannot be true, and the dedup is the one
+     * worth having: seven worse ways to buy a receiver you have already
+     * decided to buy is one suggestion wearing seven rows.
+     *
+     * So the claim moves to where it is still checkable, and is the stronger
+     * one anyway — ranking happens before the dedup, so the survivor is the
+     * cheapest route rather than whichever the sweep reached first. With only
+     * two picks in play the expected answer is arithmetic: P15 costs 1,800,
+     * both the 2027 1st at 2,800 and the 2028 1st at 2,000 clear that, and
+     * the 2,000 one is cheaper.
+     */
+    assert('exactly one route to him survives', target.length === 1,
+        `${target.length} route(s)`);
+    assert('and it is the cheaper of the two that could have bought him',
+        target[0]?.givePicks.join('+') === '2028-1-1',
+        target[0]?.givePicks.join('+') ?? '(none)');
+    assert('priced at the cheaper pick, not the dearer one',
+        target[0]?.efficiency === 5, String(target[0]?.efficiency));
 }
 
 step(7, 'selling is the mirror: a player out, picks in');
