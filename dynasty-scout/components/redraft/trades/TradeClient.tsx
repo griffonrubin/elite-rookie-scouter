@@ -852,12 +852,17 @@ export function TradeClient({ players, prices }: {
                                 setPartner(o.teamKey);
                                 setMyGive(new Set(o.give));
                                 setTheirGive(new Set(o.get));
-                                // The finder deals in players only, so a
-                                // loaded suggestion is the whole offer and
-                                // any picks left on the table are not part
-                                // of the thing being priced.
-                                setMyPicks(new Set());
-                                setTheirPicks(new Set());
+                                // Picks and all. A buy-stance suggestion IS
+                                // picks — that is what paying the other
+                                // manager means — so loading one without them
+                                // put a bench body against their best player
+                                // and priced it as a gift, while the row the
+                                // reader had just clicked showed the price.
+                                // Whatever was on the table before is gone
+                                // either way: a loaded suggestion is the
+                                // whole offer, not an addition to one.
+                                setMyPicks(new Set(o.givePicks));
+                                setTheirPicks(new Set(o.getPicks));
                                 if (typeof window !== 'undefined') {
                                     window.scrollBy({ top: 220, behavior: 'smooth' });
                                 }

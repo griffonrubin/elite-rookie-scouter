@@ -647,6 +647,55 @@ const gapNumber = async page => {
     await ctx.close();
 }
 
+
+// ──── the fourth place a pick can vanish: loading a suggestion the finder made
+{
+    step(18, 'a suggestion loads with the picks that were its price');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+
+    await page.locator('[data-stance-option="buy"]').click();
+    await page.waitForTimeout(2500);
+    const rows = page.locator('[data-offer]');
+    const n = await rows.count();
+    console.log(`      buy stance: ${n} offers`);
+    if (n === 0) {
+        // Legitimate, and step 14 already holds the empty case to its wording.
+        // Nothing to load means nothing to check here.
+        assert('nothing to load, and the page says so',
+            await page.locator('[data-finder-empty]').count() === 1);
+    } else {
+        // `offerKey` is 'team:give+givePicks>get+getPicks', so the row states
+        // its own price and the check need not read it out of the prose.
+        const key = await rows.first().getAttribute('data-offer');
+        const [, priced] = key.match(/:[^+]*\+([^>]*)>/) ?? [];
+        const wanted = priced ? priced.split('.').filter(Boolean) : [];
+        console.log(`      first offer: ${key}`);
+        assert('a buy-stance offer is priced in picks', wanted.length > 0, key);
+
+        await rows.first().click();
+        await verdictSettled(page);
+
+        // Buying means I send the picks, so they land on my side.
+        const mineSide = page.locator('section').filter({ has: page.locator('h3') })
+            .nth(0);
+        const got = await mineSide.locator('[data-pick-id][aria-pressed="true"]')
+            .evaluateAll(e => e.map(x => x.getAttribute('data-pick-id')));
+        console.log(`      wanted [${wanted}] — on the table [${got}]`);
+        // The failure this exists for: the picks were cleared on load, so the
+        // table held a bench body against their best player and priced it as
+        // a gift, while the row the reader clicked showed the price.
+        assert('every pick the offer was priced in is on the table',
+            wanted.every(id => got.includes(id)), `[${got}]`);
+        assert('and nothing else came with it', got.length === wanted.length,
+            `${got.length} vs ${wanted.length}`);
+        assert('the URL carries the price too', /givePicks=/.test(page.url()),
+            page.url());
+    }
+
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
 await b.close();
 console.log(fails.length
     ? `\nFAILED ${fails.length}:\n - ${fails.join('\n - ')}`
