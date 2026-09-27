@@ -935,8 +935,10 @@ export function TradeClient({ players, prices }: {
 
                     {held && (
                         <TradeCompare held={held} nameOf={nameOf}
+                            pickLabel={pickLabelOf}
                             current={result && them ? {
                                 give: [...giving], get: [...getting],
+                                givePicks: [...givingPicks], getPicks: [...gettingPicks],
                                 partnerName: them.name,
                                 mine: mineEffect, theirs: theirsEffect,
                             } : null}

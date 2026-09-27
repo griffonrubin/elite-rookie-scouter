@@ -553,6 +553,52 @@ const gapNumber = async page => {
     await ctx.close();
 }
 
+// ──── the held-against-current columns are the third place a pick can vanish
+{
+    step(16, 'a held offer keeps its picks in the comparison columns');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+    await page.locator('#trade-partner').selectOption('8');
+    await page.waitForTimeout(1800);
+    const mineSide = page.locator('section').filter({ has: page.locator('h3') }).nth(0);
+    const theirSide = page.locator('section').filter({ has: page.locator('h3') }).nth(1);
+
+    // Give a player, ask for a pick — the same shape that read as "nobody"
+    // in the bar, checked here in the other place it could go missing.
+    await mineSide.locator('button[aria-pressed]').first().click();
+    await theirSide.locator('[data-pick-id]').first().click();
+    await verdictSettled(page);
+
+    // Hold it, then build a different offer so both columns are filled.
+    // The Hold button lives in the bar, and the bar only exists while the
+    // verdict is off screen — so the page has to be put in that state
+    // before the button can be found at all.
+    await page.setViewportSize({ width: 1500, height: 700 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(1200);
+    await page.getByRole('button', { name: /^hold$/i }).first().click();
+    await page.waitForTimeout(800);
+    await page.setViewportSize({ width: 1500, height: 1600 });
+    await page.waitForTimeout(500);
+    await theirSide.locator('[data-pick-id]').first().click();   // take the pick off
+    await theirSide.locator('button[aria-pressed]').first().click();  // ask for a player
+    await verdictSettled(page);
+
+    const compare = page.locator('section').filter({ hasText: /held against current/i })
+        .first();
+    const text = (await compare.innerText()).replace(/\s+/g, ' ');
+    console.log('      ' + text.slice(0, 190));
+    assert('the comparison is showing', await compare.count() >= 1);
+    assert('the held offer still names its pick',
+        /20\d\d (1st|2nd|3rd|4th)/.test(text), text.slice(0, 190));
+    assert('and it reads as a pick, not as a raw id',
+        !/20\d\d-\d-\d/.test(text), text.slice(0, 190));
+    assert('neither column calls a real offer \u201cnobody\u201d',
+        !/nobody/.test(text), text.slice(0, 190));
+
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
 await b.close();
 console.log(fails.length
     ? `\nFAILED ${fails.length}:\n - ${fails.join('\n - ')}`
