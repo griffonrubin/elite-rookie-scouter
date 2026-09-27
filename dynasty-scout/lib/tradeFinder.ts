@@ -146,6 +146,23 @@ export interface FinderTeam {
  */
 const PACKAGE_POOL = 8;
 
+/**
+ * And how many for the two-sided packages, where every combination of one
+ * side's pairs is tried against every combination of the other's.
+ *
+ * Smaller than the pool above because the cost is a product rather than a
+ * sum: eight-a-side is twenty-eight pairs each way, seven hundred and
+ * eighty-four offers per opponent, and it took the sweep from 158ms to
+ * 590ms — which a browser runs twice under StrictMode while somebody waits.
+ * Six-a-side is fifteen pairs and two hundred and twenty-five.
+ *
+ * The cut is not arbitrary. A two-for-two names four players and all four
+ * have to be worth moving; an offer built from your seventh and eighth best
+ * against theirs is not a trade anybody sends, and the same reasoning that
+ * caps the pool above applies harder when both sides are packages.
+ */
+const PAIR_POOL = 6;
+
 /** Offers below this are inside the rounding of a projection. */
 const MIN_GAIN = 0.25;
 
@@ -221,8 +238,8 @@ function findMutual(
     const topOf = (r: TradeRosterPlayer[]) => [...r]
         .sort((a, b) => meanOf(b.id) - meanOf(a.id))
         .slice(0, PACKAGE_POOL);
-    const pairsOf = (r: TradeRosterPlayer[]) => {
-        const top = topOf(r);
+    const pairsOf = (r: TradeRosterPlayer[], pool = PACKAGE_POOL) => {
+        const top = topOf(r).slice(0, pool);
         const out: TradeRosterPlayer[][] = [];
         for (let i = 0; i < top.length; i++) {
             for (let j = i + 1; j < top.length; j++) out.push([top[i], top[j]]);
@@ -305,6 +322,24 @@ function findMutual(
         for (const pair of pairsOf(them.roster)) {
             for (const a of topOf(mine)) consider([a], pair);
         }
+        /*
+         * Two for two, which is the shape the finder could not see at all.
+         *
+         * One-for-one is a swap and two-for-one is consolidation; the trade
+         * neither of those covers is the one where each manager deals from
+         * depth at one position into need at another — two backs for two
+         * receivers. It is arguably the most common shape in a real league
+         * after the straight swap, and it was unreachable by construction.
+         *
+         * It is also the only multi-player shape that costs nothing in roster
+         * spots: both sides send two and receive two, so it is offered even
+         * where the league has no room, unlike the uneven packages above.
+         */
+        for (const pair of pairsOf(mine, PAIR_POOL)) {
+            for (const theirs of pairsOf(them.roster, PAIR_POOL)) {
+                consider(pair, theirs);
+            }
+        }
     }
 
     /**
@@ -324,7 +359,38 @@ function findMutual(
         return true;
     });
     unique.sort((a, b) => b.balance - a.balance || b.myGain - a.myGain);
-    return unique.slice(0, limit);
+
+    /**
+     * And one idea per idea, not one row per permutation of it.
+     *
+     * Two-for-two multiplies the ways of saying the same thing. Swap either
+     * of your two, or either of theirs, and it is a different offer by the
+     * exact-match rule above while being obviously the same suggestion — the
+     * sweep produced five rows built around one receiver, four of which a
+     * reader would skip after reading the first.
+     *
+     * So an offer is dropped when a better-ranked one with the same manager
+     * already contains three or more of its players. Three rather than two,
+     * because two one-for-ones can only ever share one player and must both
+     * survive: "their back for your receiver" and "their back for your other
+     * receiver" are genuinely different things to send. It is four-player
+     * offers the rule is aimed at, and they are the ones it catches.
+     *
+     * Sorted first, so the survivor of each cluster is its best member.
+     */
+    const kept: Offer[] = [];
+    for (const o of unique) {
+        const men = new Set([...o.give, ...o.get]);
+        const variant = kept.some(k => {
+            if (k.teamKey !== o.teamKey) return false;
+            let shared = 0;
+            for (const id of [...k.give, ...k.get]) if (men.has(id)) shared++;
+            return shared >= 3;
+        });
+        if (!variant) kept.push(o);
+        if (kept.length >= limit) break;
+    }
+    return kept;
 }
 
 /**
@@ -554,10 +620,27 @@ export function offerReason(
     positionOf: (id: number) => string,
     of: number,
 ): string | null {
-    const out = offer.give.map(positionOf).filter(Boolean);
-    const inn = offer.get.map(positionOf).filter(Boolean);
-    const from = out[0];
-    const to = inn[0];
+    /**
+     * The position each side is actually dealing, where there is one.
+     *
+     * This used to read the first player each way, which was representative
+     * while an offer was one-for-one or two-for-one. A two-for-two names four
+     * players, and the first of each pair is whichever the sweep happened to
+     * reach — so "you are thin at receiver" could describe a quarter of the
+     * trade while the other three players went unmentioned.
+     *
+     * The canonical two-for-two is homogeneous — two backs for two receivers
+     * — and that one is named exactly as before. A mixed package has no
+     * single position to name, so it says nothing, on the same principle as
+     * the guard below: a sentence that describes part of a trade as though it
+     * were the whole is worse than no sentence.
+     */
+    const only = (ids: number[]) => {
+        const seen = new Set(ids.map(positionOf).filter(Boolean));
+        return seen.size === 1 ? [...seen][0] : null;
+    };
+    const from = only(offer.give);
+    const to = only(offer.get);
     if (!from || !to || from === to) return null;
     const mineFrom = myRank[from];
     const mineTo = myRank[to];
