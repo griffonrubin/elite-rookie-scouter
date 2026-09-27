@@ -24,8 +24,10 @@ import { PlayerSearch, type SearchHit } from './PlayerSearch';
 import { PickPicker } from './PickPicker';
 import { MarketValue, type PricedAsset } from './MarketValue';
 import {
-    findPick, hasPicks, pickInventory, pickName, superflexLeague, type PickAsset,
+    findPick, hasPicks, parsePickId, pickInventory, pickName, roundLabel,
+    superflexLeague, type PickAsset,
 } from '@/lib/tradePicks';
+import type { FinderPick } from '@/lib/tradeFinder';
 import type { TradePrices } from '@/lib/tradePrices';
 import { TradeVerdict } from './TradeVerdict';
 import { TradeSummaryBar, useOutOfView } from './TradeSummaryBar';
@@ -570,6 +572,34 @@ export function TradeClient({ players, prices }: {
             gettingPicks),
         [picksByTeam, them, gettingPicks]);
 
+    /**
+     * What the finder needs to look for a trade between two managers who
+     * want different things: a price for every player, and the picks each
+     * roster is holding.
+     *
+     * Null in a redraft league and in a league too early to have picks,
+     * which is what keeps the stance control off those pages rather than
+     * offering a search that cannot return anything.
+     */
+    const finderMarket = useMemo(() => {
+        if (!picksByTeam || !myKey) return undefined;
+        const asPicks = (list: PickAsset[]): FinderPick[] => list.map(p => ({
+            id: p.id, label: `${p.season} ${p.label}`, value: p.value,
+        }));
+        return {
+            valueOfPlayer: priceOfPlayer,
+            myPicks: asPicks(picksByTeam.get(myKey) ?? []),
+            picksByTeam: new Map([...picksByTeam].map(
+                ([k, list]) => [k, asPicks(list)])),
+        };
+    }, [picksByTeam, myKey, priceOfPlayer]);
+
+    /** A pick id as the finder should print it. */
+    const pickLabelOf = useCallback((id: string) => {
+        const parsed = parsePickId(id);
+        return parsed ? `${parsed.season} ${roundLabel(parsed.round)}` : id;
+    }, []);
+
     const togglePick = (set: Set<string>, setter: (s: Set<string>) => void) =>
         (id: string) => {
             const next = new Set(set);
@@ -788,6 +818,7 @@ export function TradeClient({ players, prices }: {
                             profiles={profiles} myKey={myKey}
                             rosterSize={league.snapshot?.rosterPositions?.length}
                             partnerKey={partnerKey}
+                            market={finderMarket} pickLabel={pickLabelOf}
                             onPick={(o: Offer) => {
                                 // Loading an offer sets the partner as well,
                                 // or the analyser would price it against

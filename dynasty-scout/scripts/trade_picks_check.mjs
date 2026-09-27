@@ -490,6 +490,69 @@ const gapNumber = async page => {
     await ctx.close();
 }
 
+// ───────── the finder, looking for the trade dynasty leagues are made of
+{
+    step(14, 'the finder can be pointed at buying and at selling');
+    const { ctx, page, errs } = await open(dynasty, TRADED, 10);
+
+    const stance = page.locator('[data-stance-option]');
+    assert('a dynasty league is offered the stance control',
+        await stance.count() === 3, `${await stance.count()} options`);
+    assert('it opens on the mutual sweep',
+        await page.locator('[data-stance-option="mutual"]')
+            .getAttribute('aria-pressed') === 'true');
+
+    const blurb = () => page.locator('[data-finder-blurb]').innerText();
+    const rows = () => page.locator('[data-stance] ~ * button, section button')
+        .filter({ hasText: /market|them/ });
+
+    for (const [option, wants] of [
+        ['buy', /improve your starting lineup and pay the other manager/i],
+        ['sell', /improve .*their.* lineup and leave you better off/i],
+    ]) {
+        await page.locator(`[data-stance-option="${option}"]`).click();
+        await page.waitForTimeout(2500);
+        const text = await page.locator('body').innerText();
+        const empty = await page.locator('[data-finder-empty]').count();
+        console.log(`      ${option}: ${empty ? 'no offers' : 'offers found'}`);
+        if (empty === 0) {
+            const b = await blurb();
+            assert(`${option} explains what it is looking for`, wants.test(b),
+                b.replace(/\s+/g, ' ').slice(0, 120));
+            // Every row in a buy/sell list must name a pick, or the sweep is
+            // returning player-for-player offers under a stance that cannot
+            // produce them.
+            assert(`${option} offers are made of picks`,
+                /20\d\d (1st|2nd|3rd|4th)/.test(text));
+            assert(`${option} prices the offer on the market`, /market/.test(text));
+        } else {
+            // An empty list is a legitimate answer, but it must say so in the
+            // stance's own words rather than the mutual one's.
+            const msg = await page.locator('[data-finder-empty]').innerText();
+            console.log('        ' + msg.replace(/\s+/g, ' '));
+            assert(`${option} says why in its own terms`,
+                !/improves both lineups/.test(msg), msg.replace(/\s+/g, ' '));
+        }
+    }
+
+    await page.locator('[data-stance-option="mutual"]').click();
+    await page.waitForTimeout(2000);
+    const back = await page.locator('body').innerText();
+    assert('switching back restores the mutual wording',
+        /both starting lineups improve|improves both lineups/.test(back));
+
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
+{
+    step(15, 'a redraft league is never offered a stance it cannot use');
+    const { ctx, page, errs } = await open(redraft, []);
+    assert('no stance control', await page.locator('[data-stance-option]').count() === 0);
+    assert('no page errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+}
+
 await b.close();
 console.log(fails.length
     ? `\nFAILED ${fails.length}:\n - ${fails.join('\n - ')}`

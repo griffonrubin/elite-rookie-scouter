@@ -321,9 +321,6 @@ function findAcrossStances(
         .sort((a, b) => b.value! - a.value!)
         .slice(0, PICK_POOL);
     const sum = (list: FinderPick[]) => list.reduce((t, p) => t + (p.value ?? 0), 0);
-    const playerValue = (list: TradeRosterPlayer[]) =>
-        list.reduce((t, p) => t + (market.valueOfPlayer(p.id) ?? 0), 0);
-
     const myPicks = priced(market.myPicks);
     const myPackages: FinderPick[][] = [
         ...myPicks.map(p => [p]),
@@ -347,12 +344,47 @@ function findAcrossStances(
         const consider = (
             player: TradeRosterPlayer, picks: FinderPick[], buying: boolean,
         ) => {
+            /**
+             * The spare body that keeps the roster counts legal.
+             *
+             * A trade of picks for a player moves one body one way and none
+             * the other, so the side receiving him ends a man over the limit
+             * — and every roster in a real league is already full. Without
+             * this the whole search returns nothing, for a reason that has
+             * nothing to do with whether the trades are any good.
+             *
+             * What a manager actually does is put their last bench player in
+             * the deal, so that is what is offered: the one whose loss costs
+             * the lineup least, which is usually nothing at all. He is not a
+             * sweetener, he is the roster spot — and his market value counts
+             * towards what the other side is being paid, because they are
+             * receiving him.
+             */
+            const spareOf = (roster: TradeRosterPlayer[]) => {
+                if (rosterSize == null || roster.length < rosterSize) return null;
+                let worst: TradeRosterPlayer | null = null;
+                for (const p of roster) {
+                    if (p.id === player.id) continue;
+                    if (!worst || meanOf(p.id) < meanOf(worst.id)) worst = p;
+                }
+                return worst;
+            };
+            // The buyer receives a body, so the buyer needs the spot.
+            const spare = buying ? spareOf(mine) : spareOf(them.roster);
+            if (rosterSize != null && !spare
+                && (buying ? mine.length : them.roster.length) >= rosterSize) {
+                return;
+            }
+
+            const drop = (r: TradeRosterPlayer[], p: TradeRosterPlayer | null) =>
+                p ? r.filter(x => x.id !== p.id) : r;
             const mineAfter = buying
-                ? [...mine, player]
-                : mine.filter(p => p.id !== player.id);
+                ? [...drop(mine, spare), player]
+                : drop(mine.filter(p => p.id !== player.id), null);
             const theirsAfter = buying
-                ? them.roster.filter(p => p.id !== player.id)
-                : [...them.roster, player];
+                ? drop(them.roster.filter(p => p.id !== player.id), null)
+                    .concat(spare ? [spare] : [])
+                : [...drop(them.roster, spare), player];
             if (rosterSize != null
                 && (mineAfter.length > rosterSize || theirsAfter.length > rosterSize)) {
                 return;
@@ -360,12 +392,15 @@ function findAcrossStances(
 
             const myGain = lineup(mineAfter) - myBase;
             const theirGain = lineup(theirsAfter) - theirBase;
-            const cost = sum(picks);
-            const worth = market.valueOfPlayer(player.id);
+            const spareWorth = spare ? market.valueOfPlayer(spare.id) ?? 0 : 0;
+            const cost = sum(picks) + (buying ? spareWorth : 0);
+            const worth = (market.valueOfPlayer(player.id) ?? 0)
+                + (buying ? 0 : spareWorth);
             // Both halves have to be priced or the comparison is a number
             // against a blank, which is how a kicker ends up looking like a
             // free first-round pick.
-            if (worth == null || worth <= 0 || cost <= 0) return;
+            if (market.valueOfPlayer(player.id) == null) return;
+            if (worth <= 0 || cost <= 0) return;
 
             // The side receiving the player gains lineup; the side receiving
             // the picks gains market. Each has to actually gain.
@@ -387,8 +422,12 @@ function findAcrossStances(
             const myMarketGain = buying ? worth - cost : cost - worth;
             offers.push({
                 teamKey: them.key, teamName: them.name,
-                give: buying ? [] : [player.id],
-                get: buying ? [player.id] : [],
+                give: buying
+                    ? (spare ? [spare.id] : [])
+                    : [player.id],
+                get: buying
+                    ? [player.id]
+                    : (spare ? [spare.id] : []),
                 givePicks: buying ? picks.map(p => p.id) : [],
                 getPicks: buying ? [] : picks.map(p => p.id),
                 myGain: Math.round(myGain * 10) / 10,
@@ -402,7 +441,13 @@ function findAcrossStances(
                     ? Math.round((myGain / cost) * 1000 * 100) / 100
                     : Math.round((myMarketGain / Math.max(0.1, -myGain)) * 100) / 100,
                 balance: Math.round(buyerGain * 10) / 10,
-                unevenCount: true,
+                // Bodies, not assets: the tag exists to warn that a roster
+                // is about to grow or shrink, and an offer carrying the
+                // throw-in that keeps the counts level is not one of those.
+                // Set unconditionally it printed "1 for 1" under a heading
+                // that means "these do not match".
+                unevenCount: (buying ? (spare ? 1 : 0) : 1)
+                    !== (buying ? 1 : (spare ? 1 : 0)),
             });
         };
 
@@ -417,19 +462,33 @@ function findAcrossStances(
         }
     }
 
-    const seen = new Set<string>();
-    const unique = offers.filter(o => {
-        const k = offerKey(o);
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
-    });
     // Ranked on efficiency rather than raw gain: the question a buyer has is
     // not "what is the biggest upgrade" but "what does this cost me", and two
     // offers that add the same points are not the same offer when one costs
     // twice as much.
-    unique.sort((a, b) => b.efficiency - a.efficiency
-        || b.balance - a.balance);
+    offers.sort((a, b) => b.efficiency - a.efficiency || b.balance - a.balance);
+
+    /**
+     * One route per player, and it is the cheapest one.
+     *
+     * Every combination of picks that can buy a man is an offer, so without
+     * this the list is the same player eight times over at eight prices —
+     * which is one suggestion wearing eight rows, while the other ten
+     * rosters in the league go unmentioned. Nobody wants seven worse ways to
+     * buy the back they have already decided to buy; they want to know who
+     * else is available.
+     *
+     * Sorted first, so the survivor is the best-priced route rather than
+     * whichever combination the sweep happened to reach first.
+     */
+    const bestFor = new Set<string>();
+    const unique = offers.filter(o => {
+        const target = stance === 'buy' ? o.get[0] : o.give[0];
+        const k = `${o.teamKey}|${target}`;
+        if (bestFor.has(k)) return false;
+        bestFor.add(k);
+        return true;
+    });
     return unique.slice(0, limit);
 }
 

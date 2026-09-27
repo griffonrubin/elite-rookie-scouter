@@ -228,6 +228,76 @@ step(8, 'offer keys tell two pick packages apart');
         === offerKey({ teamKey: 't2', give: [1], get: [13], givePicks: [] }));
 }
 
+step('8b', 'the list is one route per player, and the cheapest one');
+{
+    const buy = findTrades(me, OTHERS, undefined, 40, 'buy', market);
+    const targets = buy.map(o => `${o.teamKey}|${o.get[0]}`);
+    console.log('      targets: ' + targets.join(', '));
+    assert('no player appears twice', new Set(targets).size === targets.length,
+        `${targets.length} rows, ${new Set(targets).size} distinct players`);
+
+    // And the one kept must be the cheapest route. Comparing against another
+    // call to findTrades cannot show that — the second list is deduped too,
+    // so every "rival" set has one member and the test passes on itself. So
+    // the expected value is worked out by hand instead.
+    //
+    // P15 is worth 1,800 and buying him adds 10 points a week. The picks
+    // that clear his price are the 2027 1st at 2,800 and the 2028 1st at
+    // 2,000; every pair costs more than either. The cheapest valid route is
+    // therefore 2,000, at 10 / 2000 * 1000 = 5.0 points per thousand.
+    const p15 = buy.find(o => o.get[0] === 15);
+    assert('P15 survives to be judged', p15 != null);
+    if (p15) {
+        console.log(`      P15 kept: ${p15.givePicks.join('+')} at ${p15.efficiency}`);
+        assert('the route kept for P15 is the hand-computed cheapest one',
+            p15.efficiency === 5 && p15.givePicks.length === 1
+            && p15.givePicks[0] === '2028-1-1',
+            `${p15.givePicks.join('+')} at ${p15.efficiency}`);
+        assert('and it is not the dearer pick that also clears his price',
+            !p15.givePicks.includes('2027-1-1'), p15.givePicks.join('+'));
+    }
+}
+
+step(9, 'a full roster is handled by including the spot, not by finding nothing');
+{
+    // Seven players and a seven-man limit: every buy would put me a man
+    // over, which is the state every real roster is in. Before the throw-in
+    // this returned nothing at all — not because the trades were bad, but
+    // because none of them could be expressed.
+    const full = findTrades(me, OTHERS, MINE.length, 40, 'buy', market);
+    const loose = findTrades(me, OTHERS, undefined, 40, 'buy', market);
+    console.log(`      ${loose.length} offers with no roster limit, `
+        + `${full.length} with a full roster`);
+    assert('a full roster still produces offers', full.length > 0, `${full.length}`);
+    assert('and every one of them sends a player along with the picks',
+        full.every(o => o.give.length === 1 && o.givePicks.length > 0),
+        full.filter(o => o.give.length !== 1).length + ' without one');
+
+    // The body sent has to be the cheapest one to lose, or the finder is
+    // proposing you pay for a roster spot with a starter.
+    const worstMean = Math.min(...MINE.map(p => POINTS[p.id] ?? 0));
+    assert('the body sent is the one the lineup misses least',
+        full.every(o => (POINTS[o.give[0]] ?? 0) === worstMean),
+        full.map(o => `P${o.give[0]}=${POINTS[o.give[0]]}`).join(','));
+
+    // And the counts have to balance, or it is not a legal trade.
+    assert('one body each way, so both rosters stay the size they were',
+        full.every(o => o.give.length === o.get.length));
+    assert('and none of them is tagged as changing a roster size',
+        full.every(o => !o.unevenCount),
+        `${full.filter(o => o.unevenCount).length} mislabelled`);
+
+    // Where there is room, no body is sent and the tag has to say so.
+    assert('an offer that does grow a roster is still tagged',
+        loose.some(o => o.unevenCount && o.give.length === 0),
+        `${loose.filter(o => o.unevenCount).length} tagged`);
+
+    const sell = findTrades(me, OTHERS, THEIRS.length, 40, 'sell', market);
+    assert('selling into a full roster works the same way',
+        sell.length > 0 && sell.every(o => o.get.length === 1),
+        `${sell.length} offers`);
+}
+
 console.log(fails.length
     ? `\nFAILED ${fails.length}:\n - ${fails.join('\n - ')}`
     : '\nfinder_stance_check  ok');

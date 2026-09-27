@@ -5,7 +5,10 @@ import { ArrowRight, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { POSITION_RAW } from '@/lib/constants';
 import { DIVERGING } from '@/lib/vizTokens';
-import { findTrades, offerReason, type FinderTeam, type Offer } from '@/lib/tradeFinder';
+import {
+    findTrades, offerReason,
+    type FinderTeam, type MarketInput, type Offer, type Stance,
+} from '@/lib/tradeFinder';
 import { CLAIM_NOISE, type ClaimWorth } from '@/lib/seasonOdds';
 import { offerKey } from '@/lib/tradeFinder';
 import type { TradeRosterPlayer } from '@/lib/trade';
@@ -31,8 +34,10 @@ import { SchedChip, schedFor } from '@/components/redraft/SchedChip';
  * the full simulation and the whole league's reaction.
  */
 
-function Side({ ids, nameOf, positionOf, teamOf, playoffs, tone }: {
+function Side({ ids, picks, nameOf, positionOf, teamOf, playoffs, tone }: {
     ids: number[];
+    /** Pick labels, already shortened to "2027 1st". */
+    picks?: string[];
     nameOf: (id: number) => string;
     positionOf: (id: number) => string;
     teamOf: (id: number) => string | null;
@@ -41,6 +46,19 @@ function Side({ ids, nameOf, positionOf, teamOf, playoffs, tone }: {
 }) {
     return (
         <span className="flex flex-col gap-0.5 min-w-0">
+            {/* Picks first: in a buying offer they are the whole of this
+                side, and a side that renders nothing reads as an offer of
+                nothing — which is what the summary bar used to do. */}
+            {(picks ?? []).map(label => (
+                <span key={label} className="flex items-center gap-1.5 min-w-0">
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ background: 'rgba(255,255,255,0.35)' }} />
+                    <span className={cn('text-[12px] truncate tabular-nums',
+                        tone === 'in' ? 'font-semibold' : 'text-muted-foreground/70')}>
+                        {label}
+                    </span>
+                </span>
+            ))}
             {ids.map(id => (
                 <span key={id} className="min-w-0">
                     <span className="flex items-center gap-1.5 min-w-0">
@@ -68,6 +86,7 @@ function Side({ ids, nameOf, positionOf, teamOf, playoffs, tone }: {
 export function TradeFinder({
     myRoster, teams, slots, meanOf, nameOf, positionOf, teamOf, playoffs,
     profiles, myKey, rosterSize, onPick, partnerKey, worth, onOffers,
+    market, pickLabel,
 }: {
     myRoster: TradeRosterPlayer[];
     teams: FinderTeam[];
@@ -94,18 +113,40 @@ export function TradeFinder({
     worth?: Map<string | number, ClaimWorth>;
     /** Report the offers, so the page above can price the best few. */
     onOffers?: (offers: Offer[]) => void;
+    /**
+     * Prices and pick holdings, where the league has picks worth trading.
+     *
+     * Absent in a redraft league, and its absence is what hides the stance
+     * control: there is no buying or selling to be done when every roster is
+     * torn up in August.
+     */
+    market?: MarketInput;
+    /** A pick id, as it should read on the page. */
+    pickLabel?: (id: string) => string;
 }) {
     const [only, setOnly] = useState(false);
+    /**
+     * What the reader is trying to do.
+     *
+     * Opens on the mutual sweep, which is the only honest default: it is the
+     * one shape that needs no assumption about whether this reader is
+     * chasing this season or next, and the only one a redraft league has.
+     */
+    const [stance, setStance] = useState<Stance>('mutual');
     const others = useMemo(
         () => teams.filter(t => t.key !== myKey
             && (!only || !partnerKey || t.key === partnerKey)),
         [teams, myKey, only, partnerKey]);
 
+    // A stance the league cannot support falls back rather than showing an
+    // empty list that looks like "no offers exist".
+    const active: Stance = market ? stance : 'mutual';
     const offers = useMemo(
         () => (myRoster.length && others.length
-            ? findTrades({ roster: myRoster, slots, meanOf }, others, rosterSize, 12)
+            ? findTrades({ roster: myRoster, slots, meanOf }, others, rosterSize, 12,
+                active, market)
             : []),
-        [myRoster, others, slots, meanOf, rosterSize]);
+        [myRoster, others, slots, meanOf, rosterSize, active, market]);
 
     /**
      * Handed up rather than priced here, because pricing one needs the
@@ -124,8 +165,41 @@ export function TradeFinder({
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2 mb-1">
                 <h2 className="text-[10px] uppercase tracking-widest font-bold
                                text-muted-foreground/45">
-                    Offers both sides gain from
+                    {active === 'buy' ? 'Picks for a player'
+                        : active === 'sell' ? 'A player for picks'
+                            : 'Offers both sides gain from'}
                 </h2>
+                {/* Only where picks exist to trade. In a redraft league
+                    there is no buying or selling — every roster is torn up
+                    in August — and a control offering it would be offering
+                    nothing. */}
+                {market && (
+                    <div className="inline-flex rounded-lg border border-white/10
+                                    overflow-hidden" data-stance="">
+                        {([
+                            ['mutual', 'Both gain'],
+                            ['buy', 'Buy now'],
+                            ['sell', 'Build later'],
+                        ] as const).map(([k, label]) => (
+                            <button key={k} type="button" onClick={() => setStance(k)}
+                                aria-pressed={stance === k}
+                                data-stance-option={k}
+                                title={k === 'mutual'
+                                    ? 'Offers where both starting lineups improve'
+                                    : k === 'buy'
+                                        ? 'Send picks for a player who improves your '
+                                          + 'lineup — they get paid on the market'
+                                        : 'Send a player for picks — they improve their '
+                                          + 'lineup, you gain on the market'}
+                                className={cn('text-[10px] font-semibold px-2 py-1',
+                                    stance === k
+                                        ? 'bg-white/[0.10] text-foreground'
+                                        : 'text-muted-foreground/55 hover:text-foreground')}>
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                )}
                 {partnerKey && (
                     <label className="flex items-center gap-1.5 text-[10px]
                                       text-muted-foreground/45 cursor-pointer">
@@ -147,7 +221,15 @@ export function TradeFinder({
                    the rest behind a disclosure, where a reader who wants to
                    know why can have all of it. */
                 <div className="text-[11px] text-muted-foreground/55">
-                    <span>Nothing improves both lineups right now.</span>
+                    <span data-finder-empty="">
+                        {active === 'mutual'
+                            ? 'Nothing improves both lineups right now.'
+                            : active === 'buy'
+                                ? 'Nothing your picks can buy improves your lineup '
+                                  + 'at a price the other manager would take.'
+                                : 'Nothing you could sell improves a rival\u2019s lineup '
+                                  + 'enough for them to pay over the odds for it.'}
+                    </span>
                     <details className="inline-block align-baseline ml-1.5 group">
                         <summary className="inline-flex items-center gap-0.5 cursor-pointer
                                             list-none text-[10px] text-muted-foreground/45
@@ -190,12 +272,30 @@ export function TradeFinder({
                 </div>
             ) : (
                 <>
-                    <p className="text-[11px] text-muted-foreground/55 max-w-[820px] mb-2">
+                    <p className="text-[11px] text-muted-foreground/55 max-w-[820px] mb-2"
+                        data-finder-blurb="">
+                {active === 'mutual' ? (<>
                 Every one-for-one and two-for-one against {others.length}{' '}
                 {others.length === 1 ? 'roster' : 'rosters'}, keeping the ones where
                 both starting lineups improve. Ranked on the <em>smaller</em> of the two
                 gains: an offer worth eight points to you and a tenth of one to them is
                 not a deal, it is a message that goes unanswered.
+                </>) : active === 'buy' ? (<>
+                Your picks against every player on {others.length}{' '}
+                {others.length === 1 ? 'roster' : 'rosters'}, keeping the ones that
+                improve your starting lineup and pay the other manager more than the
+                player is worth. Their lineup gets <em>worse</em> in every one of these
+                — that is what they are selling — and the mutual search above can
+                therefore never find them. Ranked on points a week bought per thousand
+                spent, because the question is not which upgrade is biggest but what
+                each one costs.
+                </>) : (<>
+                Each of your players against the picks held on {others.length}{' '}
+                {others.length === 1 ? 'roster' : 'rosters'}, keeping the ones that
+                improve <em>their</em> lineup and leave you better off on the market.
+                You are the seller here: this season gets worse and what you own
+                afterwards gets better, which is the trade a rebuild is made of.
+                </>)}
                     </p>
                 <ul className="space-y-0.5">
                     {offers.map((o) => {
@@ -222,13 +322,19 @@ export function TradeFinder({
                                             </span>
                                         )}
                                     </span>
-                                    <Side ids={o.give} nameOf={nameOf}
+                                    <Side ids={o.give}
+                                        picks={o.givePicks.map(
+                                            id => pickLabel?.(id) ?? id)}
+                                        nameOf={nameOf}
                                         positionOf={positionOf} teamOf={teamOf}
                                         playoffs={playoffs} tone="out" />
                                     <ArrowRight className="hidden sm:block w-3 h-3
                                                            text-muted-foreground/30"
                                         aria-hidden="true" />
-                                    <Side ids={o.get} nameOf={nameOf}
+                                    <Side ids={o.get}
+                                        picks={o.getPicks.map(
+                                            id => pickLabel?.(id) ?? id)}
+                                        nameOf={nameOf}
                                         positionOf={positionOf} teamOf={teamOf}
                                         playoffs={playoffs} tone="in" />
                                     <span className="text-right">
@@ -242,10 +348,34 @@ export function TradeFinder({
                                             style={{ color: DIVERGING.positive }}>
                                             +{o.myGain.toFixed(1)} you
                                         </span>
-                                        <span className="block text-[10px] tabular-nums
-                                                         text-muted-foreground/50">
-                                            +{o.theirGain.toFixed(1)} them
-                                        </span>
+                                        {/* On a mutual offer both lineup
+                                            gains matter. On a bought or sold
+                                            one the other side's lineup is
+                                            meant to get worse, so printing it
+                                            beside a positive number of yours
+                                            would read as a warning about a
+                                            deal that is working as intended —
+                                            what they gain is the price, and
+                                            that is what goes here instead. */}
+                                        {active === 'mutual' ? (
+                                            <span className="block text-[10px] tabular-nums
+                                                             text-muted-foreground/50">
+                                                +{o.theirGain.toFixed(1)} them
+                                            </span>
+                                        ) : (
+                                            <span className="block text-[10px] tabular-nums
+                                                             text-muted-foreground/50"
+                                                title={active === 'buy'
+                                                    ? 'What this costs you on the dynasty '
+                                                      + 'market — the picks are worth this '
+                                                      + 'much more than the player'
+                                                    : 'What this gains you on the dynasty '
+                                                      + 'market'}>
+                                                {o.myMarketGain > 0 ? '+' : '−'}
+                                                {Math.abs(o.myMarketGain).toLocaleString()}
+                                                {' market'}
+                                            </span>
+                                        )}
                                         {/**
                                           * What it does to your season, for
                                           * the few offers that were priced,
